@@ -131,8 +131,9 @@ def upsert_runs_meta(conn, run_id, run_ts, df_stage1, market):
     df_meta.to_sql("runs", conn, if_exists="append", index=False)
 
 
-def accumulate_market(market, date_str, conn):
-    """한 시장의 모든 단계 CSV 적재. 적재된 게 있으면 True."""
+def accumulate_market(market, date_str, conn, archive=False):
+    """한 시장의 모든 단계 CSV 적재. 적재된 게 있으면 True.
+    archive=True면 적재 후 raw CSV를 archive/로 이동 (final은 루트에도 latest 사본 유지)."""
     stages = MARKETS[market]
     csvs = {}
     for stage in stages:
@@ -151,6 +152,7 @@ def accumulate_market(market, date_str, conn):
     print(f"  [{market}] run_id={run_id}, timestamp={run_ts}")
 
     df_stage1_for_meta = pd.DataFrame()
+    final_csv_path = None
     for stage_name, (csv_path, table) in csvs.items():
         df = load_csv_with_meta(csv_path, run_id, run_ts, market)
         write_to_sqlite(df, table, conn, market)
@@ -158,10 +160,55 @@ def accumulate_market(market, date_str, conn):
         print(f"     ↪ {stage_name}: {len(df):>4}행 → SQLite[{table}] + {parquet_path.name}")
         if stage_name == "stage1":
             df_stage1_for_meta = df
+        if stage_name == "stage3":
+            final_csv_path = csv_path
 
     if not df_stage1_for_meta.empty:
         upsert_runs_meta(conn, run_id, run_ts, df_stage1_for_meta, market)
+
+    # 아카이빙 — CSV를 archive/YYYYMMDD/market/로 이동
+    if archive:
+        archive_csvs(market, run_id, csvs, final_csv_path)
+
     return True
+
+
+def archive_csvs(market, run_id, csvs, final_csv_path):
+    """raw CSV들을 archive/로 이동 + latest_<market>_final.csv는 루트에 유지."""
+    target_dir = ARCHIVE_DIR / run_id / market
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    moved = 0
+    # 모든 CSV 이동 (모든 v2_{market}_*_TIMESTAMP.csv 패턴)
+    # find_latest_csv가 찾은 것 외에 stage2의 _filtered_all 도 같이 처리
+    extra_patterns = [
+        f"v2_{market}_oversold_*.csv",
+        f"v2_{market}_filtered_safe_*.csv",
+        f"v2_{market}_filtered_all_*.csv",
+        f"v2_{market}_final_*.csv",
+    ]
+    today_id = run_id
+    for pattern in extra_patterns:
+        for csv in Path(".").glob(pattern):
+            # 다른 날짜 CSV는 건드리지 않음
+            if today_id not in csv.name:
+                continue
+            target = target_dir / csv.name
+            if target.exists():
+                target.unlink()
+            csv.rename(target)
+            moved += 1
+
+    # 본인이 자주 보는 final CSV는 루트에 'latest' 사본으로 유지 (덮어쓰기)
+    if final_csv_path is not None:
+        archived_final = target_dir / final_csv_path.name
+        if archived_final.exists():
+            latest_path = Path(f"latest_{market}_final.csv")
+            # 복사 (이동 아님)
+            latest_path.write_bytes(archived_final.read_bytes())
+            print(f"     📌 latest_{market}_final.csv (루트에 최신본 유지)")
+
+    print(f"     🗂  {moved}개 CSV → {target_dir}/")
 
 
 def main():
@@ -170,6 +217,10 @@ def main():
     parser.add_argument(
         "--market", choices=["kospi", "kosdaq", "all"], default="all",
         help="적재할 시장 (기본: all)"
+    )
+    parser.add_argument(
+        "--archive", action="store_true",
+        help="적재 후 raw CSV를 archive/로 이동. final은 latest_<market>_final.csv로 루트에 유지"
     )
     args = parser.parse_args()
 
@@ -182,7 +233,7 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     any_loaded = False
     for market in targets:
-        any_loaded = accumulate_market(market, args.date, conn) or any_loaded
+        any_loaded = accumulate_market(market, args.date, conn, archive=args.archive) or any_loaded
     conn.commit()
     conn.close()
 
