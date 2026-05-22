@@ -1,0 +1,789 @@
+#!/usr/bin/env python3
+"""
+[V2.6] GitHub Pages 대시보드 자동 생성기
+==========================================
+history.db를 읽어 docs/index.html을 생성한다.
+GitHub Actions에서 매일 실행 → GitHub Pages가 자동 서빙.
+
+[실행]
+    python build_dashboard.py
+[출력]
+    docs/index.html  (단일 파일, 외부 의존성 최소)
+    docs/data.json   (인터랙티브 필터/차트용 데이터)
+"""
+
+import json
+import sqlite3
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+DB_PATH = Path("history.db")
+DOCS_DIR = Path("docs")
+DOCS_DIR.mkdir(exist_ok=True)
+
+
+def safe_query(conn, sql, params=()):
+    """테이블/컬럼이 없을 때도 빈 DF 반환."""
+    try:
+        return pd.read_sql(sql, conn, params=params)
+    except Exception as e:
+        print(f"  ⚠️ Query failed: {e}")
+        return pd.DataFrame()
+
+
+def build_data_payload() -> dict:
+    """대시보드용 데이터 페이로드 생성."""
+    payload = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M KST"),
+        "runs": {"kospi": [], "kosdaq": []},
+        "latest": {"kospi": {"top": [], "meta": {}}, "kosdaq": {"top": [], "meta": {}}},
+        "frequent": {"kospi": [], "kosdaq": []},
+        "regime_history": {"kospi": [], "kosdaq": []},
+    }
+
+    if not DB_PATH.exists():
+        print(f"  ℹ️  {DB_PATH}가 없습니다 — 빈 대시보드 생성")
+        return payload
+
+    conn = sqlite3.connect(DB_PATH)
+
+    for market in ("kospi", "kosdaq"):
+        # 최근 30회 실행 메타
+        df_runs = safe_query(
+            conn,
+            "SELECT run_id, market_regime, regime_score, usdkrw, "
+            "foreign_kospi_5d_억 AS foreign_5d, stage1_count "
+            "FROM runs WHERE market=? ORDER BY run_id DESC LIMIT 30",
+            (market,),
+        )
+        payload["runs"][market] = df_runs.to_dict(orient="records")
+
+        if df_runs.empty:
+            continue
+
+        latest_run_id = df_runs.iloc[0]["run_id"]
+
+        # 최신 회차 TOP 30
+        df_top = safe_query(
+            conn,
+            "SELECT ticker, name, final_score, stock_score, "
+            "q_basis, sector "
+            "FROM stage3_final WHERE market=? AND run_id=? "
+            "ORDER BY final_score DESC LIMIT 30",
+            (market, latest_run_id),
+        )
+        # 컬럼이 없을 수도 있으니 안전 처리
+        if not df_top.empty:
+            for col in ("q_basis", "sector"):
+                if col not in df_top.columns:
+                    df_top[col] = None
+            payload["latest"][market]["top"] = df_top.fillna("-").to_dict(orient="records")
+
+        latest_meta = df_runs.iloc[0].to_dict()
+        payload["latest"][market]["meta"] = {
+            k: (None if pd.isna(v) else v) for k, v in latest_meta.items()
+        }
+
+        # 최근 30일 자주 등장한 종목
+        df_freq = safe_query(
+            conn,
+            """
+            SELECT name, ticker,
+                   COUNT(*) AS appearances,
+                   ROUND(AVG(final_score), 1) AS avg_score,
+                   MAX(final_score) AS max_score
+            FROM stage3_final
+            WHERE market=? AND run_id >= ?
+            GROUP BY ticker, name
+            HAVING appearances >= 2
+            ORDER BY appearances DESC, avg_score DESC
+            LIMIT 20
+            """,
+            (market, "20000101"),
+        )
+        payload["frequent"][market] = df_freq.to_dict(orient="records")
+
+        # 레짐 점수 시계열 (차트용)
+        df_regime = df_runs[["run_id", "regime_score", "market_regime"]].copy()
+        df_regime = df_regime.iloc[::-1]  # 오름차순
+        payload["regime_history"][market] = df_regime.to_dict(orient="records")
+
+    conn.close()
+    return payload
+
+
+HTML_TEMPLATE = r"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V2.6 KOSPI/KOSDAQ Screener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ec;
+  --bg-paper: #fbf9f3;
+  --ink: #1a1814;
+  --ink-soft: #4a4640;
+  --rule: #1a1814;
+  --rule-light: #c8c2b5;
+  --accent: #b8281c;
+  --accent-cool: #1d4d6e;
+  --positive: #2d6a3e;
+  --negative: #b8281c;
+  --neutral: #7a6e5b;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  padding: 0;
+  font-size: 14px;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(0,0,0,0.018) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.container { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+
+/* ────── MASTHEAD ────── */
+header.masthead {
+  border-bottom: 2px solid var(--rule);
+  padding: 28px 0 18px;
+  margin-bottom: 0;
+}
+.masthead-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--rule-light);
+  padding-bottom: 12px;
+}
+.masthead-top span { white-space: nowrap; }
+h1.title {
+  font-family: 'Noto Serif KR', serif;
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+h1.title .subtitle {
+  display: block;
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-weight: 300;
+  font-size: 16px;
+  color: var(--ink-soft);
+  margin-top: 12px;
+  letter-spacing: 0;
+}
+
+/* ────── MARKET TABS ────── */
+.market-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  margin: 32px 0 28px;
+}
+.market-tab {
+  font-family: 'Noto Serif KR', serif;
+  font-weight: 500;
+  font-size: 22px;
+  padding: 16px 32px 14px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  position: relative;
+  letter-spacing: -0.01em;
+  transition: color 0.2s;
+}
+.market-tab:hover { color: var(--ink); }
+.market-tab.active { color: var(--ink); }
+.market-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.market-tab .count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  margin-left: 8px;
+  color: var(--ink-soft);
+  font-weight: 400;
+  vertical-align: super;
+}
+
+/* ────── REGIME PANEL ────── */
+.regime-panel {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+  gap: 0;
+  border-top: 2px solid var(--rule);
+  border-bottom: 2px solid var(--rule);
+  margin-bottom: 40px;
+}
+.regime-cell {
+  padding: 20px 16px 18px;
+  border-right: 1px solid var(--rule-light);
+}
+.regime-cell:last-child { border-right: none; }
+.regime-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.regime-value {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.regime-value.small {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+}
+.regime-value.pos { color: var(--positive); }
+.regime-value.neg { color: var(--negative); }
+.regime-detail {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ────── SECTION HEADERS ────── */
+section { margin-bottom: 64px; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule-light);
+}
+.section-head h2 {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.section-head h2 .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 14px;
+  margin-right: 8px;
+  vertical-align: super;
+  font-weight: 400;
+}
+.section-head .meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ────── DATA TABLES ────── */
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.data thead th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 10px 12px 8px;
+  border-bottom: 2px solid var(--rule);
+  color: var(--ink-soft);
+  font-weight: 500;
+  white-space: nowrap;
+}
+table.data thead th.num { text-align: right; }
+table.data tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--rule-light);
+  vertical-align: top;
+}
+table.data tbody td.num {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+table.data tbody tr:hover { background: rgba(184, 40, 28, 0.04); }
+table.data .ticker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  display: block;
+  margin-top: 2px;
+}
+table.data .name {
+  font-weight: 500;
+  font-size: 14px;
+}
+table.data .rank {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 18px;
+  color: var(--accent);
+  font-weight: 500;
+  width: 30px;
+}
+.score-bar {
+  display: inline-block;
+  width: 60px;
+  height: 6px;
+  background: var(--rule-light);
+  position: relative;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.score-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
+}
+.tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--ink);
+  color: var(--bg-paper);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ────── REGIME CHART ────── */
+.chart-frame {
+  border: 1px solid var(--rule-light);
+  background: var(--bg-paper);
+  padding: 24px;
+  position: relative;
+}
+.chart-svg { width: 100%; height: 280px; display: block; }
+.chart-axis text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  fill: var(--ink-soft);
+}
+.chart-line { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.chart-point { fill: var(--bg-paper); stroke: var(--ink); stroke-width: 1.5; }
+.chart-point.alert { fill: var(--accent); stroke: var(--accent); }
+.chart-zero { stroke: var(--rule-light); stroke-dasharray: 2,3; }
+
+/* ────── EMPTY STATE ────── */
+.empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-style: italic;
+  border: 1px dashed var(--rule-light);
+}
+
+/* ────── FOOTER ────── */
+footer {
+  margin-top: 80px;
+  padding: 32px 0 48px;
+  border-top: 2px solid var(--rule);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+footer .colophon { max-width: 600px; line-height: 1.7; }
+
+/* ────── ANIMATIONS ────── */
+.market-panel { display: none; opacity: 0; }
+.market-panel.active {
+  display: block;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ────── RESPONSIVE ────── */
+@media (max-width: 768px) {
+  .container { padding: 0 16px; }
+  h1.title { font-size: 38px; }
+  .regime-panel { grid-template-columns: 1fr 1fr; }
+  .regime-cell { border-bottom: 1px solid var(--rule-light); }
+  .market-tab { padding: 12px 16px; font-size: 18px; }
+  .section-head { flex-direction: column; gap: 4px; }
+  .section-head h2 { font-size: 22px; }
+  table.data { font-size: 12px; }
+  table.data tbody td { padding: 8px 6px; }
+  table.data thead th { padding: 8px 6px; }
+  table.data .name { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="masthead">
+  <div class="masthead-top">
+    <span>V2.6 · ALGORITHMIC SCREENING</span>
+    <span>GENERATED <span id="generated-at"></span></span>
+  </div>
+  <h1 class="title">
+    Oversold Screener
+    <span class="subtitle">KOSPI · KOSDAQ — 시장 레짐과 펀더멘털 기반 일일 과매도 종목 발굴</span>
+  </h1>
+</header>
+
+<nav class="market-nav">
+  <button class="market-tab active" data-market="kospi">
+    KOSPI<span class="count" id="count-kospi">—</span>
+  </button>
+  <button class="market-tab" data-market="kosdaq">
+    KOSDAQ<span class="count" id="count-kosdaq">—</span>
+  </button>
+</nav>
+
+<!-- KOSPI PANEL -->
+<div class="market-panel active" data-market="kospi">
+  <div class="regime-panel" id="regime-kospi"></div>
+
+  <section>
+    <div class="section-head">
+      <h2><span class="num">01</span>최신 회차 상위 종목</h2>
+      <span class="meta">RANKED BY FINAL_SCORE</span>
+    </div>
+    <div id="top-kospi"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2><span class="num">02</span>레짐 점수 추이</h2>
+      <span class="meta">RECENT 30 RUNS</span>
+    </div>
+    <div class="chart-frame">
+      <svg class="chart-svg" id="chart-kospi" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2><span class="num">03</span>단골 종목 — 최근 30회 자주 등장</h2>
+      <span class="meta">APPEARANCES ≥ 2</span>
+    </div>
+    <div id="frequent-kospi"></div>
+  </section>
+</div>
+
+<!-- KOSDAQ PANEL -->
+<div class="market-panel" data-market="kosdaq">
+  <div class="regime-panel" id="regime-kosdaq"></div>
+
+  <section>
+    <div class="section-head">
+      <h2><span class="num">01</span>최신 회차 상위 종목</h2>
+      <span class="meta">RANKED BY FINAL_SCORE · KOSDAQ TUNED</span>
+    </div>
+    <div id="top-kosdaq"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2><span class="num">02</span>레짐 점수 추이</h2>
+      <span class="meta">RECENT 30 RUNS</span>
+    </div>
+    <div class="chart-frame">
+      <svg class="chart-svg" id="chart-kosdaq" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2><span class="num">03</span>단골 종목 — 최근 30회 자주 등장</h2>
+      <span class="meta">APPEARANCES ≥ 2</span>
+    </div>
+    <div id="frequent-kosdaq"></div>
+  </section>
+</div>
+
+<footer>
+  <div class="colophon">
+    Built with V2.6 Pipeline · Stage 1 Regime/FX/Foreign Flow ·
+    Stage 2 DART Risk Filter · Stage 3 Fundamentals & Momentum.
+    Data accumulated to SQLite · Snapshots in Parquet.
+    Not investment advice.
+  </div>
+  <div>
+    <div>SOURCE · FDR · NAVER · DART · BOK</div>
+    <div>RUN @ <span id="footer-generated"></span></div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+// 데이터는 같은 디렉토리의 data.json에서 로드
+const PAYLOAD = __DATA__;
+
+document.getElementById('generated-at').textContent = PAYLOAD.generated_at || '—';
+document.getElementById('footer-generated').textContent = PAYLOAD.generated_at || '—';
+
+function fmt(v, digits=1) {
+  if (v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) return '—';
+  if (typeof v === 'number') return v.toFixed(digits);
+  return v;
+}
+
+function fmtScore(v) {
+  if (v === null || v === undefined) return '—';
+  return Math.round(v);
+}
+
+function renderRegime(market) {
+  const meta = (PAYLOAD.latest[market] || {}).meta || {};
+  const el = document.getElementById('regime-' + market);
+  if (!meta || !meta.market_regime) {
+    el.innerHTML = '<div class="regime-cell" style="grid-column:1/-1"><div class="regime-label">No Data</div><div class="regime-value small">DB가 비어있거나 아직 실행 이력이 없습니다</div></div>';
+    return;
+  }
+  const regimeCls = (meta.regime_score >= 0) ? 'pos' : 'neg';
+  const flowVal = meta.foreign_5d;
+  el.innerHTML = `
+    <div class="regime-cell">
+      <div class="regime-label">Market Regime</div>
+      <div class="regime-value">${meta.market_regime || '—'}</div>
+      <div class="regime-detail">RUN_ID ${meta.run_id || '—'}</div>
+    </div>
+    <div class="regime-cell">
+      <div class="regime-label">Regime Score</div>
+      <div class="regime-value small ${regimeCls}">${fmt(meta.regime_score, 1)}</div>
+      <div class="regime-detail">통합 점수</div>
+    </div>
+    <div class="regime-cell">
+      <div class="regime-label">USD/KRW</div>
+      <div class="regime-value small">${fmt(meta.usdkrw, 2)}</div>
+      <div class="regime-detail">원/달러</div>
+    </div>
+    <div class="regime-cell">
+      <div class="regime-label">외인 5일 (억)</div>
+      <div class="regime-value small ${(flowVal||0) >= 0 ? 'pos' : 'neg'}">${fmt(flowVal, 0)}</div>
+      <div class="regime-detail">시총상위 10종목</div>
+    </div>
+    <div class="regime-cell">
+      <div class="regime-label">발굴 종목</div>
+      <div class="regime-value small">${meta.stage1_count || 0}</div>
+      <div class="regime-detail">Stage 1 통과</div>
+    </div>
+  `;
+}
+
+function renderTop(market) {
+  const top = (PAYLOAD.latest[market] || {}).top || [];
+  const el = document.getElementById('top-' + market);
+  if (!top.length) { el.innerHTML = '<div class="empty">최신 결과가 없습니다.</div>'; return; }
+
+  const maxScore = Math.max(...top.map(r => r.final_score || 0));
+  const rows = top.map((r, i) => {
+    const fillPct = maxScore > 0 ? (r.final_score / maxScore) * 100 : 0;
+    return `
+      <tr>
+        <td class="rank">${i + 1}</td>
+        <td>
+          <span class="name">${r.name || '—'}</span>
+          <span class="ticker">${r.ticker || ''}</span>
+        </td>
+        <td>${r.sector && r.sector !== '-' ? `<span style="font-size:11px;color:var(--ink-soft)">${r.sector}</span>` : '<span style="color:var(--rule-light)">—</span>'}</td>
+        <td class="num">
+          <span class="score-bar"><span class="score-bar-fill" style="width:${fillPct}%"></span></span>
+          ${fmtScore(r.final_score)}
+        </td>
+        <td class="num">${fmtScore(r.stock_score)}</td>
+        <td class="num"><span class="ticker">${r.q_basis && r.q_basis !== '-' ? r.q_basis : '—'}</span></td>
+      </tr>
+    `;
+  }).join('');
+  el.innerHTML = `
+    <table class="data">
+      <thead><tr>
+        <th>#</th><th>종목</th><th>산업</th>
+        <th class="num">FINAL</th><th class="num">STOCK</th><th class="num">Q.BASIS</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderFrequent(market) {
+  const freq = PAYLOAD.frequent[market] || [];
+  const el = document.getElementById('frequent-' + market);
+  if (!freq.length) { el.innerHTML = '<div class="empty">아직 단골 데이터가 모이지 않았습니다.</div>'; return; }
+  const rows = freq.map((r, i) => `
+    <tr>
+      <td class="rank">${i + 1}</td>
+      <td><span class="name">${r.name}</span><span class="ticker">${r.ticker}</span></td>
+      <td class="num"><span class="tag">${r.appearances}회</span></td>
+      <td class="num">${fmt(r.avg_score, 1)}</td>
+      <td class="num">${fmtScore(r.max_score)}</td>
+    </tr>
+  `).join('');
+  el.innerHTML = `
+    <table class="data">
+      <thead><tr>
+        <th>#</th><th>종목</th><th class="num">등장</th>
+        <th class="num">평균</th><th class="num">최고</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderChart(market) {
+  const data = (PAYLOAD.regime_history[market] || []).slice(-30);
+  const svg = document.getElementById('chart-' + market);
+  if (!data.length) {
+    svg.innerHTML = '<text x="400" y="140" text-anchor="middle" font-family="JetBrains Mono" fill="#7a6e5b">데이터 없음</text>';
+    return;
+  }
+
+  const W = 800, H = 280, P = 40;
+  const scores = data.map(d => d.regime_score || 0);
+  const minS = Math.min(...scores, -2);
+  const maxS = Math.max(...scores, 2);
+  const range = maxS - minS || 1;
+
+  const xStep = (W - 2 * P) / Math.max(data.length - 1, 1);
+  const yScale = s => P + (H - 2 * P) * (1 - (s - minS) / range);
+  const yZero = yScale(0);
+
+  // Path
+  const path = data.map((d, i) => {
+    const x = P + i * xStep;
+    const y = yScale(d.regime_score || 0);
+    return (i === 0 ? 'M' : 'L') + x + ',' + y;
+  }).join(' ');
+
+  // Points
+  const points = data.map((d, i) => {
+    const x = P + i * xStep;
+    const y = yScale(d.regime_score || 0);
+    const alert = (d.regime_score || 0) <= -8;
+    return `<circle class="chart-point${alert ? ' alert' : ''}" cx="${x}" cy="${y}" r="3"/>`;
+  }).join('');
+
+  // X-axis labels (5개 정도)
+  const labelStep = Math.max(1, Math.floor(data.length / 5));
+  const xLabels = data.filter((_, i) => i % labelStep === 0).map((d, idx) => {
+    const realIdx = idx * labelStep;
+    const x = P + realIdx * xStep;
+    const dateStr = String(d.run_id || '').slice(4, 8).replace(/(\d{2})(\d{2})/, '$1/$2');
+    return `<text x="${x}" y="${H - 12}" text-anchor="middle">${dateStr}</text>`;
+  }).join('');
+
+  // Y-axis labels
+  const yLabels = [maxS, 0, minS].map(s => `
+    <text x="${P - 8}" y="${yScale(s) + 4}" text-anchor="end">${s.toFixed(0)}</text>
+  `).join('');
+
+  svg.innerHTML = `
+    <g class="chart-axis">
+      <line class="chart-zero" x1="${P}" y1="${yZero}" x2="${W - P}" y2="${yZero}"/>
+      ${yLabels}
+      ${xLabels}
+    </g>
+    <path class="chart-line" d="${path}"/>
+    ${points}
+  `;
+}
+
+function renderAll() {
+  ['kospi', 'kosdaq'].forEach(m => {
+    document.getElementById('count-' + m).textContent =
+      (PAYLOAD.latest[m] || {}).top ? `(${PAYLOAD.latest[m].top.length})` : '(0)';
+    renderRegime(m);
+    renderTop(m);
+    renderFrequent(m);
+    renderChart(m);
+  });
+}
+
+// Tab switching
+document.querySelectorAll('.market-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const market = btn.dataset.market;
+    document.querySelectorAll('.market-tab').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.market-panel').forEach(p =>
+      p.classList.toggle('active', p.dataset.market === market));
+  });
+});
+
+renderAll();
+</script>
+
+</body>
+</html>
+"""
+
+
+def main():
+    print(f"\n{'='*60}")
+    print(f"📊 GitHub Pages 대시보드 생성")
+    print(f"{'='*60}")
+
+    payload = build_data_payload()
+
+    # JSON으로도 저장 (디버깅/외부 분석용)
+    data_path = DOCS_DIR / "data.json"
+    data_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+
+    # HTML 생성 — 데이터를 inline으로 박아넣음 (CORS 회피)
+    payload_json = json.dumps(payload, ensure_ascii=False, default=str)
+    html = HTML_TEMPLATE.replace("__DATA__", payload_json)
+
+    out_path = DOCS_DIR / "index.html"
+    out_path.write_text(html, encoding="utf-8")
+
+    size_kb = out_path.stat().st_size / 1024
+    kospi_runs = len(payload.get("runs", {}).get("kospi", []))
+    kosdaq_runs = len(payload.get("runs", {}).get("kosdaq", []))
+    print(f"  ✓ docs/index.html  ({size_kb:.1f} KB)")
+    print(f"  ✓ docs/data.json")
+    print(f"  📈 KOSPI 실행 이력: {kospi_runs}건")
+    print(f"  📈 KOSDAQ 실행 이력: {kosdaq_runs}건")
+    print(f"\n✅ 완료 → GitHub Pages에서 자동 서빙됨")
+    print(f"{'='*60}\n")
+
+
+if __name__ == "__main__":
+    main()
