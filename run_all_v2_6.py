@@ -201,7 +201,7 @@ def main():
         print(f"📦  누적 적재 (SQLite + Parquet)")
         print(f"{'='*72}")
         try:
-            rc = subprocess.run([sys.executable, 'accumulate_history.py']).returncode
+            rc = subprocess.run([sys.executable, 'accumulate_history.py', '--archive']).returncode
             if rc != 0:
                 print(f"⚠️  적재 스크립트가 0이 아닌 코드로 종료: {rc}")
         except Exception as e:
