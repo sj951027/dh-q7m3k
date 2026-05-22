@@ -23,7 +23,7 @@ concurrency:
 jobs:
   run-screener:
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # 코스피+코스닥 둘 다 돌려서 시간 여유
+    timeout-minutes: 90  # [V2.6] 코스피+코스닥 둘 다 돌리는 데 여유 있게 (실제 ~45분)
 
     steps:
       - name: Checkout repo
@@ -51,7 +51,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history.db snapshots/ docs/ v2_kospi_*.csv v2_kosdaq_*.csv || true
+          # archive로 이동된 파일은 git rm으로 처리, 새로 생긴 latest/archive는 git add
+          git add -A history.db snapshots/ docs/ archive/ latest_kospi_final.csv latest_kosdaq_final.csv 2>/dev/null || true
+          # 혹시 archive 안 된 옛 v2_*.csv가 루트에 남아있다면 정리
+          git add -A v2_kospi_*.csv v2_kosdaq_*.csv 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "Daily run $(date -u +%Y-%m-%d)"
             git push
