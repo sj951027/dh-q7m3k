@@ -276,7 +276,9 @@ def main():
 
     # V2에서는 composite_score 기준으로 필터 (oversold + acc_score)
     score_col = 'composite_score' if 'composite_score' in df_input.columns else 'oversold_score'
-    df_input = df_input[df_input[score_col] >= 30].copy()
+    # [V2.6 자동화] 2단계 검사 대상을 composite_score 40 이상으로 제한
+    # (기존 30은 실행 시간 과다 — 코스피 520개 → 200개로 축소)
+    df_input = df_input[df_input[score_col] >= 40].copy()
     print(f"   ✓ {score_col} 30점 이상: {len(df_input)}개 (DART 검사 대상)")
 
     print(f"\n2️⃣  DART 기업코드 매핑")
