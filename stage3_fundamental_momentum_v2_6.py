@@ -39,7 +39,7 @@ import os
 # [V2.6 자동화] 환경변수에서 로드 (GitHub Secrets / 로컬 .env)
 DART_API_KEY = os.environ.get("DART_API_KEY", "")
 INPUT_CSV = None
-MIN_OVERSOLD_SCORE = 40
+MIN_OVERSOLD_SCORE = 50  # [V2.6 자동화] 40 → 50 (3단계 검사 대상 축소, ~100개 예상)
 TOP_N = 20
 REQUEST_SLEEP = 0.05
 
