@@ -22,6 +22,8 @@ import pandas as pd
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 
 # ============================================================
@@ -36,6 +38,9 @@ DART_API_KEY = os.environ.get("DART_API_KEY", "")
 INPUT_CSV = None
 LOOKBACK_DAYS = 365
 CACHE_DIR = "dart_cache"
+
+# [V2.6 자동화] 병렬 처리 — DART rate limit 고려 4스레드
+MAX_WORKERS = 4
 
 
 # ============================================================
@@ -295,18 +300,44 @@ def main():
     df_merged = df_merged.dropna(subset=['corp_code']).reset_index(drop=True)
 
     print(f"\n3️⃣  {len(df_merged)}개 종목 공시 검사 중...")
-    print(f"   ({len(df_merged) * 0.2:.0f}초 예상)\n")
+    print(f"   ({len(df_merged) * 0.2 / MAX_WORKERS:.0f}초 예상, 병렬 {MAX_WORKERS}스레드)\n")
+
+    # [V2.6 자동화] 병렬 처리
+    def check_one(row_dict):
+        """한 종목의 DART 공시 위험 검사. 스레드 안전."""
+        disclosures = fetch_disclosures(row_dict['corp_code'], DART_API_KEY, LOOKBACK_DAYS)
+        risk = check_risk_keywords(disclosures)
+        risk['ticker'] = row_dict['ticker']
+        return row_dict.get('name', row_dict['ticker']), risk
 
     risk_results = []
-    for i, row in df_merged.iterrows():
-        disclosures = fetch_disclosures(row['corp_code'], DART_API_KEY, LOOKBACK_DAYS)
-        risk = check_risk_keywords(disclosures)
-        risk['ticker'] = row['ticker']
-        risk_results.append(risk)
+    print_lock = threading.Lock()
+    completed = 0
+    total = len(df_merged)
+    start_time = time.time()
 
-        if (i + 1) % 10 == 0 or (i + 1) == len(df_merged):
-            print(f"   [{i+1:>3}/{len(df_merged)}] {row['name'][:10]}")
-        time.sleep(0.1)
+    rows_list = [row.to_dict() for _, row in df_merged.iterrows()]
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {executor.submit(check_one, r): r for r in rows_list}
+
+        for future in as_completed(futures):
+            try:
+                name_for_log, risk = future.result()
+            except Exception as e:
+                row = futures[future]
+                print(f"   ⚠️  {row.get('name', row.get('ticker'))} 검사 실패: {e}")
+                continue
+
+            risk_results.append(risk)
+
+            with print_lock:
+                completed += 1
+                if completed % 10 == 0 or completed == total:
+                    elapsed = time.time() - start_time
+                    eta = (elapsed / completed) * (total - completed) if completed > 0 else 0
+                    print(f"   [{completed:>3}/{total}] {str(name_for_log)[:10]} "
+                          f"({elapsed:.0f}s, 남은 ~{eta:.0f}s)")
 
     df_risk = pd.DataFrame(risk_results)
 
