@@ -196,6 +196,10 @@ def main():
                 "--top", str(args.top)],
                "2단계: 섹터 쏠림 방지 추천")
 
+    # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
+    if (HERE / "compute_ic.py").exists():
+        run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
+
     # 3) GitHub 자동 업로드 (push) — 폰에서 보려면 필요
     if not args.no_push:
         git_push()

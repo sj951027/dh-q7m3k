@@ -476,6 +476,17 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   </button>
 </nav>
 
+<!-- 점수 적중도(IC) 카드 — ic_summary.json에서 로드 -->
+<div id="ic-card" style="border:1px solid var(--rule,#d8d2c4);border-radius:10px;
+     padding:18px 20px;margin:0 0 28px;background:rgba(0,0,0,0.015);">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;
+       flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+    <strong style="font-size:0.95rem;letter-spacing:0.02em;">📊 점수 적중도 (IC)</strong>
+    <span id="ic-asof" style="font-size:0.7rem;opacity:0.55;font-family:monospace;">—</span>
+  </div>
+  <div id="ic-body" style="font-size:0.85rem;opacity:0.7;">불러오는 중…</div>
+</div>
+
 <!-- KOSPI PANEL -->
 <div class="market-panel active" data-market="kospi">
   <div class="regime-panel" id="regime-kospi"></div>
@@ -570,6 +581,59 @@ function fmtScore(v) {
   if (v === null || v === undefined) return '—';
   return Math.round(v);
 }
+
+// ── 점수 적중도(IC) 카드 ──────────────────────────────
+function icColor(ic) {
+  if (ic === null || ic === undefined) return 'inherit';
+  if (ic < -0.03) return '#b3261e';      // 역방향(빨강)
+  if (ic < 0.03)  return '#8a8170';      // 무의미(회색)
+  return '#2e7d32';                       // 유효(초록)
+}
+function renderICCard() {
+  const body = document.getElementById('ic-body');
+  const asof = document.getElementById('ic-asof');
+  fetch('ic_summary.json?ts=' + Date.now())
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => {
+      asof.textContent = (d.generated_at || '') + (d.n_dates ? ` · ${d.n_dates}일치` : '');
+      if (d.status !== 'ok' || !d.headline || d.headline.ic === null) {
+        body.innerHTML = '<span style="opacity:0.7;">아직 데이터를 쌓는 중입니다. '
+          + '거래일마다 스크리너를 돌리면 점점 정확해집니다.</span>';
+        return;
+      }
+      const h = d.headline;
+      const big = (h.ic >= 0 ? '+' : '') + h.ic.toFixed(3);
+      let chips = '';
+      (d.factors || []).forEach(f => {
+        const ic20 = f.ic && f.ic['20'];
+        const c = icColor(ic20);
+        const val = (ic20 === null || ic20 === undefined) ? '—'
+                    : (ic20 >= 0 ? '+' : '') + ic20.toFixed(2);
+        chips += `<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;
+          border:1px solid var(--rule,#d8d2c4);border-radius:12px;font-size:0.72rem;">
+          ${f.label} <b style="color:${c};">${val}</b></span>`;
+      });
+      body.innerHTML = `
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:1.6rem;font-weight:700;color:${icColor(h.ic)};">${big}</span>
+          <span style="font-size:0.8rem;">최종점수 적중도 (+${h.horizon}일, N=${h.n})</span>
+          <span style="font-size:0.78rem;opacity:0.8;">${h.verdict || ''}</span>
+        </div>
+        ${h.spread !== null && h.spread !== undefined
+          ? `<div style="font-size:0.76rem;opacity:0.7;margin-bottom:8px;">
+             상위↔하위 평균 수익률 격차: <b>${h.spread >= 0 ? '+' : ''}${h.spread}%p</b>
+             ${h.spread > 0 ? '(상위가 더 좋음 ✓)' : '(점수 역작동 의심)'}</div>` : ''}
+        <div style="margin-bottom:6px;font-size:0.72rem;opacity:0.6;">요소별 (+20일 IC):</div>
+        <div>${chips}</div>
+        <div style="font-size:0.7rem;opacity:0.55;margin-top:8px;">
+          ※ +0.05↑ 유효 · 0 근처 노이즈 · 음수 역작동. ${d.note || ''}</div>`;
+    })
+    .catch(() => {
+      body.innerHTML = '<span style="opacity:0.6;">점수 적중도 데이터가 아직 없습니다 '
+        + '(스크리너를 한 번 더 돌리면 생성됩니다).</span>';
+    });
+}
+renderICCard();
 
 function renderRegime(market) {
   const meta = (PAYLOAD.latest[market] || {}).meta || {};
