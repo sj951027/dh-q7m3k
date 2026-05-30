@@ -101,11 +101,73 @@ def run_script(args_list, label):
     return rc
 
 
+def _git(args):
+    """git 명령 실행 → (returncode, 출력문자열). git 없으면 (None, '')."""
+    try:
+        r = subprocess.run(["git"] + args, cwd=str(HERE),
+                           capture_output=True, text=True)
+        return r.returncode, (r.stdout + r.stderr).strip()
+    except FileNotFoundError:
+        return None, ""
+
+
+def git_push():
+    """결과를 GitHub에 commit + push. 키 유출 방지 안전장치 포함."""
+    print(f"\n{'━'*64}\n▶  3단계: GitHub 업로드 (push)\n{'━'*64}")
+
+    # git 저장소인지 확인
+    if not (HERE / ".git").exists():
+        print("   ⏭  이 폴더는 GitHub와 연결돼 있지 않아 업로드를 건너뜁니다.")
+        print("      (clone한 dh-q7m3k 폴더에서 실행해야 자동 업로드됩니다.)")
+        return
+    rc, _ = _git(["rev-parse", "--is-inside-work-tree"])
+    if rc != 0:
+        print("   ⏭  git 저장소가 아니라 업로드를 건너뜁니다."); return
+
+    # 🔒 안전장치: .env 가 git에 올라갈 위험이 있으면 즉시 중단
+    if (HERE / ".env").exists():
+        rc_ig, _ = _git(["check-ignore", ".env"])
+        if rc_ig != 0:   # 0이면 무시됨(안전). 0이 아니면 추적될 수 있음!
+            print("   🛑 중단: .env(키 파일)가 .gitignore로 보호되지 않습니다.")
+            print("      키 유출을 막기 위해 업로드하지 않았습니다.")
+            print("      → .gitignore 맨 위에 '.env' 한 줄이 있는지 확인 후 다시 실행.")
+            return
+
+    # 변경분 스테이징 (.gitignore가 .env/캐시를 알아서 제외)
+    _git(["add", "-A"])
+    rc_diff, _ = _git(["diff", "--cached", "--quiet"])
+    if rc_diff == 0:
+        print("   ℹ️  바뀐 내용이 없어 업로드할 게 없습니다 (정상)."); return
+
+    # 한 번 더 방어: .env 가 실제로 스테이징됐으면 중단
+    _, staged = _git(["diff", "--cached", "--name-only"])
+    if any(line.strip() == ".env" for line in staged.splitlines()):
+        print("   🛑 중단: .env 가 업로드 목록에 포함됨. 안전을 위해 취소합니다.")
+        _git(["reset"]); return
+
+    from datetime import datetime
+    msg = f"Auto update {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    rc_c, out_c = _git(["commit", "-m", msg])
+    if rc_c != 0:
+        print(f"   ⚠️  commit 실패:\n      {out_c[:300]}"); return
+
+    rc_p, out_p = _git(["push"])
+    if rc_p == 0:
+        print("   ✅ 업로드 완료 — 약 10초 뒤 폰에서 최신으로 보입니다.")
+        print("      https://sj951027.github.io/dh-q7m3k/")
+    else:
+        print(f"   ⚠️  push 실패:\n      {out_p[:300]}")
+        print("      대개 인증 문제입니다 → GitHub Desktop을 한 번 열어 로그인/푸시하면")
+        print("      이후부터는 자동 push가 됩니다.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="스크리너 + 분산 추천 한 번에")
     ap.add_argument("--skip-screener", action="store_true")
     ap.add_argument("--max-per-sector", type=int, default=3)
     ap.add_argument("--top", type=int, default=20)
+    ap.add_argument("--no-push", action="store_true",
+                    help="결과를 GitHub에 자동 업로드하지 않음")
     args = ap.parse_args()
 
     print("=" * 64)
@@ -133,6 +195,10 @@ def main():
                 "--max-per-sector", str(args.max_per_sector),
                 "--top", str(args.top)],
                "2단계: 섹터 쏠림 방지 추천")
+
+    # 3) GitHub 자동 업로드 (push) — 폰에서 보려면 필요
+    if not args.no_push:
+        git_push()
 
     print("\n" + "=" * 64)
     print("  ✅ 전체 완료")
