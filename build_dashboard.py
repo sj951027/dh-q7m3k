@@ -487,6 +487,13 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <div id="ic-body" style="font-size:0.85rem;opacity:0.7;">불러오는 중…</div>
 </div>
 
+<!-- 인터랙티브 필터 페이지로 -->
+<a href="filter.html" style="display:block;text-align:center;margin:0 0 28px;padding:14px;
+   border:1px solid var(--rule,#d8d2c4);border-radius:10px;text-decoration:none;
+   font-weight:600;font-size:0.95rem;color:inherit;background:rgba(66,153,225,0.06);">
+  🔍 필터·정렬·검색으로 자세히 보기 →
+</a>
+
 <!-- KOSPI PANEL -->
 <div class="market-panel active" data-market="kospi">
   <div class="regime-panel" id="regime-kospi"></div>
@@ -837,6 +844,17 @@ def main():
 
     out_path = DOCS_DIR / "index.html"
     out_path.write_text(html, encoding="utf-8")
+
+    # 필터 페이지(docs/filter.html)가 fetch할 수 있도록 최신 CSV를 docs/로 복사
+    import shutil
+    for mkt in ("kospi", "kosdaq"):
+        src = Path(f"latest_{mkt}_final.csv")
+        if src.exists():
+            try:
+                shutil.copy(src, DOCS_DIR / src.name)
+                print(f"  ✓ docs/{src.name} (필터 페이지용 복사)")
+            except Exception as e:
+                print(f"  ⚠️ {src.name} 복사 실패: {e}")
 
     size_kb = out_path.stat().st_size / 1024
     kospi_runs = len(payload.get("runs", {}).get("kospi", []))
