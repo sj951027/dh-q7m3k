@@ -1,0 +1,21 @@
+# 절대 커밋하면 안 되는 것
+.env
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# DART 캐시 (재현 가능, 용량 큼)
+dart_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

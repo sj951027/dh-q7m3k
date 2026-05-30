@@ -1,0 +1,50 @@
+# 가벼운 Pages 배포 전용 워크플로
+# ----------------------------------------------------------------------
+# 이 워크플로는 스크리너를 "돌리지 않는다". 이미 만들어진 docs/ 폴더를
+# 그대로 GitHub Pages에 배포만 한다. → 실행 시간 약 1분.
+#
+# 동작: 너가 로컬에서 스크리너를 돌리고 결과(docs/ 등)를 push 하면,
+#       docs/ 가 바뀐 걸 감지해 자동으로 페이지를 갱신한다.
+#       (수동 실행도 가능: Actions 탭 → 이 워크플로 → Run workflow)
+#
+# ⚠️ 기존 daily.yml(스크리너 전체를 ~45분 돌리는 무거운 워크플로)은
+#    삭제하거나 비활성화할 것. 안 그러면 실수로 트리거 시 또 오래 걸린다.
+# ----------------------------------------------------------------------
+name: Deploy Pages (lightweight)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'          # docs 폴더가 바뀔 때만 배포
+  workflow_dispatch:        # 수동 실행 버튼
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

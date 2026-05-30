@@ -468,6 +468,16 @@
           </div>
         </div>
         
+        <div class="filter-group" id="supplyFilterGroup" style="display:none;">
+          <div class="filter-group-title">💸 수급 (양수만 보기)</div>
+          <div class="checkbox-row">
+            <label class="checkbox-label"><input type="checkbox" id="supply_f5" onchange="toggleCheckLabel(this); applyFilters()"> 외인 5일 ≥ 0</label>
+            <label class="checkbox-label"><input type="checkbox" id="supply_f20" onchange="toggleCheckLabel(this); applyFilters()"> 외인 20일 ≥ 0</label>
+            <label class="checkbox-label"><input type="checkbox" id="supply_i5" onchange="toggleCheckLabel(this); applyFilters()"> 기관 5일 ≥ 0</label>
+            <label class="checkbox-label"><input type="checkbox" id="supply_i20" onchange="toggleCheckLabel(this); applyFilters()"> 기관 20일 ≥ 0</label>
+          </div>
+        </div>
+        
         <div class="filter-group">
           <div class="filter-group-title">종목명/코드 검색</div>
           <input type="text" class="search-input" id="searchInput" 
@@ -547,6 +557,8 @@ const COLUMN_DEFS = [
   { key: 'return_1m_%', label: '1개월', type: 'pct' },
   { key: 'foreign_5d_억', label: '외인5일', type: 'amount_signed' },
   { key: 'inst_5d_억', label: '기관5일', type: 'amount_signed' },
+  { key: 'foreign_20d_억', label: '외인20일', type: 'amount_signed' },
+  { key: 'inst_20d_억', label: '기관20일', type: 'amount_signed' },
   { key: 'annual_yoy_%', label: '연YoY', type: 'pct' },
   { key: 'quarterly_yoy_%', label: '분기YoY', type: 'pct' },
   { key: 'q_basis', label: '분기기준', type: 'string' },
@@ -592,7 +604,7 @@ const COLUMN_GROUPS = [
   { name: '분류',         keys: ['earnings_pattern', 'ocf_pattern', 'risk_level'] },
   { name: '기술적',       keys: ['RSI', 'drawdown_52w_high_%'] },
   { name: '수익률',       keys: ['return_1w_%', 'return_1m_%'] },
-  { name: '수급',         keys: ['foreign_5d_억', 'inst_5d_억'] },
+  { name: '수급',         keys: ['foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억'] },
   { name: '실적/OCF',     keys: ['annual_yoy_%', 'quarterly_yoy_%', 'q_basis', 'q_period', 'annual_latest_억', 'ocf_latest_억', 'ocf_to_op_ratio', 'sector', 'ocf_threshold_group'] },
   { name: 'DART 진단',    keys: ['annual_fs_div', 'q_fs_div', 'q_source_api', 'q_latest_key', 'q_prev_key', 'annual_op_account_nm', 'q_op_account_nm', 'ocf_account_nm', 'dart_annual_status', 'dart_q_status', 'dart_ocf_status'] },
   { name: '레짐 세부',    keys: ['market_regime', 'regime_kospi_score', 'regime_fx_score', 'regime_flow_score', 'kospi_vs_sma200_%'] },
@@ -603,7 +615,7 @@ const COLUMN_GROUPS = [
 // ===== 사전 설정 뷰 (null이면 전체 표시) =====
 const VIEW_PRESETS = {
   '⭐ 핵심': ['name', 'ticker', 'final_score', 'stock_score', 'earnings_pattern', 'ocf_pattern', 'risk_level', 'price', 'drawdown_52w_high_%', 'return_1m_%', 'market_regime'],
-  '💎 수급': ['name', 'ticker', 'final_score', 'supply_score', 'foreign_5d_억', 'inst_5d_억', 'return_1m_%', 'drawdown_52w_high_%', 'earnings_pattern', 'market_regime'],
+  '💎 수급': ['name', 'ticker', 'final_score', 'supply_score', 'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억', 'return_1m_%', 'drawdown_52w_high_%', 'earnings_pattern', 'market_regime'],
   '🏆 점수 비교': ['name', 'ticker', 'final_score', 'stock_score', 'oversold_score', 'acc_score', 'trend_score', 'supply_score', 'regime_score', 'fundamental_score', 'momentum_score', 'ocf_score', 'earnings_pattern', 'ocf_pattern', 'risk_level'],
   '💚 OCF/현금': ['name', 'ticker', 'sector', 'final_score', 'stock_score', 'ocf_score', 'ocf_pattern', 'ocf_threshold_group', 'annual_latest_억', 'ocf_latest_억', 'ocf_to_op_ratio', 'annual_yoy_%', 'quarterly_yoy_%', 'q_basis', 'earnings_pattern', 'risk_level'],
   '🏛️ 레짐 상세': ['name', 'ticker', 'final_score', 'regime_score', 'regime_kospi_score', 'regime_fx_score', 'regime_flow_score', 'market_regime', 'usdkrw', 'usdkrw_vs_sma20_%', 'foreign_kospi_5d_억', 'kospi_vs_sma200_%'],
@@ -745,6 +757,10 @@ function initializeUI() {
   } else {
     document.getElementById('ocfFilterGroup').style.display = 'none';
   }
+  
+  // 수급 필터 그룹: 외인/기관 컬럼이 하나라도 있으면 표시
+  const hasSupply = ['foreign_5d_억','foreign_20d_억','inst_5d_억','inst_20d_억'].some(c => headers.includes(c));
+  document.getElementById('supplyFilterGroup').style.display = hasSupply ? '' : 'none';
   
   // 점수 범위 자동 설정
   const scoreCol = headers.includes('final_score') ? 'final_score' : 'oversold_score';
@@ -900,12 +916,44 @@ function filterByCheckbox(data, inputName, columnName) {
   return data.filter(r => checked.includes(r[columnName]));
 }
 
+// 수급 양수 필터: 체크된 항목마다 해당 컬럼 ≥ 0 인 종목만 남김
+function applySupplyFilters(data) {
+  const checks = [
+    { id: 'supply_f5',  col: 'foreign_5d_억' },
+    { id: 'supply_f20', col: 'foreign_20d_억' },
+    { id: 'supply_i5',  col: 'inst_5d_억' },
+    { id: 'supply_i20', col: 'inst_20d_억' },
+  ];
+  checks.forEach(({id, col}) => {
+    const el = document.getElementById(id);
+    if (el && el.checked && headers.includes(col)) {
+      data = data.filter(r => {
+        const v = parseFloat(r[col]);
+        return !isNaN(v) && v >= 0;
+      });
+    }
+  });
+  return data;
+}
+
+// 수급 필터 체크 전부 해제 (프리셋/초기화 버튼에서 사용)
+function clearSupplyChecks() {
+  ['supply_f5','supply_f20','supply_i5','supply_i20'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.checked = false;
+      el.parentElement.classList.remove('checked');
+    }
+  });
+}
+
 function applyFilters() {
   let data = [...allData];
   
   data = filterByCheckbox(data, 'pattern', 'earnings_pattern');
   data = filterByCheckbox(data, 'risk', 'risk_level');
   data = filterByCheckbox(data, 'ocf', 'ocf_pattern');
+  data = applySupplyFilters(data);
   
   // 점수 범위
   const minV = parseFloat(document.getElementById('scoreMin').value);
@@ -1101,6 +1149,8 @@ function resetFilters() {
     i.checked = ck;
     i.parentElement.classList.toggle('checked', ck);
   });
+  // 수급 필터 해제 (기본: 끔)
+  clearSupplyChecks();
   document.getElementById('scoreMin').value = '';
   document.getElementById('scoreMax').value = '';
   document.getElementById('searchInput').value = '';
@@ -1120,6 +1170,7 @@ function applyRecommendedFilter() {
     i.checked = ck;
     i.parentElement.classList.toggle('checked', ck);
   });
+  clearSupplyChecks();
   // 점수 60+
   document.getElementById('scoreMin').value = '60';
   document.getElementById('scoreMax').value = '';
@@ -1154,6 +1205,7 @@ function applyV26SafeFilter() {
     i.checked = ck;
     i.parentElement.classList.toggle('checked', ck);
   });
+  clearSupplyChecks();
   document.getElementById('scoreMin').value = '60';
   document.getElementById('scoreMax').value = '';
   document.getElementById('searchInput').value = '';
@@ -1179,6 +1231,7 @@ function applyVolumeFilter() {
     i.checked = true;
     i.parentElement.classList.add('checked');
   });
+  clearSupplyChecks();
   document.getElementById('scoreMin').value = '';
   document.getElementById('scoreMax').value = '';
   document.getElementById('searchInput').value = '';
@@ -1198,6 +1251,7 @@ function exportFiltered() {
   data = filterByCheckbox(data, 'pattern', 'earnings_pattern');
   data = filterByCheckbox(data, 'risk', 'risk_level');
   data = filterByCheckbox(data, 'ocf', 'ocf_pattern');
+  data = applySupplyFilters(data);
   const minV = parseFloat(document.getElementById('scoreMin').value);
   const maxV = parseFloat(document.getElementById('scoreMax').value);
   const scoreCol = headers.includes('final_score') ? 'final_score' : 'oversold_score';

@@ -39,8 +39,8 @@ INPUT_CSV = None
 LOOKBACK_DAYS = 365
 CACHE_DIR = "dart_cache"
 
-# [V2.6 자동화] 병렬 처리 — DART rate limit 고려 4스레드
-MAX_WORKERS = 4
+# [V2.6 자동화] DART 서버 부담 줄이기 위해 2스레드 (stage3와 일관)
+MAX_WORKERS = 2
 
 
 # ============================================================
@@ -281,9 +281,8 @@ def main():
 
     # V2에서는 composite_score 기준으로 필터 (oversold + acc_score)
     score_col = 'composite_score' if 'composite_score' in df_input.columns else 'oversold_score'
-    # [V2.6 자동화] 2단계 검사 대상을 composite_score 40 이상으로 제한
-    # (기존 30은 실행 시간 과다 — 코스피 520개 → 200개로 축소)
-    df_input = df_input[df_input[score_col] >= 40].copy()
+    # [V2.6 자동화] 컷오프 원래대로 (40→30 복원). v2_6_002와 동일 수준의 추천 종목 확보
+    df_input = df_input[df_input[score_col] >= 30].copy()
     print(f"   ✓ {score_col} 30점 이상: {len(df_input)}개 (DART 검사 대상)")
 
     print(f"\n2️⃣  DART 기업코드 매핑")

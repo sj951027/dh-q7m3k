@@ -170,7 +170,14 @@ def main():
     all_results = {}
     all_success = True
 
-    for market in markets:
+    for i, market in enumerate(markets):
+        # 두 번째 시장 시작 전 DART 서버 안정화 대기
+        # (4스레드 → 2스레드로 줄였어도 누적 호출 부담 완화용)
+        if i > 0:
+            cooldown = 60
+            print(f"\n\n⏸  DART 서버 안정화를 위해 {cooldown}초 대기 중...")
+            time.sleep(cooldown)
+
         print(f"\n\n{'#'*72}")
         print(f"#  🏛  {market.upper()} 시장 시작")
         print(f"{'#'*72}")
@@ -191,9 +198,6 @@ def main():
             mins, secs = divmod(int(r['elapsed']), 60)
             out = f" → {r['output']}" if r['output'] else ''
             print(f"    {status}  {r['name'][:50]:<50} {mins:>2}분 {secs:>2}초{out}")
-
-    total_mins, total_secs = divmod(int(total_elapsed), 60)
-    print(f"\n  ⏱️  총 소요시간: {total_mins}분 {total_secs}초")
 
     # 누적 적재
     if not args.no_accumulate and Path('accumulate_history.py').exists():
@@ -217,6 +221,18 @@ def main():
         except Exception as e:
             print(f"⚠️  대시보드 생성 실패: {e}")
 
+    # [V2.6 자동화] 총 소요시간을 맨 마지막에 한 줄로 크게 출력
+    # 누적 적재/대시보드 생성까지 포함한 전체 시간
+    grand_total = time.time() - total_start
+    total_hours, rem = divmod(int(grand_total), 3600)
+    total_mins, total_secs = divmod(rem, 60)
+    if total_hours > 0:
+        time_str = f"{total_hours}시간 {total_mins}분 {total_secs}초"
+    else:
+        time_str = f"{total_mins}분 {total_secs}초"
+
+    print(f"\n{'='*72}")
+    print(f"⏱️   총 소요시간: {time_str}   (시작: {datetime.fromtimestamp(total_start).strftime('%H:%M:%S')} → 종료: {datetime.now().strftime('%H:%M:%S')})")
     print(f"{'='*72}\n")
 
 
