@@ -1,0 +1,116 @@
+{
+  "status": "pending",
+  "generated_at": "2026-05-31 00:02",
+  "n_dates": 6,
+  "n_picks": 600,
+  "horizons": [
+    5,
+    20
+  ],
+  "headline": {
+    "horizon": null,
+    "ic": null,
+    "n": null,
+    "spread": null,
+    "verdict": null
+  },
+  "factors": [
+    {
+      "name": "final_score",
+      "label": "최종점수",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "oversold_score",
+      "label": "과매도",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "acc_score",
+      "label": "매집",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "trend_score",
+      "label": "추세전환",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "supply_score",
+      "label": "수급",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "fundamental_score",
+      "label": "펀더멘털",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "ocf_score",
+      "label": "현금흐름",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    },
+    {
+      "name": "momentum_score",
+      "label": "모멘텀",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
+        "20": 0
+      }
+    }
+  ],
+  "note": "표본이 적어 참고용입니다. 거래일마다 쌓일수록 정확해집니다."
+}
