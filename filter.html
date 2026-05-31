@@ -410,7 +410,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>📊 스크리너 결과 필터 <span style="font-size:14px; color:#4299e1; font-weight:500;">V2.6</span></h1>
+  <h1>📊 KOSPI 스크리너 결과 필터 <span style="font-size:14px; color:#4299e1; font-weight:500;">V2.6</span></h1>
   <p class="subtitle">최신 스크리너 결과를 필터/정렬/검색할 수 있어요. 시장을 고르면 자동으로 최신 데이터를 불러옵니다.</p>
 
   <!-- 시장 토글 (자동 로드) -->
@@ -420,6 +420,14 @@
     <button class="mkt-btn" data-mkt="kosdaq" onclick="autoLoad('kosdaq')"
       style="padding:8px 18px;border:1px solid #cbd5e0;border-radius:8px;background:#fff;color:#2d3748;font-weight:600;cursor:pointer;">KOSDAQ</button>
     <span id="loadStatus" style="font-size:12px;color:#718096;margin-left:6px;">불러오는 중…</span>
+    <label style="font-size:13px;color:#2d3748;margin-left:14px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+      <input type="checkbox" id="sectorCapToggle" onchange="if(allData.length)applyFilters()">
+      🧭 섹터 분산
+    </label>
+    <span style="font-size:12px;color:#718096;">업종당</span>
+    <input type="number" id="sectorCapN" value="3" min="1" max="10" style="width:48px;padding:3px 6px;border:1px solid #cbd5e0;border-radius:6px;"
+      onchange="if(document.getElementById('sectorCapToggle').checked&&allData.length)applyFilters()">
+    <span style="font-size:12px;color:#718096;">개</span>
     <a href="#" onclick="document.getElementById('dropzone').style.display='block';return false;"
       style="font-size:12px;color:#a0aec0;margin-left:auto;">파일 직접 열기</a>
   </div>
@@ -714,8 +722,10 @@ function autoLoad(market) {
     b.style.background = on ? '#4299e1' : '#fff';
     b.style.color = on ? '#fff' : '#2d3748';
   });
-  fetch('latest_' + market + '_final.csv?ts=' + Date.now())
-    .then(r => r.ok ? r.text() : Promise.reject(r.status))
+  fetch('latest_' + market + '_enriched.csv?ts=' + Date.now())
+    .then(r => r.ok ? r.text() : Promise.reject('no-enriched'))
+    .catch(() => fetch('latest_' + market + '_final.csv?ts=' + Date.now())
+                   .then(r => r.ok ? r.text() : Promise.reject(r.status)))
     .then(text => {
       applyCSVText(text);
       status.textContent = market.toUpperCase() + ' · ' + allData.length + '종목';
@@ -987,6 +997,22 @@ function clearSupplyChecks() {
   });
 }
 
+function applySectorCap(rows, n) {
+  // final_score 내림차순으로 보며 업종당 최대 n개. 업종 없음/미분류는 각각 별개.
+  const sorted = [...rows].sort((a, b) =>
+    (parseFloat(b.final_score) || 0) - (parseFloat(a.final_score) || 0));
+  const counts = {};
+  let unk = 0;
+  const keep = new Set();
+  for (const r of sorted) {
+    let sec = (r.sector || '').trim();
+    if (!sec || sec === '미분류') { sec = '__unknown__' + (unk++); }
+    const c = counts[sec] || 0;
+    if (c < n) { counts[sec] = c + 1; keep.add(r); }
+  }
+  return rows.filter(r => keep.has(r));
+}
+
 function applyFilters() {
   let data = [...allData];
   
@@ -1011,6 +1037,13 @@ function applyFilters() {
     );
   }
   
+  // 섹터 분산 (토글 ON): final_score 높은 순으로 업종당 N개만 남김
+  const capOn = document.getElementById('sectorCapToggle');
+  if (capOn && capOn.checked) {
+    const n = parseInt(document.getElementById('sectorCapN').value) || 3;
+    data = applySectorCap(data, n);
+  }
+
   // 정렬
   data.sort((a, b) => {
     let av = a[sortColumn];

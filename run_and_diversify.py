@@ -204,6 +204,15 @@ def main():
     if not args.no_push:
         git_push()
 
+    # 4) 텔레그램 알림 (완료 + IC + TOP3 + 링크) — 토큰 없으면 조용히 건너뜀
+    if (HERE / "notify_telegram.py").exists():
+        try:
+            import notify_telegram
+            print(f"\n{'━'*64}\n▶  4단계: 텔레그램 알림\n{'━'*64}")
+            notify_telegram.send()
+        except Exception as e:
+            print(f"   ⚠️  텔레그램 알림 단계 오류: {e}")
+
     print("\n" + "=" * 64)
     print("  ✅ 전체 완료")
     print("     • 스크리너 결과: latest_kospi_final.csv / latest_kosdaq_final.csv")

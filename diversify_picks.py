@@ -372,6 +372,19 @@ def main():
         print(f"   ⚠️  업종 미분류 {n_unknown}개 — 정확한 분산을 원하면 "
               f"{OVERRIDE_FILE}에 직접 채우세요 (ticker,sector).")
 
+    # 업종이 채워진 '전체' CSV를 docs/에 저장 → 필터 페이지가 섹터 토글에 사용
+    import os as _os
+    docs_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "docs")
+    _os.makedirs(docs_dir, exist_ok=True)
+    for mkt in sorted(raw["market"].dropna().unique()):
+        sub_all = raw[raw["market"] == mkt]
+        out_path = _os.path.join(docs_dir, f"latest_{mkt}_enriched.csv")
+        try:
+            sub_all.to_csv(out_path, index=False, encoding="utf-8-sig")
+            print(f"   ✓ docs/latest_{mkt}_enriched.csv (업종 채운 전체, 필터용)")
+        except Exception as e:
+            print(f"   ⚠️  {mkt} enriched 저장 실패: {e}")
+
     # 시장별로 각각 분산 (한 시장 안에서 쏠림을 막는 게 의미 있음)
     out_frames = []
     for mkt in sorted(raw["market"].dropna().unique()) if not args.market else [args.market]:
