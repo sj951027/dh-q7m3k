@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-31 00:00 KST",
+  "generated_at": "2026-05-31 23:17 KST",
   "runs": {
     "kospi": [
       {
@@ -52,6 +52,14 @@
       }
     ],
     "kosdaq": [
+      {
+        "run_id": "20260531",
+        "market_regime": "조정",
+        "regime_score": -4,
+        "usdkrw": 1507.13,
+        "foreign_5d": 1022.0,
+        "stage1_count": 1563
+      },
       {
         "run_id": "20260530",
         "market_regime": "조정",
@@ -590,8 +598,8 @@
           "sector": "-"
         },
         {
-          "ticker": "347000",
-          "name": "센코",
+          "ticker": "473980",
+          "name": "노머스",
           "final_score": 112.1,
           "stock_score": 116.1,
           "q_basis": "3개월",
@@ -599,7 +607,7 @@
         }
       ],
       "meta": {
-        "run_id": "20260530",
+        "run_id": "20260531",
         "market_regime": "조정",
         "regime_score": -4,
         "usdkrw": 1507.13,
@@ -755,141 +763,141 @@
       {
         "name": "제테마",
         "ticker": "216080",
-        "appearances": 6,
-        "avg_score": 122.5,
+        "appearances": 7,
+        "avg_score": 124.2,
         "max_score": 136.5
       },
       {
         "name": "카페24",
         "ticker": "042000",
-        "appearances": 6,
-        "avg_score": 121.6,
+        "appearances": 7,
+        "avg_score": 123.1,
         "max_score": 133.8
       },
       {
         "name": "인투셀",
         "ticker": "287840",
-        "appearances": 6,
-        "avg_score": 119.7,
+        "appearances": 7,
+        "avg_score": 120.8,
         "max_score": 129.4
       },
       {
         "name": "젝시믹스",
         "ticker": "337930",
-        "appearances": 6,
-        "avg_score": 119.6,
+        "appearances": 7,
+        "avg_score": 120.2,
         "max_score": 125.7
       },
       {
         "name": "씨아이에스",
         "ticker": "222080",
-        "appearances": 6,
-        "avg_score": 119.0,
+        "appearances": 7,
+        "avg_score": 119.3,
         "max_score": 123.1
+      },
+      {
+        "name": "애니플러스",
+        "ticker": "310200",
+        "appearances": 7,
+        "avg_score": 117.7,
+        "max_score": 123.6
       },
       {
         "name": "휴온스글로벌",
         "ticker": "084110",
-        "appearances": 6,
-        "avg_score": 118.9,
+        "appearances": 7,
+        "avg_score": 117.5,
         "max_score": 125.6
       },
       {
         "name": "이엔셀",
         "ticker": "456070",
-        "appearances": 6,
+        "appearances": 7,
         "avg_score": 117.0,
         "max_score": 119.9
       },
       {
-        "name": "애니플러스",
-        "ticker": "310200",
-        "appearances": 6,
-        "avg_score": 117.0,
-        "max_score": 123.6
-      },
-      {
         "name": "씨피시스템",
         "ticker": "413630",
-        "appearances": 6,
-        "avg_score": 116.8,
+        "appearances": 7,
+        "avg_score": 116.5,
         "max_score": 122.1
       },
       {
         "name": "한일단조",
         "ticker": "024740",
-        "appearances": 6,
-        "avg_score": 116.7,
+        "appearances": 7,
+        "avg_score": 116.4,
         "max_score": 125.2
-      },
-      {
-        "name": "SAMG엔터",
-        "ticker": "419530",
-        "appearances": 6,
-        "avg_score": 115.7,
-        "max_score": 122.3
       },
       {
         "name": "엔알비",
         "ticker": "475230",
-        "appearances": 6,
-        "avg_score": 115.6,
+        "appearances": 7,
+        "avg_score": 115.9,
         "max_score": 119.4
       },
       {
         "name": "쿼드메디슨",
         "ticker": "464490",
-        "appearances": 6,
-        "avg_score": 115.1,
+        "appearances": 7,
+        "avg_score": 115.7,
         "max_score": 121.1
+      },
+      {
+        "name": "SAMG엔터",
+        "ticker": "419530",
+        "appearances": 7,
+        "avg_score": 115.7,
+        "max_score": 122.3
       },
       {
         "name": "자이언트스텝",
         "ticker": "289220",
-        "appearances": 6,
-        "avg_score": 115.1,
+        "appearances": 7,
+        "avg_score": 114.9,
         "max_score": 122.5
       },
       {
         "name": "바이오에프디엔씨",
         "ticker": "251120",
-        "appearances": 6,
-        "avg_score": 115.0,
+        "appearances": 7,
+        "avg_score": 114.7,
         "max_score": 119.8
       },
       {
         "name": "육일씨엔에쓰",
         "ticker": "191410",
-        "appearances": 6,
-        "avg_score": 115.0,
+        "appearances": 7,
+        "avg_score": 114.3,
         "max_score": 119.8
       },
       {
         "name": "현대힘스",
         "ticker": "460930",
-        "appearances": 6,
-        "avg_score": 114.9,
+        "appearances": 7,
+        "avg_score": 114.2,
         "max_score": 125.8
       },
       {
         "name": "오아",
         "ticker": "342870",
-        "appearances": 6,
-        "avg_score": 113.5,
+        "appearances": 7,
+        "avg_score": 114.0,
         "max_score": 119.2
       },
       {
         "name": "대원산업",
         "ticker": "005710",
-        "appearances": 6,
+        "appearances": 7,
         "avg_score": 113.4,
         "max_score": 119.3
       },
       {
         "name": "웨이브일렉트로",
         "ticker": "095270",
-        "appearances": 6,
-        "avg_score": 113.0,
+        "appearances": 7,
+        "avg_score": 113.2,
         "max_score": 116.6
       }
     ]
@@ -955,6 +963,11 @@
       },
       {
         "run_id": "20260530",
+        "regime_score": -4,
+        "market_regime": "조정"
+      },
+      {
+        "run_id": "20260531",
         "regime_score": -4,
         "market_regime": "조정"
       }
