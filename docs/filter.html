@@ -642,8 +642,16 @@ const VIEW_PRESETS = {
   '📊 상세 (전체)': null,
 };
 
+// ===== 처음 열 때 기본으로 보이는 핵심 컬럼 =====
+const DEFAULT_COLUMNS = [
+  'name', 'ticker', 'final_score', 'RSI',
+  'earnings_pattern', 'ocf_pattern', 'risk_level', 'return_1m_%',
+  'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억',
+  'amt_avg_1w_억', 'amt_avg_1m_억', 'vol_1w_vs_1m_ratio',
+];
+
 // 표시할 컬럼 (null = 전체)
-let visibleColumns = null;
+let visibleColumns = new Set(DEFAULT_COLUMNS);
 
 function isColumnVisible(key) {
   return visibleColumns === null || visibleColumns.has(key);
@@ -936,9 +944,9 @@ function renderColumnSettings() {
 function saveColumnPrefs() {
   try {
     if (visibleColumns === null) {
-      localStorage.removeItem('csv_filter_visible_cols');
+      localStorage.removeItem('csv_filter_visible_cols_v2');
     } else {
-      localStorage.setItem('csv_filter_visible_cols',
+      localStorage.setItem('csv_filter_visible_cols_v2',
                           JSON.stringify([...visibleColumns]));
     }
   } catch (e) { /* localStorage 불가시 무시 */ }
@@ -946,14 +954,17 @@ function saveColumnPrefs() {
 
 function loadColumnPrefs() {
   try {
-    const saved = localStorage.getItem('csv_filter_visible_cols');
+    const saved = localStorage.getItem('csv_filter_visible_cols_v2');
     if (saved) {
       const arr = JSON.parse(saved);
       if (Array.isArray(arr) && arr.length > 0) {
         visibleColumns = new Set(arr);
+        return;
       }
     }
   } catch (e) { /* 무시 */ }
+  // 저장된 설정이 없으면 핵심 12개 기본값 유지
+  visibleColumns = new Set(DEFAULT_COLUMNS);
 }
 
 // ===== 필터 적용 =====
