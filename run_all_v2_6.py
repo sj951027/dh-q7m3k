@@ -3,8 +3,7 @@
 [V2.6] 전체 파이프라인 자동 실행 — 코스피 + 코스닥
 ==================================================
 [필요 파일]
-  • kospi_screener_fdr_v2_6.py
-  • kosdaq_screener_fdr_v2_6.py
+  • screener_fdr_v2_6.py              (코스피/코스닥 공용, V2_INPUT_MARKET로 시장 선택)
   • stage2_risk_filter_v2_6.py        (코스피/코스닥 공용, INPUT_CSV 자동 탐지)
   • stage3_fundamental_momentum_v2_6.py
   • accumulate_history.py
@@ -28,11 +27,11 @@ def build_stages(market: str):
     """market에 따라 단계 정의 생성. stage2/3는 공용 스크립트지만 입력 파일 패턴이 다름."""
     return [
         {
-            'script': f'{market}_screener_fdr_v2_6.py',
+            'script': 'screener_fdr_v2_6.py',
             'name': f'[V2.6 / {market.upper()}] 1단계: 과매도 스크리닝',
             'output_pattern': f'v2_{market}_oversold_*.csv',
             'desc': '레짐 + 환율 + 외인 통합 스크리닝',
-            'env_extra': {},
+            'env_extra': {'V2_INPUT_MARKET': market},
         },
         {
             'script': 'stage2_risk_filter_v2_6.py',

@@ -12,6 +12,9 @@ venv/
 # DART 캐시 (재현 가능, 용량 큼)
 dart_cache/
 
+# 시세 캐시 (재현 가능, 매 실행마다 갱신 → git 추적 제외)
+price_cache/
+
 # OS
 .DS_Store
 Thumbs.db

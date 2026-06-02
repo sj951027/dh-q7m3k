@@ -1,41 +1,38 @@
 #!/usr/bin/env python3
 """
-[V2.6] 1단계: KOSPI 과매도 스크리너 (레짐 + 환율 + 외인 통합)
+[V2.6] 1단계: 과매도 스크리너 (KOSPI / KOSDAQ 통합)
 =============================================================
-V2.4 → V2.6 신규 추가:
+시장별 파라미터를 MARKET_CONFIG로 분리한 단일 스크리너.
+  python screener_fdr_v2_6.py --market kospi
+  python screener_fdr_v2_6.py --market kosdaq
+  (인자 없으면 환경변수 V2_INPUT_MARKET, 그것도 없으면 kospi)
+
+기능:
   ⑬ 원/달러 환율(USD/KRW) 추세를 regime_score에 통합
-     코스피는 외국인 수급에 절대적이고, 외국인은 원/달러 환율과 직결.
-     - 원화 약세 강함 (환율 20일선 +0.5% 위 + 1개월 +1% 상승): -3
-     - 원화 약세 경미 (둘 중 하나만):                            -1
-     - 환율 안정:                                                  0
-     - 원화 강세 (환율 20일선 -0.5% 아래 + 1개월 -1% 하락):      +2
-
-  ⑭ 외국인 KOSPI 누적 순매수 (시총 상위 10개 종목 합산)
-     시총 상위 대형주가 외인 매매의 대부분을 차지하므로 좋은 proxy.
-     V2.4부터 안정 작동 중인 종목별 네이버 크롤링을 재사용 (PYKRX 의존 X).
-     - 5일 누적 < -5000억:                                       -3
-     - 5일 누적 < -2000억:                                       -1
-     - 5일 누적 [-2000, +3000]억:                                  0
-     - 5일 누적 > +3000억:                                       +2
-
-  최종 regime_score = KOSPI 점수 + 환율 점수 + 외인 점수
-  → 약세장 + 원화약세 + 외인이탈 동시면 최대 -16점까지 페널티
-
-V2.4 기존 기능 유지:
-  ⑦ 시장 레짐 필터 (KOSPI 지수 분석)
+  ⑭ 외국인 누적 순매수 (시총 상위 10개 종목 합산)
+  ⑦ 시장 레짐 필터 (지수 분석: KOSPI=KS11, KOSDAQ=KQ11)
   • 네이버 금융 외국인/기관 수급 크롤링
-  • 추세 전환 신호, 떨어지는 칼날 방어
-  • 매집, 거래량, 금융주 제외
+  • 추세 전환 신호, 떨어지는 칼날 방어, 매집/거래량, 금융주·리츠(·코스닥 스팩) 제외
 
-[실행]
-    python kospi_screener_fdr_v2_6.py
+  최종 regime_score = 지수 점수 + 환율 점수 + 외인 점수
+
+[시장별 튜닝 — MARKET_CONFIG]
+  코스닥은 변동성↑·외인비중↓·수출주↓를 반영해 코스피보다 완화:
+    • 레짐 페널티   약세 -10→-7, 반등 -5→-3, 조정 -2→-1
+    • 환율 페널티   강한약세 -3→-1, 경미 -1→0, 강세 +2→+1
+    • 외인 페널티   강한이탈 -3→-2, 이탈 -1→-1, 유입 +2→+1
+    • 외인 임계값   -5000/-2000/+3000 → -2500/-1000/+1500 (약 50% 완화)
+    • 과매도 최소점  50 → 45
+    • 스팩(SPAC) 자동 제외
 
 [출력]
-    v2_kospi_oversold_*.csv  (2/3단계와 호환)
-    + 메타 컬럼: market_regime, regime_score (통합),
-                 regime_kospi_score, regime_fx_score, regime_flow_score,
-                 usdkrw, usdkrw_vs_sma20_%, foreign_kospi_5d_억
+    v2_<market>_oversold_*.csv  (2/3단계와 호환)
+    메타 컬럼명은 시장과 무관하게 동일 (regime_kospi_score / kospi_vs_sma200_%
+    / foreign_kospi_5d_억 ...) — history.db 스키마 및 하위 단계 호환 유지.
 """
+
+import argparse
+import os
 
 import requests
 _original_get = requests.get
@@ -56,10 +53,9 @@ warnings.filterwarnings('ignore')
 
 
 # ============================================================
-# 설정
+# 공통 설정
 # ============================================================
 LOOKBACK_DAYS = 400
-MIN_SCORE = 50
 TOP_N = 30
 MAX_WORKERS = 3
 REQUEST_DELAY = 0.15
@@ -69,99 +65,21 @@ SUPPLY_MIN_OVERSOLD = 30
 SUPPLY_REQUEST_DELAY = 0.25
 SUPPLY_MAX_WORKERS = 4
 
-# [V2.4] 시장 레짐 점수 (KOSPI base)
-REGIME_SCORES = {
-    '강세': 0,
-    '조정': -2,
-    '반등': -5,
-    '약세': -10,
-}
-
-# [V2.6 NEW] 외국인 KOSPI 누적용 시총 상위 대형주
-# 시총 상위 10개가 KOSPI 시총의 약 50%+ 차지. 외인은 거의 대형주만 매매.
-FOREIGN_FLOW_PROXY_TICKERS = [
-    ('005930', '삼성전자'),
-    ('000660', 'SK하이닉스'),
-    ('373220', 'LG에너지솔루션'),
-    ('207940', '삼성바이오로직스'),
-    ('005380', '현대차'),
-    ('005490', 'POSCO홀딩스'),
-    ('000270', '기아'),
-    ('035420', 'NAVER'),
-    ('012330', '현대모비스'),
-    ('006400', '삼성SDI'),
-]
-
-# [V2.6 NEW] 외인 흐름 분류 임계값 (시총 상위 10개 합산 기준, 억 단위)
-FLOW_THRESHOLD_STRONG_OUT = -5000
-FLOW_THRESHOLD_OUT = -2000
-FLOW_THRESHOLD_IN = 3000
-
-
-
-def _get_foreign_flow_proxy_tickers(limit=10):
-    """시총 상위 proxy를 동적으로 구성하고, 실패하면 내장 리스트를 사용."""
-    try:
-        listing = fdr.StockListing('KOSPI')
-        if listing is None or len(listing) == 0:
-            raise ValueError('empty listing')
-
-        code_col = next((c for c in ['Code', 'Symbol'] if c in listing.columns), None)
-        name_col = next((c for c in ['Name'] if c in listing.columns), None)
-        marcap_col = next((c for c in ['Marcap', 'MarketCap', 'Amount'] if c in listing.columns), None)
-        if not code_col or not name_col or not marcap_col:
-            raise ValueError('required columns not found')
-
-        rows = []
-        for _, row in listing.iterrows():
-            code = str(row[code_col]).zfill(6)
-            name = str(row[name_col])
-            if not code.endswith('0'):
-                continue
-            if is_financial_or_reit(code, name):
-                continue
-            try:
-                marcap = float(row[marcap_col])
-            except Exception:
-                continue
-            rows.append((marcap, code, name))
-
-        rows.sort(reverse=True)
-        picked = [(code, name) for _, code, name in rows[:limit]]
-        if len(picked) >= max(5, limit // 2):
-            print(f"   • 외인 proxy 동적 구성: 시총 상위 {len(picked)}개")
-            return picked
-    except Exception as e:
-        print(f"   ⚠️  외인 proxy 동적 구성 실패: {str(e)[:80]} → 내장 리스트 사용")
-
-    return FOREIGN_FLOW_PROXY_TICKERS[:limit]
-
 
 # ============================================================
-# 금융주/리츠 필터
+# 금융주/리츠/스팩 키워드
 # ============================================================
 FINANCIAL_KEYWORDS = [
     '금융', '은행', '증권', '보험', '캐피탈', '캐피털', '카드',
     '손해보험', '생명', '화재', '저축', '여신', '신탁',
 ]
 REIT_KEYWORDS = ['리츠', 'REIT', '부동산투자']
+SPAC_KEYWORDS = ['스팩', 'SPAC']
 KNOWN_FINANCIAL_TICKERS = {'055550', '001450'}
 
 
-def is_financial_or_reit(ticker, name):
-    if not name:
-        return False
-    if ticker in KNOWN_FINANCIAL_TICKERS:
-        return True
-    name_str = str(name)
-    for kw in FINANCIAL_KEYWORDS + REIT_KEYWORDS:
-        if kw in name_str:
-            return True
-    return False
-
-
 # ============================================================
-# 내장 KOSPI 주요 종목 (백업)
+# 내장 주요 종목 (StockListing 실패 시 백업)
 # ============================================================
 KOSPI_MAJOR = [
     ('005930', '삼성전자'), ('000660', 'SK하이닉스'), ('373220', 'LG에너지솔루션'),
@@ -194,20 +112,145 @@ KOSPI_MAJOR = [
     ('272210', '한화시스템'), ('079550', 'LIG넥스원'),
 ]
 
+# 코스닥 백업 — StockListing('KOSDAQ') 실패 시에만 쓰이는 degraded 모드용
+# (정상 경로에선 FDR 전체 목록을 사용하므로 대표 종목만)
+KOSDAQ_MAJOR = [
+    ('247540', '에코프로비엠'), ('086520', '에코프로'), ('196170', '알테오젠'),
+    ('068760', '셀트리온제약'), ('035760', 'CJ ENM'), ('277810', '레인보우로보틱스'),
+    ('028300', 'HLB'), ('357780', '솔브레인'), ('293490', '카카오게임즈'),
+    ('058470', '리노공업'), ('067310', '하나마이크론'), ('240810', '원익IPS'),
+    ('036930', '주성엔지니어링'), ('039030', '이오테크닉스'), ('098460', '고영'),
+    ('213420', '덕산네오룩스'), ('005290', '동진쎄미켐'), ('222800', '심텍'),
+    ('140860', '파크시스템스'), ('095340', 'ISC'),
+]
 
-def get_kospi_universe():
+# 외국인 누적용 시총 상위 proxy (동적 구성 실패 시 폴백)
+KOSPI_PROXY = [
+    ('005930', '삼성전자'), ('000660', 'SK하이닉스'), ('373220', 'LG에너지솔루션'),
+    ('207940', '삼성바이오로직스'), ('005380', '현대차'), ('005490', 'POSCO홀딩스'),
+    ('000270', '기아'), ('035420', 'NAVER'), ('012330', '현대모비스'),
+    ('006400', '삼성SDI'),
+]
+KOSDAQ_PROXY = [
+    ('247540', '에코프로비엠'), ('086520', '에코프로'), ('091990', '셀트리온헬스케어'),
+    ('196170', '알테오젠'), ('068760', '셀트리온제약'), ('035760', 'CJ ENM'),
+    ('277810', '레인보우로보틱스'), ('028300', 'HLB'), ('357780', '솔브레인'),
+    ('293490', '카카오게임즈'),
+]
+
+
+# ============================================================
+# 시장별 파라미터 (튜닝은 전부 여기서만 관리)
+# ============================================================
+MARKET_CONFIG = {
+    'kospi': {
+        'name': 'KOSPI',
+        'listing': 'KOSPI',
+        'index_code': 'KS11',
+        'min_score': 50,
+        'exclude_spac': False,
+        'major_fallback': KOSPI_MAJOR,
+        'proxy_fallback': KOSPI_PROXY,
+        # 레짐(지수) 점수
+        'regime_scores': {'강세': 0, '조정': -2, '반등': -5, '약세': -10},
+        # 환율 점수 (강한약세 / 경미약세 / 강세)
+        'fx_scores': {'strong': -3, 'mild': -1, 'won_strong': 2},
+        # 외인 흐름 임계값(억) + 점수
+        'flow_thresholds': {'strong_out': -5000, 'out': -2000, 'in': 3000},
+        'flow_scores': {'strong_out': -3, 'out': -1, 'in': 2},
+    },
+    'kosdaq': {
+        'name': 'KOSDAQ',
+        'listing': 'KOSDAQ',
+        'index_code': 'KQ11',
+        'min_score': 45,            # 등락 폭 큼 → 완화
+        'exclude_spac': True,       # 스팩 매우 많음, 합병 전 가격 무의미
+        'major_fallback': KOSDAQ_MAJOR,
+        'proxy_fallback': KOSDAQ_PROXY,
+        'regime_scores': {'강세': 0, '조정': -1, '반등': -3, '약세': -7},
+        'fx_scores': {'strong': -1, 'mild': 0, 'won_strong': 1},
+        'flow_thresholds': {'strong_out': -2500, 'out': -1000, 'in': 1500},
+        'flow_scores': {'strong_out': -2, 'out': -1, 'in': 1},
+    },
+}
+
+
+def resolve_market(cli_market=None):
+    """--market > 환경변수 V2_INPUT_MARKET > 'kospi' 순으로 시장 결정."""
+    m = (cli_market or os.environ.get('V2_INPUT_MARKET') or 'kospi').lower()
+    if m not in MARKET_CONFIG:
+        raise ValueError(f"알 수 없는 market: {m} (kospi/kosdaq 중 하나)")
+    return m
+
+
+def is_financial_or_reit(ticker, name, exclude_spac=False):
+    if not name:
+        return False
+    if ticker in KNOWN_FINANCIAL_TICKERS:
+        return True
+    name_str = str(name)
+    if exclude_spac:
+        name_upper = name_str.upper()
+        for kw in SPAC_KEYWORDS:
+            if kw in name_upper:
+                return True
+    for kw in FINANCIAL_KEYWORDS + REIT_KEYWORDS:
+        if kw in name_str:
+            return True
+    return False
+
+
+def _get_foreign_flow_proxy_tickers(cfg, limit=10):
+    """시총 상위 proxy를 동적으로 구성하고, 실패하면 내장 리스트를 사용."""
+    try:
+        listing = fdr.StockListing(cfg['listing'])
+        if listing is None or len(listing) == 0:
+            raise ValueError('empty listing')
+
+        code_col = next((c for c in ['Code', 'Symbol'] if c in listing.columns), None)
+        name_col = next((c for c in ['Name'] if c in listing.columns), None)
+        marcap_col = next((c for c in ['Marcap', 'MarketCap', 'Amount'] if c in listing.columns), None)
+        if not code_col or not name_col or not marcap_col:
+            raise ValueError('required columns not found')
+
+        rows = []
+        for _, row in listing.iterrows():
+            code = str(row[code_col]).zfill(6)
+            name = str(row[name_col])
+            if not code.endswith('0'):
+                continue
+            if is_financial_or_reit(code, name, cfg['exclude_spac']):
+                continue
+            try:
+                marcap = float(row[marcap_col])
+            except Exception:
+                continue
+            rows.append((marcap, code, name))
+
+        rows.sort(reverse=True)
+        picked = [(code, name) for _, code, name in rows[:limit]]
+        if len(picked) >= max(5, limit // 2):
+            print(f"   • 외인 proxy 동적 구성: 시총 상위 {len(picked)}개")
+            return picked
+    except Exception as e:
+        print(f"   ⚠️  외인 proxy 동적 구성 실패: {str(e)[:80]} → 내장 리스트 사용")
+
+    return cfg['proxy_fallback'][:limit]
+
+
+def get_universe(cfg):
     """
-    KOSPI 종목 목록 반환.
-    Returns: (tickers, name_map, sector_map)
+    종목 목록 반환. Returns: (tickers, name_map, sector_map)
         sector_map은 FDR이 sector 컬럼을 제공할 때만 채워지고, 없으면 빈 dict.
     """
-    print("   • fdr.StockListing('KOSPI') 시도...")
+    listing = cfg['listing']
+    print(f"   • fdr.StockListing('{listing}') 시도...")
     try:
-        df = fdr.StockListing('KOSPI')
+        df = fdr.StockListing(listing)
         if df is not None and len(df) > 100:
             code_col = next((c for c in ['Code', 'Symbol'] if c in df.columns), None)
             name_col = next((c for c in ['Name'] if c in df.columns), None)
-            # [V2.6 패치] 산업 분류 자동 탐지 — FDR 버전마다 컬럼명이 다름
+            # FDR 버전마다 산업 분류 컬럼명이 다름 — 자동 탐지
             sector_col = next(
                 (c for c in ['Sector', 'sector', 'Industry', 'industry', 'IndustryName']
                  if c in df.columns),
@@ -221,7 +264,7 @@ def get_kospi_universe():
                     name = row[name_col]
                     if not code.endswith('0'):
                         continue
-                    if is_financial_or_reit(code, name):
+                    if is_financial_or_reit(code, name, cfg['exclude_spac']):
                         excluded += 1
                         continue
                     tickers.append(code)
@@ -231,7 +274,7 @@ def get_kospi_universe():
                         if sector_val and not pd.isna(sector_val):
                             sector_map[code] = str(sector_val).strip()
                 print(f"   ✓ 로드: {len(tickers)}개")
-                print(f"   🚫 금융주/리츠 제외: {excluded}개")
+                print(f"   🚫 금융주/리츠{'/스팩' if cfg['exclude_spac'] else ''} 제외: {excluded}개")
                 if sector_col:
                     print(f"   🏷️  산업 분류({sector_col}): {len(sector_map)}/{len(tickers)}개 매칭")
                 else:
@@ -242,9 +285,9 @@ def get_kospi_universe():
 
     print("   • 내장 리스트 사용")
     seen = set()
-    unique = [(c, n) for c, n in KOSPI_MAJOR
+    unique = [(c, n) for c, n in cfg['major_fallback']
               if c not in seen and not seen.add(c)
-              and not is_financial_or_reit(c, n)]
+              and not is_financial_or_reit(c, n, cfg['exclude_spac'])]
     tickers = [c for c, _ in unique]
     name_map = dict(unique)
     print(f"   ✓ {len(tickers)}개")
@@ -252,27 +295,24 @@ def get_kospi_universe():
 
 
 # ============================================================
-# [V2.4] 시장 레짐: KOSPI 부분
-# [V2.6] + 환율(USD/KRW) + 외국인 KOSPI 누적 통합
+# 시장 레짐: 지수 + 환율 + 외국인 누적
 # ============================================================
 
-def _analyze_kospi_regime():
+def _analyze_index_regime(cfg):
     """
-    KOSPI 종합지수(KS11) 분석으로 시장 레짐 판단.
-
-    분류:
+    지수(KS11/KQ11) 분석으로 시장 레짐 판단.
       🟢 강세: 200일선 위 + 50일선 위
-      🟡 조정: 200일선 위 + 50일선 아래 (강세장 내 조정)
-      🟠 반등: 200일선 아래 + 50일선 위 (약세장 내 반등)
+      🟡 조정: 200일선 위 + 50일선 아래
+      🟠 반등: 200일선 아래 + 50일선 위
       🔴 약세: 200일선 아래 + 50일선 아래
     """
     today = datetime.now()
     from_date = (today - timedelta(days=450)).strftime("%Y-%m-%d")
 
     try:
-        df = fdr.DataReader('KS11', from_date)
+        df = fdr.DataReader(cfg['index_code'], from_date)
         if df is None or len(df) < 200:
-            print("   ⚠️  KOSPI 지수 데이터 부족 (200일 이상 필요)")
+            print("   ⚠️  지수 데이터 부족 (200일 이상 필요)")
             return None
 
         close = df['Close']
@@ -299,13 +339,14 @@ def _analyze_kospi_regime():
         else:
             regime, emoji, signal = '약세', '🔴', '관망 / 현금 비중 확대'
 
-        regime_kospi_score = REGIME_SCORES.get(regime, 0)
+        regime_index_score = cfg['regime_scores'].get(regime, 0)
 
+        # 메타 컬럼명은 시장 무관하게 'kospi_*'로 유지 (history.db/하위 단계 호환)
         return {
             'regime': regime,
             'emoji': emoji,
             'signal': signal,
-            'regime_kospi_score': regime_kospi_score,
+            'regime_kospi_score': regime_index_score,
             'kospi': round(latest, 2),
             'kospi_daily_change_%': round(daily_change_pct, 2),
             'kospi_vs_sma50_%': round(vs_sma50_pct, 1),
@@ -314,19 +355,18 @@ def _analyze_kospi_regime():
             'kospi_return_3m_%': round(return_3m_pct, 1),
         }
     except Exception as e:
-        print(f"   ⚠️  KOSPI 지수 조회 실패: {str(e)[:80]}")
+        print(f"   ⚠️  지수 조회 실패: {str(e)[:80]}")
         return None
 
 
-def _analyze_fx_trend():
+def _analyze_fx_trend(cfg):
     """
-    [V2.6] 원/달러 환율 추세 분석.
-
-    환율 상승(원화 약세) → 외국인 환차손 회피 매도 → KOSPI 매도 압력.
-    KOSPI 지수만 보는 기존 레짐은 이 신호를 놓침.
+    원/달러 환율 추세 분석. 환율 상승(원화 약세) → 외국인 매도 압력.
+    페널티 강도는 cfg['fx_scores']로 시장별 조정 (코스닥은 영향 작음).
     """
     today = datetime.now()
     from_date = (today - timedelta(days=120)).strftime("%Y-%m-%d")
+    fx = cfg['fx_scores']
 
     try:
         df = fdr.DataReader('USD/KRW', from_date)
@@ -346,11 +386,11 @@ def _analyze_fx_trend():
         falling_1m = return_1m_pct < -1.0
 
         if above_20 and rising_1m:
-            fx_state, fx_score, fx_emoji = '원화약세_강함', -3, '🔻'
+            fx_state, fx_score, fx_emoji = '원화약세_강함', fx['strong'], '🔻'
         elif above_20 or rising_1m:
-            fx_state, fx_score, fx_emoji = '원화약세_경미', -1, '🟡'
+            fx_state, fx_score, fx_emoji = '원화약세_경미', fx['mild'], '🟡'
         elif below_20 and falling_1m:
-            fx_state, fx_score, fx_emoji = '원화강세', 2, '🟢'
+            fx_state, fx_score, fx_emoji = '원화강세', fx['won_strong'], '🟢'
         else:
             fx_state, fx_score, fx_emoji = '환율안정', 0, '⚪'
 
@@ -367,23 +407,25 @@ def _analyze_fx_trend():
         return None
 
 
-def _classify_foreign_flow(foreign_sum_억):
-    """외인 5일 누적 합계를 받아 (state, score, emoji) 반환 — 단위 테스트 가능."""
-    if foreign_sum_억 < FLOW_THRESHOLD_STRONG_OUT:
-        return '외인이탈_강함', -3, '🔻'
-    if foreign_sum_억 < FLOW_THRESHOLD_OUT:
-        return '외인이탈', -1, '🟡'
-    if foreign_sum_억 > FLOW_THRESHOLD_IN:
-        return '외인유입', 2, '🟢'
+def _classify_foreign_flow(foreign_sum_억, cfg):
+    """외인 5일 누적 합계 → (state, score, emoji). 임계값/점수 모두 시장별."""
+    th = cfg['flow_thresholds']
+    sc = cfg['flow_scores']
+    if foreign_sum_억 < th['strong_out']:
+        return '외인이탈_강함', sc['strong_out'], '🔻'
+    if foreign_sum_억 < th['out']:
+        return '외인이탈', sc['out'], '🟡'
+    if foreign_sum_억 > th['in']:
+        return '외인유입', sc['in'], '🟢'
     return '외인중립', 0, '⚪'
 
 
-def _analyze_foreign_kospi_flow():
+def _analyze_foreign_flow(cfg):
     """
-    [V2.6] 시총 상위 대형주의 외국인 5일 누적 순매수를 합산해 시장 외인 방향성 추정.
+    시총 상위 대형주의 외국인 5일 누적 순매수를 합산해 시장 외인 방향성 추정.
     조회 성공률이 100%가 아닐 때는 raw 합계를 coverage로 보정해 threshold 왜곡을 줄인다.
     """
-    proxy_tickers = _get_foreign_flow_proxy_tickers(limit=len(FOREIGN_FLOW_PROXY_TICKERS))
+    proxy_tickers = _get_foreign_flow_proxy_tickers(cfg, limit=len(cfg['proxy_fallback']))
     print(f"   📊 시총 상위 {len(proxy_tickers)}개 외인 수급 합산 중...")
 
     foreign_sum = 0.0
@@ -427,7 +469,7 @@ def _analyze_foreign_kospi_flow():
     else:
         print(f"   ✓ 전체 {total}개 합산 완료")
 
-    flow_state, flow_score, flow_emoji = _classify_foreign_flow(adjusted_foreign_sum)
+    flow_state, flow_score, flow_emoji = _classify_foreign_flow(adjusted_foreign_sum, cfg)
 
     contributions.sort(key=lambda x: abs(x[1]), reverse=True)
     top_contributors = ', '.join(f"{n} {v:+.0f}억" for n, v in contributions[:3])
@@ -447,25 +489,21 @@ def _analyze_foreign_kospi_flow():
     }
 
 
-def analyze_market_regime():
+def analyze_market_regime(cfg):
     """
-    [V2.6] 통합 시장 레짐 분석.
-    KOSPI 추세 + 환율 + 외국인 KOSPI 누적을 모두 합산해서 통합 regime_score 산출.
-
-    KOSPI 데이터가 없으면 None 반환 (FX/Flow만 있어도 의미 약함).
-    FX/Flow는 sub-실패해도 점수 0으로 처리하고 계속 진행.
+    통합 시장 레짐 분석. 지수 추세 + 환율 + 외국인 누적을 합산해 통합 regime_score 산출.
+    지수 데이터가 없으면 None 반환. FX/Flow는 sub-실패해도 점수 0으로 처리하고 진행.
     """
-    kospi = _analyze_kospi_regime()
-    if not kospi:
+    index_info = _analyze_index_regime(cfg)
+    if not index_info:
         return None
 
-    fx = _analyze_fx_trend() or {}
-    flow = _analyze_foreign_kospi_flow() or {}
+    fx = _analyze_fx_trend(cfg) or {}
+    flow = _analyze_foreign_flow(cfg) or {}
 
-    info = {**kospi, **fx, **flow}
+    info = {**index_info, **fx, **flow}
 
-    # 각 sub-score (없으면 0)
-    info['regime_kospi_score'] = kospi.get('regime_kospi_score', 0)
+    info['regime_kospi_score'] = index_info.get('regime_kospi_score', 0)
     info['regime_fx_score'] = fx.get('regime_fx_score', 0)
     info['regime_flow_score'] = flow.get('regime_flow_score', 0)
     info['regime_score'] = (
@@ -477,8 +515,9 @@ def analyze_market_regime():
     return info
 
 
-def print_regime_box(regime_info):
-    """시장 레짐 정보 박스 출력 (KOSPI + 환율 + 외인 통합)"""
+def print_regime_box(regime_info, cfg):
+    """시장 레짐 정보 박스 출력 (지수 + 환율 + 외인 통합)"""
+    market_name = cfg['name']
     if not regime_info:
         print(f"\n{'─'*72}")
         print(f"⚠️  시장 레짐 분석 실패 → regime_score 0으로 진행")
@@ -493,8 +532,8 @@ def print_regime_box(regime_info):
     print(f"🏛️   시장 레짐: {r.get('emoji', '⚪')} {r.get('regime', '미정')}장 "
           f"(통합 Score: {r['regime_score']:+d})")
     print(f"{'═'*72}")
-    print(f"   KOSPI: {r.get('kospi', 0):,.2f}  ({daily_sign}{daily:.2f}% vs 어제)  "
-          f"→ KOSPI 점수: {r['regime_kospi_score']:+d}")
+    print(f"   {market_name}: {r.get('kospi', 0):,.2f}  ({daily_sign}{daily:.2f}% vs 어제)  "
+          f"→ 지수 점수: {r['regime_kospi_score']:+d}")
 
     sma50_mark = '✅' if r.get('kospi_vs_sma50_%', 0) > 0 else '❌'
     sma200_mark = '✅' if r.get('kospi_vs_sma200_%', 0) > 0 else '❌'
@@ -503,7 +542,7 @@ def print_regime_box(regime_info):
     print(f"   📈 1개월: {r.get('kospi_return_1m_%', 0):+.1f}%  /  "
           f"3개월: {r.get('kospi_return_3m_%', 0):+.1f}%")
 
-    # [V2.6] 환율
+    # 환율
     if 'usdkrw' in r:
         print(f"   ─────────────────────────────────────────")
         print(f"   {r.get('fx_emoji', '⚪')} USD/KRW: {r['usdkrw']:.2f}원  "
@@ -512,7 +551,7 @@ def print_regime_box(regime_info):
     else:
         print(f"   ⚪ 환율 데이터 없음 → 환율 점수: 0")
 
-    # [V2.6] 외인 KOSPI 누적
+    # 외인 누적
     if 'foreign_kospi_5d_억' in r:
         proxy_n = r.get('foreign_proxy_success', '?')
         proxy_total = r.get('foreign_proxy_total', '?')
@@ -704,7 +743,7 @@ def calculate_trend_reversal(df):
 
 
 # ============================================================
-# 네이버 금융 수급 크롤링 (V2.3)
+# 네이버 금융 수급 크롤링
 # ============================================================
 
 NAVER_HEADERS = {
@@ -880,7 +919,7 @@ def analyze_ticker(ticker, name_map, sector_map, from_date, to_date):
         return {
             'ticker': ticker,
             'name': name_map.get(ticker, ticker),
-            'sector': sector_map.get(ticker) if sector_map else None,  # [V2.6 패치] 산업 분류
+            'sector': sector_map.get(ticker) if sector_map else None,
             'price': int(price),
             'RSI': round(latest['RSI'], 1) if pd.notna(latest['RSI']) else None,
             'Stoch_K': round(latest['Stoch'], 1) if pd.notna(latest['Stoch']) else None,
@@ -931,23 +970,27 @@ def calculate_oversold_score(row):
 # 메인
 # ============================================================
 
-def run_screener():
+def run_screener(market='kospi'):
+    cfg = MARKET_CONFIG[market]
+    market_name = cfg['name']
+    min_score = cfg['min_score']
+
     print(f"\n{'='*72}")
-    print(f"📊  [V2.6] KOSPI 과매도 스크리너 (레짐 + 환율 + 외인 통합)")
-    print(f"     • 금융주/리츠 자동 제외")
+    print(f"📊  [V2.6] {market_name} 과매도 스크리너 (레짐 + 환율 + 외인 통합)")
+    print(f"     • 금융주/리츠{'/스팩' if cfg['exclude_spac'] else ''} 자동 제외")
     print(f"     • 매집 / 거래량 / 추세 전환")
     print(f"     • 외국인/기관 수급 (네이버)")
-    print(f"     • 시장 레짐 + 환율(USD/KRW) + 외국인 KOSPI 누적  ← V2.6")
+    print(f"     • 시장 레짐 + 환율(USD/KRW) + 외국인 누적")
     print(f"{'='*72}")
     print(f"실행 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-    # ===== [V2.6] 통합 레짐 분석 (KOSPI + 환율 + 외인) =====
-    print("0️⃣  시장 레짐 분석 (KOSPI + USD/KRW + 외국인 KOSPI)")
-    regime_info = analyze_market_regime()
-    print_regime_box(regime_info)
+    # ===== 통합 레짐 분석 (지수 + 환율 + 외인) =====
+    print(f"0️⃣  시장 레짐 분석 ({market_name} + USD/KRW + 외국인 {market_name})")
+    regime_info = analyze_market_regime(cfg)
+    print_regime_box(regime_info, cfg)
 
     print("1️⃣  종목 유니버스 구성")
-    tickers, name_map, sector_map = get_kospi_universe()
+    tickers, name_map, sector_map = get_universe(cfg)
     if not tickers:
         print("❌ 종목 리스트 가져오기 실패")
         return
@@ -1028,10 +1071,11 @@ def run_screener():
 
     df['supply_score'] = df.apply(calculate_supply_score, axis=1)
 
-    # ===== [V2.6] 통합 레짐 점수 + 메타 컬럼 부여 (KOSPI + 환율 + 외인) =====
+    # ===== 통합 레짐 점수 + 메타 컬럼 부여 (지수 + 환율 + 외인) =====
+    # 컬럼명은 시장 무관하게 'kospi_*'/'foreign_kospi_*' 유지 (history.db/하위 단계 호환)
     if regime_info:
         df['market_regime'] = regime_info.get('regime', '미정')
-        df['regime_score'] = regime_info['regime_score']                 # 통합 점수
+        df['regime_score'] = regime_info['regime_score']
         df['regime_kospi_score'] = regime_info.get('regime_kospi_score', 0)
         df['regime_fx_score'] = regime_info.get('regime_fx_score', 0)
         df['regime_flow_score'] = regime_info.get('regime_flow_score', 0)
@@ -1087,7 +1131,7 @@ def run_screener():
     if regime_info:
         print(f"   🏛️  시장 레짐:  {regime_info.get('emoji', '⚪')} "
               f"{regime_info.get('regime', '미정')}장  → 통합 점수 {regime_info['regime_score']:+d}")
-        print(f"      └ KOSPI {regime_info['regime_kospi_score']:+d} / "
+        print(f"      └ 지수 {regime_info['regime_kospi_score']:+d} / "
               f"환율 {regime_info['regime_fx_score']:+d} / "
               f"외인 {regime_info['regime_flow_score']:+d}")
     print(f"   ⚠️  떨어지는 칼날:              {fk_count}개")
@@ -1099,7 +1143,7 @@ def run_screener():
     print(f"🎯  누적 점수 상위 {TOP_N}개  (과매도+매집+추세+수급+레짐)")
     print(f"{'='*72}\n")
 
-    candidates = df[df['oversold_score'] >= MIN_SCORE].head(TOP_N)
+    candidates = df[df['oversold_score'] >= min_score].head(TOP_N)
     if len(candidates) == 0:
         candidates = df.head(20)
 
@@ -1134,13 +1178,13 @@ def run_screener():
                   f"1개월 {row['return_1m_%']:+5.1f}%  "
                   f"외인 {f5:+6.0f}억  기관 {i5:+6.0f}억")
 
-    # [V2.6] 통합 레짐 페널티 경고
+    # 통합 레짐 페널티 경고
     if regime_info and regime_info['regime_score'] <= -8:
         print(f"\n{'!'*72}")
         print(f"⚠️  통합 레짐 점수 {regime_info['regime_score']:+d}점 — 강한 페널티 적용 중")
         details = []
         if regime_info['regime_kospi_score'] < 0:
-            details.append(f"KOSPI 약세({regime_info['regime_kospi_score']:+d})")
+            details.append(f"{market_name} 약세({regime_info['regime_kospi_score']:+d})")
         if regime_info['regime_fx_score'] < 0:
             details.append(f"원화 약세({regime_info['regime_fx_score']:+d})")
         if regime_info['regime_flow_score'] < 0:
@@ -1150,10 +1194,19 @@ def run_screener():
         print(f"   포지션 사이즈를 평소보다 줄이거나 현금 비중을 유지하세요.")
         print(f"{'!'*72}")
 
-    filename = f"v2_kospi_oversold_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    filename = f"v2_{market}_oversold_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     df.to_csv(filename, index=False, encoding='utf-8-sig')
     print(f"\n💾 저장: {filename}\n")
 
 
+def main():
+    parser = argparse.ArgumentParser(description="V2.6 과매도 스크리너 (KOSPI/KOSDAQ 통합)")
+    parser.add_argument('--market', choices=['kospi', 'kosdaq'], default=None,
+                        help='대상 시장 (없으면 환경변수 V2_INPUT_MARKET, 기본 kospi)')
+    args = parser.parse_args()
+    market = resolve_market(args.market)
+    run_screener(market)
+
+
 if __name__ == "__main__":
-    run_screener()
+    main()

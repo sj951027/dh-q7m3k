@@ -270,7 +270,7 @@ def main():
         candidates = sorted(Path('.').glob(input_pattern), reverse=True)
         if not candidates:
             print(f"❌ V2 1단계 결과({input_pattern})를 찾을 수 없습니다.")
-            print(f"   먼저 {market}_screener_fdr_v2_6.py 실행")
+            print(f"   먼저 screener_fdr_v2_6.py (V2_INPUT_MARKET={market}) 실행")
             return
         input_path = str(candidates[0])
 
