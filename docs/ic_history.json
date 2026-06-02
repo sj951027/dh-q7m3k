@@ -10,5 +10,11 @@
     "n_dates": 8,
     "ic5": null,
     "ic20": null
+  },
+  {
+    "date": "2026-06-02",
+    "n_dates": 9,
+    "ic5": 0.548,
+    "ic20": null
   }
 ]

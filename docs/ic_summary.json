@@ -1,29 +1,29 @@
 {
-  "status": "pending",
-  "generated_at": "2026-06-01 21:54",
-  "n_dates": 8,
-  "n_picks": 750,
+  "status": "ok",
+  "generated_at": "2026-06-02 23:49",
+  "n_dates": 9,
+  "n_picks": 850,
   "horizons": [
     5,
     20
   ],
   "headline": {
-    "horizon": null,
-    "ic": null,
-    "n": null,
-    "spread": null,
-    "verdict": null
+    "horizon": 5,
+    "ic": 0.548,
+    "n": 100,
+    "spread": 15.73,
+    "verdict": "💚 뚜렷함 (이례적으로 강함 — 표본/룩어헤드 재확인)"
   },
   "factors": [
     {
       "name": "final_score",
       "label": "최종점수",
       "ic": {
-        "5": null,
+        "5": 0.548,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -31,11 +31,11 @@
       "name": "oversold_score",
       "label": "과매도",
       "ic": {
-        "5": null,
+        "5": 0.142,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -43,11 +43,11 @@
       "name": "acc_score",
       "label": "매집",
       "ic": {
-        "5": null,
+        "5": 0.164,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -55,11 +55,11 @@
       "name": "trend_score",
       "label": "추세전환",
       "ic": {
-        "5": null,
+        "5": 0.159,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -67,11 +67,11 @@
       "name": "supply_score",
       "label": "수급",
       "ic": {
-        "5": null,
+        "5": 0.368,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -79,11 +79,11 @@
       "name": "fundamental_score",
       "label": "펀더멘털",
       "ic": {
-        "5": null,
+        "5": 0.04,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -91,11 +91,11 @@
       "name": "ocf_score",
       "label": "현금흐름",
       "ic": {
-        "5": null,
+        "5": -0.132,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     },
@@ -103,11 +103,11 @@
       "name": "momentum_score",
       "label": "모멘텀",
       "ic": {
-        "5": null,
+        "5": 0.123,
         "20": null
       },
       "n": {
-        "5": 0,
+        "5": 100,
         "20": 0
       }
     }
