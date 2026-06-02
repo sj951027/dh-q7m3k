@@ -196,6 +196,10 @@ def main():
                 "--top", str(args.top)],
                "2단계: 섹터 쏠림 방지 추천")
 
+   # 2.6) v3 조용한 누적 (화면/대시보드 노출 없음, v3_archive/ 에만 저장)
+    if (HERE / "v3_daily.py").exists():
+        run_script(["v3_daily.py"], "2.6단계: v3 히스토리 누적")
+
     # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
