@@ -37,29 +37,39 @@ def _latest_v3(mkt):
 
 
 def _top_names(mkt, n=TOP_N):
-    """위험 종목을 제외한 후보 상위 n개 (이름, 점수, 등급) 반환.
+    """후보 상위 n개 (이름, 점수, 등급) 반환. BUY → WAIT 버킷에서만 뽑는다.
 
-    1순위: v3 결과(메인후보만 = EXCLUDE/WATCH 제외 → 이중적자·주의·밸류트랩·
-           위험·falling_knife 자동 제외)에서 final_score_v3 상위.
+    1순위: v3 결과의 BUY(=A+/A) 우선, 모자라면 WAIT(=B+반전)로 채움.
+           OBSERVE/WATCH/EXCLUDE 는 절대 후보로 올리지 않음.
     2순위(v3 없으면): latest_*_final.csv + 안전필터(이중적자·밸류트랩·주의·위험 제외).
     """
     import pandas as pd
-    # 1) v3 우선
+    # 1) v3 우선 — BUY 먼저, 그다음 WAIT
     vf = _latest_v3(mkt)
     if vf:
         try:
             df = pd.read_csv(vf)
-            if "bucket" in df.columns:
-                df = df[~df["bucket"].isin(["EXCLUDE", "WATCH"])]
-            elif "main_candidate" in df.columns:
-                df = df[df["main_candidate"] == True]  # noqa: E712
             df["final_score_v3"] = pd.to_numeric(df["final_score_v3"], errors="coerce")
-            df = df.dropna(subset=["final_score_v3"]).sort_values(
-                "final_score_v3", ascending=False)
-            out = [(str(r["name"]), float(r["final_score_v3"]), str(r.get("grade", "")))
-                   for _, r in df.head(n).iterrows()]
-            if out:
-                return out
+            df = df.dropna(subset=["final_score_v3"])
+            if "bucket" in df.columns:
+                picks = []
+                for bk in ["BUY", "WAIT"]:           # 순서 중요: BUY 먼저
+                    part = df[df["bucket"] == bk].sort_values(
+                        "final_score_v3", ascending=False)
+                    for _, r in part.iterrows():
+                        picks.append((str(r["name"]), float(r["final_score_v3"]),
+                                      str(r.get("grade", ""))))
+                        if len(picks) >= n:
+                            break
+                    if len(picks) >= n:
+                        break
+                return picks   # 후보가 없으면 빈 리스트(=오늘 후보 없음)
+            # bucket 컬럼이 없는 옛 v3 파일이면 메인후보만
+            if "main_candidate" in df.columns:
+                df = df[df["main_candidate"] == True]  # noqa: E712
+            df = df.sort_values("final_score_v3", ascending=False)
+            return [(str(r["name"]), float(r["final_score_v3"]), str(r.get("grade", "")))
+                    for _, r in df.head(n).iterrows()]
         except Exception:
             pass
     # 2) 폴백: v2.6 final + 안전 필터
@@ -116,10 +126,12 @@ def build_message():
             for i, (name, sc, grade) in enumerate(tops, 1):
                 gtag = f" [{grade}]" if grade else ""
                 lines.append(f" {i}. {name} ({sc:.1f}){gtag}")
-            lines.append("")
+        else:
+            lines.append(f"{emoji} {label} 후보 없음 (BUY/WAIT 없음)")
+        lines.append("")
 
     lines += [
-        "※ 위험종목(이중적자·주의 등) 제외한 참고용 후보입니다.",
+        "※ BUY/WAIT 등급만, 위험종목 제외한 참고용 후보입니다.",
         f"🔗 대시보드: {DASHBOARD_URL}",
         f"🔍 필터·정렬: {FILTER_URL}",
     ]

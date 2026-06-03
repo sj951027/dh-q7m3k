@@ -60,14 +60,20 @@ def main():
     if rc != 0:
         print("[v3_daily] 밸류에이션 수집 실패/건너뜀 — value_score 없이 진행")
 
-    # 2) 조용한 재점수화 + 보관 폴더 누적 (대시보드 노출 안 함)
+    # 2) 조용한 재점수화 + 보관 폴더 누적
     rc = run([sys.executable, "v3_rescore.py",
               "--run_id", run_id, "--quiet"])
     if rc != 0:
         print("[v3_daily] 재점수화 실패")
         return rc
 
-    print(f"[v3_daily] 완료. 결과는 v3_archive/ 에 누적됨 (화면/대시보드 노출 없음).")
+    # 3) 본체 CSV(docs/latest_*)에 v3 컬럼 병합 → HTML/대시보드가 v3 사용
+    if (HERE / "v3_merge.py").exists():
+        rc2 = run([sys.executable, "v3_merge.py", "--run_id", run_id])
+        if rc2 != 0:
+            print("[v3_daily] v3 병합 실패 — HTML이 옛 점수로 보일 수 있음")
+
+    print(f"[v3_daily] 완료. v3_archive/ 누적 + docs/latest_* 에 v3 컬럼 병합.")
     print("           검증은 주 1회 정도  python v3_backtest.py  로 직접 확인.")
     return 0
 

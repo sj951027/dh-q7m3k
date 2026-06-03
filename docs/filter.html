@@ -548,14 +548,23 @@
 // ===== 전역 상태 =====
 let allData = [];
 let headers = [];
-let sortColumn = 'final_score';
+let sortColumn = 'final_score_v3';
 let sortDesc = true;
 
 // ===== 컬럼 정의 (보여줄 컬럼과 순서) =====
 const COLUMN_DEFS = [
   { key: 'name', label: '종목명', type: 'name' },
   { key: 'ticker', label: '코드', type: 'string' },
-  { key: 'final_score', label: '최종', type: 'score' },
+  { key: 'grade', label: '등급', type: 'string' },                    // V3
+  { key: 'final_score_v3', label: 'V3점수', type: 'score' },          // V3
+  { key: 'bucket', label: '버킷', type: 'string' },                   // V3
+  { key: 'final_score', label: '옛최종', type: 'score' },
+  { key: 'value_score', label: 'V3가치', type: 'signed' },            // V3
+  { key: 'quality_score', label: 'V3품질', type: 'signed' },          // V3
+  { key: 'turnaround_score', label: 'V3턴어', type: 'signed' },       // V3
+  { key: 'reversal_score', label: 'V3반전', type: 'number' },         // V3
+  { key: 'supply_score_v2', label: 'V3수급', type: 'signed' },        // V3
+  { key: 'oversold_component', label: 'V3과매도', type: 'number' },   // V3
   { key: 'stock_score', label: '종목점수', type: 'score' },
   { key: 'stock_score_stage1', label: '1단계종목', type: 'score' },
   { key: 'oversold_score', label: '과매도', type: 'number' },
@@ -633,7 +642,8 @@ const COLUMN_GROUPS = [
 
 // ===== 사전 설정 뷰 (null이면 전체 표시) =====
 const VIEW_PRESETS = {
-  '⭐ 핵심': ['name', 'ticker', 'final_score', 'stock_score', 'earnings_pattern', 'ocf_pattern', 'risk_level', 'price', 'drawdown_52w_high_%', 'return_1m_%', 'market_regime'],
+  '🌟 V3 추천': ['name', 'ticker', 'grade', 'bucket', 'final_score_v3', 'value_score', 'quality_score', 'turnaround_score', 'reversal_score', 'supply_score_v2', 'oversold_component', 'risk_level', 'sector', 'return_1m_%', 'return_1w_%'],
+  '⭐ 핵심': ['name', 'ticker', 'grade', 'final_score_v3', 'bucket', 'final_score', 'earnings_pattern', 'ocf_pattern', 'risk_level', 'price', 'drawdown_52w_high_%', 'return_1m_%', 'market_regime'],
   '💎 수급': ['name', 'ticker', 'final_score', 'supply_score', 'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억', 'return_1m_%', 'drawdown_52w_high_%', 'earnings_pattern', 'market_regime'],
   '🏆 점수 비교': ['name', 'ticker', 'final_score', 'stock_score', 'oversold_score', 'acc_score', 'trend_score', 'supply_score', 'regime_score', 'fundamental_score', 'momentum_score', 'ocf_score', 'earnings_pattern', 'ocf_pattern', 'risk_level'],
   '💚 OCF/현금': ['name', 'ticker', 'sector', 'final_score', 'stock_score', 'ocf_score', 'ocf_pattern', 'ocf_threshold_group', 'annual_latest_억', 'ocf_latest_억', 'ocf_to_op_ratio', 'annual_yoy_%', 'quarterly_yoy_%', 'q_basis', 'earnings_pattern', 'risk_level'],
@@ -644,7 +654,7 @@ const VIEW_PRESETS = {
 
 // ===== 처음 열 때 기본으로 보이는 핵심 컬럼 =====
 const DEFAULT_COLUMNS = [
-  'name', 'ticker', 'final_score', 'RSI',
+  'name', 'ticker', 'grade', 'final_score_v3', 'bucket', 'final_score', 'RSI',
   'earnings_pattern', 'ocf_pattern', 'risk_level', 'return_1m_%',
   'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억',
   'amt_avg_1w_억', 'amt_avg_1m_억', 'vol_1w_vs_1m_ratio',
