@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "generated_at": "2026-06-03 14:56",
+  "generated_at": "2026-06-03 17:37",
   "n_dates": 10,
   "n_picks": 950,
   "horizons": [
@@ -108,6 +108,30 @@
       },
       "n": {
         "5": 100,
+        "20": 0
+      }
+    },
+    {
+      "name": "smartmoney_score",
+      "label": "스마트머니",
+      "ic": {
+        "5": 0.367,
+        "20": null
+      },
+      "n": {
+        "5": 100,
+        "20": 0
+      }
+    },
+    {
+      "name": "roe_value",
+      "label": "ROE",
+      "ic": {
+        "5": null,
+        "20": null
+      },
+      "n": {
+        "5": 0,
         "20": 0
       }
     }
