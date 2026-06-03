@@ -25,3 +25,7 @@ Thumbs.db
 
 # 용량 쌓이는거
 v3_archive/
+valuation_*.csv
+v3_kospi_final_*.csv
+v3_kosdaq_final_*.csv
+*.bak
