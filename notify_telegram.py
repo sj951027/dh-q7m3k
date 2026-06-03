@@ -29,36 +29,76 @@ FILTER_URL = "https://sj951027.github.io/dh-q7m3k/filter.html"
 TOP_N = 3
 
 
-def _top_names(csv_path, n=TOP_N):
-    """latest_*_final.csv 에서 final_score 상위 n개 (이름, 점수) 반환."""
+def _latest_v3(mkt):
+    """v3_archive 에서 가장 최근 v3_{mkt}_*.csv 경로."""
+    import glob
+    files = sorted(glob.glob(str(HERE / "v3_archive" / f"v3_{mkt}_*.csv")))
+    return files[-1] if files else None
+
+
+def _top_names(mkt, n=TOP_N):
+    """위험 종목을 제외한 후보 상위 n개 (이름, 점수, 등급) 반환.
+
+    1순위: v3 결과(메인후보만 = EXCLUDE/WATCH 제외 → 이중적자·주의·밸류트랩·
+           위험·falling_knife 자동 제외)에서 final_score_v3 상위.
+    2순위(v3 없으면): latest_*_final.csv + 안전필터(이중적자·밸류트랩·주의·위험 제외).
+    """
+    import pandas as pd
+    # 1) v3 우선
+    vf = _latest_v3(mkt)
+    if vf:
+        try:
+            df = pd.read_csv(vf)
+            if "bucket" in df.columns:
+                df = df[~df["bucket"].isin(["EXCLUDE", "WATCH"])]
+            elif "main_candidate" in df.columns:
+                df = df[df["main_candidate"] == True]  # noqa: E712
+            df["final_score_v3"] = pd.to_numeric(df["final_score_v3"], errors="coerce")
+            df = df.dropna(subset=["final_score_v3"]).sort_values(
+                "final_score_v3", ascending=False)
+            out = [(str(r["name"]), float(r["final_score_v3"]), str(r.get("grade", "")))
+                   for _, r in df.head(n).iterrows()]
+            if out:
+                return out
+        except Exception:
+            pass
+    # 2) 폴백: v2.6 final + 안전 필터
     try:
-        import pandas as pd
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(HERE / f"latest_{mkt}_final.csv")
+        if "ocf_pattern" in df.columns:
+            df = df[~df["ocf_pattern"].isin(["이중적자", "밸류트랩의심"])]
+        if "risk_level" in df.columns:
+            df = df[~df["risk_level"].isin(["주의", "위험"])]
         df["final_score"] = pd.to_numeric(df["final_score"], errors="coerce")
-        df = df.dropna(subset=["final_score"]).sort_values("final_score", ascending=False)
-        return [(str(r["name"]), float(r["final_score"]))
+        df = df.dropna(subset=["final_score"]).sort_values(
+            "final_score", ascending=False)
+        return [(str(r["name"]), float(r["final_score"]), "")
                 for _, r in df.head(n).iterrows()]
     except Exception:
         return []
 
 
 def _ic_line():
-    """ic_summary.json 에서 점수 적중도 한 줄."""
-    p = HERE / "docs" / "ic_summary.json"
+    """교정된 v3_ic_summary.json 에서 검증 IC 한 줄(표본 크기 포함, 정직하게)."""
+    p = HERE / "docs" / "v3_ic_summary.json"
     if not p.exists():
-        return None
+        return "📊 검증 IC: 데이터 쌓는 중 (v3_backtest.py 미실행)"
     try:
         d = json.loads(p.read_text(encoding="utf-8"))
+        rows = d.get("new_final_score_v3") or []
+        runs = d.get("active_runs") or []
+        if not rows:
+            return "📊 검증 IC: 데이터 쌓는 중"
+        row = sorted(rows, key=lambda r: r.get("horizon", 0))[-1]  # 가장 긴 horizon
+        ic, h, ndays = row.get("mean_IC"), row.get("horizon"), len(runs)
+        if ic is None:
+            return "📊 검증 IC: 데이터 쌓는 중"
+        verdict = "양호" if ic > 0.02 else ("중립" if ic > -0.02 else "약함")
+        caveat = " · 표본 적음" if ndays < 15 else ""
+        return (f"📊 검증 IC(v3, +{h}일): {ic:+.3f} "
+                f"({verdict}, {ndays}거래일{caveat})")
     except Exception:
-        return None
-    if d.get("status") != "ok" or not d.get("headline"):
-        return "📊 점수 적중도(IC): 데이터 쌓는 중"
-    h = d["headline"]
-    ic = h.get("ic")
-    verdict = (h.get("verdict") or "").split("(")[0].strip()
-    if ic is None:
-        return "📊 점수 적중도(IC): 데이터 쌓는 중"
-    return f"📊 점수 적중도(IC, +{h.get('horizon')}일): {ic:+.3f}  {verdict}"
+        return "📊 검증 IC: 데이터 쌓는 중"
 
 
 def build_message():
@@ -70,15 +110,16 @@ def build_message():
         lines += [ic, ""]
 
     for mkt, emoji, label in [("kospi", "🔵", "KOSPI"), ("kosdaq", "🟠", "KOSDAQ")]:
-        csv = HERE / f"latest_{mkt}_final.csv"
-        tops = _top_names(csv)
+        tops = _top_names(mkt)
         if tops:
-            lines.append(f"{emoji} {label} TOP{len(tops)}")
-            for i, (name, sc) in enumerate(tops, 1):
-                lines.append(f" {i}. {name} ({sc:.1f})")
+            lines.append(f"{emoji} {label} 후보 TOP{len(tops)}")
+            for i, (name, sc, grade) in enumerate(tops, 1):
+                gtag = f" [{grade}]" if grade else ""
+                lines.append(f" {i}. {name} ({sc:.1f}){gtag}")
             lines.append("")
 
     lines += [
+        "※ 위험종목(이중적자·주의 등) 제외한 참고용 후보입니다.",
         f"🔗 대시보드: {DASHBOARD_URL}",
         f"🔍 필터·정렬: {FILTER_URL}",
     ]
