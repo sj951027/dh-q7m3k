@@ -71,6 +71,12 @@ FACTOR_COLUMNS = [
     "ocf_score",          # 영업현금흐름 질
     "momentum_score",     # 단기 모멘텀
     "regime_score",       # 시장 레짐(종목 무관, 참고용)
+    # ── 관측 전용 후보 팩터 (catalyst_observe.py 가 stage3_final 에 채움) ──
+    # 점수식(final_score)에는 안 들어감. 여기 등록은 'IC만 측정'하기 위함.
+    "smartmoney_score",   # 과매도+거래대금폭발+양봉+수급 (가산 트리거)
+    "roe_value",          # EPS/BPS — 품질(밸류업) 게이트 후보
+    "insider_score",      # 내부자 매집(프록시) — catalyst csv 있을 때만
+    "buyback_cancel_flag",  # 자사주 소각 — catalyst csv 있을 때만
 ]
 
 
@@ -150,9 +156,13 @@ def load_picks(db_path, market=None, run_id=None, top=None):
         sys.exit(1)
 
     conn = sqlite3.connect(db_path)
+    # stage3_final 에 '실제로 있는' 팩터 컬럼만 SELECT.
+    # (catalyst_observe.py 미실행 DB에서도 안 깨지게 — 없는 팩터는 아래서 NaN 채움)
+    have = {r[1] for r in conn.execute('PRAGMA table_info("stage3_final")')}
+    sel_factors = [c for c in FACTOR_COLUMNS if c in have]
     cols = ", ".join(
         ['"run_id"', '"market"', '"ticker"', '"name"', '"sector"', '"price"']
-        + [f'"{c}"' for c in FACTOR_COLUMNS]
+        + [f'"{c}"' for c in sel_factors]
     )
     q = f'SELECT {cols} FROM stage3_final WHERE 1=1'
     params = []
@@ -172,6 +182,8 @@ def load_picks(db_path, market=None, run_id=None, top=None):
     df["ticker"] = df["ticker"].astype(str).str.zfill(6)
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
     for c in FACTOR_COLUMNS:
+        if c not in df.columns:      # 아직 배선 안 된 팩터 → NaN (IC 단계서 'pending')
+            df[c] = pd.NA
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
     # top N: run_id×market별로 final_score 상위만

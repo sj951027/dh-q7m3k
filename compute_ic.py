@@ -38,6 +38,9 @@ FACTOR_LABELS = {
     "fundamental_score": "펀더멘털",
     "ocf_score": "현금흐름",
     "momentum_score": "모멘텀",
+    # 관측 후보(데이터 있는 것만 카드에 노출). 내부자/소각은 catalyst 누적 후 추가.
+    "smartmoney_score": "스마트머니",
+    "roe_value": "ROE",
 }
 CARD_HORIZONS = [5, 20]   # 카드에 보여줄 기간 (60일은 데이터 쌓인 뒤)
 MIN_N = 10                # 이 표본 미만이면 '데이터 쌓는 중'으로 표시

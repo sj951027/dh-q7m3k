@@ -200,6 +200,12 @@ def main():
     if (HERE / "v3_daily.py").exists():
         run_script(["v3_daily.py"], "2.6단계: v3 히스토리 누적")
 
+    # 2.7) 관측 팩터 배선 (가중치 0): stage3_final 에 smartmoney/ROE/내부자/소각 컬럼 채움.
+    #      적재(1단계)+v3_daily(밸류에이션 생성) 다음, IC 계산 전에 둬야
+    #      스마트머니는 전체 백필되고 ROE 는 그날 valuation 으로 자동 채워진다. (점수식 불변)
+    if (HERE / "catalyst_observe.py").exists():
+        run_script(["catalyst_observe.py"], "2.7단계: 관측 팩터 배선 (점수 불변)")
+
     # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
