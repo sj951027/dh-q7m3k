@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-06-03 13:21 KST",
+  "generated_at": "2026-06-03 14:54 KST",
   "runs": {
     "kospi": [
       {
         "run_id": "20260603",
         "market_regime": "강세",
         "regime_score": -4,
-        "usdkrw": 1518.25,
+        "usdkrw": 1518.0,
         "foreign_5d": -121906.0,
         "stage1_count": 722
       },
@@ -80,7 +80,7 @@
         "run_id": "20260603",
         "market_regime": "조정",
         "regime_score": -1,
-        "usdkrw": 1518.42,
+        "usdkrw": 1519.31,
         "foreign_5d": -896.0,
         "stage1_count": 1550
       },
@@ -178,16 +178,16 @@
           "sector": "-"
         },
         {
-          "ticker": "009240",
-          "name": "한샘",
+          "ticker": "000890",
+          "name": "보해양조",
           "final_score": 116.7,
           "stock_score": 120.7,
           "q_basis": "3개월",
           "sector": "-"
         },
         {
-          "ticker": "000890",
-          "name": "보해양조",
+          "ticker": "009240",
+          "name": "한샘",
           "final_score": 116.7,
           "stock_score": 120.7,
           "q_basis": "3개월",
@@ -226,16 +226,16 @@
           "sector": "-"
         },
         {
-          "ticker": "001620",
-          "name": "케이비아이동국실업",
+          "ticker": "123690",
+          "name": "한국화장품",
           "final_score": 114.2,
           "stock_score": 118.2,
           "q_basis": "3개월",
           "sector": "-"
         },
         {
-          "ticker": "123690",
-          "name": "한국화장품",
+          "ticker": "001620",
+          "name": "케이비아이동국실업",
           "final_score": 114.2,
           "stock_score": 118.2,
           "q_basis": "3개월",
@@ -258,16 +258,16 @@
           "sector": "-"
         },
         {
-          "ticker": "027740",
-          "name": "마니커",
+          "ticker": "024890",
+          "name": "대원화성",
           "final_score": 113.0,
           "stock_score": 117.0,
           "q_basis": "3개월",
           "sector": "-"
         },
         {
-          "ticker": "024890",
-          "name": "대원화성",
+          "ticker": "027740",
+          "name": "마니커",
           "final_score": 113.0,
           "stock_score": 117.0,
           "q_basis": "3개월",
@@ -362,16 +362,16 @@
           "sector": "-"
         },
         {
-          "ticker": "004430",
-          "name": "송원산업",
+          "ticker": "298020",
+          "name": "효성티앤씨",
           "final_score": 107.8,
           "stock_score": 111.8,
           "q_basis": "3개월",
           "sector": "-"
         },
         {
-          "ticker": "298020",
-          "name": "효성티앤씨",
+          "ticker": "004430",
+          "name": "송원산업",
           "final_score": 107.8,
           "stock_score": 111.8,
           "q_basis": "3개월",
@@ -406,7 +406,7 @@
         "run_id": "20260603",
         "market_regime": "강세",
         "regime_score": -4,
-        "usdkrw": 1518.25,
+        "usdkrw": 1518.0,
         "foreign_5d": -121906.0,
         "stage1_count": 722
       }
@@ -582,14 +582,6 @@
           "sector": "-"
         },
         {
-          "ticker": "039310",
-          "name": "세중",
-          "final_score": 117.4,
-          "stock_score": 118.4,
-          "q_basis": "3개월",
-          "sector": "-"
-        },
-        {
           "ticker": "0008Z0",
           "name": "에스엔시스",
           "final_score": 117.4,
@@ -598,16 +590,24 @@
           "sector": "-"
         },
         {
-          "ticker": "318000",
-          "name": "KBG",
-          "final_score": 116.7,
-          "stock_score": 117.7,
+          "ticker": "039310",
+          "name": "세중",
+          "final_score": 117.4,
+          "stock_score": 118.4,
           "q_basis": "3개월",
           "sector": "-"
         },
         {
           "ticker": "065450",
           "name": "빅텍",
+          "final_score": 116.7,
+          "stock_score": 117.7,
+          "q_basis": "3개월",
+          "sector": "-"
+        },
+        {
+          "ticker": "318000",
+          "name": "KBG",
           "final_score": 116.7,
           "stock_score": 117.7,
           "q_basis": "3개월",
@@ -658,7 +658,7 @@
         "run_id": "20260603",
         "market_regime": "조정",
         "regime_score": -1,
-        "usdkrw": 1518.42,
+        "usdkrw": 1519.31,
         "foreign_5d": -896.0,
         "stage1_count": 1550
       }

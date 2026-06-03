@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "generated_at": "2026-06-03 13:24",
+  "generated_at": "2026-06-03 14:56",
   "n_dates": 10,
   "n_picks": 950,
   "horizons": [
@@ -11,7 +11,7 @@
     "horizon": 5,
     "ic": 0.548,
     "n": 100,
-    "spread": 15.73,
+    "spread": 16.81,
     "verdict": "💚 뚜렷함 (이례적으로 강함 — 표본/룩어헤드 재확인)"
   },
   "factors": [
