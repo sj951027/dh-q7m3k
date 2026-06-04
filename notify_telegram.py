@@ -26,7 +26,14 @@ HERE = Path(__file__).resolve().parent
 DASHBOARD_URL = "https://sj951027.github.io/dh-q7m3k/"
 FILTER_URL = "https://sj951027.github.io/dh-q7m3k/filter.html"
 
-TOP_N = 3
+TOP_N = 3   # 버킷별로 보여줄 상위 후보 수
+
+# 버킷 → 표시 라벨 (정렬키가 '점수'가 아니라 '등급'임을 메시지에서 드러냄)
+BUCKET_LABEL = {
+    "BUY":  "🅰️ BUY(매수후보)",
+    "WAIT": "🅱️ WAIT(대기)",
+    "REF":  "▫️ 참고후보",
+}
 
 
 def _latest_v3(mkt):
@@ -36,15 +43,18 @@ def _latest_v3(mkt):
     return files[-1] if files else None
 
 
-def _top_names(mkt, n=TOP_N):
-    """후보 상위 n개 (이름, 점수, 등급) 반환. BUY → WAIT 버킷에서만 뽑는다.
+def _picks_by_bucket(mkt, per_bucket=TOP_N):
+    """버킷별 후보를 {bucket: [(이름, 점수, 등급), ...]} 로 반환.
 
-    1순위: v3 결과의 BUY(=A+/A) 우선, 모자라면 WAIT(=B+반전)로 채움.
-           OBSERVE/WATCH/EXCLUDE 는 절대 후보로 올리지 않음.
-    2순위(v3 없으면): latest_*_final.csv + 안전필터(이중적자·밸류트랩·주의·위험 제외).
+    BUY / WAIT 버킷을 '각각' final_score_v3 내림차순으로 per_bucket개까지 담는다.
+    (버킷 간 점수를 섞지 않으므로 '점수는 높은데 순위는 낮은' 오해가 사라진다.)
+    OBSERVE/WATCH/EXCLUDE 는 절대 후보로 올리지 않음.
+
+    v3 결과가 없거나 bucket 컬럼이 없으면 폴백을 'REF'(참고) 그룹 하나로 반환.
+      폴백: latest_*_final.csv + 안전필터(이중적자·밸류트랩·주의·위험 제외).
     """
     import pandas as pd
-    # 1) v3 우선 — BUY 먼저, 그다음 WAIT
+    # 1) v3 우선 — 버킷별로 분리
     vf = _latest_v3(mkt)
     if vf:
         try:
@@ -52,27 +62,25 @@ def _top_names(mkt, n=TOP_N):
             df["final_score_v3"] = pd.to_numeric(df["final_score_v3"], errors="coerce")
             df = df.dropna(subset=["final_score_v3"])
             if "bucket" in df.columns:
-                picks = []
-                for bk in ["BUY", "WAIT"]:           # 순서 중요: BUY 먼저
+                out = {}
+                for bk in ["BUY", "WAIT"]:           # 표시 순서: BUY 먼저
                     part = df[df["bucket"] == bk].sort_values(
-                        "final_score_v3", ascending=False)
-                    for _, r in part.iterrows():
-                        picks.append((str(r["name"]), float(r["final_score_v3"]),
-                                      str(r.get("grade", ""))))
-                        if len(picks) >= n:
-                            break
-                    if len(picks) >= n:
-                        break
-                return picks   # 후보가 없으면 빈 리스트(=오늘 후보 없음)
-            # bucket 컬럼이 없는 옛 v3 파일이면 메인후보만
+                        "final_score_v3", ascending=False).head(per_bucket)
+                    rows = [(str(r["name"]), float(r["final_score_v3"]),
+                             str(r.get("grade", ""))) for _, r in part.iterrows()]
+                    if rows:
+                        out[bk] = rows
+                return out   # 둘 다 비면 {} (=오늘 후보 없음)
+            # bucket 컬럼이 없는 옛 v3 파일이면 메인후보만 참고그룹으로
             if "main_candidate" in df.columns:
                 df = df[df["main_candidate"] == True]  # noqa: E712
-            df = df.sort_values("final_score_v3", ascending=False)
-            return [(str(r["name"]), float(r["final_score_v3"]), str(r.get("grade", "")))
-                    for _, r in df.head(n).iterrows()]
+            df = df.sort_values("final_score_v3", ascending=False).head(per_bucket)
+            rows = [(str(r["name"]), float(r["final_score_v3"]), str(r.get("grade", "")))
+                    for _, r in df.iterrows()]
+            return {"REF": rows} if rows else {}
         except Exception:
             pass
-    # 2) 폴백: v2.6 final + 안전 필터
+    # 2) 폴백: v2.6 final + 안전 필터 → 참고그룹
     try:
         df = pd.read_csv(HERE / f"latest_{mkt}_final.csv")
         if "ocf_pattern" in df.columns:
@@ -81,11 +89,11 @@ def _top_names(mkt, n=TOP_N):
             df = df[~df["risk_level"].isin(["주의", "위험"])]
         df["final_score"] = pd.to_numeric(df["final_score"], errors="coerce")
         df = df.dropna(subset=["final_score"]).sort_values(
-            "final_score", ascending=False)
-        return [(str(r["name"]), float(r["final_score"]), "")
-                for _, r in df.head(n).iterrows()]
+            "final_score", ascending=False).head(per_bucket)
+        rows = [(str(r["name"]), float(r["final_score"]), "") for _, r in df.iterrows()]
+        return {"REF": rows} if rows else {}
     except Exception:
-        return []
+        return {}
 
 
 def _ic_line():
@@ -120,14 +128,18 @@ def build_message():
         lines += [ic, ""]
 
     for mkt, emoji, label in [("kospi", "🔵", "KOSPI"), ("kosdaq", "🟠", "KOSDAQ")]:
-        tops = _top_names(mkt)
-        if tops:
-            lines.append(f"{emoji} {label} 후보 TOP{len(tops)}")
-            for i, (name, sc, grade) in enumerate(tops, 1):
-                gtag = f" [{grade}]" if grade else ""
-                lines.append(f" {i}. {name} ({sc:.1f}){gtag}")
+        groups = _picks_by_bucket(mkt)
+        lines.append(f"{emoji} {label}")
+        if not groups:
+            lines.append("  후보 없음 (BUY/WAIT 없음)")
         else:
-            lines.append(f"{emoji} {label} 후보 없음 (BUY/WAIT 없음)")
+            for bk in ["BUY", "WAIT", "REF"]:
+                rows = groups.get(bk)
+                if not rows:
+                    continue
+                picks = "  ".join(f"{i}. {name}({sc:.1f})"
+                                  for i, (name, sc, _g) in enumerate(rows, 1))
+                lines.append(f"  {BUCKET_LABEL[bk]}  {picks}")
         lines.append("")
 
     lines += [
