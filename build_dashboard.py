@@ -33,6 +33,42 @@ def safe_query(conn, sql, params=()):
         return pd.DataFrame()
 
 
+V3_DIR = Path("v3_archive")
+_BUCKET_RANK = {"BUY": 0, "WAIT": 1}
+
+
+def _latest_v3_file(market):
+    files = sorted(V3_DIR.glob(f"v3_{market}_*.csv"))
+    return files[-1] if files else None
+
+
+def load_v3_top(market, top_n=30):
+    """최신 v3 파일에서 BUY→WAIT 순, 버킷 내 final_score_v3 내림차순 상위 N개.
+
+    v3 파일이 없거나 bucket 컬럼이 없거나 BUY/WAIT가 하나도 없으면 None
+    → 호출부에서 v2.6 final_score 로 폴백한다(대시보드가 안 깨지게).
+    """
+    f = _latest_v3_file(market)
+    if not f:
+        return None
+    try:
+        d = pd.read_csv(f)
+    except Exception:
+        return None
+    if "bucket" not in d.columns or "final_score_v3" not in d.columns:
+        return None
+    d = d[d["bucket"].isin(["BUY", "WAIT"])].copy()
+    if d.empty:
+        return None
+    d["final_score_v3"] = pd.to_numeric(d["final_score_v3"], errors="coerce")
+    d["_brank"] = d["bucket"].map(_BUCKET_RANK).fillna(9)
+    d = d.sort_values(["_brank", "final_score_v3"],
+                      ascending=[True, False]).head(top_n)
+    keep = [c for c in ["ticker", "name", "sector", "final_score_v3",
+                        "grade", "bucket", "q_basis"] if c in d.columns]
+    return d[keep]
+
+
 def build_data_payload() -> dict:
     """대시보드용 데이터 페이로드 생성."""
     payload = {
@@ -65,21 +101,28 @@ def build_data_payload() -> dict:
 
         latest_run_id = df_runs.iloc[0]["run_id"]
 
-        # 최신 회차 TOP 30
-        df_top = safe_query(
-            conn,
-            "SELECT ticker, name, final_score, stock_score, "
-            "q_basis, sector "
-            "FROM stage3_final WHERE market=? AND run_id=? "
-            "ORDER BY final_score DESC LIMIT 30",
-            (market, latest_run_id),
-        )
+        # 최신 회차 TOP — v3 등급/버킷 기준(BUY→WAIT). v3 없으면 v2.6으로 폴백.
+        df_top = load_v3_top(market, top_n=30)
+        used_v3 = df_top is not None and not df_top.empty
+        if not used_v3:
+            df_top = safe_query(
+                conn,
+                "SELECT ticker, name, final_score AS final_score_v3, "
+                "q_basis, sector "
+                "FROM stage3_final WHERE market=? AND run_id=? "
+                "ORDER BY final_score DESC LIMIT 30",
+                (market, latest_run_id),
+            )
+            if not df_top.empty:
+                df_top["grade"] = "-"
+                df_top["bucket"] = "-"
         # 컬럼이 없을 수도 있으니 안전 처리
-        if not df_top.empty:
-            for col in ("q_basis", "sector"):
+        if df_top is not None and not df_top.empty:
+            for col in ("q_basis", "sector", "grade", "bucket"):
                 if col not in df_top.columns:
                     df_top[col] = None
             payload["latest"][market]["top"] = df_top.fillna("-").to_dict(orient="records")
+            payload["latest"][market]["ranked_by"] = "v3" if used_v3 else "v2"
 
         latest_meta = df_runs.iloc[0].to_dict()
         payload["latest"][market]["meta"] = {
@@ -501,7 +544,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">01</span>최신 회차 상위 종목</h2>
-      <span class="meta">RANKED BY FINAL_SCORE</span>
+      <span class="meta">v3 등급 · BUY → WAIT</span>
     </div>
     <div id="top-kospi"></div>
   </section>
@@ -532,7 +575,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">01</span>최신 회차 상위 종목</h2>
-      <span class="meta">RANKED BY FINAL_SCORE · KOSDAQ TUNED</span>
+      <span class="meta">v3 등급 · BUY → WAIT · KOSDAQ TUNED</span>
     </div>
     <div id="top-kosdaq"></div>
   </section>
@@ -685,9 +728,14 @@ function renderTop(market) {
   const el = document.getElementById('top-' + market);
   if (!top.length) { el.innerHTML = '<div class="empty">최신 결과가 없습니다.</div>'; return; }
 
-  const maxScore = Math.max(...top.map(r => r.final_score || 0));
+  const maxScore = Math.max(...top.map(r => r.final_score_v3 || 0));
   const rows = top.map((r, i) => {
-    const fillPct = maxScore > 0 ? (r.final_score / maxScore) * 100 : 0;
+    const v3 = r.final_score_v3;
+    const fillPct = maxScore > 0 ? (v3 / maxScore) * 100 : 0;
+    const bk = r.bucket || '-';
+    const bkColor = bk === 'BUY' ? '#2e7d32' : (bk === 'WAIT' ? '#b26a00' : 'var(--rule-light)');
+    const bkLabel = (bk === 'BUY' || bk === 'WAIT') ? bk : '—';
+    const gr = (r.grade && r.grade !== '-') ? r.grade : '—';
     return `
       <tr>
         <td class="rank">${i + 1}</td>
@@ -698,10 +746,10 @@ function renderTop(market) {
         <td>${r.sector && r.sector !== '-' ? `<span style="font-size:11px;color:var(--ink-soft)">${r.sector}</span>` : '<span style="color:var(--rule-light)">—</span>'}</td>
         <td class="num">
           <span class="score-bar"><span class="score-bar-fill" style="width:${fillPct}%"></span></span>
-          ${fmtScore(r.final_score)}
+          ${fmtScore(v3)}
         </td>
-        <td class="num">${fmtScore(r.stock_score)}</td>
-        <td class="num"><span class="ticker">${r.q_basis && r.q_basis !== '-' ? r.q_basis : '—'}</span></td>
+        <td class="num"><span class="ticker">${gr}</span></td>
+        <td class="num"><span style="font-weight:600;color:${bkColor}">${bkLabel}</span></td>
       </tr>
     `;
   }).join('');
@@ -709,7 +757,7 @@ function renderTop(market) {
     <table class="data">
       <thead><tr>
         <th>#</th><th>종목</th><th>산업</th>
-        <th class="num">FINAL</th><th class="num">STOCK</th><th class="num">Q.BASIS</th>
+        <th class="num">V3</th><th class="num">등급</th><th class="num">버킷</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
