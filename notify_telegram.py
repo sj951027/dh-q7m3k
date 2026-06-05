@@ -15,8 +15,10 @@ PC/폰 어디서든 텔레그램 알림의 링크를 누르면 웹 대시보드�
 단독 테스트:  python notify_telegram.py
 """
 
+import html
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -30,8 +32,8 @@ TOP_N = 3   # 버킷별로 보여줄 상위 후보 수
 
 # 버킷 → 표시 라벨 (정렬키가 '점수'가 아니라 '등급'임을 메시지에서 드러냄)
 BUCKET_LABEL = {
-    "BUY":  "🅰️ BUY(매수후보)",
-    "WAIT": "🅱️ WAIT(대기)",
+    "BUY":  "🅰️ BUY · 매수후보",
+    "WAIT": "🅱️ WAIT · 대기",
     "REF":  "▫️ 참고후보",
 }
 
@@ -113,15 +115,15 @@ def _ic_line():
             return "📊 검증 IC: 데이터 쌓는 중"
         verdict = "양호" if ic > 0.02 else ("중립" if ic > -0.02 else "약함")
         caveat = " · 표본 적음" if ndays < 15 else ""
-        return (f"📊 검증 IC(v3, +{h}일): {ic:+.3f} "
-                f"({verdict}, {ndays}거래일{caveat})")
+        return (f"📊 검증 IC(v3, +{h}일) <b>{ic:+.3f}</b>\n"
+                f"   {verdict} · {ndays}거래일{caveat}")
     except Exception:
         return "📊 검증 IC: 데이터 쌓는 중"
 
 
 def build_message():
     today = datetime.now().strftime("%Y-%m-%d")
-    lines = [f"✅ 스크리너 완료 · {today}", ""]
+    lines = [f"✅ <b>스크리너 완료</b> · {today}", ""]
 
     ic = _ic_line()
     if ic:
@@ -129,7 +131,7 @@ def build_message():
 
     for mkt, emoji, label in [("kospi", "🔵", "KOSPI"), ("kosdaq", "🟠", "KOSDAQ")]:
         groups = _picks_by_bucket(mkt)
-        lines.append(f"{emoji} {label}")
+        lines.append(f"{emoji} <b>{label}</b>")
         if not groups:
             lines.append("  후보 없음 (BUY/WAIT 없음)")
         else:
@@ -137,15 +139,16 @@ def build_message():
                 rows = groups.get(bk)
                 if not rows:
                     continue
-                picks = "  ".join(f"{i}. {name}({sc:.1f})"
-                                  for i, (name, sc, _g) in enumerate(rows, 1))
-                lines.append(f"  {BUCKET_LABEL[bk]}  {picks}")
+                lines.append(BUCKET_LABEL[bk])            # 버킷은 소제목 한 줄
+                for i, (name, sc, _g) in enumerate(rows, 1):
+                    nm = html.escape(str(name), quote=False)   # 종목명 안전 처리
+                    lines.append(f" {i}. {nm} ({sc:.1f})")     # 한 종목당 한 줄
         lines.append("")
 
     lines += [
-        "※ BUY/WAIT 등급만, 위험종목 제외한 참고용 후보입니다.",
-        f"🔗 대시보드: {DASHBOARD_URL}",
-        f"🔍 필터·정렬: {FILTER_URL}",
+        "※ BUY/WAIT 등급만 · 위험종목 제외 · 참고용",
+        f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
+        f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a>',
     ]
     return "\n".join(lines)
 
@@ -164,6 +167,7 @@ def send(message=None):
         r = requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
             data={"chat_id": chat_id, "text": msg,
+                  "parse_mode": "HTML",
                   "disable_web_page_preview": "true"},
             timeout=15)
         if r.status_code == 200 and r.json().get("ok"):
@@ -179,7 +183,8 @@ def send(message=None):
 def main():
     print(f"\n{'━'*64}\n▶  텔레그램 알림\n{'━'*64}")
     print("   메시지 미리보기:\n")
-    print("   " + build_message().replace("\n", "\n   "))
+    preview = re.sub(r"<[^>]+>", "", build_message())   # 콘솔엔 태그 빼고
+    print("   " + preview.replace("\n", "\n   "))
     print()
     send()
 
