@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "generated_at": "2026-06-05 22:56",
+  "generated_at": "2026-06-06 00:40",
   "n_dates": 12,
   "n_picks": 1150,
   "horizons": [
@@ -12,7 +12,7 @@
     "ic": -0.013,
     "n": 300,
     "n_groups": 6,
-    "spread": 9.77,
+    "spread": -0.04,
     "verdict": "⚪ 사실상 무의미"
   },
   "factors": [
