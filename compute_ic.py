@@ -72,12 +72,20 @@ def _load_v3_scores():
     history.db(stage3_final)에는 v3 점수가 없으므로, 헤드라인/구간격차를 v3로
     계산하려면 여기서 끌어와 rets 에 합친다. 파일이 없으면 None(→ v2.6 폴백).
     """
+    import re
     import pandas as pd
     v3dir = HERE / "v3_archive"
     if not v3dir.exists():
         return None
+    files = sorted(v3dir.glob("v3_*.csv"))
+    # 최근 IC_MAX_DATES 개 run_id 의 파일만 읽는다(보관 파일이 수백 개로 늘어도 빠르게).
+    def _rid(p):
+        m = re.search(r"_(\d{8})\.csv$", p.name)
+        return m.group(1) if m else ""
+    recent_rids = sorted({_rid(p) for p in files if _rid(p)})[-IC_MAX_DATES:]
+    files = [p for p in files if _rid(p) in recent_rids]
     frames = []
-    for f in sorted(v3dir.glob("v3_*.csv")):
+    for f in files:
         try:
             d = pd.read_csv(f, usecols=lambda c: c in (
                 "run_id", "market", "ticker", "final_score_v3"))

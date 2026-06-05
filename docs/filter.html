@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KOSPI 스크리너 결과 필터 (V3)</title>
+<title>KOSPI 스크리너 결과 필터 (V3.0)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   
@@ -410,7 +410,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>📊 KOSPI 스크리너 결과 필터 <span style="font-size:14px; color:#4299e1; font-weight:500;">V3</span></h1>
+  <h1>📊 KOSPI 스크리너 결과 필터 <span style="font-size:14px; color:#4299e1; font-weight:500;">V3.0</span></h1>
   <p class="subtitle">최신 스크리너 결과를 필터/정렬/검색할 수 있어요. 시장을 고르면 자동으로 최신 데이터를 불러옵니다.</p>
 
   <!-- 시장 토글 (자동 로드) -->
@@ -1190,7 +1190,11 @@ function formatCell(row, col) {
       const pct = parseFloat(val);
       if (isNaN(pct)) return `<td class="num">-</td>`;
       const pcls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : '';
-      return `<td class="num ${pcls}">${pct > 0 ? '+' : ''}${pct.toFixed(1)}%</td>`;
+      // 적자→흑자 등 분모가 작으면 YoY가 수백~수천%로 튄다 → 표시만 ±999%로 클립(정렬값·원본은 그대로).
+      const pdisp = Math.abs(pct) > 999
+        ? (pct > 0 ? '>+999' : '<-999')
+        : (pct > 0 ? '+' : '') + pct.toFixed(1);
+      return `<td class="num ${pcls}" title="${pct.toFixed(1)}%">${pdisp}%</td>`;
     case 'pattern':
       return `<td><span class="badge pattern-${val}">${PATTERN_EMOJI[val] || ''} ${val}</span></td>`;
     case 'ocf_pattern':

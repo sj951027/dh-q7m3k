@@ -156,6 +156,8 @@ def main():
 
     print(f"\n[주의] 활성 거래일 {len(runs)}개뿐이라 통계적 신뢰도는 여전히 낮음.")
     print("       매 거래일 누적될수록 위 표가 의미를 갖는다.")
+    print("       또한 valuation_*.csv 가 없는 과거 회차는 value_score=0 으로 채점되어,")
+    print("       해당 회차의 v3 점수는 실거래 당시 v3 와 약간 다를 수 있다(밸류 누적 시 해소).")
 
     # 대시보드/기록용 요약 저장
     import json

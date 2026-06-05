@@ -276,12 +276,13 @@ def load_latest_picks(source, market):
 # ─────────────────────────────────────────────────────────────
 # 출력
 # ─────────────────────────────────────────────────────────────
-def print_report(market, raw, kept, cut, max_per_sector, top):
+def print_report(market, raw, kept, cut, max_per_sector, top, score_col="final_score"):
     bar = "=" * 64
+    label = "V3" if score_col == "final_score_v3" else "점수"
     print(f"\n{bar}\n  🧭 섹터 쏠림 방지 — {market or 'KOSPI+KOSDAQ'}\n{bar}")
     print(f"  규칙: 업종당 최대 {max_per_sector}개, 총 {top}개 선정\n")
 
-    raw_top = raw.sort_values("final_score", ascending=False).head(top)
+    raw_top = raw.sort_values(score_col, ascending=False).head(top)
     print(f"  [원본 상위 {top}개] 업종 분포:")
     for sec, n in sector_distribution(raw_top).items():
         flag = "  ⚠️ 쏠림" if n > max_per_sector else ""
@@ -292,17 +293,17 @@ def print_report(market, raw, kept, cut, max_per_sector, top):
         print(f"     {sec:<14} {n}개")
 
     print(f"\n  {'─'*60}\n  ✅ 분산된 추천 리스트\n  {'─'*60}")
-    print(f"  {'종목명':<12} {'업종':<12} {'점수':>7}")
+    print(f"  {'종목명':<12} {'업종':<12} {label:>7}")
     for _, r in kept.iterrows():
         print(f"  {str(r['name'])[:12]:<12} {str(r.get('sector') or UNKNOWN)[:12]:<12} "
-              f"{r['final_score']:>7.1f}")
+              f"{r[score_col]:>7.1f}")
 
     if len(cut) and (cut["keep_reason"].str.contains("초과로 보류").any()):
         print(f"\n  {'─'*60}\n  ⏸️  쏠림으로 보류된 종목 (점수는 높지만 같은 업종 초과)\n  {'─'*60}")
         held = cut[cut["keep_reason"].str.contains("초과로 보류")].head(15)
         for _, r in held.iterrows():
             print(f"  {str(r['name'])[:12]:<12} {str(r.get('sector') or UNKNOWN)[:12]:<12} "
-                  f"{r['final_score']:>7.1f}  ({r['keep_reason']})")
+                  f"{r[score_col]:>7.1f}  ({r['keep_reason']})")
     print(bar)
 
 
@@ -341,16 +342,15 @@ def main():
     print("📥 스크리너 결과 로드...")
     raw = load_latest_picks(args.source, args.market)
     raw["ticker"] = raw["ticker"].astype(str).str.zfill(6)
-    # v3 점수가 있으면 그걸로 정렬/표시 (없으면 v2.6 final_score 유지 = 폴백)
-    use_v3 = "final_score_v3" in raw.columns and pd.to_numeric(
-        raw["final_score_v3"], errors="coerce").notna().any()
-    if use_v3:
-        raw["final_score"] = pd.to_numeric(raw["final_score_v3"], errors="coerce")
-        print("   ✓ v3 점수(final_score_v3) 기준으로 정렬합니다.")
-    else:
-        print("   ℹ️  v3 점수가 없어 v2.6 final_score 로 정렬합니다.")
+    # v3 점수가 있으면 그걸로 정렬/표시. 단 final_score(옛 점수)는 '보존'한다
+    # (docs/enriched 를 filter.html 이 읽으므로 옛 점수를 덮어쓰면 '옛최종'이 오염됨).
     raw["final_score"] = pd.to_numeric(raw["final_score"], errors="coerce")
-    raw = raw.dropna(subset=["final_score"])
+    if "final_score_v3" in raw.columns:
+        raw["final_score_v3"] = pd.to_numeric(raw["final_score_v3"], errors="coerce")
+    use_v3 = ("final_score_v3" in raw.columns) and raw["final_score_v3"].notna().any()
+    rank_col = "final_score_v3" if use_v3 else "final_score"
+    print(f"   {'✓ v3 점수(final_score_v3)' if use_v3 else 'ℹ️  v2.6 final_score'} 기준으로 정렬합니다.")
+    raw = raw.dropna(subset=[rank_col])
 
     # 업종 채우기 (override → cache → FDR → DART)
     has_sector = "sector" in raw.columns and raw["sector"].notna().any()
@@ -368,10 +368,9 @@ def main():
         cc = r.get("corp_code") if has_corp else None
         return resolver.resolve(r["ticker"], cc)
 
-    raw = raw.sort_values("final_score", ascending=False).reset_index(drop=True)
+    raw = raw.sort_values(rank_col, ascending=False).reset_index(drop=True)
     raw["sector"] = UNKNOWN
-    head_idx = (raw.groupby("market", group_keys=False)
-                .apply(lambda g: g.head(resolve_limit)).index)
+    head_idx = raw.groupby("market", group_keys=False).head(resolve_limit).index
     raw.loc[head_idx, "sector"] = raw.loc[head_idx].apply(resolve_row, axis=1)
     resolver.save_cache()
 
@@ -399,15 +398,15 @@ def main():
         sub = raw[raw["market"] == mkt]
         if sub.empty:
             continue
-        kept, cut = diversify(sub, args.max_per_sector, args.top)
-        print_report(mkt, sub, kept, cut, args.max_per_sector, args.top)
+        kept, cut = diversify(sub, args.max_per_sector, args.top, score_col=rank_col)
+        print_report(mkt, sub, kept, cut, args.max_per_sector, args.top, score_col=rank_col)
         kept = kept.copy(); kept["market"] = mkt
         out_frames.append(kept)
 
     if out_frames:
         out = pd.concat(out_frames, ignore_index=True)
-        cols = [c for c in ["market", "ticker", "name", "sector", "final_score",
-                            "grade", "bucket", "keep_reason"]
+        cols = [c for c in ["market", "ticker", "name", "sector",
+                            "final_score_v3", "grade", "bucket", "final_score", "keep_reason"]
                 if c in out.columns]
         from datetime import datetime
         fn = f"diversified_picks_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"

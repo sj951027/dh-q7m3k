@@ -181,7 +181,9 @@ def main():
     if not args.skip_screener:
         if not (HERE / "run_all_v2_6.py").exists():
             print("❌ run_all_v2_6.py 를 찾을 수 없습니다 (같은 폴더에 있어야 함)."); sys.exit(1)
-        rc = run_script(["run_all_v2_6.py"], "1단계: 스크리너 (KOSPI + KOSDAQ)")
+        # 대시보드는 2.8단계에서 v3 반영해 다시 그리므로 1단계에선 생략(중복 빌드 제거)
+        rc = run_script(["run_all_v2_6.py", "--no-dashboard"],
+                        "1단계: 스크리너 (KOSPI + KOSDAQ)")
         if rc != 0:
             print("\n❌ 스크리너가 실패해 분산 단계를 건너뜁니다. 위 로그를 확인하세요.")
             sys.exit(rc)

@@ -151,6 +151,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--market', choices=['kospi', 'kosdaq', 'all'], default='all')
     parser.add_argument('--no-accumulate', action='store_true', help='SQLite 적재 생략')
+    parser.add_argument('--no-dashboard', action='store_true',
+                        help='대시보드 생성 생략 (런처가 v3 반영 후 다시 그릴 때 사용)')
     args = parser.parse_args()
 
     markets = ['kospi', 'kosdaq'] if args.market == 'all' else [args.market]
@@ -211,7 +213,7 @@ def main():
             print(f"⚠️  적재 중 예외 발생: {e}")
 
     # 대시보드 자동 생성
-    if Path('build_dashboard.py').exists():
+    if not args.no_dashboard and Path('build_dashboard.py').exists():
         print(f"\n{'='*72}")
         print(f"📊  대시보드 생성")
         print(f"{'='*72}")

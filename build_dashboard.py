@@ -37,14 +37,23 @@ V3_DIR = Path("v3_archive")
 _BUCKET_RANK = {"BUY": 0, "WAIT": 1, "OBSERVE": 2, "WATCH": 3}
 
 
-def _latest_v3_file(market):
+def _v3_file(market, run_id=None):
+    """run_id 를 주면 그 회차의 v3 파일만(없으면 None). 없으면 가장 최근 파일.
+
+    run_id 를 주는 게 중요하다: 대시보드를 '그날 v3 가 만들어지기 전'에 그리면
+    최근 파일은 '전날' v3 라서 표가 하루 묵게 된다. 현재 run_id 파일이 아직
+    없으면 None 을 돌려 v2.6 으로 폴백시킨다.
+    """
+    if run_id is not None:
+        f = V3_DIR / f"v3_{market}_{run_id}.csv"
+        return f if f.exists() else None
     files = sorted(V3_DIR.glob(f"v3_{market}_*.csv"))
     return files[-1] if files else None
 
 
-def _read_latest_v3(market):
-    """최신 v3 파일 DataFrame (없으면 None)."""
-    f = _latest_v3_file(market)
+def _read_v3(market, run_id=None):
+    """v3 파일 DataFrame (없으면 None)."""
+    f = _v3_file(market, run_id)
     if not f:
         return None
     try:
@@ -59,12 +68,12 @@ def _read_latest_v3(market):
     return d
 
 
-def load_v3_top(market, top_n=30, buckets=("BUY", "WAIT")):
-    """최신 v3 파일에서 지정 버킷만, 버킷순→final_score_v3 내림차순 상위 N개.
+def load_v3_top(market, run_id=None, top_n=30, buckets=("BUY", "WAIT")):
+    """현재 run_id 의 v3 파일에서 지정 버킷만, 버킷순→final_score_v3 내림차순 상위 N개.
 
     buckets 에 든 것만 포함(EXCLUDE 는 절대 안 들어감). 해당 버킷이 없으면 None.
     """
-    d = _read_latest_v3(market)
+    d = _read_v3(market, run_id)
     if d is None or "bucket" not in d.columns:
         return None
     d = d[d["bucket"].isin(buckets)].copy()
@@ -111,9 +120,9 @@ def build_data_payload() -> dict:
         latest_run_id = df_runs.iloc[0]["run_id"]
 
         # 최신 회차 TOP — v3 등급/버킷 기준. BUY→WAIT 우선, 없으면 OBSERVE/WATCH까지(여전히 v3).
-        df_top = load_v3_top(market, top_n=30, buckets=("BUY", "WAIT"))
+        df_top = load_v3_top(market, run_id=latest_run_id, top_n=30, buckets=("BUY", "WAIT"))
         if df_top is None or df_top.empty:
-            df_top = load_v3_top(market, top_n=30,
+            df_top = load_v3_top(market, run_id=latest_run_id, top_n=30,
                                  buckets=("BUY", "WAIT", "OBSERVE", "WATCH"))
         used_v3 = df_top is not None and not df_top.empty
         if not used_v3:
@@ -163,7 +172,7 @@ def build_data_payload() -> dict:
 
         # 단골 종목에 '현재 v3 등급/점수' 붙이기 (최신 v3 파일 기준)
         if not df_freq.empty:
-            v3now = _read_latest_v3(market)
+            v3now = _read_v3(market, latest_run_id)
             if v3now is not None and "ticker" in v3now.columns:
                 gmap = v3now.set_index("ticker")
                 recs = []
@@ -196,7 +205,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V3 KOSPI/KOSDAQ Screener</title>
+<title>V3.0 KOSPI/KOSDAQ Screener</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -535,7 +544,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 
 <header class="masthead">
   <div class="masthead-top">
-    <span>V3 · ALGORITHMIC SCREENING</span>
+    <span>V3.0 · ALGORITHMIC SCREENING</span>
     <span>GENERATED <span id="generated-at"></span></span>
   </div>
   <h1 class="title">
@@ -635,7 +644,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 
 <footer>
   <div class="colophon">
-    Built with V3 Pipeline · Stage 1 Regime/FX/Foreign Flow ·
+    Built with V3.0 Pipeline · Stage 1 Regime/FX/Foreign Flow ·
     Stage 2 DART Risk Filter · Stage 3 Fundamentals & Momentum.
     Data accumulated to SQLite · Snapshots in Parquet.
     Not investment advice.
@@ -710,7 +719,8 @@ function renderICCard() {
         <div style="margin-bottom:6px;font-size:0.72rem;opacity:0.6;">요소별 (+20일 IC):</div>
         <div>${chips}</div>
         <div style="font-size:0.7rem;opacity:0.55;margin-top:8px;">
-          ※ +0.05↑ 유효 · 0 근처 노이즈 · 음수 역작동. ${d.note || ''}</div>`;
+          ※ +0.05↑ 유효 · 0 근처 노이즈 · 음수 역작동. ${d.note || ''}
+          ${h.score === 'final_score_v3' ? '<br>※ 텔레그램 IC와는 측정 기간(여기 +5/20일)·종목군(최근 추천권)이 달라 값이 다를 수 있습니다.' : ''}</div>`;
     })
     .catch(() => {
       body.innerHTML = '<span style="opacity:0.6;">점수 적중도 데이터가 아직 없습니다 '
@@ -737,7 +747,7 @@ function renderRegime(market) {
     <div class="regime-cell">
       <div class="regime-label">Regime Score</div>
       <div class="regime-value small ${regimeCls}">${fmt(meta.regime_score, 1)}</div>
-      <div class="regime-detail">통합 점수</div>
+      <div class="regime-detail">시장 맥락 · 종목순위 무관</div>
     </div>
     <div class="regime-cell">
       <div class="regime-label">USD/KRW</div>
