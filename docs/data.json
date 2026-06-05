@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-06-05 20:28 KST",
+  "generated_at": "2026-06-05 21:14 KST",
   "runs": {
     "kospi": [
       {
         "run_id": "20260605",
         "market_regime": "강세",
         "regime_score": -4,
-        "usdkrw": 1538.58,
+        "usdkrw": 1541.08,
         "foreign_5d": -167387.0,
         "stage1_count": 722
       },
@@ -96,7 +96,7 @@
         "run_id": "20260605",
         "market_regime": "조정",
         "regime_score": -2,
-        "usdkrw": 1537.78,
+        "usdkrw": 1541.68,
         "foreign_5d": -1895.0,
         "stage1_count": 1548
       },
@@ -438,7 +438,7 @@
         "run_id": "20260605",
         "market_regime": "강세",
         "regime_score": -4,
-        "usdkrw": 1538.58,
+        "usdkrw": 1541.08,
         "foreign_5d": -167387.0,
         "stage1_count": 722
       }
@@ -598,8 +598,8 @@
           "sector": "-"
         },
         {
-          "ticker": "099390",
-          "name": "브레인즈컴퍼니",
+          "ticker": "024060",
+          "name": "흥구석유",
           "final_score": 117.0,
           "stock_score": 119.0,
           "q_basis": "3개월",
@@ -614,16 +614,16 @@
           "sector": "-"
         },
         {
-          "ticker": "024060",
-          "name": "흥구석유",
+          "ticker": "067290",
+          "name": "JW신약",
           "final_score": 117.0,
           "stock_score": 119.0,
           "q_basis": "3개월",
           "sector": "-"
         },
         {
-          "ticker": "067290",
-          "name": "JW신약",
+          "ticker": "099390",
+          "name": "브레인즈컴퍼니",
           "final_score": 117.0,
           "stock_score": 119.0,
           "q_basis": "3개월",
@@ -690,7 +690,7 @@
         "run_id": "20260605",
         "market_regime": "조정",
         "regime_score": -2,
-        "usdkrw": 1537.78,
+        "usdkrw": 1541.68,
         "foreign_5d": -1895.0,
         "stage1_count": 1548
       }
