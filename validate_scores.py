@@ -293,6 +293,34 @@ def spearman_ic(df, score_col, ret_col):
     return (round(float(ic), 3) if pd.notna(ic) else None), len(sub)
 
 
+def grouped_spearman_ic(df, score_col, ret_col, by=("run_id", "market"), min_n=8):
+    """(날짜, 시장)별로 각각 cross-sectional Spearman IC를 구해 평균낸다.
+
+    pooled(전부 한 통에 섞기) 방식은 시점·시장 차이가 IC를 부풀린다.
+    같은 날·같은 시장 안에서 '점수 높은 종목이 더 갔나'만 보도록 그룹별로
+    상관을 구한 뒤 평균하는 게 올바른 IC다 (v3_backtest 와 동일한 방식).
+
+    반환: (mean_ic, n_groups, total_n)
+      - mean_ic : 그룹별 IC들의 평균 (유효 그룹 없으면 None)
+      - n_groups: IC를 구한 (날짜,시장) 그룹 수
+      - total_n : 그 그룹들에 들어간 종목 쌍 총합
+    """
+    by = list(by)
+    sub = df[by + [score_col, ret_col]].dropna()
+    ics, total = [], 0
+    for _, g in sub.groupby(by):
+        if (len(g) < min_n or g[score_col].nunique() < 3
+                or g[ret_col].nunique() < 3):
+            continue
+        ic = g[[score_col, ret_col]].corr(method="spearman").iloc[0, 1]
+        if pd.notna(ic):
+            ics.append(float(ic))
+            total += len(g)
+    if not ics:
+        return None, 0, 0
+    return round(float(np.mean(ics)), 3), len(ics), total
+
+
 def factor_ic_table(rets, horizons, ret_prefix="exret"):
     """요소별 × horizon별 IC 표."""
     out = []

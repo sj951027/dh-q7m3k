@@ -108,17 +108,17 @@ def main():
                                   if c in FACTOR_LABELS and c != "final_score"]:
         rec = {"name": fac, "label": FACTOR_LABELS.get(fac, fac), "ic": {}, "n": {}}
         for h in CARD_HORIZONS:
-            ic, n = vs.spearman_ic(rets, fac, f"exret_{h}d")
+            ic, ng, n = vs.grouped_spearman_ic(rets, fac, f"exret_{h}d")
             rec["ic"][str(h)] = ic
             rec["n"][str(h)] = n
         factors_out.append(rec)
 
     # 4) 헤드라인 (final_score, 가장 짧은 기간 우선)
-    head_ic = head_n = head_h = None
+    head_ic = head_n = head_h = head_groups = None
     for h in CARD_HORIZONS:
-        ic, n = vs.spearman_ic(rets, "final_score", f"exret_{h}d")
+        ic, ng, n = vs.grouped_spearman_ic(rets, "final_score", f"exret_{h}d")
         if ic is not None and n >= MIN_N:
-            head_ic, head_n, head_h = ic, n, h
+            head_ic, head_n, head_h, head_groups = ic, n, h, ng
             break
     # 구간 격차(상위1/3 - 하위1/3)
     spread = None
@@ -138,6 +138,7 @@ def main():
             "horizon": head_h,
             "ic": head_ic,
             "n": head_n,
+            "n_groups": head_groups,
             "spread": spread,
             "verdict": vs.interpret_ic(head_ic) if head_ic is not None else None,
         },
@@ -171,7 +172,8 @@ def main():
 
     if head_ic is not None:
         print(f"   ✅ final_score IC(+{head_h}일) = {head_ic:+.3f}  "
-              f"(N={head_n})  {payload['headline']['verdict']}")
+              f"(날짜·시장별 평균, 그룹 {head_groups}개·N={head_n})  "
+              f"{payload['headline']['verdict']}")
     else:
         print(f"   ℹ️  아직 표본 부족 — 카드는 '데이터 쌓는 중'으로 표시 "
               f"({n_dates}일치)")
