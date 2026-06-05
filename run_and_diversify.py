@@ -188,7 +188,12 @@ def main():
     else:
         print("\n⏭  스크리너 건너뜀 (--skip-screener) — 기존 결과로 분산만 진행")
 
-    # 2) 분산 추천
+    # 2.6) v3 점수/등급/버킷 생성 — diversify·대시보드보다 '먼저' 돌려야 함.
+    #      그날 v3 가 만들어지고 latest_*_final.csv 에 병합된다.
+    if (HERE / "v3_daily.py").exists():
+        run_script(["v3_daily.py"], "2.6단계: v3 점수 생성·병합")
+
+    # 2) 분산 추천 — v3 점수 기준(파일에 v3 있으면 자동 사용, 없으면 v2.6 폴백)
     if not (HERE / "diversify_picks.py").exists():
         print("❌ diversify_picks.py 를 찾을 수 없습니다."); sys.exit(1)
     run_script(["diversify_picks.py",
@@ -196,19 +201,18 @@ def main():
                 "--top", str(args.top)],
                "2단계: 섹터 쏠림 방지 추천")
 
-   # 2.6) v3 조용한 누적 (화면/대시보드 노출 없음, v3_archive/ 에만 저장)
-    if (HERE / "v3_daily.py").exists():
-        run_script(["v3_daily.py"], "2.6단계: v3 히스토리 누적")
-
     # 2.7) 관측 팩터 배선 (가중치 0): stage3_final 에 smartmoney/ROE/내부자/소각 컬럼 채움.
-    #      적재(1단계)+v3_daily(밸류에이션 생성) 다음, IC 계산 전에 둬야
-    #      스마트머니는 전체 백필되고 ROE 는 그날 valuation 으로 자동 채워진다. (점수식 불변)
     if (HERE / "catalyst_observe.py").exists():
         run_script(["catalyst_observe.py"], "2.7단계: 관측 팩터 배선 (점수 불변)")
 
     # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
+
+    # 2.8) 대시보드 재생성 — '그날 v3' + IC 가 반영되도록 다시 빌드.
+    #      (스크리너 1단계에서 만든 대시보드는 그날 v3 이전이라 최신이 아님)
+    if (HERE / "build_dashboard.py").exists():
+        run_script(["build_dashboard.py"], "2.8단계: 대시보드 재생성 (v3 반영)")
 
     # 3) GitHub 자동 업로드 (push) — 폰에서 보려면 필요
     if not args.no_push:

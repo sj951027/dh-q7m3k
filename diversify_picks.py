@@ -341,6 +341,14 @@ def main():
     print("📥 스크리너 결과 로드...")
     raw = load_latest_picks(args.source, args.market)
     raw["ticker"] = raw["ticker"].astype(str).str.zfill(6)
+    # v3 점수가 있으면 그걸로 정렬/표시 (없으면 v2.6 final_score 유지 = 폴백)
+    use_v3 = "final_score_v3" in raw.columns and pd.to_numeric(
+        raw["final_score_v3"], errors="coerce").notna().any()
+    if use_v3:
+        raw["final_score"] = pd.to_numeric(raw["final_score_v3"], errors="coerce")
+        print("   ✓ v3 점수(final_score_v3) 기준으로 정렬합니다.")
+    else:
+        print("   ℹ️  v3 점수가 없어 v2.6 final_score 로 정렬합니다.")
     raw["final_score"] = pd.to_numeric(raw["final_score"], errors="coerce")
     raw = raw.dropna(subset=["final_score"])
 
@@ -398,7 +406,8 @@ def main():
 
     if out_frames:
         out = pd.concat(out_frames, ignore_index=True)
-        cols = [c for c in ["market", "ticker", "name", "sector", "final_score", "keep_reason"]
+        cols = [c for c in ["market", "ticker", "name", "sector", "final_score",
+                            "grade", "bucket", "keep_reason"]
                 if c in out.columns]
         from datetime import datetime
         fn = f"diversified_picks_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"

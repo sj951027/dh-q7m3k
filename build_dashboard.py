@@ -34,7 +34,7 @@ def safe_query(conn, sql, params=()):
 
 
 V3_DIR = Path("v3_archive")
-_BUCKET_RANK = {"BUY": 0, "WAIT": 1}
+_BUCKET_RANK = {"BUY": 0, "WAIT": 1, "OBSERVE": 2, "WATCH": 3}
 
 
 def _latest_v3_file(market):
@@ -42,12 +42,8 @@ def _latest_v3_file(market):
     return files[-1] if files else None
 
 
-def load_v3_top(market, top_n=30):
-    """최신 v3 파일에서 BUY→WAIT 순, 버킷 내 final_score_v3 내림차순 상위 N개.
-
-    v3 파일이 없거나 bucket 컬럼이 없거나 BUY/WAIT가 하나도 없으면 None
-    → 호출부에서 v2.6 final_score 로 폴백한다(대시보드가 안 깨지게).
-    """
+def _read_latest_v3(market):
+    """최신 v3 파일 DataFrame (없으면 None)."""
     f = _latest_v3_file(market)
     if not f:
         return None
@@ -55,12 +51,25 @@ def load_v3_top(market, top_n=30):
         d = pd.read_csv(f)
     except Exception:
         return None
-    if "bucket" not in d.columns or "final_score_v3" not in d.columns:
-        return None
-    d = d[d["bucket"].isin(["BUY", "WAIT"])].copy()
-    if d.empty:
+    if "final_score_v3" not in d.columns:
         return None
     d["final_score_v3"] = pd.to_numeric(d["final_score_v3"], errors="coerce")
+    if "ticker" in d.columns:
+        d["ticker"] = d["ticker"].astype(str).str.zfill(6)
+    return d
+
+
+def load_v3_top(market, top_n=30, buckets=("BUY", "WAIT")):
+    """최신 v3 파일에서 지정 버킷만, 버킷순→final_score_v3 내림차순 상위 N개.
+
+    buckets 에 든 것만 포함(EXCLUDE 는 절대 안 들어감). 해당 버킷이 없으면 None.
+    """
+    d = _read_latest_v3(market)
+    if d is None or "bucket" not in d.columns:
+        return None
+    d = d[d["bucket"].isin(buckets)].copy()
+    if d.empty:
+        return None
     d["_brank"] = d["bucket"].map(_BUCKET_RANK).fillna(9)
     d = d.sort_values(["_brank", "final_score_v3"],
                       ascending=[True, False]).head(top_n)
@@ -101,10 +110,14 @@ def build_data_payload() -> dict:
 
         latest_run_id = df_runs.iloc[0]["run_id"]
 
-        # 최신 회차 TOP — v3 등급/버킷 기준(BUY→WAIT). v3 없으면 v2.6으로 폴백.
-        df_top = load_v3_top(market, top_n=30)
+        # 최신 회차 TOP — v3 등급/버킷 기준. BUY→WAIT 우선, 없으면 OBSERVE/WATCH까지(여전히 v3).
+        df_top = load_v3_top(market, top_n=30, buckets=("BUY", "WAIT"))
+        if df_top is None or df_top.empty:
+            df_top = load_v3_top(market, top_n=30,
+                                 buckets=("BUY", "WAIT", "OBSERVE", "WATCH"))
         used_v3 = df_top is not None and not df_top.empty
         if not used_v3:
+            # v3 파일 자체가 없을 때만 v2.6 으로 폴백
             df_top = safe_query(
                 conn,
                 "SELECT ticker, name, final_score AS final_score_v3, "
@@ -148,6 +161,27 @@ def build_data_payload() -> dict:
         )
         payload["frequent"][market] = df_freq.to_dict(orient="records")
 
+        # 단골 종목에 '현재 v3 등급/점수' 붙이기 (최신 v3 파일 기준)
+        if not df_freq.empty:
+            v3now = _read_latest_v3(market)
+            if v3now is not None and "ticker" in v3now.columns:
+                gmap = v3now.set_index("ticker")
+                recs = []
+                for r in payload["frequent"][market]:
+                    tk = str(r.get("ticker", "")).zfill(6)
+                    if tk in gmap.index:
+                        row = gmap.loc[tk]
+                        if hasattr(row, "iloc") and getattr(row, "ndim", 1) > 1:
+                            row = row.iloc[0]
+                        r["v3_score"] = (None if pd.isna(row.get("final_score_v3"))
+                                         else round(float(row.get("final_score_v3")), 1))
+                        r["grade"] = None if pd.isna(row.get("grade")) else row.get("grade")
+                        r["bucket"] = None if pd.isna(row.get("bucket")) else row.get("bucket")
+                    else:
+                        r["v3_score"], r["grade"], r["bucket"] = None, None, None
+                    recs.append(r)
+                payload["frequent"][market] = recs
+
         # 레짐 점수 시계열 (차트용)
         df_regime = df_runs[["run_id", "regime_score", "market_regime"]].copy()
         df_regime = df_regime.iloc[::-1]  # 오름차순
@@ -162,7 +196,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V2.6 KOSPI/KOSDAQ Screener</title>
+<title>V3 KOSPI/KOSDAQ Screener</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -501,7 +535,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 
 <header class="masthead">
   <div class="masthead-top">
-    <span>V2.6 · ALGORITHMIC SCREENING</span>
+    <span>V3 · ALGORITHMIC SCREENING</span>
     <span>GENERATED <span id="generated-at"></span></span>
   </div>
   <h1 class="title">
@@ -601,7 +635,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 
 <footer>
   <div class="colophon">
-    Built with V2.6 Pipeline · Stage 1 Regime/FX/Foreign Flow ·
+    Built with V3 Pipeline · Stage 1 Regime/FX/Foreign Flow ·
     Stage 2 DART Risk Filter · Stage 3 Fundamentals & Momentum.
     Data accumulated to SQLite · Snapshots in Parquet.
     Not investment advice.
@@ -666,7 +700,7 @@ function renderICCard() {
       body.innerHTML = `
         <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
           <span style="font-size:1.6rem;font-weight:700;color:${icColor(h.ic)};">${big}</span>
-          <span style="font-size:0.8rem;">최종점수 적중도 (+${h.horizon}일, N=${h.n})</span>
+          <span style="font-size:0.8rem;">${h.score === 'final_score_v3' ? 'v3 점수' : '최종점수'} 적중도 (+${h.horizon}일, N=${h.n})</span>
           <span style="font-size:0.78rem;opacity:0.8;">${h.verdict || ''}</span>
         </div>
         ${h.spread !== null && h.spread !== undefined
@@ -768,20 +802,24 @@ function renderFrequent(market) {
   const freq = PAYLOAD.frequent[market] || [];
   const el = document.getElementById('frequent-' + market);
   if (!freq.length) { el.innerHTML = '<div class="empty">아직 단골 데이터가 모이지 않았습니다.</div>'; return; }
-  const rows = freq.map((r, i) => `
+  const rows = freq.map((r, i) => {
+    const gr = (r.grade && r.grade !== '-') ? r.grade : '—';
+    const v3 = (r.v3_score === null || r.v3_score === undefined) ? '—' : fmtScore(r.v3_score);
+    return `
     <tr>
       <td class="rank">${i + 1}</td>
       <td><span class="name">${r.name}</span><span class="ticker">${r.ticker}</span></td>
       <td class="num"><span class="tag">${r.appearances}회</span></td>
-      <td class="num">${fmt(r.avg_score, 1)}</td>
-      <td class="num">${fmtScore(r.max_score)}</td>
+      <td class="num">${v3}</td>
+      <td class="num"><span class="ticker">${gr}</span></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
   el.innerHTML = `
     <table class="data">
       <thead><tr>
         <th>#</th><th>종목</th><th class="num">등장</th>
-        <th class="num">평균</th><th class="num">최고</th>
+        <th class="num">V3</th><th class="num">등급</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>

@@ -30,6 +30,7 @@ HISTORY_PATH = DOCS / "ic_history.json"
 
 # 대시보드 카드용 짧은 라벨
 FACTOR_LABELS = {
+    "final_score_v3": "최종점수(v3)",
     "final_score": "최종점수",
     "oversold_score": "과매도",
     "acc_score": "매집",
@@ -63,6 +64,36 @@ def _write_pending(reason):
     SUMMARY_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2),
                             encoding="utf-8")
     print(f"   ℹ️  IC 카드: 데이터 쌓는 중 ({reason})")
+
+
+def _load_v3_scores():
+    """v3_archive 의 모든 v3_*.csv 에서 (run_id, market, ticker)→final_score_v3.
+
+    history.db(stage3_final)에는 v3 점수가 없으므로, 헤드라인/구간격차를 v3로
+    계산하려면 여기서 끌어와 rets 에 합친다. 파일이 없으면 None(→ v2.6 폴백).
+    """
+    import pandas as pd
+    v3dir = HERE / "v3_archive"
+    if not v3dir.exists():
+        return None
+    frames = []
+    for f in sorted(v3dir.glob("v3_*.csv")):
+        try:
+            d = pd.read_csv(f, usecols=lambda c: c in (
+                "run_id", "market", "ticker", "final_score_v3"))
+        except Exception:
+            continue
+        if "final_score_v3" in d.columns:
+            frames.append(d)
+    if not frames:
+        return None
+    v = pd.concat(frames, ignore_index=True)
+    v["run_id"] = v["run_id"].astype(str)
+    v["market"] = v["market"].astype(str)
+    v["ticker"] = v["ticker"].astype(str).str.zfill(6)
+    v["final_score_v3"] = pd.to_numeric(v["final_score_v3"], errors="coerce")
+    v = v.dropna(subset=["final_score_v3"])
+    return v.drop_duplicates(["run_id", "market", "ticker"], keep="last")
 
 
 def main():
@@ -102,10 +133,25 @@ def main():
         _write_pending(f"시세 조회 실패: {e}")
         return
 
-    # 3) 요소별 IC (시장초과 수익 기준)
+    # 2.5) v3 점수를 rets 에 합치기 (헤드라인을 final_score_v3 로)
+    score_main = "final_score"          # 기본(폴백): v2.6
+    try:
+        v3 = _load_v3_scores()
+    except Exception:
+        v3 = None
+    if v3 is not None and not v3.empty:
+        rets["run_id"] = rets["run_id"].astype(str)
+        rets["market"] = rets["market"].astype(str)
+        rets["ticker"] = rets["ticker"].astype(str).str.zfill(6)
+        rets = rets.merge(v3, on=["run_id", "market", "ticker"], how="left")
+        if rets["final_score_v3"].notna().sum() >= MIN_N:
+            score_main = "final_score_v3"   # v3 점수로 적중도 계산
+
+    # 3) 요소별 IC (시장초과 수익 기준) — 헤드라인 점수 먼저, 그다음 하위 요소들
     factors_out = []
-    for fac in ["final_score"] + [c for c in vs.FACTOR_COLUMNS
-                                  if c in FACTOR_LABELS and c != "final_score"]:
+    sub_factors = [c for c in vs.FACTOR_COLUMNS
+                   if c in FACTOR_LABELS and c not in ("final_score", "final_score_v3")]
+    for fac in [score_main] + sub_factors:
         rec = {"name": fac, "label": FACTOR_LABELS.get(fac, fac), "ic": {}, "n": {}}
         for h in CARD_HORIZONS:
             ic, ng, n = vs.grouped_spearman_ic(rets, fac, f"exret_{h}d")
@@ -113,17 +159,17 @@ def main():
             rec["n"][str(h)] = n
         factors_out.append(rec)
 
-    # 4) 헤드라인 (final_score, 가장 짧은 기간 우선)
+    # 4) 헤드라인 (헤드라인 점수, 가장 짧은 기간 우선)
     head_ic = head_n = head_h = head_groups = None
     for h in CARD_HORIZONS:
-        ic, ng, n = vs.grouped_spearman_ic(rets, "final_score", f"exret_{h}d")
+        ic, ng, n = vs.grouped_spearman_ic(rets, score_main, f"exret_{h}d")
         if ic is not None and n >= MIN_N:
             head_ic, head_n, head_h, head_groups = ic, n, h, ng
             break
     # 구간 격차(상위1/3 − 하위1/3) — IC와 동일하게 (날짜,시장)별 평균
     spread = None
     if head_h is not None:
-        spread, _ = vs.grouped_spread(rets, "final_score", f"exret_{head_h}d", q=3)
+        spread, _ = vs.grouped_spread(rets, score_main, f"exret_{head_h}d", q=3)
 
     status = "ok" if head_ic is not None else "pending"
     payload = {
@@ -138,6 +184,7 @@ def main():
             "n": head_n,
             "n_groups": head_groups,
             "spread": spread,
+            "score": score_main,
             "verdict": vs.interpret_ic(head_ic) if head_ic is not None else None,
         },
         "factors": factors_out,
@@ -161,15 +208,15 @@ def main():
     hist.append({
         "date": today,
         "n_dates": int(n_dates),
-        "ic5": next((f["ic"]["5"] for f in factors_out if f["name"] == "final_score"), None),
-        "ic20": next((f["ic"]["20"] for f in factors_out if f["name"] == "final_score"), None),
+        "ic5": next((f["ic"]["5"] for f in factors_out if f["name"] == score_main), None),
+        "ic20": next((f["ic"]["20"] for f in factors_out if f["name"] == score_main), None),
     })
     hist = hist[-120:]   # 최근 120개만
     HISTORY_PATH.write_text(json.dumps(hist, ensure_ascii=False, indent=2),
                             encoding="utf-8")
 
     if head_ic is not None:
-        print(f"   ✅ final_score IC(+{head_h}일) = {head_ic:+.3f}  "
+        print(f"   ✅ {score_main} IC(+{head_h}일) = {head_ic:+.3f}  "
               f"(날짜·시장별 평균, 그룹 {head_groups}개·N={head_n})  "
               f"{payload['headline']['verdict']}")
     else:
