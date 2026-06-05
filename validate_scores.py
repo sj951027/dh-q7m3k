@@ -321,6 +321,34 @@ def grouped_spearman_ic(df, score_col, ret_col, by=("run_id", "market"), min_n=8
     return round(float(np.mean(ics)), 3), len(ics), total
 
 
+def grouped_spread(df, score_col, ret_col, by=("run_id", "market"), q=3, min_n=9):
+    """(날짜, 시장)별로 '상위 1/q 평균 − 하위 1/q 평균' 초과수익 격차를 구해 평균.
+
+    pooled quantile(전부 한 통)은 시점·시장 차이로 격차가 부풀려진다.
+    그룹별로 상·하위 격차를 구한 뒤 평균해야 IC와 같은 기준이 된다.
+
+    반환: (mean_spread, n_groups) — 유효 그룹 없으면 (None, 0)
+    """
+    by = list(by)
+    sub = df[by + [score_col, ret_col]].dropna()
+    spreads = []
+    for _, g in sub.groupby(by):
+        if len(g) < max(min_n, q * 3) or g[score_col].nunique() < q:
+            continue
+        try:
+            bucket = pd.qcut(g[score_col].rank(method="first"), q,
+                             labels=[f"Q{i+1}" for i in range(q)])
+        except Exception:
+            continue
+        m = g.groupby(bucket, observed=True)[ret_col].mean()
+        hi, lo = f"Q{q}", "Q1"
+        if hi in m.index and lo in m.index:
+            spreads.append(float(m[hi] - m[lo]))
+    if not spreads:
+        return None, 0
+    return round(float(np.mean(spreads)), 2), len(spreads)
+
+
 def factor_ic_table(rets, horizons, ret_prefix="exret"):
     """요소별 × horizon별 IC 표."""
     out = []

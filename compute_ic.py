@@ -120,12 +120,10 @@ def main():
         if ic is not None and n >= MIN_N:
             head_ic, head_n, head_h, head_groups = ic, n, h, ng
             break
-    # 구간 격차(상위1/3 - 하위1/3)
+    # 구간 격차(상위1/3 − 하위1/3) — IC와 동일하게 (날짜,시장)별 평균
     spread = None
     if head_h is not None:
-        qt = vs.quantile_table(rets, "final_score", f"exret_{head_h}d", q=3)
-        if qt is not None and "Q3" in qt.index and "Q1" in qt.index:
-            spread = round(float(qt.loc["Q3", "mean"] - qt.loc["Q1", "mean"]), 2)
+        spread, _ = vs.grouped_spread(rets, "final_score", f"exret_{head_h}d", q=3)
 
     status = "ok" if head_ic is not None else "pending"
     payload = {
