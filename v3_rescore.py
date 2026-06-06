@@ -25,6 +25,7 @@ v3_rescore.py
 """
 import os
 import json
+import copy
 import sqlite3
 import argparse
 import numpy as np
@@ -83,7 +84,7 @@ def reversal_score(df):
     return (a + b + c + improving).clip(0, 15)
 
 
-def supply_v2_score(df):
+def supply_v2_score(df, both_pos_bonus=3):
     """수급 정규화: (외인+기관 5일 순매수) / 20일 평균거래대금."""
     f = _num(df["foreign_5d_억"]).fillna(0)
     i = _num(df["inst_5d_억"]).fillna(0)
@@ -96,7 +97,7 @@ def supply_v2_score(df):
     s = s.mask(intensity >= 0.30, 15)
     s = s.mask(intensity <= -0.15, -10)
     both_pos = (f > 0) & (i > 0)
-    s = (s + both_pos.astype(int) * 3).clip(-10, 15)
+    s = (s + both_pos.astype(int) * both_pos_bonus).clip(-10, 15)
     return s, intensity.round(3)
 
 
@@ -186,17 +187,72 @@ def attach_valuation(df, run_id, market):
     return df.drop(columns=["_pbr", "_per"], errors="ignore")
 
 
+# ------------------------------------------------------- 모델 스펙(챔피언/챌린저)
+# v30 = 현재 챔피언. 값은 기존 코드 상수와 100% 동일 → 출력 불변(회귀 테스트로 증명).
+# 챌린저는 v30 에서 '딱 한 가지'만 바꾼다(무엇이 효과인지 분리하기 위해).
+LIQ_FLOOR = 5.0    # E4: 최소 20일 평균거래대금(억). 거래 불가 초소형주 컷(튜닝 가능).
+
+SPEC_V30 = {
+    "label": "v30 · 챔피언(현재)",
+    "oversold_cap": 20,
+    "oversold_scale": 0.25,
+    # final_score_v3 합산 가중치 (v30 = 전부 1.0)
+    "w": {"value": 1.0, "quality": 1.0, "turnaround": 1.0,
+          "reversal": 1.0, "supply": 1.0, "oversold": 1.0},
+    "supply_both_pos_bonus": 3,
+    "penalty_caution": -10.0,
+    "penalty_soft_trap": -10.0,
+    "entry_w": {"reversal": 2.0, "supply": 1.2, "quality": 0.8,
+                "turnaround": 0.7, "oversold": 0.3},
+    "grade_B":  {"q": 12},
+    "grade_A":  {"q": 15, "rev": 8, "sup": 0, "turn": 0, "fs": 35, "val": 12},
+    "grade_Ap": {"q": 18, "rev": 8, "sup": 8, "turn": 5, "fs": 50, "val": 15},
+    "bucket_wait_rev": 4,
+    # ── 챌린저 훅(v30 = 전부 OFF) ──
+    "liquidity_floor": 0.0,          # E4
+    "buy_requires_reversal": False,  # E2
+    "sector_neutralize": False,      # E5
+}
+
+
+def _spec(label, **over):
+    """v30 을 깊은 복사한 뒤 지정한 키만 덮어쓴 새 스펙(=한 가지만 다른 챌린저)."""
+    s = copy.deepcopy(SPEC_V30)
+    s["label"] = label
+    for k, v in over.items():
+        if isinstance(v, dict) and isinstance(s.get(k), dict):
+            s[k] = {**s[k], **v}
+        else:
+            s[k] = v
+    return s
+
+
+# 등록된 모델. v30 외에는 전부 '한 변수'만 변경.
+MODELS = {
+    "v30":  SPEC_V30,
+    "v31a": _spec("v31a · E2 반전확인 진입게이트", buy_requires_reversal=True),
+    "v31b": _spec("v31b · E3 수급 가중↑",          w={"supply": 1.6}),
+    "v31c": _spec("v31c · E4 유동성 하한",          liquidity_floor=LIQ_FLOOR),
+    "v31d": _spec("v31d · E5 섹터 중립화",          sector_neutralize=True),
+}
+
+
 # ------------------------------------------------------------ 조립
-def rescore(df, run_id=None, market=None, oversold_cap=20):
-    """한 (run_id, market) 묶음을 v3로 재점수화."""
+def rescore(df, run_id=None, market=None, oversold_cap=None, spec=None):
+    """한 (run_id, market) 묶음을 재점수화. spec 미지정 시 v30(챔피언)과 100% 동일."""
+    spec = spec or SPEC_V30
+    cap = oversold_cap if oversold_cap is not None else spec["oversold_cap"]
+    w = spec["w"]
+
     df = df.copy().reset_index(drop=True)
     df = attach_sector(df)
 
     df["reversal_score"] = reversal_score(df)
-    df["supply_score_v2"], df["supply_intensity"] = supply_v2_score(df)
+    df["supply_score_v2"], df["supply_intensity"] = supply_v2_score(
+        df, both_pos_bonus=spec["supply_both_pos_bonus"])
     df["quality_score"] = quality_score(df)
     df["turnaround_score"] = turnaround_score(df)
-    df["oversold_component"] = oversold_component(df, cap=oversold_cap)
+    df["oversold_component"] = oversold_component(df, cap=cap, scale=spec["oversold_scale"])
 
     if run_id is None:
         run_id = str(df["run_id"].iloc[0])
@@ -210,53 +266,74 @@ def rescore(df, run_id=None, market=None, oversold_cap=20):
     soft_trap = df["ocf_pattern"].isin(["밸류트랩의심"])   # 메인후보 제외(+패널티)
 
     penalty = pd.Series(0.0, index=df.index)
-    penalty += (risk == "주의").astype(int) * (-10)
-    penalty += soft_trap.astype(int) * (-10)
+    penalty += (risk == "주의").astype(int) * spec["penalty_caution"]
+    penalty += soft_trap.astype(int) * spec["penalty_soft_trap"]
+
     # 메인후보: 주의/위험/이중적자/밸류트랩의심/falling_knife 모두 제외
-    df["main_candidate"] = ~(
-        (risk == "주의") | (risk == "위험") | fk | hard_trap | soft_trap)
+    main = ~((risk == "주의") | (risk == "위험") | fk | hard_trap | soft_trap)
+    # E4: 유동성 하한 (켜졌을 때만 — v30 은 floor=0 이라 건너뜀 → 동일)
+    if spec["liquidity_floor"] > 0:
+        amt = _num(df["amt_avg_1m_억"]).fillna(0)
+        main = main & (amt >= spec["liquidity_floor"])
+    df["main_candidate"] = main
 
-    df["final_score_v3"] = (
-        df["value_score"]
-        + df["quality_score"]
-        + df["turnaround_score"]
-        + df["reversal_score"]
-        + df["supply_score_v2"]
-        + df["oversold_component"]
+    fs = (
+        df["value_score"] * w["value"]
+        + df["quality_score"] * w["quality"]
+        + df["turnaround_score"] * w["turnaround"]
+        + df["reversal_score"] * w["reversal"]
+        + df["supply_score_v2"] * w["supply"]
+        + df["oversold_component"] * w["oversold"]
         + penalty
-    ).round(1)
+    )
 
-    # 진입 타이밍 점수: 메인후보 '내부'에서 누가 먼저 들어갈지 (반전·수급 가중)
+    hard_exclude = (risk == "위험") | fk | hard_trap
+
+    # E5: 섹터 중립화 (켜졌을 때만). 제외 종목은 평균에서 빼고, 비제외만 섹터평균 차감.
+    if spec["sector_neutralize"]:
+        valid = ~hard_exclude
+        sec_mean = fs.where(valid).groupby(df["sector"]).transform("mean")
+        glob_mean = fs[valid].mean()
+        fs = fs - sec_mean.fillna(glob_mean) + glob_mean
+
+    df["final_score_v3"] = fs.round(1)
+
+    ew = spec["entry_w"]
     df["entry_score"] = (
-        df["reversal_score"] * 2.0
-        + df["supply_score_v2"] * 1.2
-        + df["quality_score"] * 0.8
-        + df["turnaround_score"] * 0.7
-        + df["oversold_component"] * 0.3
+        df["reversal_score"] * ew["reversal"]
+        + df["supply_score_v2"] * ew["supply"]
+        + df["quality_score"] * ew["quality"]
+        + df["turnaround_score"] * ew["turnaround"]
+        + df["oversold_component"] * ew["oversold"]
     ).round(1)
 
     # 하드 제외는 점수를 완전히 바닥으로 (위험/falling_knife/이중적자 모두)
-    hard_exclude = (risk == "위험") | fk | hard_trap
     df.loc[hard_exclude, ["final_score_v3", "entry_score"]] = -999
 
-    df["grade"] = grade(df)
-    df["bucket"] = bucket(df)
+    df["grade"] = grade(df, spec)
+    df["bucket"] = bucket(df, spec)
     return df.sort_values("final_score_v3", ascending=False).reset_index(drop=True)
 
 
-def bucket(df):
+def bucket(df, spec=SPEC_V30):
     """실사용 의사결정용 버킷. Top 점수 단순 정렬 오해를 막는다."""
     g = df["grade"]; rev = df["reversal_score"]
+    wr = spec["bucket_wait_rev"]
     b = pd.Series("OBSERVE", index=df.index)
-    b = b.mask((g == "B") & (rev < 4), "OBSERVE")
-    b = b.mask((g == "B") & (rev >= 4), "WAIT")
+    b = b.mask((g == "B") & (rev < wr), "OBSERVE")
+    b = b.mask((g == "B") & (rev >= wr), "WAIT")
     b = b.mask(g.isin(["A+", "A"]), "BUY")
+    # E2: '실제' 반전 확인(5일선 회복 AND 거래량 양봉)이 없으면 BUY→WAIT 강등.
+    #     A등급이 이미 reversal_score>=8 을 요구하므로, 합성점수가 아니라 개별 플래그로 봐야 의미가 있다.
+    if spec["buy_requires_reversal"]:
+        confirmed = _flag(df["reversal_above_sma5"]) & _flag(df["reversal_vol_up_candle"])
+        b = b.mask((b == "BUY") & ~confirmed, "WAIT")
     b = b.mask(g == "WATCH", "WATCH")
     b = b.mask(g == "EXCLUDE", "EXCLUDE")
     return b
 
 
-def grade(df):
+def grade(df, spec=SPEC_V30):
     risk = df["risk_level"].astype(str)
     fk = _flag(df["falling_knife"])
     trap = df["ocf_pattern"].isin(["이중적자"])
@@ -265,18 +342,20 @@ def grade(df):
     mc = df["main_candidate"]
     q = df["quality_score"]; rev = df["reversal_score"]; sup = df["supply_score_v2"]
     turn = df["turnaround_score"]; fs = df["final_score_v3"]
+    gB, gA, gAp = spec["grade_B"], spec["grade_A"], spec["grade_Ap"]
 
     g = pd.Series("C", index=df.index)
     # B: 메인후보 + 품질은 괜찮으나 반전 미확인 (대기)
-    b = mc & (q >= 12)
+    b = mc & (q >= gB["q"])
     # A: 더 엄격 — 반전 확인 + 수급 비음수 + 턴어라운드 비음수 + 점수 하한
-    a = mc & (q >= 15) & (rev >= 8) & (sup >= 0) & (turn >= 0) & (fs >= 35)
+    a = (mc & (q >= gA["q"]) & (rev >= gA["rev"]) & (sup >= gA["sup"])
+         & (turn >= gA["turn"]) & (fs >= gA["fs"]))
     # A+: 가장 엄격
-    a_plus = (mc & (q >= 18) & (rev >= 8) & (sup >= 8)
-              & (turn >= 5) & (fs >= 50) & (risk == "안전"))
+    a_plus = (mc & (q >= gAp["q"]) & (rev >= gAp["rev"]) & (sup >= gAp["sup"])
+              & (turn >= gAp["turn"]) & (fs >= gAp["fs"]) & (risk == "안전"))
     if has_val:                       # 밸류 켜지면 저평가 조건 필수
-        a = a & (val >= 12)
-        a_plus = a_plus & (val >= 15)
+        a = a & (val >= gA["val"])
+        a_plus = a_plus & (val >= gAp["val"])
     g = g.mask(b, "B")
     g = g.mask(a, "A")
     g = g.mask(a_plus, "A+")
@@ -299,8 +378,11 @@ def main():
                     help="run_id별 결과를 쌓아둘 폴더(검증 히스토리 누적용)")
     ap.add_argument("--docs", action="store_true",
                     help="docs/latest_*_v3.csv 로도 저장(대시보드 노출). 기본 꺼짐")
+    ap.add_argument("--model", default="v30", choices=list(MODELS.keys()),
+                    help="채점 모델(스펙). 기본 v30=챔피언. 챌린저는 보통 shadow_run.py 가 돌림")
     args = ap.parse_args()
 
+    spec = MODELS[args.model]
     allruns = load_runs(args.db)
     run_id = args.run_id or sorted(allruns["run_id"].unique())[-1]
     os.makedirs(args.archive, exist_ok=True)
@@ -309,7 +391,8 @@ def main():
         sub = allruns[(allruns["run_id"] == run_id) & (allruns["market"] == mkt)]
         if sub.empty:
             continue
-        rs = rescore(sub, run_id=run_id, market=mkt, oversold_cap=args.oversold_cap)
+        rs = rescore(sub, run_id=run_id, market=mkt,
+                     oversold_cap=args.oversold_cap, spec=spec)
 
         # (1) 검증 히스토리 누적: 보관 폴더에 run_id별로 영구 저장
         rs.to_csv(f"{args.archive}/v3_{mkt}_{run_id}.csv",

@@ -181,9 +181,7 @@ def main():
     if not args.skip_screener:
         if not (HERE / "run_all_v2_6.py").exists():
             print("❌ run_all_v2_6.py 를 찾을 수 없습니다 (같은 폴더에 있어야 함)."); sys.exit(1)
-        # 대시보드는 2.8단계에서 v3 반영해 다시 그리므로 1단계에선 생략(중복 빌드 제거)
-        rc = run_script(["run_all_v2_6.py", "--no-dashboard"],
-                        "1단계: 스크리너 (KOSPI + KOSDAQ)")
+        rc = run_script(["run_all_v2_6.py"], "1단계: 스크리너 (KOSPI + KOSDAQ)")
         if rc != 0:
             print("\n❌ 스크리너가 실패해 분산 단계를 건너뜁니다. 위 로그를 확인하세요.")
             sys.exit(rc)
@@ -194,6 +192,11 @@ def main():
     #      그날 v3 가 만들어지고 latest_*_final.csv 에 병합된다.
     if (HERE / "v3_daily.py").exists():
         run_script(["v3_daily.py"], "2.6단계: v3 점수 생성·병합")
+
+    # 2.65) 챌린저(v31a~) 섀도우 누적 — 조용히 {model}_archive 에만 저장(추가 네트워크 0).
+    #       챔피언/대시보드/텔레그램엔 노출 안 함. 비교는 주 1회 compare_models.py.
+    if (HERE / "shadow_run.py").exists():
+        run_script(["shadow_run.py"], "2.65단계: 챌린저 섀도우 누적(조용)")
 
     # 2) 분산 추천 — v3 점수 기준(파일에 v3 있으면 자동 사용, 없으면 v2.6 폴백)
     if not (HERE / "diversify_picks.py").exists():
