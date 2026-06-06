@@ -574,10 +574,17 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 </div>
 
 <!-- 인터랙티브 필터 페이지로 -->
-<a href="filter.html" style="display:block;text-align:center;margin:0 0 28px;padding:14px;
+<a href="filter.html" style="display:block;text-align:center;margin:0 0 10px;padding:14px;
    border:1px solid var(--rule,#d8d2c4);border-radius:10px;text-decoration:none;
    font-weight:600;font-size:0.95rem;color:inherit;background:rgba(66,153,225,0.06);">
   🔍 필터·정렬·검색으로 자세히 보기 →
+</a>
+
+<!-- 점수 읽는 법 가이드 -->
+<a href="guide.html" style="display:block;text-align:center;margin:0 0 28px;padding:14px;
+   border:1px solid var(--rule-light,#c8c2b5);border-radius:10px;text-decoration:none;
+   font-weight:600;font-size:0.95rem;color:inherit;background:rgba(184,40,28,0.05);">
+  📖 점수 읽는 법 — 이 종목들이 어떻게 골라졌나
 </a>
 
 <!-- KOSPI PANEL -->
