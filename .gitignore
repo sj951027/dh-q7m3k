@@ -25,6 +25,12 @@ Thumbs.db
 
 # 용량 쌓이는거
 v3_archive/
+# 챌린저 섀도우 아카이브 — 재현 가능(history.db + 고정 스펙으로 compare_models 가 재계산).
+# v3_archive 와 동일 취급. 새 챌린저(v32a 등) 추가 시 같은 식으로 한 줄 추가.
+v31a_archive/
+v31b_archive/
+v31c_archive/
+v31d_archive/
 valuation_*.csv
 v3_kospi_final_*.csv
 v3_kosdaq_final_*.csv
