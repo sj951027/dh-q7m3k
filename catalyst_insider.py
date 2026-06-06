@@ -2,6 +2,15 @@
 """
 catalyst_insider.py  (댁의 PC에서 실행 — DART 네트워크 필요)
 ================================================================
+[기본 동작 = 자사주 '소각'만 수집]  내부자(임원·주요주주) 매수는 기본 비활성.
+  이유: elestock 요약은 '소유수 증감'만 줄 뿐 *사유*(장내매수=호재 / 무상증자·
+  주식배당=중립 / 상속·증여 / 스톡옵션행사 …)를 구분하지 못한다. 무상증자는
+  최대주주 포함 전원의 보유수를 늘려 '내부자 매집'으로 오판되고, 비율(%)로
+  거르면 대형주의 진짜 장내매수는 반올림 0.00 으로 같이 사라진다 → 깨끗한
+  신호로 정제 불가. 그래서 기본은 끄고, 해석 여지가 없는 '자사주 소각'만 쓴다.
+  (정말 데이터로 확인하고 싶으면 `--with-insider` 로 켤 수 있음. 점수식엔 어차피
+   가중치 0 으로만 들어가는 관측 팩터다.)
+
 '상승 촉매' 중 가장 견고한 두 가지를 DART에서 뽑아 점수화한다.
 stage2_risk_filter_v2_6.py 의 DART 배관(get_corp_code_mapping / fetch_disclosures)
 을 그대로 재사용하고, v3_rescore.attach_valuation 과 같은 패턴의 파일을 만든다:
@@ -198,15 +207,15 @@ def score_insider(filings, days=DEFAULT_DAYS, asof=None):
 
     for it in filings:
         # 날짜 윈도 + 룩어헤드 컷
-        ds = _norm(_g(it, "rcept_dt"))
-        if len(ds) >= 8:
-            try:
-                d = datetime.strptime(ds[:8], "%Y%m%d")
-            except Exception:
-                continue
-            if d < start or d > asof:
-                continue
-        else:
+        # elestock 의 rcept_dt 는 'YYYY-MM-DD'(하이픈), 공시목록은 'YYYYMMDD' — 숫자만 뽑아 통일.
+        ds = "".join(ch for ch in _norm(_g(it, "rcept_dt")) if ch.isdigit())[:8]
+        if len(ds) < 8:
+            continue
+        try:
+            d = datetime.strptime(ds, "%Y%m%d")
+        except Exception:
+            continue
+        if d < start or d > asof:
             continue
 
         irds_cnt = _to_int(_g(it, "sp_stock_lmp_irds_cnt"))
@@ -277,6 +286,15 @@ def score_buyback_cancel(disclosures, days=DEFAULT_DAYS, asof=None):
             if ds > hit_dt:
                 hit_dt = ds
     return {"buyback_cancel_flag": 1 if hit_dt else 0, "buyback_cancel_dt": hit_dt}
+
+
+def _insider_off():
+    """내부자(elestock) 평가를 끈 상태의 중립 결과. CSV/DB 컬럼 스키마는 그대로 유지."""
+    return {
+        "insider_score": 0.0, "insider_net_irds": 0, "insider_buy_filings": 0,
+        "insider_top_role": 0.0, "insider_recent_dt": "",
+        "insider_source": "OFF",
+    }
 
 
 def combine_catalyst(ins, buy):
@@ -357,7 +375,7 @@ def load_universe(market, input_csv=None):
 
 
 # ----------------------------------------------------------------- 메인
-def run_market(market, api_key, run_id, days, input_csv, workers):
+def run_market(market, api_key, run_id, days, input_csv, workers, with_insider=False):
     import importlib
     stage2 = importlib.import_module("stage2_risk_filter_v2_6")  # 기업코드/공시목록 재사용
 
@@ -378,8 +396,10 @@ def run_market(market, api_key, run_id, days, input_csv, workers):
 
     def one(r):
         time.sleep(0.05)
-        elestock = fetch_elestock(r["corp_code"], api_key)
-        ins = score_insider(elestock, days=days)
+        if with_insider:
+            ins = score_insider(fetch_elestock(r["corp_code"], api_key), days=days)
+        else:
+            ins = _insider_off()        # 기본: 내부자 평가 끔(elestock 호출 안 함 → 종목당 DART 1회 절약)
         # 자사주 소각은 일반 공시목록에서(stage2.fetch_disclosures 재사용)
         discs = stage2.fetch_disclosures(r["corp_code"], api_key, days_back=days)
         buy = score_buyback_cancel(discs, days=days)
@@ -420,8 +440,11 @@ def run_market(market, api_key, run_id, days, input_csv, workers):
     n_ins = int((out["insider_buy_filings"] > 0).sum())
     n_buy = int(out["buyback_cancel_flag"].sum())
     n_proxy = int((out["insider_source"] == "PROXY").sum())
-    print(f"   💾 {fn}  (내부자매집 {n_ins}종목 / 자사주소각 {n_buy}종목 / "
-          f"프록시판정 {n_proxy}종목)")
+    if with_insider:
+        print(f"   💾 {fn}  (내부자매집 {n_ins}종목 / 자사주소각 {n_buy}종목 / "
+              f"프록시판정 {n_proxy}종목)")
+    else:
+        print(f"   💾 {fn}  (자사주소각 {n_buy}종목 · 내부자평가 OFF)")
     top = out[out["catalyst_score"] > 0].head(10)
     if not top.empty:
         print(f"\n   [{market.upper()}] 촉매 TOP")
@@ -537,10 +560,13 @@ def main():
                     help="미지정 시 둘 다")
     ap.add_argument("--inspect", default=None, metavar="STOCK_CODE",
                     help="elestock 실제 필드명 확인용(1종목)")
-    ap.add_argument("--run_id", default=None, help="기본: 오늘(YYYYMMDD)")
+    ap.add_argument("--run_id", default=None, help="기본: 최신 stage3 run(history.db)")
     ap.add_argument("--days", type=int, default=DEFAULT_DAYS, help="조회 윈도(일)")
     ap.add_argument("--input", default=None, help="검사 대상 CSV(없으면 최신 후보 자동)")
     ap.add_argument("--workers", type=int, default=MAX_WORKERS)
+    ap.add_argument("--with-insider", action="store_true",
+                    help="내부자(elestock) 평가도 수집(기본: 자사주 소각만). "
+                         "elestock 요약은 호재/무상증자 구분이 안 돼 기본 비활성.")
     ap.add_argument("--self-test", action="store_true",
                     help="네트워크 없이 점수 로직 점검")
     args = ap.parse_args()
@@ -562,7 +588,8 @@ def main():
     for mkt in markets:
         print(f"\n{'='*64}\n▶  {mkt.upper()} 촉매(내부자매수+자사주소각) {run_id}\n{'='*64}")
         try:
-            run_market(mkt, api_key, run_id, args.days, args.input, args.workers)
+            run_market(mkt, api_key, run_id, args.days, args.input, args.workers,
+                       with_insider=args.with_insider)
         except SystemExit as e:
             print(f"   건너뜀: {e}")
 
