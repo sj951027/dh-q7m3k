@@ -31,6 +31,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -95,9 +96,15 @@ def check_dart_key():
 
 def run_script(args_list, label):
     print(f"\n{'━'*64}\n▶  {label}\n{'━'*64}")
+    _t0 = time.time()
     rc = subprocess.run([sys.executable] + args_list, env=os.environ.copy()).returncode
+    _el = time.time() - _t0
+    _m, _s = divmod(int(_el), 60)
+    _ts = f"{_m}분 {_s}초" if _m else f"{_s}초"
     if rc != 0:
-        print(f"   ⚠️  {label} 종료 코드 {rc}")
+        print(f"   ⚠️  {label} 종료 코드 {rc}  (소요 {_ts})")
+    else:
+        print(f"   ⏱  {label} 소요 {_ts}")
     return rc
 
 

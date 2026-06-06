@@ -45,6 +45,15 @@ MIN_OVERSOLD_SCORE = 40  # [V2.6 자동화] 원래대로 (v2_6_002와 동일 수
 TOP_N = 20
 REQUEST_SLEEP = 0.05
 
+# [D2-②] DART 재무 응답 캐시. 정상 응답('000')은 정정 전엔 안 변하므로 길게,
+#        '데이터 없음' 등은 곧 채워질 수 있으니 짧게. 오류는 캐시하지 않음.
+#        끄기: 환경변수 DART_NO_CACHE=1
+import dart_cache_util as _dcache
+FIN_CACHE_TTL = float(os.environ.get("DART_FIN_TTL_DAYS", "14")) * 86400      # 정상 응답
+NODATA_CACHE_TTL = float(os.environ.get("DART_NODATA_TTL_HOURS", "12")) * 3600  # 데이터없음 등
+_CACHE_STATS = {"hit": 0, "miss": 0}
+_CACHE_STATS_LOCK = threading.Lock()
+
 # [V2.6 자동화] DART 서버 안정성을 위해 2스레드로 축소
 # (4스레드 시 코스피 후 코스닥 첫 호출부터 RemoteDisconnected 발생)
 MAX_WORKERS = 2
@@ -58,7 +67,24 @@ REPRT_CODES = {'Q1': '11013', 'H1': '11012', 'Q3': '11014', 'Y': '11011'}
 
 def _request_json(url, params, timeout=15, max_retries=3):
     """DART API 호출. RemoteDisconnected 등 연결 오류 시 자동 재시도.
-    재시도 간 백오프: 1초 → 3초 → 9초."""
+    재시도 간 백오프: 1초 → 3초 → 9초.
+    [D2-②] 캐시: api_key 를 제외한 (url+params) 가 키. 정상 응답은 길게, 데이터없음은
+    짧게 캐시. '미스' 경로는 캐시 이전과 100% 동일 → 가속일 뿐 결과 불변."""
+    # 캐시 키 (crtfc_key 는 비밀이라 키에서 제외 — 나머지가 응답을 완전히 결정)
+    key_parts = (url,) + tuple(f"{k}={v}" for k, v in sorted(params.items())
+                               if k != "crtfc_key")
+    hit = _dcache.get_with_age("fin", key_parts)
+    if hit is not None:
+        (lst, status, message), age = hit
+        ttl = FIN_CACHE_TTL if status == "000" else NODATA_CACHE_TTL
+        if age <= ttl:
+            with _CACHE_STATS_LOCK:
+                _CACHE_STATS["hit"] += 1
+            return lst, status, message
+
+    with _CACHE_STATS_LOCK:
+        _CACHE_STATS["miss"] += 1
+
     last_exc = None
     for attempt in range(max_retries):
         try:
@@ -67,12 +93,17 @@ def _request_json(url, params, timeout=15, max_retries=3):
             status = str(data.get('status', ''))
             message = data.get('message', '')
             if status == '000':
-                return data.get('list', []) or [], status, message
+                lst = data.get('list', []) or []
+                _dcache.put("fin", key_parts, [lst, status, message])   # 정상: 길게 캐시
+                return lst, status, message
             # DART rate limit (1020)이나 일시 오류면 재시도
             if status in ('1020', '900', '901', '902') and attempt < max_retries - 1:
                 time.sleep(3 ** attempt)
                 continue
-            return None, status or 'NO_STATUS', message or 'DART 응답 오류'
+            # 정의된 비-000 상태(예: '013' 데이터없음): 짧게 캐시 후 반환
+            result = (None, status or 'NO_STATUS', message or 'DART 응답 오류')
+            _dcache.put("fin", key_parts, [result[0], result[1], result[2]])
+            return result
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout,
                 requests.exceptions.ChunkedEncodingError) as e:
@@ -82,8 +113,8 @@ def _request_json(url, params, timeout=15, max_retries=3):
                 time.sleep(3 ** attempt)
                 continue
         except Exception as e:
-            return None, 'REQUEST_ERROR', str(e)[:120]
-    return None, 'REQUEST_ERROR', f"after {max_retries} retries: {str(last_exc)[:100]}"
+            return None, 'REQUEST_ERROR', str(e)[:120]   # 오류는 캐시 안 함
+    return None, 'REQUEST_ERROR', f"after {max_retries} retries: {str(last_exc)[:100]}"   # 캐시 안 함
 
 
 def fetch_report_all(corp_code, year, reprt_code, api_key, fs_div='CFS'):
@@ -787,6 +818,14 @@ def main():
     print(f"   • 연간 영업이익 YoY: {annual_op_count}/{n} ({ann_rate:.0f}%)")
     print(f"   • 분기/누적 영업이익 YoY: {quarterly_op_count}/{n} ({qtr_rate:.0f}%)")
     print(f"   • OCF(영업현금흐름): {ocf_found_count}/{n} ({ocf_rate:.0f}%)")
+
+    # [D2-②] DART 재무 캐시 적중률 (가속 효과 확인용)
+    _h, _m = _CACHE_STATS["hit"], _CACHE_STATS["miss"]
+    if _dcache.enabled() and (_h + _m) > 0:
+        print(f"   • DART 재무 캐시: 적중 {_h} / 미스 {_m}  "
+              f"(적중률 {_h / (_h + _m) * 100:.0f}%)")
+    elif not _dcache.enabled():
+        print(f"   • DART 재무 캐시: 비활성(DART_NO_CACHE=1) — 전량 네트워크 호출")
 
     if 'dart_q_status' in df_final.columns:
         print(f"\n   분기 DART 상태 분포:")
