@@ -358,20 +358,33 @@ def main():
         print("🏷️  업종 데이터가 비어 있어 업종을 해석합니다 (override→캐시→FDR→DART)...")
     resolver = SectorResolver()
 
-    # 업종 조회는 점수 상위 후보에만 (하위는 어차피 컷 — DART 호출 절약)
+    # 업종 조회 비용 분리:
+    #   (1) override/캐시에 있으면 '전 종목' 공짜로 채움(네트워크 0) — 필터 섹터 토글이 전 종목 작동.
+    #   (2) 그래도 미분류인 것만 '점수 상위'에 한해 FDR/DART 조회(호출 비용 제한, 하위는 어차피 컷).
     resolve_limit = max(args.top * 6, 60)
     has_corp = "corp_code" in raw.columns
 
-    def resolve_row(r):
+    raw = raw.sort_values(rank_col, ascending=False).reset_index(drop=True)
+
+    def _free_lookup(r):
         if has_sector and pd.notna(r.get("sector")) and str(r.get("sector")).strip():
             return r["sector"]
+        t = str(r["ticker"]).zfill(6)
+        if t in resolver.overrides:
+            return resolver.overrides[t]
+        v = resolver.cache.get(t)
+        return v if (v and v != UNKNOWN) else UNKNOWN
+
+    raw["sector"] = raw.apply(_free_lookup, axis=1)   # (1) 공짜로 전부
+
+    def resolve_row(r):
         cc = r.get("corp_code") if has_corp else None
         return resolver.resolve(r["ticker"], cc)
 
-    raw = raw.sort_values(rank_col, ascending=False).reset_index(drop=True)
-    raw["sector"] = UNKNOWN
-    head_idx = raw.groupby("market", group_keys=False).head(resolve_limit).index
-    raw.loc[head_idx, "sector"] = raw.loc[head_idx].apply(resolve_row, axis=1)
+    still = raw[raw["sector"] == UNKNOWN]              # (2) 남은 미분류 상위만 네트워크
+    if not still.empty:
+        head_idx = still.groupby("market", group_keys=False).head(resolve_limit).index
+        raw.loc[head_idx, "sector"] = raw.loc[head_idx].apply(resolve_row, axis=1)
     resolver.save_cache()
 
     n_unknown = (raw["sector"] == UNKNOWN).sum()

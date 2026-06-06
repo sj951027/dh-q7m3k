@@ -517,6 +517,20 @@ def inspect(stock_code):
               "_g(...) 호출의 키만 바꿔주면 됨.")
 
 
+def _latest_run_id(db="history.db"):
+    """기본 run_id = history.db 의 최신 stage3_final run(누적과 일치). 없으면 오늘 날짜."""
+    try:
+        import sqlite3
+        con = sqlite3.connect(db)
+        rid = con.execute("SELECT MAX(run_id) FROM stage3_final").fetchone()[0]
+        con.close()
+        if rid:
+            return str(rid)
+    except Exception:
+        pass
+    return datetime.now().strftime("%Y%m%d")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--market", choices=["kospi", "kosdaq"], default=None,
@@ -543,7 +557,7 @@ def main():
     if len(api_key) < 30:
         raise SystemExit("❌ .env 의 DART_API_KEY 가 비었거나 형식이 이상합니다.")
 
-    run_id = args.run_id or datetime.now().strftime("%Y%m%d")
+    run_id = args.run_id or _latest_run_id()
     markets = [args.market] if args.market else ["kospi", "kosdaq"]
     for mkt in markets:
         print(f"\n{'='*64}\n▶  {mkt.upper()} 촉매(내부자매수+자사주소각) {run_id}\n{'='*64}")

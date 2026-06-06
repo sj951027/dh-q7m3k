@@ -32,6 +32,7 @@ v31b_archive/
 v31c_archive/
 v31d_archive/
 valuation_*.csv
+catalyst_*.csv
 v3_kospi_final_*.csv
 v3_kosdaq_final_*.csv
 *.bak

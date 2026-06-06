@@ -213,6 +213,12 @@ def main():
                 "--top", str(args.top)],
                "2단계: 섹터 쏠림 방지 추천")
 
+    # 2.68) 촉매(내부자매수+자사주소각) 수집 — DART. catalyst_{market}_{run_id}.csv 생성.
+    #        이게 '먼저' 있어야 다음 단계(catalyst_observe)가 insider/buyback 컬럼을 채운다.
+    #        없어도 파이프라인은 계속(그 경우 insider/buyback 은 NULL 유지).
+    if (HERE / "catalyst_insider.py").exists():
+        run_script(["catalyst_insider.py"], "2.68단계: 촉매 수집(내부자/자사주, DART)")
+
     # 2.7) 관측 팩터 배선 (가중치 0): stage3_final 에 smartmoney/ROE/내부자/소각 컬럼 채움.
     if (HERE / "catalyst_observe.py").exists():
         run_script(["catalyst_observe.py"], "2.7단계: 관측 팩터 배선 (점수 불변)")
