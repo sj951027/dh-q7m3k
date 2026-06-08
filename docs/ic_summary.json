@@ -1,8 +1,8 @@
 {
   "status": "pending",
-  "generated_at": "2026-06-06 18:14",
-  "n_dates": 13,
-  "n_picks": 1250,
+  "generated_at": "2026-06-08 21:00",
+  "n_dates": 14,
+  "n_picks": 1315,
   "horizons": [
     5,
     20
