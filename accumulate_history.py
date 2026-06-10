@@ -25,6 +25,7 @@ market 컬럼으로 코스피/코스닥 구분.
 """
 
 import argparse
+import os
 import sqlite3
 import sys
 from datetime import datetime
@@ -156,8 +157,11 @@ def accumulate_market(market, date_str, conn, archive=False):
     for stage_name, (csv_path, table) in csvs.items():
         df = load_csv_with_meta(csv_path, run_id, run_ts, market)
         write_to_sqlite(df, table, conn, market)
-        parquet_path = write_parquet_snapshot(df, stage_name, run_id, market)
-        print(f"     ↪ {stage_name}: {len(df):>4}행 → SQLite[{table}] + {parquet_path.name}")
+        if os.environ.get("SCREENER_NO_SNAPSHOTS", "0") in ("1", "true", "True", "yes"):
+            print(f"     ↪ {stage_name}: {len(df):>4}행 → SQLite[{table}] (snapshot 생략)")
+        else:
+            parquet_path = write_parquet_snapshot(df, stage_name, run_id, market)
+            print(f"     ↪ {stage_name}: {len(df):>4}행 → SQLite[{table}] + {parquet_path.name}")
         if stage_name == "stage1":
             df_stage1_for_meta = df
         if stage_name == "stage3":

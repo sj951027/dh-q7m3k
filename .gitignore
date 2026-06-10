@@ -36,3 +36,20 @@ catalyst_*.csv
 v3_kospi_final_*.csv
 v3_kosdaq_final_*.csv
 *.bak
+
+# ─────────────────────────────────────────────────────────────
+# 데이터 산출물 git 다이어트 (2026-06-10 추가)
+# 원본은 history.db(로컬+backup/)이고, 웹에 필요한 건 docs/ 뿐이다.
+# 아래는 전부 루트 앵커(/) — docs/ 안의 동명 파일은 계속 추적된다(Pages용).
+# 추가 후 1회: git rm -r --cached 로 기존 추적 해제 필요(CLEANUP_NOTES.md 참고).
+/history.db
+/archive/
+/snapshots/
+/diversified_picks_*.csv
+/validation_picks.csv
+/validation_summary.csv
+/latest_kospi_final.csv
+/latest_kosdaq_final.csv
+/backup/
+/handoff/
+/_trash/
