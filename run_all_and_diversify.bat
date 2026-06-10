@@ -15,6 +15,7 @@ echo This runs the full screener and then the sector-diversified picks.
 echo It can take 60-120 minutes. Please do not close this window.
 echo.
 
+set SCREENER_NO_SNAPSHOTS=1
 python run_and_diversify.py
 
 set EXIT_CODE=%ERRORLEVEL%
