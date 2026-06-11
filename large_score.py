@@ -21,8 +21,13 @@ v1 팩터 (설계 §4):
 
 명시된 데이터 갭 (상상으로 메우지 않음 — 설계 §13):
   - '최근 2년 흑자'(DART NI) 항은 대형 전수 데이터가 없어 v1 게이트에서 보류.
-  - buyback_cancel_flag 는 catalyst CSV(=v3 후보 스캔분)에 있는 종목만. 미스캔 종목은
-    0이 아니라 NaN(buyback_src='미수집') — '확인했는데 없음'과 '확인 안 함'을 구분.
+  - buyback_cancel_flag: catalyst_large_{run_id}.csv(전수 스캔, catalyst_large.py)가
+    있으면 그걸 우선 사용, 없으면 v3 catalyst CSV 교집합만(구버전 경로). 미확인 종목은
+    0이 아니라 NaN — '확인했는데 없음'과 '확인 안 함'을 구분.
+  - [v1.2 20260611] 업종 오버레이 추가(apply_sector_overlay): 공유 sector_cache 는
+    불변, large_final 안에서만 라벨 보정. 원본은 sector_raw 로 보존.
+    ③우선주 미분류→보통주 상속 → ②'금융(은행)'&비금융→'지주'(KSIC64 오라벨)
+    → ①is_financial→'금융' → ④미분류&리츠→'리츠'.
   - KRX는 적자기업 EPS/PER 를 0으로 표기 → 음(−) ROE 식별 불가(roe_value=NaN 처리).
   - stage3 유래 컬럼(ocf/수급/YoY)은 해당 종목이 마지막으로 v3 후보였던 run 값
     (stage3_src_run 기록, 반드시 ≤ 대상 run — 포인트-인-타임 §8).
@@ -39,6 +44,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from large_universe import load_sector_map   # 섹터 캐시 로더 재사용(오버레이 ③ 우선주 상속용)
 
 DB_PATH = Path("history.db")
 TABLE = "large_final"
@@ -122,17 +129,48 @@ def load_stage3_latest(tickers, target_run, db_path=DB_PATH):
 
 
 def load_buyback(run_id):
-    """catalyst_{mkt}_{run_id}.csv 가 있으면 자사주 소각 플래그 조인(있는 종목만)."""
+    """자사주 소각 플래그. 우선순위: catalyst_large(전수) > v3 catalyst(교집합).
+    반환: (df, mode) — mode는 'large' | 'v3' | 'none'."""
+    p = Path(f"catalyst_large_{run_id}.csv")
+    if p.exists():
+        c = pd.read_csv(p, encoding='utf-8-sig', dtype={'ticker': str})
+        c['ticker'] = c['ticker'].str.zfill(6)
+        c['buyback_cancel_flag'] = pd.to_numeric(c['buyback_cancel_flag'], errors='coerce')
+        return c[['ticker', 'buyback_cancel_flag', 'buyback_src']].drop_duplicates('ticker'), 'large'
     frames = []
     for mkt in ('kospi', 'kosdaq'):
-        p = Path(f"catalyst_{mkt}_{run_id}.csv")
-        if p.exists():
-            c = pd.read_csv(p, encoding='utf-8-sig')
+        q = Path(f"catalyst_{mkt}_{run_id}.csv")
+        if q.exists():
+            c = pd.read_csv(q, encoding='utf-8-sig')
             c['ticker'] = c['ticker'].astype(str).str.zfill(6)
             frames.append(c[['ticker', 'buyback_cancel_flag']])
     if not frames:
-        return pd.DataFrame(columns=['ticker', 'buyback_cancel_flag'])
-    return pd.concat(frames, ignore_index=True).drop_duplicates('ticker')
+        return pd.DataFrame(columns=['ticker', 'buyback_cancel_flag']), 'none'
+    out = pd.concat(frames, ignore_index=True).drop_duplicates('ticker')
+    out['buyback_src'] = 'catalyst'
+    return out, 'v3' 
+
+
+# ============================================================
+# 업종 오버레이 (순수 — large 전용, 공유 캐시 불변)
+# ============================================================
+def apply_sector_overlay(df, sector_map=None):
+    """large 트랙 전용 업종 라벨 보정. v3가 쓰는 sector_cache.json 은 건드리지 않는다.
+    순서 의존: ③ 우선주 상속 → ② KSIC64 지주 보정 → ① 금융 통합 → ④ 리츠.
+    (예: 두산우 → ③두산='금융(은행)' 상속 → ②비금융이므로 '지주')"""
+    sector_map = sector_map or {}
+    out = df.copy()
+    out['sector_raw'] = out['sector']
+    s = out['sector'].copy()
+    m = (s == '미분류') & (out['is_pref'] == 1)                      # ③ 보통주(끝자리 0) 상속
+    s.loc[m] = out.loc[m, 'ticker'].map(lambda t: sector_map.get(t[:5] + '0', '미분류'))
+    m = (s == '금융(은행)') & (out['is_financial'] == 0)             # ② KSIC64 지주회사 오라벨
+    s.loc[m] = '지주'
+    s.loc[out['is_financial'] == 1] = '금융'                          # ① 은행·보험·증권 통합(v1)
+    m = (s == '미분류') & (out['is_reit'] == 1)                      # ④
+    s.loc[m] = '리츠'
+    out['sector'] = s
+    return out
 
 
 # ============================================================
@@ -171,7 +209,7 @@ def compute_factors(df):
 # ============================================================
 FINAL_COLS = [
     'run_id', 'run_timestamp', 'market', 'ticker', 'name',
-    'close', 'marcap', 'stocks', 'marcap_rank', 'sector',
+    'close', 'marcap', 'stocks', 'marcap_rank', 'sector', 'sector_raw',
     'is_pref', 'is_spac', 'is_reit', 'is_holding', 'is_financial', 'is_cyclical',
     'pbr', 'per', 'div_yield', 'bps', 'eps',
     'roe_value', 'rim_fair_pbr', 'rim_spread', 'rim_quadrant',
@@ -187,6 +225,11 @@ def save_db(df, run_id, db_path=DB_PATH):
         cur = con.cursor()
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (TABLE,))
         if cur.fetchone():
+            existing = {r[1] for r in cur.execute(f"PRAGMA table_info({TABLE})")}
+            for c in FINAL_COLS:                       # v1.x 컬럼 추가분 자동 마이그레이션
+                if c not in existing:
+                    cur.execute(f'ALTER TABLE {TABLE} ADD COLUMN "{c}"')
+                    print(f"   • 스키마 마이그레이션: {TABLE}.{c} 추가")
             cur.execute(f"DELETE FROM {TABLE} WHERE run_id=?", (str(run_id),))
             con.commit()
         keep.to_sql(TABLE, con, if_exists='append', index=False)
@@ -207,7 +250,7 @@ def report(df, run_id):
         'pbr': u['pbr'].notna().sum(), 'roe_value': u['roe_value'].notna().sum(),
         'rim_spread': u['rim_spread'].notna().sum(),
         'div_yield>0': (u['div_yield'] > 0).sum(),
-        'buyback(수집됨)': (u['buyback_src'] == 'catalyst').sum(),
+        'buyback(확인)': u['buyback_cancel_flag'].notna().sum(),
         'ocf(stage3)': u['ocf_to_op_ratio'].notna().sum(),
         'foreign_20d': u['foreign_20d'].notna().sum(),
     }
@@ -244,7 +287,11 @@ def main():
     print("=" * 64)
 
     uni = load_universe(run_id, db)
+    uni = apply_sector_overlay(uni, load_sector_map())
+    n_mi = (uni['sector'] == '미분류').sum()
     print(f"   • 유니버스: {len(uni)}개 (rank≤{UNIVERSE_N} 분석 대상 {min(len(uni), UNIVERSE_N)}개)")
+    print(f"   • 업종 오버레이: 금융 {(uni['sector']=='금융').sum()} · 지주 {(uni['sector']=='지주').sum()} · "
+          f"리츠 {(uni['sector']=='리츠').sum()} · 미분류 잔여 {n_mi} (원라벨=sector_raw)")
     val = load_valuation(run_id)
     df = uni.merge(val, on='ticker', how='left')
     print(f"   • valuation 조인: PBR 보유 {df['pbr'].notna().sum()}/{len(df)}")
@@ -253,11 +300,11 @@ def main():
     df = df.merge(s3, on='ticker', how='left')
     print(f"   • stage3 운반(ocf/수급/YoY): {df['stage3_src_run'].notna().sum()}/{len(df)} (PIT: src ≤ {run_id})")
 
-    bb = load_buyback(run_id)
+    bb, bb_mode = load_buyback(run_id)
     df = df.merge(bb, on='ticker', how='left')
-    df['buyback_src'] = np.where(df['ticker'].isin(bb['ticker']), 'catalyst', '미수집')
-    print(f"   • 자사주 소각 플래그: 수집 {len(bb)}종목 중 유니버스 교집합 "
-          f"{(df['buyback_src'] == 'catalyst').sum()}개 (나머지는 NaN='미수집')")
+    df['buyback_src'] = df.get('buyback_src', pd.Series(index=df.index, dtype=object)).fillna('미수집')
+    cov = (df['buyback_src'] != '미수집').sum()
+    print(f"   • 자사주 소각: 소스={bb_mode} → 확인 {cov}/{len(df)}종목 (미확인=NaN)")
 
     df = compute_factors(df)
     report(df, run_id)

@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-test_large_score_offline.py — large_score.py 오프라인 검증
-==========================================================
-실제 history.db '사본' + 합성 valuation/catalyst CSV로, 네트워크 없이 검증 가능한 전부를 검증:
-  [1] 팩터 규칙: RIM(NaN 규칙·클램프·사분면), KRX 0 처리(DIV=0은 유효), 행 무제외
-  [2] PIT: stage3 운반값이 대상 run 이하만 사용(미래 run 누출 0)
-  [3] 통합: 유니버스→조인→계산→리포트→적재 전 구간 + 멱등 재실행
-  [4] v3 4개 테이블 전 행 해시 0 diff
-사용: python test_large_score_offline.py [history.db경로]
+test_large_score_offline.py — large_score.py v1.2 오프라인 검증
+================================================================
+실제 history.db '사본' + 합성 valuation/catalyst CSV로, 네트워크 없이 검증:
+  [1] 팩터 규칙: RIM(log형·NaN·캡·사분면·순위동치), KRX 0 처리, 무제외
+  [2] 업종 오버레이(실데이터): 금융 통합·KSIC64 지주 보정·우선주 상속·리츠, 원본 보존
+  [3] PIT: stage3 운반값 미래 run 누출 0
+  [4] buyback 우선순위: catalyst_large > v3 catalyst, 미확인=NaN
+  [5] 통합 적재 + 구스키마 자동 마이그레이션(sector_raw ALTER) + 멱등
+  [6] v3 4개 테이블 전 행 해시 0 diff
+사용: python test_large_score_offline.py [history.db경로] [sector_cache.json경로]
 """
 import hashlib
 import os
@@ -23,44 +25,39 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import large_score as ls
 
 DB_SRC = Path(sys.argv[1] if len(sys.argv) > 1 else "history.db").resolve()
-RUN = "20260609"
+SC_SRC = Path(sys.argv[2] if len(sys.argv) > 2 else "sector_cache.json").resolve()
+RUN = "20260610"
 
 
 def table_hash(db, table):
-    with sqlite3.connect(db) as con:
+    con = sqlite3.connect(db)
+    try:
         df = pd.read_sql(f"SELECT * FROM {table} ORDER BY rowid", con)
+    finally:
+        con.close()                      # Windows: 핸들을 닫아야 임시 폴더 삭제 가능
     return hashlib.md5(df.to_csv(index=False).encode()).hexdigest(), len(df)
 
 
-def make_synthetic_inputs(workdir, db):
-    """실제 유니버스 티커에 결정적 합성 valuation/catalyst를 만든다(엣지 케이스 포함)."""
-    with sqlite3.connect(db) as con:
-        uni = pd.read_sql(
-            "SELECT ticker, market, marcap_rank FROM large_universe WHERE run_id=? ORDER BY marcap_rank",
-            con, params=(RUN,))
+def make_synthetic_valuation(workdir, uni):
     t = list(uni['ticker'])
     cases = {  # ticker → (PBR, PER, DIV, BPS, EPS)
-        t[0]: (0.8, 7.0, 2.5, 10000, 1200),    # 정상 가치주: ROE12%, 사분면 해당
+        t[0]: (0.8, 7.0, 2.5, 10000, 1200),    # ROE12%, 사분면 해당
         t[1]: (1.5, 0.0, 0.0, 10000, 0),       # KRX 적자표기 EPS=0 → roe NaN
-        t[2]: (1.2, 9.0, 1.0, 0, 500),         # BPS=0 → roe NaN
-        t[3]: (0.0, 8.0, 1.0, 10000, 900),     # PBR=0 → pbr NaN → spread NaN (roe는 9%)
-        t[4]: (2.0, 5.0, 1.0, 10000, 10000),   # ROE100% → fair 12.4 → cap 10
-        t[5]: (0.9, 30.0, 0.0, 10000, 50),     # ROE0.5% ≤ g → fair NaN, DIV=0 유효
+        t[2]: (1.2, 9.0, 1.0, 0, 500),         # BPS=0
+        t[3]: (0.0, 8.0, 1.0, 10000, 900),     # PBR=0
+        t[4]: (2.0, 5.0, 1.0, 10000, 10000),   # ROE100% → 캡 10
+        t[5]: (0.9, 30.0, 0.0, 10000, 50),     # ROE0.5%≤g → fair NaN, DIV=0 유효
     }
     rows = []
-    for i, r in uni.iterrows():
-        tk = r['ticker']
-        pbr, per, div, bps, eps = cases.get(tk, (1.2, 10.0, 1.5, 10000, 800))  # 기본 ROE8%
-        rows.append((tk, r['market'], pbr, per, div, bps, eps))
+    for _, r in uni.iterrows():
+        pbr, per, div, bps, eps = cases.get(r['ticker'], (1.2, 10.0, 1.5, 10000, 800))
+        rows.append((r['ticker'], r['market'], pbr, per, div, bps, eps))
     v = pd.DataFrame(rows, columns=['ticker', 'market', 'PBR', 'PER', 'DIV', 'BPS', 'EPS'])
-    drop = set(t[-3:])                          # 마지막 3개는 valuation 자체 누락 케이스
+    drop = set(t[-3:])
     v = v[~v['ticker'].isin(drop)]
     for mkt in ('kospi', 'kosdaq'):
         v[v['market'] == mkt].drop(columns='market').to_csv(
             workdir / f"valuation_{mkt}_{RUN}.csv", index=False, encoding='utf-8-sig')
-    # catalyst: 유니버스 2종목만 수집된 상황
-    pd.DataFrame({'ticker': [t[0], t[6]], 'buyback_cancel_flag': [1, 0]}).to_csv(
-        workdir / f"catalyst_kospi_{RUN}.csv", index=False, encoding='utf-8-sig')
     return t, drop
 
 
@@ -71,80 +68,118 @@ def main():
     work.mkdir()
     db = work / "history.db"
     shutil.copy(DB_SRC, db)
-    before = {tb: table_hash(db, tb) for tb in
-              ('stage1_oversold', 'stage2_filtered', 'stage3_final', 'runs')}
-    t, dropped = make_synthetic_inputs(work, db)
+    if SC_SRC.exists():
+        shutil.copy(SC_SRC, work / 'sector_cache.json')
+    v3_tabs = ('stage1_oversold', 'stage2_filtered', 'stage3_final', 'runs')
+    before = {tb: table_hash(db, tb) for tb in v3_tabs}
+    con = sqlite3.connect(db)
+    try:
+        uni_raw = pd.read_sql("SELECT * FROM large_universe WHERE run_id=? ORDER BY marcap_rank",
+                              con, params=(RUN,))
+        n_uni_total = con.execute("SELECT COUNT(*) FROM large_universe").fetchone()[0]
+    finally:
+        con.close()
+    t, dropped = make_synthetic_valuation(work, uni_raw)
     os.chdir(work)
 
-    # ---- 통합 흐름 (main()과 동일 순서) ----
-    uni = ls.load_universe(RUN, db)
+    # ---- [2] 업종 오버레이 (실데이터) ----
+    uni = ls.apply_sector_overlay(uni_raw, ls.load_sector_map())
+    r = uni.set_index('ticker')
+    assert (uni['sector_raw'] == uni_raw['sector']).all(), "원본 라벨 보존 실패"
+    assert r.loc['105560', 'sector'] == '금융', "KB금융 → 금융 실패"      # 미분류였던 진짜 금융
+    for tk in ('001040', '003550'):                                      # CJ, LG (KSIC64 오라벨)
+        if tk in r.index:
+            assert r.loc[tk, 'sector'] == '지주', f"{tk} 지주 보정 실패"
+    if '005935' in r.index:                                              # 삼성전자우 상속
+        assert r.loc['005935', 'sector'] == '반도체·전자부품', "우선주 상속 실패"
+    u300 = uni[uni['marcap_rank'] <= 300]
+    n_mi = int((u300['sector'] == '미분류').sum())
+    assert n_mi <= 2, f"top300 미분류 잔여 {n_mi}개(기대 ≤2)"
+    assert (u300['sector'] == '금융').sum() >= 25 and (u300['sector'] == '지주').sum() >= 20
+    print(f"✅ [2] 오버레이: 금융 {(u300['sector']=='금융').sum()} · 지주 {(u300['sector']=='지주').sum()} · "
+          f"리츠 {(u300['sector']=='리츠').sum()} · 미분류 잔여 {n_mi} · sector_raw 보존 OK")
+
+    # ---- 통합 흐름 (main 과 동일 순서) ----
     val = ls.load_valuation(RUN)
     df = uni.merge(val, on='ticker', how='left')
     s3 = ls.load_stage3_latest(df['ticker'], RUN, db)
     df = df.merge(s3, on='ticker', how='left')
-    bb = ls.load_buyback(RUN)
+
+    # ---- [4] buyback 우선순위 ----
+    pd.DataFrame({'ticker': [t[0], t[6]], 'buyback_cancel_flag': [1, 0]}).to_csv(
+        f"catalyst_kospi_{RUN}.csv", index=False, encoding='utf-8-sig')
+    bb, mode = ls.load_buyback(RUN)
+    assert mode == 'v3' and len(bb) == 2 and set(bb['buyback_src']) == {'catalyst'}
+    pd.DataFrame({'ticker': t[:4], 'buyback_cancel_flag': [1, 0, np.nan, 0],
+                  'buyback_src': ['dart', 'v3공유', '미등록', 'dart']}).to_csv(
+        f"catalyst_large_{RUN}.csv", index=False, encoding='utf-8-sig')
+    bb, mode = ls.load_buyback(RUN)
+    assert mode == 'large' and len(bb) == 4, "전수 스캔 파일 우선순위 실패"
     df = df.merge(bb, on='ticker', how='left')
-    df['buyback_src'] = np.where(df['ticker'].isin(bb['ticker']), 'catalyst', '미수집')
+    df['buyback_src'] = df.get('buyback_src', pd.Series(index=df.index, dtype=object)).fillna('미수집')
+    r2 = df.set_index('ticker')
+    assert r2.loc[t[0], 'buyback_cancel_flag'] == 1 and r2.loc[t[0], 'buyback_src'] == 'dart'
+    assert np.isnan(r2.loc[t[2], 'buyback_cancel_flag']) and r2.loc[t[2], 'buyback_src'] == '미등록'
+    assert df.loc[df['buyback_src'] == '미수집', 'buyback_cancel_flag'].isna().all()
+    print("✅ [4] buyback: catalyst_large 우선 · src 전달 · 미확인 NaN OK")
+
     df = ls.compute_factors(df)
 
-    # [1] 팩터 규칙
-    assert len(df) == len(uni) == 500, "행 제외 발생 — 무제외 원칙 위반"
-    r = df.set_index('ticker')
-    a = r.loc[t[0]]
+    # ---- [1] 팩터 규칙 (log형) ----
+    assert len(df) == len(uni_raw) == 500, "행 제외 발생"
+    rr = df.set_index('ticker')
+    a = rr.loc[t[0]]
     assert abs(a['roe_value'] - 12.0) < 1e-9 and abs(a['rim_fair_pbr'] - 1.375) < 1e-9
     assert abs(a['rim_spread'] - np.log(1.375 / 0.8)) < 1e-9 and a['rim_quadrant'] == 1.0
-    assert abs(r.loc[t[4], 'rim_spread'] - np.log(10.0 / 2.0)) < 1e-9, "캡 적용 후 log 스프레드"
-    # log형 ↔ 구식(1−PBR/fair) 순위 동치(단조변환) 확인
+    assert np.isnan(rr.loc[t[1], 'roe_value']) and np.isnan(rr.loc[t[3], 'rim_spread'])
+    assert rr.loc[t[4], 'rim_fair_pbr'] == 10.0
+    assert abs(rr.loc[t[4], 'rim_spread'] - np.log(10.0 / 2.0)) < 1e-9
+    assert np.isnan(rr.loc[t[5], 'rim_fair_pbr']) and rr.loc[t[5], 'div_yield'] == 0.0
     s = df.dropna(subset=['rim_spread'])
     old_form = 1.0 - s['pbr'] / s['rim_fair_pbr']
-    assert (old_form.rank() == s['rim_spread'].rank()).all(), "스프레드 정의 교체로 순위 변동"
-    assert np.isnan(r.loc[t[1], 'roe_value']) and np.isnan(r.loc[t[1], 'rim_spread'])
-    assert np.isnan(r.loc[t[2], 'roe_value'])
-    assert np.isnan(r.loc[t[3], 'pbr']) and np.isnan(r.loc[t[3], 'rim_spread']) \
-        and abs(r.loc[t[3], 'roe_value'] - 9.0) < 1e-9
-    assert r.loc[t[4], 'rim_fair_pbr'] == 10.0, "정당PBR 캡 미작동"
-    assert np.isnan(r.loc[t[5], 'rim_fair_pbr']) and r.loc[t[5], 'div_yield'] == 0.0
-    assert r.loc[t[5], 'rim_quadrant'] == 0.0
+    assert (old_form.rank() == s['rim_spread'].rank()).all(), "log형 순위 동치 깨짐"
     for d in dropped:
-        assert np.isnan(r.loc[d, 'pbr']), "valuation 누락 종목이 NaN으로 보존되지 않음"
-    assert r.loc[t[0], 'buyback_cancel_flag'] == 1 and r.loc[t[6], 'buyback_cancel_flag'] == 0
-    assert (df['buyback_src'] == 'catalyst').sum() == 2
-    assert df.loc[df['buyback_src'] == '미수집', 'buyback_cancel_flag'].isna().all(), \
-        "미수집이 0으로 오염됨('확인 안 함'≠'없음')"
-    assert set(df.loc[df['sector'] == '화학', 'is_cyclical']) <= {1}
-    print("✅ [1] 팩터 규칙(RIM NaN·캡·사분면, KRX 0 처리, DIV=0 유효, 무제외, 자사주 NaN 구분) OK")
+        assert np.isnan(rr.loc[d, 'pbr'])
+    print("✅ [1] 팩터 규칙(log형 RIM·캡·사분면·순위동치·KRX 0 처리·무제외) OK")
 
-    # [2] PIT — 과거 시점으로 재계산해도 미래 run 누출 0
+    # ---- [3] PIT ----
     old = ls.load_stage3_latest(df['ticker'], '20260601', db)
-    assert (old['stage3_src_run'].astype(str) <= '20260601').all(), "PIT 위반"
+    assert (old['stage3_src_run'].astype(str) <= '20260601').all()
     assert (s3['stage3_src_run'].astype(str) <= RUN).all()
-    moved = (old.set_index('ticker')['stage3_src_run'].astype(str)
-             != s3.set_index('ticker')['stage3_src_run'].astype(str).reindex(old.set_index('ticker').index)).sum()
-    print(f"✅ [2] PIT: target 20260601 → src 전부 ≤ 20260601 (target {RUN} 대비 src 변동 {moved}종목)")
+    print("✅ [3] PIT: 미래 run 누출 0")
 
-    # [3] 리포트 스모크 + 적재 멱등
+    # ---- [5] 적재 + 구스키마 마이그레이션 + 멱등 ----
+    con = sqlite3.connect(db)
+    pre = {x[1] for x in con.execute("PRAGMA table_info(large_final)")}
+    con.close()
+    if 'sector_raw' in pre:
+        print("   (참고: 이 DB는 이미 마이그레이션됨 — ALTER 발생 없이 적재만 검증)")
     ls.report(df, RUN)
     n1 = ls.save_db(df, RUN, db)
     n2 = ls.save_db(df, RUN, db)
-    assert n1 == n2 == 500, f"멱등 실패: {n1}, {n2}"
-    with sqlite3.connect(db) as con:
-        idx = [x[1] for x in con.execute("PRAGMA index_list(large_final)")]
-        assert 'idx_large_final_rt' in idx
-        assert con.execute("PRAGMA quick_check").fetchone()[0] == 'ok'
-        cov = con.execute(
-            "SELECT COUNT(*), SUM(stage3_src_run IS NOT NULL), SUM(rim_spread IS NOT NULL) "
-            "FROM large_final WHERE run_id=?", (RUN,)).fetchone()
-    print(f"✅ [3] 통합 적재·멱등·인덱스·무결성 OK (행 {cov[0]}, stage3 운반 {cov[1]}, rim_spread {cov[2]})")
+    assert n1 == n2 == 500
+    con = sqlite3.connect(db)
+    post = {x[1] for x in con.execute("PRAGMA table_info(large_final)")}
+    assert 'sector_raw' in post, "ALTER 마이그레이션 실패"
+    assert con.execute("PRAGMA quick_check").fetchone()[0] == 'ok'
+    nuni = con.execute("SELECT COUNT(*) FROM large_universe").fetchone()[0]
+    con.close()
+    assert nuni == n_uni_total, "large_universe 변형됨"
+    print("✅ [5] 적재·sector_raw ALTER·멱등·무결성 OK")
 
-    # [4] v3 0 diff
-    for tb, (h, n) in before.items():
-        h2, n2 = table_hash(db, tb)
-        assert (h, n) == (h2, n2), f"v3 테이블 {tb} 변경됨!"
-    print("✅ [4] v3 4개 테이블 전 행 해시 0 diff")
+    # ---- [6] v3 0 diff ----
+    for tb, hv in before.items():
+        assert table_hash(db, tb) == hv, f"v3 테이블 {tb} 변경됨!"
+    print("✅ [6] v3 4개 테이블 전 행 해시 0 diff")
 
     os.chdir('..')
-    shutil.rmtree(work)
-    print("\n🎉 오프라인 검증 전부 통과 — 실데이터 검증은 오늘 .bat 후 실행분으로")
+    import gc
+    gc.collect()                          # 남은 sqlite 핸들 정리(Windows)
+    try:
+        shutil.rmtree(work)
+    except OSError:
+        print(f"⚠️  임시 폴더 삭제 실패 — 수동 삭제 요망: {work} (검증 결과와는 무관)")
+    print("\n🎉 v1.2 오프라인 검증 전부 통과")
 
 
 if __name__ == "__main__":

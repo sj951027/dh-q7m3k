@@ -54,8 +54,10 @@ ROOT_PATTERNS = [
     ("v3_kospi_final_*.csv", "days"),
     ("v3_kosdaq_final_*.csv", "days"),
     ("diversified_picks_*.csv", "days"),
+    ("large_universe_*.csv", "days"),              # 대형 트랙 1단계 산출 (DB 적재됨 → 7일)
     ("catalyst_kospi_*.csv", "catalyst_days"),
     ("catalyst_kosdaq_*.csv", "catalyst_days"),
+    ("catalyst_large_*.csv", "catalyst_days"),     # 대형 자사주 스캔 (large_final 반영 → 30일)
 ]
 
 # 이중 안전장치: 어떤 경우에도 건드리면 안 되는 이름/디렉터리
