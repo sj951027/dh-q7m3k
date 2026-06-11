@@ -34,6 +34,14 @@ if %EXIT_CODE% NEQ 0 (
 
 echo.
 echo ========================================================================
+echo   [Large] universe + buyback scan + observe load (approx 3 min)
+echo ========================================================================
+python large_universe.py
+python catalyst_large.py
+python large_score.py
+
+echo.
+echo ========================================================================
 echo   [OK] Done.  End: %DATE% %TIME%
 echo ========================================================================
 echo   Output:
@@ -47,5 +55,3 @@ echo.
 echo Press any key to close this window.
 pause > nul
 
-python large_universe.py
-python large_score.py
