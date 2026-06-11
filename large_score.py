@@ -10,8 +10,11 @@ v1 관측 팩터를 계산하고 새 테이블 large_final 에 적재한다.
 ★ v3 테이블은 읽기만 하고(stage3_final) 쓰기는 large_final 한 곳뿐.
 
 v1 팩터 (설계 §4):
-  ① RIM 스프레드  : 정당PBR=(ROE−g)/(COE−g), rim_spread=1−PBR/정당PBR (양수=저평가)
+  ① RIM 스프레드  : 정당PBR=(ROE−g)/(COE−g), rim_spread=log(정당PBR/PBR) (양수=저평가)
                     ROE≤g 면 정당PBR 무의미 → NaN. 사분면 플래그(ROE>10% & PBR<1).
+                    [v1.1 20260610] 1−PBR/정당PBR → log형으로 교체. 단조변환이라 Spearman
+                    순위(=IC) 완전 동일하며, ROE≈g 에서 정당PBR→0+ 일 때 비율식이
+                    −수천까지 폭주하던 스케일 문제만 제거(실데이터 ρ=1.0 검증).
   ② 주주환원      : div_yield(배당수익률) + buyback_cancel_flag(있는 범위만 — 아래 갭 참고)
   ③ 품질 게이트   : ocf_to_op_ratio ∈ [0.7, 5.0] (설계 §4③ 예시 구간).
   ④ 수급          : v1은 stage3의 foreign_20d/inst_20d 를 '운반'만(리버설은 3단계 KIS).
@@ -147,7 +150,8 @@ def compute_factors(df):
     fair = (roe_frac - RIM_G) / (RIM_COE - RIM_G)
     fair = fair.where(fair > 0)                       # ROE≤g → NaN
     out['rim_fair_pbr'] = fair.clip(upper=RIM_FAIR_PBR_CAP)
-    out['rim_spread'] = 1.0 - out['pbr'] / out['rim_fair_pbr']   # 양수=정당가 대비 저평가
+    # log형 스프레드: 양수=정당가 대비 저평가. (구 1−PBR/fair 와 단조 동치 → 순위 불변)
+    out['rim_spread'] = np.log(out['rim_fair_pbr'] / out['pbr'])
     quad = (out['roe_value'] > 10.0) & (out['pbr'] < 1.0)
     out['rim_quadrant'] = quad.astype(float)
     out.loc[out['roe_value'].isna() | out['pbr'].isna(), 'rim_quadrant'] = np.nan

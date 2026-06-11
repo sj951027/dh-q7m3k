@@ -92,7 +92,12 @@ def main():
     r = df.set_index('ticker')
     a = r.loc[t[0]]
     assert abs(a['roe_value'] - 12.0) < 1e-9 and abs(a['rim_fair_pbr'] - 1.375) < 1e-9
-    assert abs(a['rim_spread'] - (1 - 0.8 / 1.375)) < 1e-9 and a['rim_quadrant'] == 1.0
+    assert abs(a['rim_spread'] - np.log(1.375 / 0.8)) < 1e-9 and a['rim_quadrant'] == 1.0
+    assert abs(r.loc[t[4], 'rim_spread'] - np.log(10.0 / 2.0)) < 1e-9, "캡 적용 후 log 스프레드"
+    # log형 ↔ 구식(1−PBR/fair) 순위 동치(단조변환) 확인
+    s = df.dropna(subset=['rim_spread'])
+    old_form = 1.0 - s['pbr'] / s['rim_fair_pbr']
+    assert (old_form.rank() == s['rim_spread'].rank()).all(), "스프레드 정의 교체로 순위 변동"
     assert np.isnan(r.loc[t[1], 'roe_value']) and np.isnan(r.loc[t[1], 'rim_spread'])
     assert np.isnan(r.loc[t[2], 'roe_value'])
     assert np.isnan(r.loc[t[3], 'pbr']) and np.isnan(r.loc[t[3], 'rim_spread']) \
