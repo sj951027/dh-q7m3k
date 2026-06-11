@@ -259,8 +259,7 @@ def main():
     if not args.no_db:
         save_db(df, run_id, Path(args.db), args.store_top)
 
-    print("\n✅ 1단계 완료. 다음: 로그와 large_universe CSV(또는 새 perf 핸드오프)를 "
-          "Claude에 전달 → 분포 검토 후 N 확정 → 2단계(관측 팩터 적재) 진행.")
+    print("\n✅ 유니버스 적재 완료. 분석 유니버스는 rank≤300으로 파생(확정 N=300).")
 
 
 if __name__ == "__main__":

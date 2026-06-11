@@ -20,6 +20,7 @@ large_universe 최신 run의 종목(상위 500)에 대해 KIS '주식현재가 �
     KIS는 유효기간(24h) 내 재요청 시 동일 토큰을 반환하므로, 같은 앱키를
     쓰는 다른 프로그램(예: Position Tracker)과 토큰이 자연 공유된다.
     발급 자체도 1분당 1회 제한이 있어 함부로 재발급하지 않는다.
+  - [v1.0.1] 토큰 1분 게이트 충돌 시 65초 후 1회 재시도.
   - 레이트: 단일 스레드 + 호출 간 KIS_REQ_INTERVAL(기본 0.55s ≈ 초당 1.8건).
     500종목 ≈ 4.6분/일.
 
@@ -84,18 +85,27 @@ def get_token(app_key, app_secret, path=TOKEN_CACHE):
         return tok
     import requests
     print("   • 접근토큰 발급 요청 (캐시 만료/부재 — 1분당 1회 제한 유의)")
-    r = requests.post(f"{BASE}/oauth2/tokenP",
-                      headers={"content-type": "application/json"},
-                      data=json.dumps({"grant_type": "client_credentials",
-                                       "appkey": app_key, "appsecret": app_secret}),
-                      timeout=10)
-    j = r.json()
-    tok = j.get("access_token")
-    if not tok:
+    for attempt in (1, 2):
+        r = requests.post(f"{BASE}/oauth2/tokenP",
+                          headers={"content-type": "application/json"},
+                          data=json.dumps({"grant_type": "client_credentials",
+                                           "appkey": app_key, "appsecret": app_secret}),
+                          timeout=10)
+        try:
+            j = r.json()
+        except Exception:
+            j = {}
+        tok = j.get("access_token")
+        if tok:
+            ttl = float(j.get("expires_in", 86400))
+            save_token(tok, time.time() + ttl)
+            return tok
+        # 같은 앱키의 다른 프로그램(트래커)이 직전 1분 내 발급한 경우 — 잠시 기다려 재시도
+        if attempt == 1 and ('EGW00133' in r.text or '1분' in r.text):
+            print("   • 1분당 1회 발급 제한에 걸림 — 65초 대기 후 재시도")
+            time.sleep(65)
+            continue
         raise RuntimeError(f"토큰 발급 실패 (status={r.status_code}): {r.text[:200]}")
-    ttl = float(j.get("expires_in", 86400))
-    save_token(tok, time.time() + ttl)
-    return tok
 
 
 # ============================================================

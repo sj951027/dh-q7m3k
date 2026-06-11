@@ -70,7 +70,8 @@ print("✅ [3] upsert: 신규/재기록 집계 · 잠정→확정 보정 · 기�
 
 # [4] 유니버스 로드
 rid, tks = kf.load_universe_tickers(work, top=300)
-assert rid == '20260611' and len(tks) == 300 and tks[0][0] == '005930'
+_c = sqlite3.connect(work); _expect = str(_c.execute("SELECT MAX(run_id) FROM large_universe").fetchone()[0]); _c.close()
+assert rid == _expect and len(tks) == 300 and tks[0][0] == '005930'
 rid, tks = kf.load_universe_tickers(work)
 assert len(tks) == 500
 con.close(); work.unlink()

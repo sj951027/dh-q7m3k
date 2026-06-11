@@ -16,7 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import catalyst_large as cl
 
 DB_SRC = Path(sys.argv[1] if len(sys.argv) > 1 else "history.db").resolve()
-RUN = "20260610"
+import sqlite3 as _sq
+_c = _sq.connect(DB_SRC); RUN = str(_c.execute("SELECT MAX(run_id) FROM large_universe").fetchone()[0]); _c.close()
 
 work = Path("_t_cat").resolve()
 if work.exists():

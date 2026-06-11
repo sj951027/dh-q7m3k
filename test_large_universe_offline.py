@@ -79,7 +79,11 @@ def t2_db(df):
     after = _table_counts(work)
     for t in v3_tabs:
         assert before[t] == after[t], f"v3 테이블 {t} 변경됨! {before[t]} → {after[t]}"
-    assert after['large_universe'] == 5, "중복 적재 발생(멱등 깨짐)"
+    expected = before.get('large_universe', 0) + 5          # 기존 실데이터 run 보존 + 테스트 5행
+    assert after['large_universe'] == expected, "중복 적재 발생(멱등 깨짐)"
+    with sqlite3.connect(work) as con:
+        n99 = con.execute("SELECT COUNT(*) FROM large_universe WHERE run_id='99999999'").fetchone()[0]
+    assert n99 == 5, "테스트 run 행수 불일치"
     with sqlite3.connect(work) as con:
         cols = [r[1] for r in con.execute("PRAGMA table_info(large_universe)")]
         for c in ('run_id', 'ticker', 'marcap', 'stocks', 'marcap_rank',

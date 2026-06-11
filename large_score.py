@@ -28,6 +28,8 @@ v1 팩터 (설계 §4):
     불변, large_final 안에서만 라벨 보정. 원본은 sector_raw 로 보존.
     ③우선주 미분류→보통주 상속 → ②'금융(은행)'&비금융→'지주'(KSIC64 오라벨)
     → ①is_financial→'금융' → ④미분류&리츠→'리츠'.
+  - [v1.2.1 20260612] 표기 정리(값 불변): 자사주 줄을 '플래그 확인' 기준으로, 오버레이
+    줄에 집계 범위 명시, run_timestamp=적재 시각, 주석 예시 교정.
   - KRX는 적자기업 EPS/PER 를 0으로 표기 → 음(−) ROE 식별 불가(roe_value=NaN 처리).
   - stage3 유래 컬럼(ocf/수급/YoY)은 해당 종목이 마지막으로 v3 후보였던 run 값
     (stage3_src_run 기록, 반드시 ≤ 대상 run — 포인트-인-타임 §8).
@@ -157,7 +159,8 @@ def load_buyback(run_id):
 def apply_sector_overlay(df, sector_map=None):
     """large 트랙 전용 업종 라벨 보정. v3가 쓰는 sector_cache.json 은 건드리지 않는다.
     순서 의존: ③ 우선주 상속 → ② KSIC64 지주 보정 → ① 금융 통합 → ④ 리츠.
-    (예: 두산우 → ③두산='금융(은행)' 상속 → ②비금융이므로 '지주')"""
+    (예: CJ4우(전환) → ③CJ='금융(은행)' 상속 → ②비금융이므로 '지주'.
+    두산우는 두산의 캐시 업종이 '반도체·전자부품'이라 그걸 상속한다 — 지주 아님)"""
     sector_map = sector_map or {}
     out = df.copy()
     out['sector_raw'] = out['sector']
@@ -221,6 +224,8 @@ FINAL_COLS = [
 
 def save_db(df, run_id, db_path=DB_PATH):
     keep = df[FINAL_COLS].copy()
+    # run_timestamp = '이 행을 적재한 시각'. (유니버스 생성 시각이 흘러들던 것을 교정 — v1.2.1)
+    keep['run_timestamp'] = datetime.now().strftime("%Y%m%d_%H%M")
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (TABLE,))
@@ -291,7 +296,7 @@ def main():
     n_mi = (uni['sector'] == '미분류').sum()
     print(f"   • 유니버스: {len(uni)}개 (rank≤{UNIVERSE_N} 분석 대상 {min(len(uni), UNIVERSE_N)}개)")
     print(f"   • 업종 오버레이: 금융 {(uni['sector']=='금융').sum()} · 지주 {(uni['sector']=='지주').sum()} · "
-          f"리츠 {(uni['sector']=='리츠').sum()} · 미분류 잔여 {n_mi} (원라벨=sector_raw)")
+          f"리츠 {(uni['sector']=='리츠').sum()} · 미분류 잔여 {n_mi} (적재 {len(uni)}개 기준 · 원라벨=sector_raw)")
     val = load_valuation(run_id)
     df = uni.merge(val, on='ticker', how='left')
     print(f"   • valuation 조인: PBR 보유 {df['pbr'].notna().sum()}/{len(df)}")
@@ -303,8 +308,8 @@ def main():
     bb, bb_mode = load_buyback(run_id)
     df = df.merge(bb, on='ticker', how='left')
     df['buyback_src'] = df.get('buyback_src', pd.Series(index=df.index, dtype=object)).fillna('미수집')
-    cov = (df['buyback_src'] != '미수집').sum()
-    print(f"   • 자사주 소각: 소스={bb_mode} → 확인 {cov}/{len(df)}종목 (미확인=NaN)")
+    cov = df['buyback_cancel_flag'].notna().sum()   # 실제 플래그 보유(미등록·미수집 NaN 제외)
+    print(f"   • 자사주 소각: 소스={bb_mode} → 플래그 확인 {cov}/{len(df)}종목 (미등록·미수집=NaN)")
 
     df = compute_factors(df)
     report(df, run_id)
