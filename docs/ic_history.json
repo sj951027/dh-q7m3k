@@ -58,5 +58,11 @@
     "n_dates": 16,
     "ic5": null,
     "ic20": null
+  },
+  {
+    "date": "2026-06-11",
+    "n_dates": 17,
+    "ic5": -0.09,
+    "ic20": null
   }
 ]

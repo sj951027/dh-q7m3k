@@ -46,3 +46,6 @@ start "" "%~dp0"
 echo.
 echo Press any key to close this window.
 pause > nul
+
+python large_universe.py
+python large_score.py
