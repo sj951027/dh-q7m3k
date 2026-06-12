@@ -131,7 +131,7 @@ def build_html(rid, df, n_runs, runs, flows):
                    + (f" <span class='pct'>상위{p}%</span>" if p is not None else ""))
         rows.append(
             f"<tr{ext}><td class='num'>{int(r['marcap_rank'])}</td>"
-            f"<td>{html.escape(str(r['name']))} <span class='tk'>{r['ticker']}</span></td>"
+            f"<td>{html.escape(str(r['name']))} <span class='tk'>{r['ticker']}</span>{flags}</td>"
             f"<td>{html.escape(str(r['sector']))}</td>"
             f"<td class='num'>{fmt(r['marcap']/1e12, '{:.1f}')}</td>"
             f"<td class='num'>{fmt(r['pbr'])}</td>"
@@ -141,8 +141,7 @@ def build_html(rid, df, n_runs, runs, flows):
             f"<td class='num'>{fmt(r['div_yield'], '{:.1f}')}</td>"
             f"<td class='num'>{bb}</td>"
             f"<td class='num'>{fmt(r['ocf_to_op_ratio'])}</td>"
-            f"<td class='num'>{gate}</td>"
-            f"<td>{flags}</td></tr>")
+            f"<td class='num'>{gate}</td></tr>")
     table_rows = "\n".join(rows)
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
@@ -186,6 +185,9 @@ h2::before {{ content:""; display:inline-block; width:18px; height:1px;
 .stat b {{ display:block; font-size:20px; font-variant-numeric:tabular-nums; }}
 .stat span {{ font-size:12px; color:var(--mut); }}
 table {{ border-collapse:collapse; width:100%; font-size:13.5px; }}
+.ledger {{ table-layout:fixed; }}
+.ledger td {{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.ledger td:nth-child(2) {{ white-space:normal; overflow:visible; }}
 .mini td {{ padding:4px 10px 4px 0; }}
 .mini .bar {{ width:240px; }} .mini .bar i {{ display:block; height:7px;
   background:#C7D2E8; }}
@@ -257,7 +259,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 <tr><td>OCF/OP</td><td>영업이익 1원당 영업현금 배율. <b>높을수록 좋은 값이 아니라 구간 게이트</b>:
  {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
  밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.</td></tr>
-<tr><td>플래그</td><td>구조적 특성 표시(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬.</td></tr>
+<tr><td>플래그</td><td>종목명 옆 배지(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬 — 구조적 특성 표시.</td></tr>
 <tr><td>'·'</td><td>자료 없음(미수집·미산출) — 0이나 탈락이 아님.</td></tr>
 </table>
 
@@ -275,12 +277,16 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
   <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
   <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
 </div>
-<table class="ledger" id="tb"><thead>
-<tr class="grp"><th colspan="4">식별</th><th colspan="4">밸류 · RIM (관측)</th>
-<th colspan="2">주주환원 (관측)</th><th colspan="2">품질 (관측)</th><th></th></tr>
+<table class="ledger" id="tb">
+<colgroup><col style="width:38px"><col><col style="width:132px"><col style="width:64px">
+<col style="width:56px"><col style="width:56px"><col style="width:64px"><col style="width:132px">
+<col style="width:54px"><col style="width:50px"><col style="width:62px"><col style="width:58px"></colgroup>
+<thead>
+<tr class="grp"><th colspan="4">식별 · 플래그</th><th colspan="4">밸류 · RIM (관측)</th>
+<th colspan="2">주주환원 (관측)</th><th colspan="2">품질 (관측)</th></tr>
 <tr>
 <th>#</th><th>종목</th><th>업종</th><th>시총(조)</th><th>PBR</th><th>ROE%</th>
-<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th>플래그</th>
+<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th>
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
@@ -308,7 +314,7 @@ function filt(){{const q=document.getElementById('q').value.trim().toLowerCase()
    tr.style.display=ok?'':'none';}}}}
 let asc={{}};
 tb.tHead.rows[1].querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{{
- const num=![1,2,9,11,12].includes(i); asc[i]=!asc[i];
+ const num=![1,2,9,11].includes(i); asc[i]=!asc[i];
  const rows=[...tb.tBodies[0].rows];
  rows.sort((a,b)=>{{let x=a.cells[i].innerText.split(' 상위')[0].replace('◆','').replace('·','').trim(),
    y=b.cells[i].innerText.split(' 상위')[0].replace('◆','').replace('·','').trim();
