@@ -25,6 +25,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from large_score import QUALITY_OCF_LO, QUALITY_OCF_HI   # 게이트 구간(단일 출처)
+
 DB_PATH = Path("history.db")
 OUT = Path("large_report.html")
 UNIVERSE_N = 300
@@ -100,16 +102,33 @@ def build_html(rid, df, n_runs, runs, flows):
         for s, n in sec.items())
 
     # ── 종목 원장 ─────────────────────────────────────────────
+    # RIM 스프레드 백분위: 분석 유니버스(rank≤N) 내 단일 팩터 위치 설명 — 합성 점수 아님
+    sp = u["rim_spread"].dropna()
+    def pct_top(v):
+        if pd.isna(v) or len(sp) == 0:
+            return None
+        return max(1, int(round(100 * (sp > v).mean() + 0.0)))  # 상위 X%
     rows = []
     for _, r in df.iterrows():
-        flags = "".join([
-            "우" if r["is_pref"] else "", "金" if r["is_financial"] else "",
-            "持" if r["is_holding"] else "", "리" if r["is_reit"] else "",
-            "循" if r["is_cyclical"] else "",
-        ])
+        labels = [lab for flag, lab in (
+            (r["is_pref"], "우선주"), (r["is_financial"], "금융"),
+            (r["is_holding"], "지주"), (r["is_reit"], "리츠"),
+            (r["is_cyclical"], "시클리컬")) if flag]
+        flags = "".join(f"<span class='fb'>{l}</span>" for l in labels)
         bb = {1.0: "소각", 0.0: "—"}.get(r["buyback_cancel_flag"], "·")
-        gate = {1.0: "통과", 0.0: "탈락"}.get(r["quality_gate"], "·")
-        ext = "" if r["marcap_rank"] <= UNIVERSE_N else ' class="ext"'
+        ocf = r["ocf_to_op_ratio"]
+        if pd.isna(ocf):
+            gate = "·"
+        elif r["quality_gate"] == 1:
+            gate = "통과"
+        else:
+            gate = "탈락↓" if ocf < QUALITY_OCF_LO else "탈락↑"
+        in_u = r["marcap_rank"] <= UNIVERSE_N
+        ext = "" if in_u else ' class="ext"'
+        p = pct_top(r["rim_spread"]) if in_u else None
+        quad = " ◆" if r["rim_quadrant"] == 1 else ""
+        sp_cell = (f"{fmt(r['rim_spread'], '{:+.2f}')}{quad}"
+                   + (f" <span class='pct'>상위{p}%</span>" if p is not None else ""))
         rows.append(
             f"<tr{ext}><td class='num'>{int(r['marcap_rank'])}</td>"
             f"<td>{html.escape(str(r['name']))} <span class='tk'>{r['ticker']}</span></td>"
@@ -118,10 +137,11 @@ def build_html(rid, df, n_runs, runs, flows):
             f"<td class='num'>{fmt(r['pbr'])}</td>"
             f"<td class='num'>{fmt(r['roe_value'], '{:.1f}')}</td>"
             f"<td class='num'>{fmt(r['rim_fair_pbr'])}</td>"
-            f"<td class='num'>{fmt(r['rim_spread'], '{:+.2f}')}</td>"
-            f"<td class='num'>{'◆' if r['rim_quadrant'] == 1 else '·'}</td>"
+            f"<td class='num sp'>{sp_cell}</td>"
             f"<td class='num'>{fmt(r['div_yield'], '{:.1f}')}</td>"
-            f"<td class='num'>{bb}</td><td class='num'>{gate}</td>"
+            f"<td class='num'>{bb}</td>"
+            f"<td class='num'>{fmt(r['ocf_to_op_ratio'])}</td>"
+            f"<td class='num'>{gate}</td>"
             f"<td>{flags}</td></tr>")
     table_rows = "\n".join(rows)
 
@@ -184,6 +204,24 @@ table {{ border-collapse:collapse; width:100%; font-size:13.5px; }}
 .ctrl input[type=text], .ctrl select {{ font:inherit; padding:5px 9px;
   border:1px solid var(--line); border-radius:3px; background:#fff; }}
 .ext {{ display:none; }} .show-ext .ext {{ display:table-row; }}
+.ledger thead th {{ position:sticky; background:var(--paper); z-index:2; }}
+.ledger tr.grp th {{ top:0; height:22px; text-align:left; font-size:11px;
+  letter-spacing:.8px; color:var(--indigo); border-bottom:1px solid var(--line);
+  cursor:default; }}
+.ledger thead tr:nth-child(2) th {{ top:23px; }}
+.ledger tbody tr:nth-child(even) td {{ background:#F7F8F4; }}
+.ledger tbody tr:hover td {{ background:#EFF2EA; }}
+.pct {{ color:var(--mut); font-size:10.5px; font-family:inherit; }}
+.chips {{ display:inline-flex; gap:6px; }}
+.chip {{ font:12.5px/1 inherit; padding:6px 10px; border:1px solid var(--line);
+  background:#fff; border-radius:14px; cursor:pointer; color:var(--ink); }}
+.chip.on {{ background:var(--indigo); border-color:var(--indigo); color:#fff; }}
+.fb {{ display:inline-block; font-size:10.5px; border:1px solid var(--line);
+  border-radius:3px; padding:1px 5px; margin:0 3px 1px 0; color:var(--mut);
+  background:#fff; white-space:nowrap; }}
+.legend td:first-child {{ white-space:nowrap; color:var(--indigo); font-weight:700;
+  vertical-align:top; padding-right:16px; }}
+.legend td {{ font-size:13px; padding:5px 10px 5px 0; }}
 footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
   border-top:1px solid var(--line); padding-top:12px; }}
 @media (max-width:760px) {{ .stat {{ flex-basis:46%; border-right:0; }} }}
@@ -210,40 +248,70 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 <h2>업종 구성 (보정 후 라벨)</h2>
 <table class="mini">{sec_rows}</table>
 
+<h2>읽는 법</h2>
+<table class="mini legend">
+<tr><td>RIM 스프레드</td><td>log(정당PBR ÷ 실제PBR). <b>+면 정당가 대비 싸게 거래 중이라는 '관측'</b>.
+ 균일 COE 9% 가정이라 금융·보험은 구조적으로 크게 나오는 경향 — §9에서 업종 내 비교로 판정.</td></tr>
+<tr><td>◆ 사분면</td><td>ROE&gt;10% &amp; PBR&lt;1 — 설계(§4①)가 지목한 최우선 관찰 구역.</td></tr>
+<tr><td>배당% · 소각</td><td>주주환원 두 축. 소각 = 최근 90일 내 자사주 소각 공시(DART).</td></tr>
+<tr><td>OCF/OP</td><td>영업이익 1원당 영업현금 배율. <b>높을수록 좋은 값이 아니라 구간 게이트</b>:
+ {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
+ 밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.</td></tr>
+<tr><td>플래그</td><td>구조적 특성 표시(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬.</td></tr>
+<tr><td>'·'</td><td>자료 없음(미수집·미산출) — 0이나 탈락이 아님.</td></tr>
+</table>
+
 <h2>종목 원장</h2>
 <div class="ctrl">
   <input type="text" id="q" placeholder="종목명/티커 필터" oninput="filt()">
   <select id="sec" onchange="filt()"><option value="">업종 전체</option>
   {"".join(f'<option>{html.escape(str(s))}</option>' for s in sorted(df["sector"].dropna().unique()))}</select>
-  <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 시총 상위 500 모두 보기</label>
-  <span>열 머리글 클릭 = 정렬 (기본: 시총순)</span>
+  <span class="chips">
+    <button class="chip" data-k="quad" onclick="chip(this)">◆ 사분면</button>
+    <button class="chip" data-k="gate" onclick="chip(this)">게이트 통과</button>
+    <button class="chip" data-k="bb" onclick="chip(this)">소각 있음</button>
+    <button class="chip" data-k="div" onclick="chip(this)">배당&gt;0</button>
+  </span>
+  <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
+  <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
 </div>
-<table class="ledger" id="tb"><thead><tr>
+<table class="ledger" id="tb"><thead>
+<tr class="grp"><th colspan="4">식별</th><th colspan="4">밸류 · RIM (관측)</th>
+<th colspan="2">주주환원 (관측)</th><th colspan="2">품질 (관측)</th><th></th></tr>
+<tr>
 <th>#</th><th>종목</th><th>업종</th><th>시총(조)</th><th>PBR</th><th>ROE%</th>
-<th>정당PBR</th><th>RIM스프레드</th><th>사분면</th><th>배당%</th><th>소각</th><th>게이트</th><th>플래그</th>
+<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th>플래그</th>
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
 
 <footer>원천: history.db · large_final(관측 적재) — fetch: KRX(valuation)/DART(소각)/stage3 운반.
- ◆=ROE&gt;10% &amp; PBR&lt;1 · '·'=자료 없음(미수집·미산출) · 플래그 우=우선주 金=금융 持=지주 리=리츠 循=시클리컬.
+ 상위%=분석 유니버스 내 RIM 스프레드 단일 팩터 백분위(합성 아님) · 각 칼럼 해석은 상단 '읽는 법' 참조.
  <b>§9 검증(h=60/120d) 전 — 이 페이지의 어떤 값도 매수·매도 신호가 아니다.</b> 공개 대시보드 탭은 검증 후 별도 결정.</footer>
 </div>
 <script>
 const tb=document.getElementById('tb');
+const chipsOn={{}};
+function chip(b){{b.classList.toggle('on');chipsOn[b.dataset.k]=b.classList.contains('on');filt();}}
+function pass(tr){{
+ if(chipsOn.quad && !tr.cells[7].innerText.includes('◆'))return false;
+ if(chipsOn.gate && tr.cells[11].innerText!=='통과')return false;
+ if(chipsOn.bb   && tr.cells[9].innerText!=='소각')return false;
+ if(chipsOn.div){{const d=parseFloat(tr.cells[8].innerText);if(!(d>0))return false;}}
+ return true;}}
 function filt(){{const q=document.getElementById('q').value.trim().toLowerCase();
  const s=document.getElementById('sec').value;const ext=document.getElementById('ext').checked;
  for(const tr of tb.tBodies[0].rows){{
    const isExt=tr.classList.contains('ext');
    const name=tr.cells[1].innerText.toLowerCase(), sec=tr.cells[2].innerText;
-   const ok=(!q||name.includes(q))&&(!s||sec===s)&&(ext||!isExt);
+   const ok=(!q||name.includes(q))&&(!s||sec===s)&&(ext||!isExt)&&pass(tr);
    tr.style.display=ok?'':'none';}}}}
 let asc={{}};
-tb.tHead.rows[0].querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{{
- const num=![1,2,12].includes(i); asc[i]=!asc[i];
+tb.tHead.rows[1].querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{{
+ const num=![1,2,9,11,12].includes(i); asc[i]=!asc[i];
  const rows=[...tb.tBodies[0].rows];
- rows.sort((a,b)=>{{let x=a.cells[i].innerText.replace('◆','1').replace('·',''),
-   y=b.cells[i].innerText.replace('◆','1').replace('·','');
+ rows.sort((a,b)=>{{let x=a.cells[i].innerText.split(' 상위')[0].replace('◆','').replace('·','').trim(),
+   y=b.cells[i].innerText.split(' 상위')[0].replace('◆','').replace('·','').trim();
    if(num){{x=parseFloat(x);y=parseFloat(y);
      if(isNaN(x))return 1; if(isNaN(y))return -1; return asc[i]?x-y:y-x;}}
    return asc[i]?x.localeCompare(y,'ko'):y.localeCompare(x,'ko');}});
