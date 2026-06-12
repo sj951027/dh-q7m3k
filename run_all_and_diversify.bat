@@ -34,12 +34,13 @@ if %EXIT_CODE% NEQ 0 (
 
 echo.
 echo ========================================================================
-echo   [Large] universe + buyback scan + observe load (approx 3 min)
+echo   [Large] universe + buyback + observe + flows + report (approx 8 min)
 echo ========================================================================
 python large_universe.py
 python catalyst_large.py
 python large_score.py
 python kis_flows.py
+python build_large_report.py
 
 echo.
 echo ========================================================================
