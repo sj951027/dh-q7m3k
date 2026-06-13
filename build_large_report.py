@@ -197,15 +197,16 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
         flags = "".join(f"<span class='fb'>{l}</span>" for l in labels)
         bb = {1.0: "소각", 0.0: "—"}.get(r["buyback_cancel_flag"], "·")
         ocf = r["ocf_to_op_ratio"]
-        # 품질 게이트 — §4③ 객관 구간이라 색 부여(통과 초록 / 탈락↓ 빨강 / 탈락↑ 주황)
+        # 품질 게이트 — §4③ 객관 구간이라 색 부여(통과 초록 / 탈락↓ 빨강 / 탈락↑ 주황).
+        # 표는 좁아서 "탈락"만 쓰고 ↓/↑ 방향은 색(빨강/주황)+툴팁으로 구분(화살표 글리프가 칸을 넘침).
         if pd.isna(ocf):
-            gate, gcls = "·", ""
+            gate, gcls, gtt = "·", "", "자료없음(OCF/OP 미산출)"
         elif r["quality_gate"] == 1:
-            gate, gcls = "통과", " g-ok"
+            gate, gcls, gtt = "통과", " g-ok", "통과 — OCF/OP 건전구간"
         elif ocf < QUALITY_OCF_LO:
-            gate, gcls = "탈락↓", " g-bad"      # 현금 미유입 — 밸류트랩 경계
+            gate, gcls, gtt = "탈락", " g-bad", "탈락↓ — OCF/OP 하한 미만(현금 미유입·밸류트랩 경계)"
         else:
-            gate, gcls = "탈락↑", " g-warn"     # 일회성·왜곡 의심
+            gate, gcls, gtt = "탈락", " g-warn", "탈락↑ — OCF/OP 상한 초과(일회성·회계 왜곡 의심)"
         in_u = r["marcap_rank"] <= UNIVERSE_N
         # 구조적 경고(사실, 주장 아님): 진짜 자본잠식(BPS<=0)만. 단순 EPS 무자료는
         # 경고가 아니라 '·'로 — 멀쩡한 회사를 부실로 오인시키지 않도록(색 원칙 준수).
@@ -245,7 +246,7 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
             f"<td class='num'>{fmt(r['div_yield'], '{:.1f}')}</td>"
             f"<td class='num'>{bb}</td>"
             f"<td class='num'>{fmt(r['ocf_to_op_ratio'])}</td>"
-            f"<td class='num{gcls}'>{gate}</td>"
+            f"<td class='num{gcls}' title='{gtt}'>{gate}</td>"
             f"<td class='num'>{sup}</td>"
             f"<td class='num'>{mc_cell}</td>"
             f"<td class='num'>{rk_cell}</td>"
@@ -384,7 +385,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 <tr><td>OCF/OP</td><td>영업이익 1원당 영업현금 배율. <b>높을수록 좋은 값이 아니라 구간 게이트</b>:
  {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
  밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.
- <span class="g-ok">통과</span>·<span class="g-bad">탈락↓</span>·<span class="g-warn">탈락↑</span>로 색 구분.</td></tr>
+ <span class="g-ok">통과</span>(초록)·<span class="g-bad">탈락↓</span>(빨강)·<span class="g-warn">탈락↑</span>(주황). 표에선 칸이 좁아 둘 다 '탈락'으로만 쓰고 <b>색으로 방향 구분</b>(빨강=하한미만, 주황=상한초과) — 셀에 마우스를 올리면 ↓/↑ 표시.</td></tr>
 <tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다. <b>→ 우측 '외인/기관 5·20d'(daily_flows)가 동일 개념의 상위호환(커버리지 ~100%)이며, 그쪽으로 점진 대체 예정.</b></td></tr>
 <tr><td>외인/기관<br>5·20d</td><td>daily_flows(KIS 일별 투자자)에서 <b>최근 5거래일·20거래일</b> 외국인·기관 <b>순매수 누적(억)</b>을 각각 분리 표시. <b>+ 순매수 / − 순매도</b>, <b>+ 초록 / − 빨강</b>(v3 동일 — 자금 방향 표시일 뿐, 매수·매도 신호 아님). 일별 적재라 <b>커버리지 ~100%</b> — stage3 운반 '수급20'(~2/3)의 상위호환. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b>: 리버설은 "장기(60거래일) 소외 → 단기(20거래일) 전환"인데 60거래일이 아직 안 쌓였다(8월 말 예정). 지금은 단기·중기 누적의 <b>부호·크기</b>만 보는 거친 관측치다. 머리글 클릭으로 정렬 가능.</td></tr>
 <tr><td>시총 추세</td><td>직전 run 대비 <b>시총 변화율(시총Δ%)</b>·<b>순위 변화(순위Δ, ▲=상승)</b>. <b>⚠️ 사실 표시일 뿐 "오를 종목" 신호가 아니다</b> — "오르는 중"인지 "이미 다 올라 과열"인지는 지난 데이터로 구분 못 한다(모멘텀의 본질적 함정). 현재 누적 4거래일이라 추세라 부를 수도 없는 노이즈 구간. 색을 안 칠한 이유다. 수급 결합 정식 관측은 daily_flows 60일 적재 후(8월 말).</td></tr>
