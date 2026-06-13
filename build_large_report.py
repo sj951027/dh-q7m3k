@@ -110,6 +110,18 @@ def fmt(v, pat="{:.2f}", dash="·"):
     return pat.format(v)
 
 
+def fmtc(v, small=2, dash="·"):
+    # 자릿수 적응(좁은 칸 잘림 방지): |v|≥100 → 0자리, ≥10 → 1자리, 그 미만 → small자리.
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return dash
+    v = float(v); a = abs(v)
+    if a >= 100:
+        return f"{v:.0f}"
+    if a >= 10:
+        return f"{v:.1f}"
+    return f"{v:.{small}f}"
+
+
 def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
     u = df[df["marcap_rank"] <= UNIVERSE_N]
     gen = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -225,10 +237,10 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
             f"<tr{ext}><td class='num'>{int(r['marcap_rank'])}</td>"
             f"<td>{html.escape(str(r['name']))} <span class='tk'>{r['ticker']}</span>{flags}</td>"
             f"<td>{html.escape(str(r['sector']))}</td>"
-            f"<td class='num'>{fmt(r['marcap']/1e12, '{:.1f}')}</td>"
-            f"<td class='num'>{fmt(r['pbr'])}</td>"
-            f"<td class='num'>{fmt(r['roe_value'], '{:.1f}')}</td>"
-            f"<td class='num'>{fmt(r['rim_fair_pbr'])}</td>"
+            f"<td class='num'>{fmtc(r['marcap']/1e12, 1)}</td>"
+            f"<td class='num'>{fmtc(r['pbr'])}</td>"
+            f"<td class='num'>{fmtc(r['roe_value'], 1)}</td>"
+            f"<td class='num'>{fmtc(r['rim_fair_pbr'])}</td>"
             f"<td class='num sp'>{sp_cell}</td>"
             f"<td class='num'>{fmt(r['div_yield'], '{:.1f}')}</td>"
             f"<td class='num'>{bb}</td>"
@@ -252,7 +264,7 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
 * {{ box-sizing:border-box; }}
 body {{ margin:0; background:var(--paper); color:var(--ink);
   font:15px/1.55 Pretendard,'Noto Sans KR','Malgun Gothic',system-ui,sans-serif; }}
-.wrap {{ max-width:1180px; margin:0 auto; padding:34px 26px 80px; }}
+.wrap {{ max-width:1300px; margin:0 auto; padding:34px 26px 80px; }}
 header h1 {{ font-size:27px; letter-spacing:-.4px; margin:0; font-weight:800; }}
 header .sub {{ color:var(--mut); margin-top:4px; font-size:13.5px; }}
 .badge {{ display:inline-block; background:var(--amber-bg); color:var(--amber);
@@ -405,7 +417,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
   <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
 </div>
 <table class="ledger" id="tb">
-<colgroup><col style="width:32px"><col><col style="width:108px"><col style="width:54px">
+<colgroup><col style="width:32px"><col style="width:120px"><col style="width:108px"><col style="width:54px">
 <col style="width:46px"><col style="width:46px"><col style="width:52px"><col style="width:112px">
 <col style="width:44px"><col style="width:40px"><col style="width:50px"><col style="width:46px"><col style="width:66px">
 <col style="width:58px"><col style="width:48px">
