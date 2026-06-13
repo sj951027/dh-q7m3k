@@ -204,6 +204,19 @@ def compute_factors(df):
 
     # 시클리컬 플래그(관측 — 페널티 아님)
     out['is_cyclical'] = out['sector'].isin(CYCLICAL_SECTORS).astype(int)
+
+    # ④ 수급 관측 플래그 (임시 — 20일 부호만. ⚠️ 설계 §4의 '리버설'이 아님)
+    #   설계 §4 수급 리버설 = "장기(60/120일) 소외 <0 AND 단기(20일) 전환 >0".
+    #   그러나 현재 large_final엔 20일 수급만 있고 60일 누적이 없다(stage3가 5/20일까지만 제공).
+    #   → 지금은 '최근 20일 외인+기관 순매수 부호'만 관측 플래그로 둔다. 이건 '소외→전환'의
+    #     축소판(거친 신호)일 뿐, 진짜 2구간 리버설은 daily_flows 60거래일 적재 후(8월 말) 배선.
+    #   결측(대형주 ~34%)은 0이 아니라 NaN으로 — '안 샀다'와 '자료 없음'을 구분.
+    f20 = pd.to_numeric(out['foreign_20d'], errors='coerce')
+    i20 = pd.to_numeric(out['inst_20d'], errors='coerce')
+    both_na = f20.isna() & i20.isna()
+    net20 = f20.fillna(0) + i20.fillna(0)          # 한쪽만 있으면 있는 쪽으로 판정
+    out['supply20_net'] = net20.where(~both_na, np.nan)            # 외인+기관 20일 합(억)
+    out['supply20_pos'] = (net20 > 0).astype(float).where(~both_na, np.nan)  # 1=순매수 0=순매도
     return out
 
 
@@ -218,7 +231,7 @@ FINAL_COLS = [
     'roe_value', 'rim_fair_pbr', 'rim_spread', 'rim_quadrant',
     'buyback_cancel_flag', 'buyback_src',
     'ocf_to_op_ratio', 'annual_yoy', 'quarterly_yoy', 'quality_gate',
-    'foreign_20d', 'inst_20d', 'stage3_src_run',
+    'foreign_20d', 'inst_20d', 'supply20_net', 'supply20_pos', 'stage3_src_run',
 ]
 
 
@@ -267,6 +280,9 @@ def report(df, run_id):
     print(f"품질게이트: 통과 {int((gate == 1).sum())} / 탈락 {int((gate == 0).sum())} / 자료없음 {int(gate.isna().sum())}")
     fresh = (u['stage3_src_run'].astype(str) == str(run_id)).sum()
     print(f"stage3 운반값 신선도: 당일 run {fresh}개 / 과거 run {int(u['stage3_src_run'].notna().sum()) - fresh}개")
+    sp = u['supply20_pos']
+    print(f"수급 관측(20일 부호·임시): 순매수 {int((sp == 1).sum())} / 순매도 {int((sp == 0).sum())} "
+          f"/ 자료없음 {int(sp.isna().sum())}  ※리버설 아님 — 60일판은 daily_flows 누적 후")
     chk = u.dropna(subset=['rim_spread']).sort_values('rim_spread')
     if len(chk) >= 6:
         print("\n[데이터 정합성 점검용 — 추천 아님] rim_spread 상·하위 3:")

@@ -141,6 +141,13 @@ def build_html(rid, df, n_runs, runs, flows):
         quad = " <span class='quad-on'>◆</span>" if r["rim_quadrant"] == 1 else ""
         sp_cell = (f"{fmt(r['rim_spread'], '{:+.2f}')}{quad}"
                    + (f" <span class='pct'>상위{p}%</span>" if p is not None else ""))
+        # 수급 관측(20일 부호·임시, 리버설 아님) — 결측 크고 검증 전이라 색 없이 중립 표기
+        spp = r.get("supply20_pos")
+        if pd.isna(spp):
+            sup = "·"
+        else:
+            net = r.get("supply20_net")
+            sup = (f"▲ {fmt(net, '{:.0f}')}" if spp == 1 else f"▽ {fmt(net, '{:.0f}')}")
         rows.append(
             f"<tr{ext}><td class='num'>{int(r['marcap_rank'])}</td>"
             f"<td>{html.escape(str(r['name']))} <span class='tk'>{r['ticker']}</span>{flags}</td>"
@@ -153,7 +160,8 @@ def build_html(rid, df, n_runs, runs, flows):
             f"<td class='num'>{fmt(r['div_yield'], '{:.1f}')}</td>"
             f"<td class='num'>{bb}</td>"
             f"<td class='num'>{fmt(r['ocf_to_op_ratio'])}</td>"
-            f"<td class='num{gcls}'>{gate}</td></tr>")
+            f"<td class='num{gcls}'>{gate}</td>"
+            f"<td class='num'>{sup}</td></tr>")
     table_rows = "\n".join(rows)
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
@@ -278,6 +286,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
  {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
  밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.
  <span class="g-ok">통과</span>·<span class="g-bad">탈락↓</span>·<span class="g-warn">탈락↑</span>로 색 구분.</td></tr>
+<tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다.</td></tr>
 <tr><td>플래그</td><td>종목명 옆 배지(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬 — 구조적 특성 표시.</td></tr>
 <tr><td><span style="color:#B4231F">경고행</span></td><td><b>자본잠식</b>(BPS≤0)만 표시 — 지표 신뢰 불가라는 <b>사실</b>(나쁜 종목이라는 주장 아님). 종목명 왼쪽 붉은 띠 + ROE 칸 적색. 단순 EPS 무자료(우선주·일부 지주 등)는 경고가 아니라 '·'.</td></tr>
 <tr><td>색 원칙</td><td><b>객관적 게이트·조건에만</b> 색(게이트 통과/탈락, 사분면, 경고행). RIM·배당·ROE 같은 <b>연속 수치엔 무색</b> — 거기 색을 칠하면 검증 안 된 가중치를 주장하는 셈이라 일부러 비웠다.</td></tr>
@@ -294,20 +303,21 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
     <button class="chip" data-k="gate" onclick="chip(this)">게이트 통과</button>
     <button class="chip" data-k="bb" onclick="chip(this)">소각 있음</button>
     <button class="chip" data-k="div" onclick="chip(this)">배당&gt;0</button>
+    <button class="chip" data-k="sup" onclick="chip(this)">▲ 20일 순매수</button>
   </span>
   <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
   <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
 </div>
 <table class="ledger" id="tb">
-<colgroup><col style="width:38px"><col><col style="width:132px"><col style="width:64px">
-<col style="width:56px"><col style="width:56px"><col style="width:64px"><col style="width:132px">
-<col style="width:54px"><col style="width:50px"><col style="width:62px"><col style="width:58px"></colgroup>
+<colgroup><col style="width:34px"><col><col style="width:120px"><col style="width:58px">
+<col style="width:50px"><col style="width:50px"><col style="width:58px"><col style="width:124px">
+<col style="width:48px"><col style="width:44px"><col style="width:56px"><col style="width:52px"><col style="width:74px"></colgroup>
 <thead>
 <tr class="grp"><th colspan="4">식별 · 플래그</th><th colspan="4">밸류 · RIM (관측)</th>
-<th colspan="2">주주환원 (관측)</th><th colspan="2">품질 (관측)</th></tr>
+<th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th></tr>
 <tr>
 <th>#</th><th>종목</th><th>업종</th><th>시총(조)</th><th>PBR</th><th>ROE%</th>
-<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th>
+<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th title="최근 20일 외인+기관 순매수(억). ▲순매수 ▽순매도. 리버설 아님">수급20</th>
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
@@ -325,6 +335,7 @@ function pass(tr){{
  if(chipsOn.gate && tr.cells[11].innerText!=='통과')return false;
  if(chipsOn.bb   && tr.cells[9].innerText!=='소각')return false;
  if(chipsOn.div){{const d=parseFloat(tr.cells[8].innerText);if(!(d>0))return false;}}
+ if(chipsOn.sup && !tr.cells[12].innerText.includes('▲'))return false;
  return true;}}
 function filt(){{const q=document.getElementById('q').value.trim().toLowerCase();
  const s=document.getElementById('sec').value;const ext=document.getElementById('ext').checked;
