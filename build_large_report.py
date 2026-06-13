@@ -33,6 +33,32 @@ UNIVERSE_N = 300
 JUDGE_DAYS = (60, 120)          # §9 검증 호라이즌(거래일)
 
 
+def load_flow_windows(con, rid, short=5, long=20):
+    """daily_flows에서 run 기준일 이하 '최근 5/20거래일' 외국인·기관 순매수 누적.
+    net_val 단위는 백만원(KIS frgn/orgn_ntby_tr_pbmn) → ÷100 으로 '억' 환산.
+    점수 아님·읽기 전용·관측. 반환: (DataFrame[ticker,f5,i5,f20,i20], (short_n,long_n,from,to)) 또는 (None,None).
+    PIT: date<=run_id 만 사용(미래 미참조). 종목 윈도 결손은 NaN→'·'."""
+    if not con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='daily_flows'").fetchone():
+        return None, None
+    dates = [r[0] for r in con.execute(
+        "SELECT DISTINCT date FROM daily_flows WHERE date<=? ORDER BY date DESC LIMIT ?",
+        (str(rid), int(long))).fetchall()]
+    if not dates:
+        return None, None
+    d_long, d_short = dates, dates[:short]
+
+    def agg(ds, fcol, icol):
+        ph = ",".join("?" * len(ds))
+        return pd.read_sql(
+            f"SELECT ticker, SUM(foreign_net_val)/100.0 AS {fcol}, "
+            f"SUM(inst_net_val)/100.0 AS {icol} FROM daily_flows "
+            f"WHERE date IN ({ph}) GROUP BY ticker", con, params=ds)
+
+    fw = agg(d_long, "f20", "i20").merge(agg(d_short, "f5", "i5"), on="ticker", how="outer")
+    win = (len(d_short), len(d_long), dates[-1], dates[0])   # (단기n, 장기n, from, to)
+    return fw, win
+
+
 def load(db_path, run_id=None):
     con = sqlite3.connect(db_path)
     try:
@@ -58,6 +84,8 @@ def load(db_path, run_id=None):
             prev_df = pd.read_sql(
                 "SELECT ticker, marcap AS marcap_prev, marcap_rank AS rank_prev "
                 "FROM large_universe WHERE run_id=?", con, params=(str(prev),))
+        # 외인·기관 5/20일 수급(daily_flows) — 관측 칼럼. 읽기 전용, 점수 미투입.
+        fw, fwin = load_flow_windows(con, rid)
     finally:
         con.close()
     if prev_df is not None and len(prev_df):
@@ -67,7 +95,12 @@ def load(db_path, run_id=None):
     else:
         df["mc_chg_pct"] = pd.NA
         df["rank_chg"] = pd.NA
-    return str(rid), df, n_runs, runs, flows, (prev if prev_df is not None else None)
+    if fw is not None and len(fw):
+        df = df.merge(fw, on="ticker", how="left")
+    else:
+        for c in ("f5", "i5", "f20", "i20"):
+            df[c] = pd.NA
+    return str(rid), df, n_runs, runs, flows, (prev if prev_df is not None else None), fwin
 
 
 def fmt(v, pat="{:.2f}", dash="·"):
@@ -76,7 +109,7 @@ def fmt(v, pat="{:.2f}", dash="·"):
     return pat.format(v)
 
 
-def build_html(rid, df, n_runs, runs, flows, prev_run=None):
+def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
     u = df[df["marcap_rank"] <= UNIVERSE_N]
     gen = datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -93,6 +126,13 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None):
     g1, g0 = int((u["quality_gate"] == 1).sum()), int((u["quality_gate"] == 0).sum())
     flows_txt = (f"{flows[0]}거래일 · {flows[1]}종목 ({flows[2]}~{flows[3]})"
                  if flows and flows[0] else "수집 시작 전 (kis_flows 가동 후 누적)")
+    # 5/20일 수급 칼럼 커버리지(rank≤N) + 사용한 윈도 표기 (관측·점수 무관)
+    if fwin and ("f20" in u.columns):
+        cf = int(u["f20"].notna().sum())
+        flow_cov_txt = (f" · 5/20d 외인·기관: rank≤{UNIVERSE_N} 중 {cf}개 커버"
+                        f"({fwin[2]}~{fwin[3]} 기준 {fwin[0]}/{fwin[1]}거래일)")
+    else:
+        flow_cov_txt = " · 5/20d 외인·기관: daily_flows 비어 있음('·')"
     q = u["rim_spread"].quantile([0.25, 0.5, 0.75])
 
     # ── 타임라인 레일 (시그니처: '아직 판정 전'을 시각화) ──────────
@@ -124,6 +164,12 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None):
         if pd.isna(v) or len(sp) == 0:
             return None
         return max(1, int(round(100 * (sp > v).mean() + 0.0)))  # 상위 X%
+    def fnet(v):
+        # 순매수 누적(억): 부호 숫자, 색 없음, parseFloat 정렬 가능(콤마·화살표 미사용).
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return "·"
+        v = float(v)
+        return "0" if abs(v) < 0.5 else f"{v:+.0f}"
     rows = []
     for _, r in df.iterrows():
         labels = [lab for flag, lab in (
@@ -184,7 +230,11 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None):
             f"<td class='num{gcls}'>{gate}</td>"
             f"<td class='num'>{sup}</td>"
             f"<td class='num'>{mc_cell}</td>"
-            f"<td class='num'>{rk_cell}</td></tr>")
+            f"<td class='num'>{rk_cell}</td>"
+            f"<td class='num'>{fnet(r.get('f5'))}</td>"
+            f"<td class='num'>{fnet(r.get('i5'))}</td>"
+            f"<td class='num'>{fnet(r.get('f20'))}</td>"
+            f"<td class='num'>{fnet(r.get('i20'))}</td></tr>")
     table_rows = "\n".join(rows)
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
@@ -292,7 +342,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
   <div class="stat"><b>{n_runs}</b><span>관측 run 누적 ({runs[0]}~{runs[-1]})</span></div>
   {"".join(f'<div class="stat"><b>{v}<small style="font-size:12px;color:var(--mut)">/{UNIVERSE_N}</small></b><span>{k}</span></div>' for k, v in cov.items())}
 </div>
-<p style="font-size:13px;color:var(--mut);margin-top:8px">수급 이력(daily_flows): {flows_txt}
+<p style="font-size:13px;color:var(--mut);margin-top:8px">수급 이력(daily_flows): {flows_txt}{flow_cov_txt}
  · RIM 스프레드 분위 25/50/75% = {fmt(q[0.25],'{:+.2f}')} / {fmt(q[0.5],'{:+.2f}')} / {fmt(q[0.75],'{:+.2f}')}
  · 사분면(ROE&gt;10%·PBR&lt;1) {quad}개 · 품질게이트 통과 {g1} / 탈락 {g0}</p>
 
@@ -309,7 +359,8 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
  {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
  밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.
  <span class="g-ok">통과</span>·<span class="g-bad">탈락↓</span>·<span class="g-warn">탈락↑</span>로 색 구분.</td></tr>
-<tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다.</td></tr>
+<tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다. <b>→ 우측 '외인/기관 5·20d'(daily_flows)가 동일 개념의 상위호환(커버리지 ~100%)이며, 그쪽으로 점진 대체 예정.</b></td></tr>
+<tr><td>외인/기관<br>5·20d</td><td>daily_flows(KIS 일별 투자자)에서 <b>최근 5거래일·20거래일</b> 외국인·기관 <b>순매수 누적(억)</b>을 각각 분리 표시. <b>+ 순매수 / − 순매도</b>, <b>색 없음</b>(검증 전 연속수치 무색 원칙). 일별 적재라 <b>커버리지 ~100%</b> — stage3 운반 '수급20'(~2/3)의 상위호환. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b>: 리버설은 "장기(60거래일) 소외 → 단기(20거래일) 전환"인데 60거래일이 아직 안 쌓였다(8월 말 예정). 지금은 단기·중기 누적의 <b>부호·크기</b>만 보는 거친 관측치다. 머리글 클릭으로 정렬 가능.</td></tr>
 <tr><td>시총 추세</td><td>직전 run 대비 <b>시총 변화율(시총Δ%)</b>·<b>순위 변화(순위Δ, ▲=상승)</b>. <b>⚠️ 사실 표시일 뿐 "오를 종목" 신호가 아니다</b> — "오르는 중"인지 "이미 다 올라 과열"인지는 지난 데이터로 구분 못 한다(모멘텀의 본질적 함정). 현재 누적 4거래일이라 추세라 부를 수도 없는 노이즈 구간. 색을 안 칠한 이유다. 수급 결합 정식 관측은 daily_flows 60일 적재 후(8월 말).</td></tr>
 <tr><td>플래그</td><td>종목명 옆 배지(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬 — 구조적 특성 표시.</td></tr>
 <tr><td><span style="color:#B4231F">경고행</span></td><td><b>자본잠식</b>(BPS≤0)만 표시 — 지표 신뢰 불가라는 <b>사실</b>(나쁜 종목이라는 주장 아님). 종목명 왼쪽 붉은 띠 + ROE 칸 적색. 단순 EPS 무자료(우선주·일부 지주 등)는 경고가 아니라 '·'.</td></tr>
@@ -329,6 +380,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
     <button class="chip" data-k="div" onclick="chip(this)">배당&gt;0</button>
     <button class="chip" data-k="sup" onclick="chip(this)">▲ 20일 순매수</button>
     <button class="chip" data-k="mcup" onclick="chip(this)">▲ 시총 상승</button>
+    <button class="chip" data-k="supbuy" onclick="chip(this)" title="외국인·기관 5거래일·20거래일 누적이 모두 0 초과(순매수). 자료없음(·)은 제외.">외인·기관 5·20d 모두 순매수</button>
   </span>
   <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
   <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
@@ -337,13 +389,18 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 <colgroup><col style="width:32px"><col><col style="width:108px"><col style="width:54px">
 <col style="width:46px"><col style="width:46px"><col style="width:52px"><col style="width:112px">
 <col style="width:44px"><col style="width:40px"><col style="width:50px"><col style="width:46px"><col style="width:66px">
-<col style="width:58px"><col style="width:48px"></colgroup>
+<col style="width:58px"><col style="width:48px">
+<col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px"></colgroup>
 <thead>
 <tr class="grp"><th colspan="4">식별 · 플래그</th><th colspan="4">밸류 · RIM (관측)</th>
-<th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th><th colspan="2">시총 추세 (직전 run 대비)</th></tr>
+<th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th><th colspan="2">시총 추세 (직전 run 대비)</th><th colspan="4">수급 5/20일 (daily_flows · 관측)</th></tr>
 <tr>
 <th>#</th><th>종목</th><th>업종</th><th>시총(조)</th><th>PBR</th><th>ROE%</th>
 <th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th title="최근 20일 외인+기관 순매수(억). ▲순매수 ▽순매도. 리버설 아님">수급20</th><th title="직전 run 대비 시총 변화율(%)">시총Δ%</th><th title="직전 run 대비 순위 변화(▲=상승)">순위Δ</th>
+<th title="최근 5거래일 외국인 순매수 누적(억). +순매수/−순매도. daily_flows(KIS 일별).">외인5d</th>
+<th title="최근 5거래일 기관 순매수 누적(억). +순매수/−순매도.">기관5d</th>
+<th title="최근 20거래일 외국인 순매수 누적(억). 좌측 '수급20'(stage3 운반)과 동일 개념이나 커버리지 100%.">외인20d</th>
+<th title="최근 20거래일 기관 순매수 누적(억). +순매수/−순매도.">기관20d</th>
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
@@ -363,6 +420,7 @@ function pass(tr){{
  if(chipsOn.div){{const d=parseFloat(tr.cells[8].innerText);if(!(d>0))return false;}}
  if(chipsOn.sup && !tr.cells[12].innerText.includes('▲'))return false;
  if(chipsOn.mcup && !tr.cells[13].innerText.includes('▲'))return false;
+ if(chipsOn.supbuy){{const f5=parseFloat(tr.cells[15].innerText),i5=parseFloat(tr.cells[16].innerText),f20=parseFloat(tr.cells[17].innerText),i20=parseFloat(tr.cells[18].innerText);if(!(f5>0&&i5>0&&f20>0&&i20>0))return false;}}
  return true;}}
 function filt(){{const q=document.getElementById('q').value.trim().toLowerCase();
  const s=document.getElementById('sec').value;const ext=document.getElementById('ext').checked;
@@ -394,8 +452,8 @@ def main():
     ap.set_defaults(publish_obs=True)
     args = ap.parse_args()
 
-    rid, df, n_runs, runs, flows, prev_run = load(Path(args.db), args.run_id)
-    htm = build_html(rid, df, n_runs, runs, flows, prev_run)
+    rid, df, n_runs, runs, flows, prev_run, fwin = load(Path(args.db), args.run_id)
+    htm = build_html(rid, df, n_runs, runs, flows, prev_run, fwin)
     Path(args.out).write_text(htm, encoding="utf-8")
     print(f"💾 {args.out} 생성 — run {rid}, {len(df)}종목, 누적 {n_runs}run. 더블클릭으로 열람.")
     # 텔레그램 '대형 가치 트랙(준비중)' 링크 대상 — docs 내 '링크 안 걸린' 비공개 경로.
