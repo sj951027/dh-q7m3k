@@ -49,9 +49,25 @@ def load(db_path, run_id=None):
             flows = con.execute(
                 "SELECT COUNT(DISTINCT date), COUNT(DISTINCT ticker), MIN(date), MAX(date) "
                 "FROM daily_flows").fetchone()
+        # 시총·순위 변화(②) — large_universe의 '직전 run' 대비. 점수 아님, 사실 표시.
+        # 직전 run = 현재 run 미만의 가장 큰 run_id (자정경계·결손 run 안전).
+        prev = con.execute(
+            "SELECT MAX(run_id) FROM large_universe WHERE run_id < ?", (str(rid),)).fetchone()[0]
+        prev_df = None
+        if prev:
+            prev_df = pd.read_sql(
+                "SELECT ticker, marcap AS marcap_prev, marcap_rank AS rank_prev "
+                "FROM large_universe WHERE run_id=?", con, params=(str(prev),))
     finally:
         con.close()
-    return str(rid), df, n_runs, runs, flows
+    if prev_df is not None and len(prev_df):
+        df = df.merge(prev_df, on="ticker", how="left")
+        df["mc_chg_pct"] = (df["marcap"] / df["marcap_prev"] - 1) * 100
+        df["rank_chg"] = df["rank_prev"] - df["marcap_rank"]   # +면 순위 상승(숫자 작아짐)
+    else:
+        df["mc_chg_pct"] = pd.NA
+        df["rank_chg"] = pd.NA
+    return str(rid), df, n_runs, runs, flows, (prev if prev_df is not None else None)
 
 
 def fmt(v, pat="{:.2f}", dash="·"):
@@ -60,7 +76,7 @@ def fmt(v, pat="{:.2f}", dash="·"):
     return pat.format(v)
 
 
-def build_html(rid, df, n_runs, runs, flows):
+def build_html(rid, df, n_runs, runs, flows, prev_run=None):
     u = df[df["marcap_rank"] <= UNIVERSE_N]
     gen = datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -148,6 +164,11 @@ def build_html(rid, df, n_runs, runs, flows):
         else:
             net = r.get("supply20_net")
             sup = (f"▲ {fmt(net, '{:.0f}')}" if spp == 1 else f"▽ {fmt(net, '{:.0f}')}")
+        # ② 시총·순위 변화 (직전 run 대비) — 사실 표시. 모멘텀 신호 아님, 색 없음.
+        mc = r.get("mc_chg_pct")
+        mc_cell = "·" if pd.isna(mc) else (f"▲{mc:.1f}" if mc > 0 else (f"▽{mc:.1f}" if mc < 0 else "0.0"))
+        rk = r.get("rank_chg")
+        rk_cell = "·" if pd.isna(rk) else (f"▲{int(rk)}" if rk > 0 else (f"▽{int(abs(rk))}" if rk < 0 else "—"))
         rows.append(
             f"<tr{ext}><td class='num'>{int(r['marcap_rank'])}</td>"
             f"<td>{html.escape(str(r['name']))} <span class='tk'>{r['ticker']}</span>{flags}</td>"
@@ -161,7 +182,9 @@ def build_html(rid, df, n_runs, runs, flows):
             f"<td class='num'>{bb}</td>"
             f"<td class='num'>{fmt(r['ocf_to_op_ratio'])}</td>"
             f"<td class='num{gcls}'>{gate}</td>"
-            f"<td class='num'>{sup}</td></tr>")
+            f"<td class='num'>{sup}</td>"
+            f"<td class='num'>{mc_cell}</td>"
+            f"<td class='num'>{rk_cell}</td></tr>")
     table_rows = "\n".join(rows)
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
@@ -287,6 +310,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
  밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.
  <span class="g-ok">통과</span>·<span class="g-bad">탈락↓</span>·<span class="g-warn">탈락↑</span>로 색 구분.</td></tr>
 <tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다.</td></tr>
+<tr><td>시총 추세</td><td>직전 run 대비 <b>시총 변화율(시총Δ%)</b>·<b>순위 변화(순위Δ, ▲=상승)</b>. <b>⚠️ 사실 표시일 뿐 "오를 종목" 신호가 아니다</b> — "오르는 중"인지 "이미 다 올라 과열"인지는 지난 데이터로 구분 못 한다(모멘텀의 본질적 함정). 현재 누적 4거래일이라 추세라 부를 수도 없는 노이즈 구간. 색을 안 칠한 이유다. 수급 결합 정식 관측은 daily_flows 60일 적재 후(8월 말).</td></tr>
 <tr><td>플래그</td><td>종목명 옆 배지(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬 — 구조적 특성 표시.</td></tr>
 <tr><td><span style="color:#B4231F">경고행</span></td><td><b>자본잠식</b>(BPS≤0)만 표시 — 지표 신뢰 불가라는 <b>사실</b>(나쁜 종목이라는 주장 아님). 종목명 왼쪽 붉은 띠 + ROE 칸 적색. 단순 EPS 무자료(우선주·일부 지주 등)는 경고가 아니라 '·'.</td></tr>
 <tr><td>색 원칙</td><td><b>객관적 게이트·조건에만</b> 색(게이트 통과/탈락, 사분면, 경고행). RIM·배당·ROE 같은 <b>연속 수치엔 무색</b> — 거기 색을 칠하면 검증 안 된 가중치를 주장하는 셈이라 일부러 비웠다.</td></tr>
@@ -304,20 +328,22 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
     <button class="chip" data-k="bb" onclick="chip(this)">소각 있음</button>
     <button class="chip" data-k="div" onclick="chip(this)">배당&gt;0</button>
     <button class="chip" data-k="sup" onclick="chip(this)">▲ 20일 순매수</button>
+    <button class="chip" data-k="mcup" onclick="chip(this)">▲ 시총 상승</button>
   </span>
   <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
   <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
 </div>
 <table class="ledger" id="tb">
-<colgroup><col style="width:34px"><col><col style="width:120px"><col style="width:58px">
-<col style="width:50px"><col style="width:50px"><col style="width:58px"><col style="width:124px">
-<col style="width:48px"><col style="width:44px"><col style="width:56px"><col style="width:52px"><col style="width:74px"></colgroup>
+<colgroup><col style="width:32px"><col><col style="width:108px"><col style="width:54px">
+<col style="width:46px"><col style="width:46px"><col style="width:52px"><col style="width:112px">
+<col style="width:44px"><col style="width:40px"><col style="width:50px"><col style="width:46px"><col style="width:66px">
+<col style="width:58px"><col style="width:48px"></colgroup>
 <thead>
 <tr class="grp"><th colspan="4">식별 · 플래그</th><th colspan="4">밸류 · RIM (관측)</th>
-<th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th></tr>
+<th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th><th colspan="2">시총 추세 (직전 run 대비)</th></tr>
 <tr>
 <th>#</th><th>종목</th><th>업종</th><th>시총(조)</th><th>PBR</th><th>ROE%</th>
-<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th title="최근 20일 외인+기관 순매수(억). ▲순매수 ▽순매도. 리버설 아님">수급20</th>
+<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th title="최근 20일 외인+기관 순매수(억). ▲순매수 ▽순매도. 리버설 아님">수급20</th><th title="직전 run 대비 시총 변화율(%)">시총Δ%</th><th title="직전 run 대비 순위 변화(▲=상승)">순위Δ</th>
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
@@ -336,6 +362,7 @@ function pass(tr){{
  if(chipsOn.bb   && tr.cells[9].innerText!=='소각')return false;
  if(chipsOn.div){{const d=parseFloat(tr.cells[8].innerText);if(!(d>0))return false;}}
  if(chipsOn.sup && !tr.cells[12].innerText.includes('▲'))return false;
+ if(chipsOn.mcup && !tr.cells[13].innerText.includes('▲'))return false;
  return true;}}
 function filt(){{const q=document.getElementById('q').value.trim().toLowerCase();
  const s=document.getElementById('sec').value;const ext=document.getElementById('ext').checked;
@@ -367,8 +394,8 @@ def main():
     ap.set_defaults(publish_obs=True)
     args = ap.parse_args()
 
-    rid, df, n_runs, runs, flows = load(Path(args.db), args.run_id)
-    htm = build_html(rid, df, n_runs, runs, flows)
+    rid, df, n_runs, runs, flows, prev_run = load(Path(args.db), args.run_id)
+    htm = build_html(rid, df, n_runs, runs, flows, prev_run)
     Path(args.out).write_text(htm, encoding="utf-8")
     print(f"💾 {args.out} 생성 — run {rid}, {len(df)}종목, 누적 {n_runs}run. 더블클릭으로 열람.")
     # 텔레그램 '대형 가치 트랙(준비중)' 링크 대상 — docs 내 '링크 안 걸린' 비공개 경로.
