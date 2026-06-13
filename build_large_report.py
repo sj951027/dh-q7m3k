@@ -117,16 +117,28 @@ def build_html(rid, df, n_runs, runs, flows):
         flags = "".join(f"<span class='fb'>{l}</span>" for l in labels)
         bb = {1.0: "소각", 0.0: "—"}.get(r["buyback_cancel_flag"], "·")
         ocf = r["ocf_to_op_ratio"]
+        # 품질 게이트 — §4③ 객관 구간이라 색 부여(통과 초록 / 탈락↓ 빨강 / 탈락↑ 주황)
         if pd.isna(ocf):
-            gate = "·"
+            gate, gcls = "·", ""
         elif r["quality_gate"] == 1:
-            gate = "통과"
+            gate, gcls = "통과", " g-ok"
+        elif ocf < QUALITY_OCF_LO:
+            gate, gcls = "탈락↓", " g-bad"      # 현금 미유입 — 밸류트랩 경계
         else:
-            gate = "탈락↓" if ocf < QUALITY_OCF_LO else "탈락↑"
+            gate, gcls = "탈락↑", " g-warn"     # 일회성·왜곡 의심
         in_u = r["marcap_rank"] <= UNIVERSE_N
-        ext = "" if in_u else ' class="ext"'
+        # 구조적 경고(사실, 주장 아님): 진짜 자본잠식(BPS<=0)만. 단순 EPS 무자료는
+        # 경고가 아니라 '·'로 — 멀쩡한 회사를 부실로 오인시키지 않도록(색 원칙 준수).
+        cls = []
+        if not in_u:
+            cls.append("ext")
+        bps = r.get("bps")
+        if pd.notna(bps) and bps <= 0:
+            cls.append("warn-row")
+        ext = f' class="{" ".join(cls)}"' if cls else ""
         p = pct_top(r["rim_spread"]) if in_u else None
-        quad = " ◆" if r["rim_quadrant"] == 1 else ""
+        # 사분면 ◆ — ROE>10%&PBR<1 (§4① 객관 조건) → 초록 배지
+        quad = " <span class='quad-on'>◆</span>" if r["rim_quadrant"] == 1 else ""
         sp_cell = (f"{fmt(r['rim_spread'], '{:+.2f}')}{quad}"
                    + (f" <span class='pct'>상위{p}%</span>" if p is not None else ""))
         rows.append(
@@ -141,7 +153,7 @@ def build_html(rid, df, n_runs, runs, flows):
             f"<td class='num'>{fmt(r['div_yield'], '{:.1f}')}</td>"
             f"<td class='num'>{bb}</td>"
             f"<td class='num'>{fmt(r['ocf_to_op_ratio'])}</td>"
-            f"<td class='num'>{gate}</td></tr>")
+            f"<td class='num{gcls}'>{gate}</td></tr>")
     table_rows = "\n".join(rows)
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
@@ -218,6 +230,12 @@ table {{ border-collapse:collapse; width:100%; font-size:13.5px; }}
 .chip {{ font:12.5px/1 inherit; padding:6px 10px; border:1px solid var(--line);
   background:#fff; border-radius:14px; cursor:pointer; color:var(--ink); }}
 .chip.on {{ background:var(--indigo); border-color:var(--indigo); color:#fff; }}
+.g-ok {{ color:#1B7A43; font-weight:700; }}
+.g-bad {{ color:#B4231F; font-weight:700; }}
+.g-warn {{ color:#A6650E; font-weight:700; }}
+.quad-on {{ color:#1B7A43; font-weight:800; }}
+.warn-row td:nth-child(2) {{ box-shadow:inset 3px 0 0 #D9A0A0; }}
+.warn-row td:nth-child(6) {{ color:#B4231F; }}   /* ROE 칸 — 산출 불가 강조 */
 .fb {{ display:inline-block; font-size:10.5px; border:1px solid var(--line);
   border-radius:3px; padding:1px 5px; margin:0 3px 1px 0; color:var(--mut);
   background:#fff; white-space:nowrap; }}
@@ -254,12 +272,15 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 <table class="mini legend">
 <tr><td>RIM 스프레드</td><td>log(정당PBR ÷ 실제PBR). <b>+면 정당가 대비 싸게 거래 중이라는 '관측'</b>.
  균일 COE 9% 가정이라 금융·보험은 구조적으로 크게 나오는 경향 — §9에서 업종 내 비교로 판정.</td></tr>
-<tr><td>◆ 사분면</td><td>ROE&gt;10% &amp; PBR&lt;1 — 설계(§4①)가 지목한 최우선 관찰 구역.</td></tr>
+<tr><td><span class="quad-on">◆</span> 사분면</td><td>ROE&gt;10% &amp; PBR&lt;1 — 설계(§4①)가 지목한 최우선 관찰 구역(초록 ◆).</td></tr>
 <tr><td>배당% · 소각</td><td>주주환원 두 축. 소각 = 최근 90일 내 자사주 소각 공시(DART).</td></tr>
 <tr><td>OCF/OP</td><td>영업이익 1원당 영업현금 배율. <b>높을수록 좋은 값이 아니라 구간 게이트</b>:
  {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
- 밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.</td></tr>
+ 밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.
+ <span class="g-ok">통과</span>·<span class="g-bad">탈락↓</span>·<span class="g-warn">탈락↑</span>로 색 구분.</td></tr>
 <tr><td>플래그</td><td>종목명 옆 배지(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬 — 구조적 특성 표시.</td></tr>
+<tr><td><span style="color:#B4231F">경고행</span></td><td><b>자본잠식</b>(BPS≤0)만 표시 — 지표 신뢰 불가라는 <b>사실</b>(나쁜 종목이라는 주장 아님). 종목명 왼쪽 붉은 띠 + ROE 칸 적색. 단순 EPS 무자료(우선주·일부 지주 등)는 경고가 아니라 '·'.</td></tr>
+<tr><td>색 원칙</td><td><b>객관적 게이트·조건에만</b> 색(게이트 통과/탈락, 사분면, 경고행). RIM·배당·ROE 같은 <b>연속 수치엔 무색</b> — 거기 색을 칠하면 검증 안 된 가중치를 주장하는 셈이라 일부러 비웠다.</td></tr>
 <tr><td>'·'</td><td>자료 없음(미수집·미산출) — 0이나 탈락이 아님.</td></tr>
 </table>
 
@@ -330,13 +351,26 @@ def main():
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--db", default=str(DB_PATH))
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--no-publish-obs", dest="publish_obs", action="store_false",
+                    help="docs/_large_obs.html 비공개 경로 복사 생략")
+    ap.set_defaults(publish_obs=True)
     args = ap.parse_args()
 
     rid, df, n_runs, runs, flows = load(Path(args.db), args.run_id)
     htm = build_html(rid, df, n_runs, runs, flows)
     Path(args.out).write_text(htm, encoding="utf-8")
     print(f"💾 {args.out} 생성 — run {rid}, {len(df)}종목, 누적 {n_runs}run. 더블클릭으로 열람.")
-    print("   (관측 전용 라벨 포함 · docs/ 공개 탭은 §9 검증 후 별도 결정)")
+    # 텔레그램 '대형 가치 트랙(준비중)' 링크 대상 — docs 내 '링크 안 걸린' 비공개 경로.
+    # 메인(index)·필터에서 참조하지 않으므로 공개 탭이 아니며, 주소를 아는 본인만 폰에서 열람.
+    if args.publish_obs:
+        dst = Path("docs") / "_large_obs.html"
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(htm, encoding="utf-8")
+            print(f"   • {dst} 로도 복사 (텔레그램 준비중 링크 대상 · 비공개 경로)")
+        except Exception as e:
+            print(f"   ⚠️  {dst} 복사 실패(무시 가능): {e}")
+    print("   (관측 전용 라벨 포함 · docs/ 공개 *탭*은 §9 검증 후 별도 결정)")
 
 
 if __name__ == "__main__":

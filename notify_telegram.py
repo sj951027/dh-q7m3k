@@ -27,6 +27,8 @@ HERE = Path(__file__).resolve().parent
 # 대시보드/필터 주소 (네 GitHub Pages)
 DASHBOARD_URL = "https://sj951027.github.io/dh-q7m3k/"
 FILTER_URL = "https://sj951027.github.io/dh-q7m3k/filter.html"
+# 대형 가치 트랙 관측 리포트 — 메인/필터 어디에도 링크하지 않는 비공개 경로(검증 전 관측 전용)
+LARGE_OBS_URL = "https://sj951027.github.io/dh-q7m3k/_large_obs.html"
 
 TOP_N = 3   # 버킷별로 보여줄 상위 후보 수
 
@@ -149,6 +151,7 @@ def build_message():
         "※ BUY/WAIT 등급만 · 위험종목 제외 · 참고용",
         f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
         f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a>',
+        f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',
     ]
     return "\n".join(lines)
 
