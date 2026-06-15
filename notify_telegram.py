@@ -115,10 +115,15 @@ def _ic_line():
         ic, h, ndays = row.get("mean_IC"), row.get("horizon"), len(runs)
         if ic is None:
             return "📊 검증 IC: 데이터 쌓는 중"
+        # §11: 1차 판정은 OOS 40거래일·h=20d. 그 전엔 단기·소표본이라 '관측중'으로만 표기
+        #  (양호/약함 단정 금지 — 노이즈를 신호로 오인하지 않도록).
+        PRELIM_DAYS = 40
+        if ndays < PRELIM_DAYS:
+            return (f"📊 검증 IC(v3, +{h}일) <b>{ic:+.3f}</b>\n"
+                    f"   관측중(판정 전) · {ndays}/{PRELIM_DAYS}거래일 · 참고용")
         verdict = "양호" if ic > 0.02 else ("중립" if ic > -0.02 else "약함")
-        caveat = " · 표본 적음" if ndays < 15 else ""
         return (f"📊 검증 IC(v3, +{h}일) <b>{ic:+.3f}</b>\n"
-                f"   {verdict} · {ndays}거래일{caveat}")
+                f"   {verdict} · {ndays}거래일")
     except Exception:
         return "📊 검증 IC: 데이터 쌓는 중"
 

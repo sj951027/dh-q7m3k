@@ -127,6 +127,23 @@ def main():
         _write_pending(f"로드 오류: {e}")
         return
 
+    # [부분실행일 게이트] 그날 스크리너 유니버스(stage3_final)가 정상 중앙값의 30% 미만이면
+    #  IC 에서 제외(추천은 top-N 이라 행수가 비슷해 못 걸러지므로 원 유니버스 기준).
+    try:
+        import sqlite3 as _sq, statistics as _st
+        _con = _sq.connect(str(db))
+        _rows = _con.execute("SELECT run_id, COUNT(*) FROM stage3_final GROUP BY run_id").fetchall()
+        _con.close()
+        if _rows:
+            _cnt = {str(r[0]): r[1] for r in _rows}
+            _floor = _st.median(list(_cnt.values())) * 0.3
+            _bad = {rid for rid, n in _cnt.items() if n < _floor}
+            if _bad:
+                picks = picks[~picks["run_id"].astype(str).isin(_bad)].reset_index(drop=True)
+                print("   [게이트] 부분실행일 IC 제외(유니버스<%.0f): %s" % (_floor, sorted(_bad)))
+    except Exception as _e:
+        print("   (커버리지 게이트 생략: %s)" % _e)
+
     recent_dates = sorted(picks["run_id"].unique())[-IC_MAX_DATES:]
     picks = picks[picks["run_id"].isin(recent_dates)].reset_index(drop=True)
 

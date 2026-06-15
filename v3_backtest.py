@@ -31,10 +31,18 @@ HORIZONS = [1, 2, 3]      # run-step(거래일) 기준 forward
 SCORES = ["final_score", "final_score_v3"]
 
 
-def filter_active_runs(panel, runs, zero_threshold=0.99):
-    """직전 run 대비 가격이 사실상 전부 동일한(주말/정적) run 제거."""
-    keep = [runs[0]]
-    for r in runs[1:]:
+def filter_active_runs(panel, runs, zero_threshold=0.99, min_coverage=0.3):
+    """(1) 종목 커버리지가 정상일 중앙값의 min_coverage 미만인 run(부분실행/장애일) 제거,
+       (2) 직전 run 대비 가격이 사실상 전부 동일한(주말/정적) run 제거.
+    표본이 작을 때 부분실행일 1개가 날짜별 IC 평균을 왜곡하는 것을 막는다."""
+    counts = {r: int(panel[r].notna().sum()) for r in runs}
+    pos = [c for c in counts.values() if c > 0]
+    floor = (float(np.median(pos)) * min_coverage) if pos else 0.0
+    covered = [r for r in runs if counts[r] >= floor]
+    if not covered:
+        covered = list(runs)
+    keep = [covered[0]]
+    for r in covered[1:]:
         ret = (panel[r] / panel[keep[-1]] - 1).dropna()
         if len(ret) and (ret.abs() < 1e-12).mean() < zero_threshold:
             keep.append(r)
