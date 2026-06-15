@@ -297,9 +297,10 @@ h2::before {{ content:""; display:inline-block; width:18px; height:1px;
 .stat b {{ display:block; font-size:20px; font-variant-numeric:tabular-nums; }}
 .stat span {{ font-size:12px; color:var(--mut); }}
 table {{ border-collapse:collapse; width:100%; font-size:13.5px; }}
-.ledger {{ table-layout:fixed; }}
-.ledger td {{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
-.ledger td:nth-child(2) {{ white-space:normal; overflow:visible; }}
+.ledger {{ table-layout:auto; }}
+.ledger-wrap {{ overflow:auto; max-height:78vh; }}
+.ledger td {{ white-space:nowrap; }}
+.ledger td:nth-child(2) {{ white-space:normal; }}
 .mini td {{ padding:4px 10px 4px 0; }}
 .mini .bar {{ width:240px; }} .mini .bar i {{ display:block; height:7px;
   background:#C7D2E8; }}
@@ -417,12 +418,8 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
   <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
   <span>칩=조건 슬라이스(조합 가능) · 머리글 클릭=정렬 · 기본=시총순</span>
 </div>
+<div class="ledger-wrap">
 <table class="ledger" id="tb">
-<colgroup><col style="width:32px"><col style="width:120px"><col style="width:108px"><col style="width:54px">
-<col style="width:46px"><col style="width:46px"><col style="width:52px"><col style="width:112px">
-<col style="width:44px"><col style="width:40px"><col style="width:50px"><col style="width:46px"><col style="width:66px">
-<col style="width:58px"><col style="width:48px">
-<col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"></colgroup>
 <thead>
 <tr class="grp"><th colspan="4">식별 · 플래그</th><th colspan="4">밸류 · RIM (관측)</th>
 <th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th><th colspan="2">시총 추세 (직전 run 대비)</th><th colspan="4">수급 5/20일 (daily_flows · 관측)</th></tr>
@@ -436,6 +433,7 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
+</div>
 
 <footer>원천: history.db · large_final(관측 적재) — fetch: KRX(valuation)/DART(소각)/stage3 운반.
  상위%=분석 유니버스 내 RIM 스프레드 단일 팩터 백분위(합성 아님) · 각 칼럼 해석은 상단 '읽는 법' 참조.
