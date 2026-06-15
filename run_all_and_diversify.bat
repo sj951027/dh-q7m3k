@@ -44,6 +44,12 @@ python build_large_report.py
 
 echo.
 echo ========================================================================
+echo   [Large] Push docs/_large_obs.html to GitHub (Pages auto-deploy)
+echo ========================================================================
+python -c "import run_and_diversify as r; r.git_push()"
+
+echo.
+echo ========================================================================
 echo   [OK] Done.  End: %DATE% %TIME%
 echo ========================================================================
 echo   Output:
