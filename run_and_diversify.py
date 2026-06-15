@@ -227,6 +227,12 @@ def main():
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
 
+    # 2.55) v3 백테스트 — docs/v3_ic_summary.json 갱신(텔레그램 '검증 IC' 한 줄의 출처).
+    #        compute_ic 와 독립: 이쪽은 v3_ic_summary.json 만, compute_ic 는 ic_summary.json 만
+    #        쓴다(오프라인 0diff 확인). 텔레그램(4)·push(3) 전에 둬야 당일 반영. history.db만 사용.
+    if (HERE / "v3_backtest.py").exists():
+        run_script(["v3_backtest.py"], "2.55단계: v3 백테스트(검증 IC 요약 갱신)")
+
     # 2.8) 대시보드 재생성 — '그날 v3' + IC 가 반영되도록 다시 빌드.
     #      (스크리너 1단계에서 만든 대시보드는 그날 v3 이전이라 최신이 아님)
     if (HERE / "build_dashboard.py").exists():
