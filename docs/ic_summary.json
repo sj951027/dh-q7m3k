@@ -1,27 +1,27 @@
 {
   "status": "ok",
-  "generated_at": "2026-06-15 20:25",
+  "generated_at": "2026-06-16 23:32",
   "n_dates": 19,
-  "n_picks": 1815,
+  "n_picks": 1850,
   "horizons": [
     5,
     20
   ],
   "headline": {
     "horizon": 5,
-    "ic": -0.029,
+    "ic": -0.03,
     "n": 500,
     "n_groups": 10,
-    "spread": -2.38,
+    "spread": -2.26,
     "score": "final_score_v3",
-    "verdict": "⚪ 사실상 무의미"
+    "verdict": "🟡 매우 약함"
   },
   "factors": [
     {
       "name": "final_score_v3",
       "label": "최종점수(v3)",
       "ic": {
-        "5": -0.029,
+        "5": -0.03,
         "20": null
       },
       "n": {
@@ -33,7 +33,7 @@
       "name": "oversold_score",
       "label": "과매도",
       "ic": {
-        "5": 0.004,
+        "5": 0.007,
         "20": null
       },
       "n": {
@@ -45,7 +45,7 @@
       "name": "acc_score",
       "label": "매집",
       "ic": {
-        "5": 0.065,
+        "5": 0.062,
         "20": null
       },
       "n": {
@@ -57,7 +57,7 @@
       "name": "trend_score",
       "label": "추세전환",
       "ic": {
-        "5": 0.007,
+        "5": 0.004,
         "20": null
       },
       "n": {
@@ -93,7 +93,7 @@
       "name": "ocf_score",
       "label": "현금흐름",
       "ic": {
-        "5": 0.117,
+        "5": 0.115,
         "20": null
       },
       "n": {
@@ -105,7 +105,7 @@
       "name": "momentum_score",
       "label": "모멘텀",
       "ic": {
-        "5": 0.043,
+        "5": 0.041,
         "20": null
       },
       "n": {
@@ -117,7 +117,7 @@
       "name": "smartmoney_score",
       "label": "스마트머니",
       "ic": {
-        "5": 0.004,
+        "5": 0.002,
         "20": null
       },
       "n": {
