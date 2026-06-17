@@ -457,6 +457,7 @@
           <button class="btn btn-primary" onclick="applyRecommendedFilter()">⭐ 추천 종목만</button>
           <button class="btn btn-primary" onclick="applyV26SafeFilter()" style="background:#48bb78;">💚 V2.6 안전필터</button>
           <button class="btn btn-primary" onclick="applyVolumeFilter()" style="background:#9f7aea;">💹 거래량 TOP</button>
+          <button class="btn btn-primary" onclick="applyRecoReversalFilter()" style="background:#319795;">🔄 추천+수급반전</button>
           <button class="btn btn-success" onclick="exportFiltered()">💾 결과 CSV 다운</button>
         </div>
       </div>
@@ -494,6 +495,22 @@
             <label class="checkbox-label"><input type="checkbox" id="supply_f20" onchange="toggleCheckLabel(this); applyFilters()"> 외인 20일 ≥ 0</label>
             <label class="checkbox-label"><input type="checkbox" id="supply_i5" onchange="toggleCheckLabel(this); applyFilters()"> 기관 5일 ≥ 0</label>
             <label class="checkbox-label"><input type="checkbox" id="supply_i20" onchange="toggleCheckLabel(this); applyFilters()"> 기관 20일 ≥ 0</label>
+          </div>
+        </div>
+
+        <div class="filter-group" id="reversalFilterGroup" style="display:none;">
+          <div class="filter-group-title">🔄 수급 반전 + 1주 거래대금</div>
+          <div class="checkbox-row">
+            <label class="checkbox-label"><input type="checkbox" id="reversalToggle" onchange="toggleCheckLabel(this); applyFilters()"> 수급 반전만 (20일 음수 → 5일 양수)</label>
+          </div>
+          <div class="checkbox-row" id="reversalWhoRow" style="margin-top:2px;">
+            <label class="checkbox-label checked"><input type="radio" name="reversalWho" value="either" checked onchange="onReversalWhoChange(this)"> 외인·기관 중 하나</label>
+            <label class="checkbox-label"><input type="radio" name="reversalWho" value="foreign" onchange="onReversalWhoChange(this)"> 외인만</label>
+            <label class="checkbox-label"><input type="radio" name="reversalWho" value="inst" onchange="onReversalWhoChange(this)"> 기관만</label>
+          </div>
+          <div class="range-row" style="margin-top:6px;">
+            <span style="color:#718096;">1주 거래대금(억) ≥</span>
+            <input type="number" id="amtMin" placeholder="예: 10" oninput="applyFilters()" style="width:90px;">
           </div>
         </div>
         
@@ -829,6 +846,10 @@ function initializeUI() {
   // 수급 필터 그룹: 외인/기관 컬럼이 하나라도 있으면 표시
   const hasSupply = ['foreign_5d_억','foreign_20d_억','inst_5d_억','inst_20d_억'].some(c => headers.includes(c));
   document.getElementById('supplyFilterGroup').style.display = hasSupply ? '' : 'none';
+
+  // 수급 반전 + 거래대금 그룹: 1주 거래대금 또는 수급 컬럼이 있으면 표시
+  const hasAmt1w = headers.includes('amt_avg_1w_억');
+  document.getElementById('reversalFilterGroup').style.display = (hasSupply || hasAmt1w) ? '' : 'none';
   
   // 점수 범위 자동 설정
   const scoreCol = headers.includes('final_score') ? 'final_score' : 'oversold_score';
@@ -1018,6 +1039,46 @@ function clearSupplyChecks() {
   });
 }
 
+// 수급 반전(20일 음수 → 5일 양수) + 1주 거래대금 하한 필터
+//  - 반전: foreign_20d_억<0 & foreign_5d_억>0  (또는 기관 동일). 외인/기관/둘중하나 선택.
+//  - 거래대금: amt_avg_1w_억 ≥ 입력값.
+function applyReversalAndAmt(data) {
+  // 1주 거래대금 하한
+  const amtMin = parseFloat(document.getElementById('amtMin') ? document.getElementById('amtMin').value : '');
+  if (!isNaN(amtMin) && headers.includes('amt_avg_1w_억')) {
+    data = data.filter(r => {
+      const v = parseFloat(r['amt_avg_1w_억']);
+      return !isNaN(v) && v >= amtMin;
+    });
+  }
+  // 수급 반전
+  const rev = document.getElementById('reversalToggle');
+  if (rev && rev.checked) {
+    const sel = document.querySelector('input[name="reversalWho"]:checked');
+    const who = sel ? sel.value : 'either';
+    const hasF = headers.includes('foreign_20d_억') && headers.includes('foreign_5d_억');
+    const hasI = headers.includes('inst_20d_억') && headers.includes('inst_5d_억');
+    data = data.filter(r => {
+      const f20 = parseFloat(r['foreign_20d_억']), f5 = parseFloat(r['foreign_5d_억']);
+      const i20 = parseFloat(r['inst_20d_억']),    i5 = parseFloat(r['inst_5d_억']);
+      const fRev = hasF && !isNaN(f20) && !isNaN(f5) && f20 < 0 && f5 > 0;
+      const iRev = hasI && !isNaN(i20) && !isNaN(i5) && i20 < 0 && i5 > 0;
+      if (who === 'foreign') return fRev;
+      if (who === 'inst')    return iRev;
+      return fRev || iRev;   // 외인·기관 중 하나
+    });
+  }
+  return data;
+}
+
+// 반전 대상 라디오 변경 (선택 표시 + 반전 ON일 때만 재적용)
+function onReversalWhoChange(input) {
+  document.querySelectorAll('#reversalWhoRow .checkbox-label').forEach(l => l.classList.remove('checked'));
+  input.parentElement.classList.add('checked');
+  if (document.getElementById('reversalToggle').checked) applyFilters();
+}
+
+
 function applySectorCap(rows, n) {
   // final_score 내림차순으로 보며 업종당 최대 n개. 업종 없음/미분류는 각각 별개.
   const sorted = [...rows].sort((a, b) =>
@@ -1041,6 +1102,7 @@ function applyFilters() {
   data = filterByCheckbox(data, 'risk', 'risk_level');
   data = filterByCheckbox(data, 'ocf', 'ocf_pattern');
   data = applySupplyFilters(data);
+  data = applyReversalAndAmt(data);
   
   // 점수 범위
   const minV = parseFloat(document.getElementById('scoreMin').value);
@@ -1249,6 +1311,17 @@ function resetFilters() {
   });
   // 수급 필터 해제 (기본: 끔)
   clearSupplyChecks();
+  // 수급 반전 + 거래대금 해제
+  const rev = document.getElementById('reversalToggle');
+  if (rev) { rev.checked = false; rev.parentElement.classList.remove('checked'); }
+  const amtMin = document.getElementById('amtMin');
+  if (amtMin) amtMin.value = '';
+  const either = document.querySelector('input[name="reversalWho"][value="either"]');
+  if (either) {
+    either.checked = true;
+    document.querySelectorAll('#reversalWhoRow .checkbox-label').forEach(l => l.classList.remove('checked'));
+    either.parentElement.classList.add('checked');
+  }
   document.getElementById('scoreMin').value = '';
   document.getElementById('scoreMax').value = '';
   document.getElementById('searchInput').value = '';
@@ -1340,6 +1413,45 @@ function applyVolumeFilter() {
   applyFilters();
 }
 
+// 추천 종목만(=applyRecommendedFilter 와 동일 기준) + 1주 거래대금 ≥ 10억 + 수급 반전(외인 또는 기관)
+function applyRecoReversalFilter() {
+  const hasAmt = headers.includes('amt_avg_1w_억');
+  const hasSupply = (headers.includes('foreign_20d_억') && headers.includes('foreign_5d_억'))
+                 || (headers.includes('inst_20d_억') && headers.includes('inst_5d_억'));
+  if (!hasAmt || !hasSupply) {
+    alert('이 CSV에는 1주 거래대금/수급 컬럼이 없습니다.\n\nv3 파이프라인(diversify_picks.py)이 만든 latest_*_enriched.csv 를 사용하세요.');
+    return;
+  }
+  // (1) '추천 종목만' 과 동일: 턴어라운드/성장지속 + 안전 + 점수 60+
+  document.querySelectorAll('input[name="pattern"]').forEach(i => {
+    const ck = i.value === '턴어라운드' || i.value === '성장지속';
+    i.checked = ck;
+    i.parentElement.classList.toggle('checked', ck);
+  });
+  document.querySelectorAll('input[name="risk"]').forEach(i => {
+    const ck = i.value === '안전';
+    i.checked = ck;
+    i.parentElement.classList.toggle('checked', ck);
+  });
+  clearSupplyChecks();
+  document.getElementById('scoreMin').value = '60';
+  document.getElementById('scoreMax').value = '';
+  document.getElementById('searchInput').value = '';
+  // (2) 1주 거래대금 ≥ 10억
+  document.getElementById('amtMin').value = '10';
+  // (3) 수급 반전 ON, 외인·기관 중 하나
+  const rev = document.getElementById('reversalToggle');
+  rev.checked = true;
+  rev.parentElement.classList.add('checked');
+  const either = document.querySelector('input[name="reversalWho"][value="either"]');
+  if (either) {
+    either.checked = true;
+    document.querySelectorAll('#reversalWhoRow .checkbox-label').forEach(l => l.classList.remove('checked'));
+    either.parentElement.classList.add('checked');
+  }
+  applyFilters();
+}
+
 function exportFiltered() {
   // 현재 필터 결과 추출
   const tbody = document.getElementById('tableBody');
@@ -1350,6 +1462,7 @@ function exportFiltered() {
   data = filterByCheckbox(data, 'risk', 'risk_level');
   data = filterByCheckbox(data, 'ocf', 'ocf_pattern');
   data = applySupplyFilters(data);
+  data = applyReversalAndAmt(data);
   const minV = parseFloat(document.getElementById('scoreMin').value);
   const maxV = parseFloat(document.getElementById('scoreMax').value);
   const scoreCol = headers.includes('final_score') ? 'final_score' : 'oversold_score';
