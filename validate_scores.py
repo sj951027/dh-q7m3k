@@ -77,6 +77,9 @@ FACTOR_COLUMNS = [
     "roe_value",          # EPS/BPS — 품질(밸류업) 게이트 후보
     "insider_score",      # 내부자 매집(프록시) — catalyst csv 있을 때만
     "buyback_cancel_flag",  # 자사주 소각 — catalyst csv 있을 때만
+    # ── 관측 후보 추가(2026-06-20): 둘 다 점수식 미사용, IC만 측정 ──
+    "vol_1w_vs_1m_ratio", # 거래량 팽창(5일/21일 평균거래량). 가설: 팽창=거래량동반 반등(+IC). stage3 기존 컬럼.
+    "realized_vol",       # trailing 실현변동성(observe_vol.py 가 채움). low-vol 가설 검정용(부호는 데이터에 맡김).
 ]
 
 

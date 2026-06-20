@@ -191,6 +191,9 @@ def attach_valuation(df, run_id, market):
 # v30 = 현재 챔피언. 값은 기존 코드 상수와 100% 동일 → 출력 불변(회귀 테스트로 증명).
 # 챌린저는 v30 에서 '딱 한 가지'만 바꾼다(무엇이 효과인지 분리하기 위해).
 LIQ_FLOOR = 5.0    # E4: 최소 20일 평균거래대금(억). 거래 불가 초소형주 컷(튜닝 가능).
+# F1(v31f) macd 이격도 가산 가중치. 셀내 z(±3 clip) std≈0.92, 성분 std 중앙값≈5.93 →
+# 기여 std가 '성분 1개' 크기가 되도록 6.0 으로 보정·동결(불변규칙 2: 시작하면 변경 금지).
+MACD_TILT_W = 6.0
 
 SPEC_V30 = {
     "label": "v30 · 챔피언(현재)",
@@ -212,6 +215,7 @@ SPEC_V30 = {
     "liquidity_floor": 0.0,          # E4
     "buy_requires_reversal": False,  # E2
     "sector_neutralize": False,      # E5
+    "macd_tilt_w": 0.0,              # F1 (v31f) — 0 이면 점수 불변(v30/v31a~d 동일)
 }
 
 
@@ -234,6 +238,7 @@ MODELS = {
     "v31b": _spec("v31b · E3 수급 가중↑",          w={"supply": 1.6}),
     "v31c": _spec("v31c · E4 유동성 하한",          liquidity_floor=LIQ_FLOOR),
     "v31d": _spec("v31d · E5 섹터 중립화",          sector_neutralize=True),
+    "v31f": _spec("v31f · F1 macd 이격도 가산(섀도우)", macd_tilt_w=MACD_TILT_W),
 }
 
 
@@ -286,6 +291,15 @@ def rescore(df, run_id=None, market=None, oversold_cap=None, spec=None):
         + df["oversold_component"] * w["oversold"]
         + penalty
     )
+
+    # F1 (v31f): 단기-중기 이격도(vs_SMA20 − vs_SMA50) 가산. 켜졌을 때만 —
+    # v30/v31a~d 는 macd_tilt_w=0 이라 건너뜀 → 출력 100% 동일(0-diff).
+    # 셀(run×market) 내 z-score(±3 clip; 동시점 데이터라 룩어헤드 없음) → 스케일 안정.
+    if spec.get("macd_tilt_w", 0.0):
+        _macd = _num(df["vs_SMA20_%"]) - _num(df["vs_SMA50_%"])
+        _sd = _macd.std(ddof=0)
+        _z = ((_macd - _macd.mean()) / (_sd if _sd > 1e-9 else 1.0)).clip(-3, 3)
+        fs = fs + spec["macd_tilt_w"] * _z.fillna(0.0)
 
     hard_exclude = (risk == "위험") | fk | hard_trap
 
