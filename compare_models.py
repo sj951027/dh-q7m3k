@@ -28,7 +28,7 @@ import v3_backtest as bt
 import v3_rescore as v3
 
 HERE = Path(__file__).resolve().parent
-HORIZONS = [1, 2, 3, 5]
+HORIZONS = [1, 2, 3, 5, 20]   # 20 = §11 주력 호라이즌. 미성숙 구간은 '—'(셀 0).
 
 
 def scored(spec):
@@ -57,12 +57,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="*", default=list(v3.MODELS.keys()),
                     help="비교할 모델 id (기본: 전부)")
+    ap.add_argument("--since", default=None,
+                    help="기준 run_id(YYYYMMDD) 이상만 집계 — §11 OOS 판정용(챌린저 등록일 이후만). "
+                         "낚시로 찾은 v31f/v31g 는 발견기간을 빼야 정직함.")
     args = ap.parse_args()
 
     panel, all_runs, tk_mkt = bt.price_panel()
     runs = bt.filter_active_runs(panel, all_runs)
     fwd = bt.forward_returns(panel, runs, tk_mkt, HORIZONS)
-    print(f"활성 거래일 {len(runs)}개 · horizon {HORIZONS}\n")
+
+    # --since: 기준 run_id(=picks 산출일) 이상만 집계. forward 수익은 전체 패널로 이미
+    # 계산됐으니(미래 종가 사용엔 영향 없음), 기준 run 만 잘라 OOS 구간으로 제한한다.
+    # run_id 는 'YYYYMMDD' 라 문자열 비교 = 날짜순.
+    if args.since:
+        fwd = fwd[fwd["run_id"].astype(str) >= str(args.since)].copy()
+    n_eval = int(fwd["run_id"].astype(str).nunique()) if len(fwd) else 0
+    if args.since:
+        print(f"[--since {args.since}] OOS 기준일 {n_eval}개만 집계 "
+              f"(전체 활성 {len(runs)}개 중). h=20d 미성숙이면 셀이 비어 '—' 로 나옴.\n")
+    else:
+        print(f"활성 거래일 {len(runs)}개 · horizon {HORIZONS}\n")
 
     summary = {}
     ic_table, buy_table, bw_table = {}, {}, {}
@@ -124,11 +138,15 @@ def main():
     print("\n[주의] 활성 거래일이 적으면 모델 간 차이는 대부분 노이즈다.")
     print("       수십 거래일(이상적으로 60+) 쌓인 뒤, 사전에 정한 승격 기준으로 판단할 것.")
     print("       또 valuation_*.csv 없는 과거 회차는 value_score=0 으로 채점됨(누적 시 해소).")
+    if args.since:
+        print(f"       [OOS] --since {args.since} 적용 — 이 표는 등록 이후 구간만. "
+              f"이게 §11 판정용 숫자다(발견기간 제외).")
 
     out = HERE / "docs" / "model_compare.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"horizons": HORIZONS, "models": summary,
-                               "n_active_runs": len(runs)},
+                               "n_active_runs": (n_eval if args.since else len(runs)),
+                               "since": args.since},
                               ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n요약 저장: {out}")
 
