@@ -40,7 +40,7 @@ MIN_OBS = 8    # 최소 수익률 관측수. 미만이면 NaN(=pending, 윈도�
 
 def compute_realized_vol(db_path):
     """모든 활성런 R 에 대해 trailing WINDOW 수익률 표준편차(종목별)."""
-    panel, runs, _ = bt.price_panel(db_path)
+    panel, runs, tk_mkt = bt.price_panel(db_path)
     active = bt.filter_active_runs(panel, runs)
     sub = panel[active]                                  # ticker × 활성런
     rets = sub.pct_change(axis=1, fill_method=None)      # 인접 활성런 수익률(미존재=NaN)
@@ -54,8 +54,10 @@ def compute_realized_vol(db_path):
         d["run_id"] = str(R)
         recs.append(d.dropna(subset=["realized_vol"]))
     if not recs:
-        return pd.DataFrame(columns=["ticker", "run_id", "realized_vol"])
-    return pd.concat(recs, ignore_index=True)
+        return pd.DataFrame(columns=["market", "ticker", "run_id", "realized_vol"])
+    out = pd.concat(recs, ignore_index=True)
+    out["market"] = out["ticker"].map(tk_mkt)            # idx_stage3_mrt(market,run_id,ticker) 사용 위해 동반
+    return out
 
 
 def ensure_column(con):
@@ -78,14 +80,18 @@ def filled_runs(con):
 
 
 def update(con, df):
+    if df.empty:
+        return 0
+    # (market,run_id,ticker) 3키 → idx_stage3_mrt 사용(풀스캔 방지). executemany 일괄.
+    rows = [(float(rv), str(mk), str(rid), str(tk))
+            for mk, rid, tk, rv in zip(df["market"], df["run_id"],
+                                       df["ticker"], df["realized_vol"])
+            if pd.notna(mk)]
     cur = con.cursor()
-    n = 0
-    for (rid, tk), g in df.groupby(["run_id", "ticker"]):
-        cur.execute('UPDATE "stage3_final" SET realized_vol=? WHERE run_id=? AND ticker=?',
-                    (float(g["realized_vol"].iloc[0]), str(rid), str(tk)))
-        n += cur.rowcount
+    cur.executemany('UPDATE "stage3_final" SET realized_vol=? '
+                    'WHERE market=? AND run_id=? AND ticker=?', rows)
     con.commit()
-    return n
+    return cur.rowcount if (cur.rowcount and cur.rowcount > 0) else len(rows)
 
 
 def main():
