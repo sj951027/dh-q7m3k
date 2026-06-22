@@ -194,6 +194,9 @@ LIQ_FLOOR = 5.0    # E4: 최소 20일 평균거래대금(억). 거래 불가 초
 # F1(v31f) macd 이격도 가산 가중치. 셀내 z(±3 clip) std≈0.92, 성분 std 중앙값≈5.93 →
 # 기여 std가 '성분 1개' 크기가 되도록 6.0 으로 보정·동결(불변규칙 2: 시작하면 변경 금지).
 MACD_TILT_W = 6.0
+# F2(v31g) 거래량팽창(vol_1w_vs_1m_ratio) 가산 가중치. 셀내 z(±3)std≈0.863 →
+# 기여 std가 '성분 1개'(≈5.93)가 되도록 7.0 으로 보정·동결(불변규칙 2).
+VOLEXP_TILT_W = 7.0
 
 SPEC_V30 = {
     "label": "v30 · 챔피언(현재)",
@@ -216,6 +219,7 @@ SPEC_V30 = {
     "buy_requires_reversal": False,  # E2
     "sector_neutralize": False,      # E5
     "macd_tilt_w": 0.0,              # F1 (v31f) — 0 이면 점수 불변(v30/v31a~d 동일)
+    "volexp_tilt_w": 0.0,            # F2 (v31g) — 0 이면 점수 불변(v30/v31a~d/v31f 동일)
 }
 
 
@@ -239,6 +243,7 @@ MODELS = {
     "v31c": _spec("v31c · E4 유동성 하한",          liquidity_floor=LIQ_FLOOR),
     "v31d": _spec("v31d · E5 섹터 중립화",          sector_neutralize=True),
     "v31f": _spec("v31f · F1 macd 이격도 가산(섀도우)", macd_tilt_w=MACD_TILT_W),
+    "v31g": _spec("v31g · F2 거래량팽창 가산(섀도우)",   volexp_tilt_w=VOLEXP_TILT_W),
 }
 
 
@@ -300,6 +305,15 @@ def rescore(df, run_id=None, market=None, oversold_cap=None, spec=None):
         _sd = _macd.std(ddof=0)
         _z = ((_macd - _macd.mean()) / (_sd if _sd > 1e-9 else 1.0)).clip(-3, 3)
         fs = fs + spec["macd_tilt_w"] * _z.fillna(0.0)
+
+    # F2 (v31g): 거래량 팽창(vol_1w_vs_1m_ratio) 가산. 켜졌을 때만 —
+    # v30/v31a~d/v31f 는 volexp_tilt_w=0 이라 건너뜀 → 출력 동일(0-diff).
+    # 셀 내 z-score(±3 clip). 우편향이라 +3 클램프가 극단 거래량스파이크를 정규화(클램프 규율).
+    if spec.get("volexp_tilt_w", 0.0):
+        _ve = _num(df["vol_1w_vs_1m_ratio"])
+        _ves = _ve.std(ddof=0)
+        _vez = ((_ve - _ve.mean()) / (_ves if _ves > 1e-9 else 1.0)).clip(-3, 3)
+        fs = fs + spec["volexp_tilt_w"] * _vez.fillna(0.0)
 
     hard_exclude = (risk == "위험") | fk | hard_trap
 
