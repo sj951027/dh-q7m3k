@@ -243,6 +243,11 @@ def main():
     if (HERE / "build_dashboard.py").exists():
         run_script(["build_dashboard.py"], "2.8단계: 대시보드 재생성 (v3 반영)")
 
+    # 2.85) v31g 챌린저 관측 CSV 생성 — filter_v31g.html 이 fetch할 docs/latest_*_v31g.csv 갱신.
+    #        push(3) 전에 두어야 당일 반영. 점수 미투입·섬도우(검증 전). history.db만 사용.
+    if (HERE / "build_v31g_filter.py").exists():
+        run_script(["build_v31g_filter.py"], "2.85단계: v31g 챌린저 관측 CSV (섬도우, 점수 불변)")
+
     # 3) GitHub 자동 업로드 (push) — 폰에서 보려면 필요
     if not args.no_push:
         git_push()
