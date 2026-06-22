@@ -223,6 +223,11 @@ def main():
     if (HERE / "catalyst_observe.py").exists():
         run_script(["catalyst_observe.py"], "2.7단계: 관측 팩터 배선 (점수 불변)")
 
+    # 2.72) 실현변동성 관측 컬럼(realized_vol) 채움 — 가중치 0, 점수 불변. 증분(미채움 run만).
+    #        trailing 21 활성런 종가수익률 std. validate_scores 가 IC 측정(low-vol 가설 검정).
+    if (HERE / "observe_vol.py").exists():
+        run_script(["observe_vol.py"], "2.72단계: 실현변동성 관측 컬럼 (점수 불변)")
+
     # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
