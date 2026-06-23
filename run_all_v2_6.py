@@ -163,9 +163,9 @@ def main():
     print(f"실행 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
     if not check_prerequisites(markets):
-        return
+        return 1
     if not check_api_key():
-        return
+        return 1
 
     total_start = time.time()
     all_results = {}
@@ -235,7 +235,9 @@ def main():
     print(f"\n{'='*72}")
     print(f"⏱️   총 소요시간: {time_str}   (시작: {datetime.fromtimestamp(total_start).strftime('%H:%M:%S')} → 종료: {datetime.now().strftime('%H:%M:%S')})")
     print(f"{'='*72}\n")
+    # 스테이지 실패 시 종료코드 1 — 호출자(run_and_diversify)가 실패/degraded 배포를 막도록.
+    return 0 if all_success else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

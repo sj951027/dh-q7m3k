@@ -32,6 +32,8 @@ import os
 import subprocess
 import sys
 import time
+import sqlite3
+import statistics
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -118,6 +120,36 @@ def _git(args):
         return None, ""
 
 
+def check_completeness(db_path, run_id=None, floor_frac=0.5, recent_n=10):
+    """degraded(부분수집) 데이터의 공개 배포를 막는 게이트. 최신 run 의 stage1/stage3 행수가 최근 중앙값 대비 floor_frac 미만이면 degraded. 반환=(ok, issues, details)."""
+    issues, details = [], []
+    con = sqlite3.connect(str(db_path))
+    try:
+        for table, label in (("stage1_oversold", "stage1"), ("stage3_final", "stage3")):
+            try:
+                rid = run_id or con.execute(f"SELECT MAX(run_id) FROM {table}").fetchone()[0]
+            except sqlite3.OperationalError:
+                continue
+            if rid is None:
+                continue
+            for mkt in ("kospi", "kosdaq"):
+                cur = con.execute(
+                    f"SELECT COUNT(*) FROM {table} WHERE CAST(run_id AS TEXT)=? AND LOWER(market)=?",
+                    (str(rid), mkt)).fetchone()[0]
+                hist = [r[0] for r in con.execute(
+                    f"SELECT COUNT(*) FROM {table} WHERE LOWER(market)=? AND CAST(run_id AS TEXT)<>? "
+                    f"GROUP BY run_id ORDER BY run_id DESC LIMIT ?", (mkt, str(rid), recent_n))]
+                if len(hist) < 3:
+                    continue
+                med = statistics.median(hist)
+                details.append(f"{label}·{mkt} {cur}")
+                if med > 0 and cur < med * floor_frac:
+                    issues.append(f"{label} {mkt}: {cur}행 (최근 중앙값 {int(med)}의 {cur/med:.0%}, 기준 {floor_frac:.0%} 미만)")
+        return (len(issues) == 0), issues, details
+    finally:
+        con.close()
+
+
 def git_push():
     """결과를 GitHub에 commit + push. 키 유출 방지 안전장치 포함."""
     print(f"\n{'━'*64}\n▶  3단계: GitHub 업로드 (push)\n{'━'*64}")
@@ -197,10 +229,16 @@ def main():
     else:
         print("\n⏭  스크리너 건너뜀 (--skip-screener) — 기존 결과로 분산만 진행")
 
+    # 배포 게이트 상태 — 치명 단계 실패 또는 degraded 데이터면 공개 배포(push·평소 텔레) 보류.
+    deploy_ok = True
+    critical_fail = []   # 치명 단계(점수/추천/대시보드) 실패 라벨
+
     # 2.6) v3 점수/등급/버킷 생성 — diversify·대시보드보다 '먼저' 돌려야 함.
     #      그날 v3 가 만들어지고 latest_*_final.csv 에 병합된다.
     if (HERE / "v3_daily.py").exists():
-        run_script(["v3_daily.py"], "2.6단계: v3 점수 생성·병합")
+        rc = run_script(["v3_daily.py"], "2.6단계: v3 점수 생성·병합")
+        if rc != 0:
+            deploy_ok = False; critical_fail.append("v3 점수 생성(2.6)")
 
     # 2.65) 챌린저(v31a~) 섀도우 누적 — 조용히 {model}_archive 에만 저장(추가 네트워크 0).
     #       챔피언/대시보드/텔레그램엔 노출 안 함. 비교는 주 1회 compare_models.py.
@@ -216,10 +254,12 @@ def main():
     # 2) 분산 추천 — v3 점수 기준(파일에 v3 있으면 자동 사용, 없으면 v2.6 폴백)
     if not (HERE / "diversify_picks.py").exists():
         print("❌ diversify_picks.py 를 찾을 수 없습니다."); sys.exit(1)
-    run_script(["diversify_picks.py",
+    rc = run_script(["diversify_picks.py",
                 "--max-per-sector", str(args.max_per_sector),
                 "--top", str(args.top)],
                "2단계: 섹터 쏠림 방지 추천")
+    if rc != 0:
+        deploy_ok = False; critical_fail.append("분산 추천(2)")
 
     # 2.68) 촉매(내부자매수+자사주소각) 수집 — DART. catalyst_{market}_{run_id}.csv 생성.
     #        이게 '먼저' 있어야 다음 단계(catalyst_observe)가 insider/buyback 컬럼을 채운다.
@@ -249,23 +289,54 @@ def main():
     # 2.8) 대시보드 재생성 — '그날 v3' + IC 가 반영되도록 다시 빌드.
     #      (스크리너 1단계에서 만든 대시보드는 그날 v3 이전이라 최신이 아님)
     if (HERE / "build_dashboard.py").exists():
-        run_script(["build_dashboard.py"], "2.8단계: 대시보드 재생성 (v3 반영)")
+        rc = run_script(["build_dashboard.py"], "2.8단계: 대시보드 재생성 (v3 반영)")
+        if rc != 0:
+            deploy_ok = False; critical_fail.append("대시보드(2.8)")
 
     # 2.85) v31g 챌린저 관측 CSV 생성 — filter_v31g.html 이 fetch할 docs/latest_*_v31g.csv 갱신.
     #        push(3) 전에 두어야 당일 반영. 점수 미투입·섬도우(검증 전). history.db만 사용.
     if (HERE / "build_v31g_filter.py").exists():
         run_script(["build_v31g_filter.py"], "2.85단계: v31g 챌린저 관측 CSV (섬도우, 점수 불변)")
 
-    # 3) GitHub 자동 업로드 (push) — 폰에서 보려면 필요
-    if not args.no_push:
-        git_push()
+    # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
+    #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
+    gate_issues, gate_details = [], []
+    try:
+        comp_ok, gate_issues, gate_details = check_completeness(str(HERE / "history.db"))
+        deploy_ok = deploy_ok and comp_ok   # 치명 단계 실패와 결합(둘 중 하나라도 나쁘면 보류)
+    except Exception as e:
+        print(f"\n   ⚠️ 완전성 점검 실패 — 게이트 건너뛰고 계속: {e}")
+    if gate_details:
+        print(f"\n   🔎 완전성 점검: {' · '.join(gate_details)}")
+    if not deploy_ok:
+        print("\n   " + "🛑"*16)
+        print("   배포 게이트: 공개 배포(push·평소 텔레) 보류")
+        for cf in critical_fail:
+            print(f"      • 단계 실패: {cf}")
+        for it in gate_issues:
+            print(f"      • {it}")
+        print("   (DB 기록은 남김 · 어제 대시보드 유지 · 원인 확인 후 재실행 권장)")
 
-    # 4) 텔레그램 알림 (완료 + IC + TOP3 + 링크) — 토큰 없으면 조용히 건너뜀
+    # 3) GitHub 자동 업로드 (push) — 완전하고 --no-push 아닐 때만
+    if deploy_ok and not args.no_push:
+        git_push()
+    elif not deploy_ok:
+        print("\n   ⏸  push 건너뜀(완전성 게이트).")
+
+    # 4) 텔레그램 — 완전하면 평소 알림, degraded면 '보류' 알림(토큰 없으면 조용히 건너뜀)
     if (HERE / "notify_telegram.py").exists():
         try:
             import notify_telegram
             print(f"\n{'━'*64}\n▶  4단계: 텔레그램 알림\n{'━'*64}")
-            notify_telegram.send()
+            if deploy_ok:
+                notify_telegram.send()
+            else:
+                _reasons = ([f"• 단계 실패: {cf}" for cf in critical_fail]
+                            + [f"• {it}" for it in gate_issues])
+                alert = ("⚠️ 스크리너 — 배포 보류(데이터 불완전/단계 실패)\n\n"
+                         + "\n".join(_reasons)
+                         + "\n\n대시보드는 직전 정상 회차 유지. 원인 확인 후 재실행 권장.")
+                notify_telegram.send(message=alert)
         except Exception as e:
             print(f"   ⚠️  텔레그램 알림 단계 오류: {e}")
 
