@@ -119,7 +119,7 @@ def scan_dart(todo, api_key, days, workers):
 
     def one(r):
         time.sleep(0.05)
-        discs = stage2.fetch_disclosures(r['corp_code'], api_key, days_back=days)
+        discs, _dart = stage2.fetch_disclosures(r['corp_code'], api_key, days_back=days)  # (목록, fetch_status) 2-튜플 언팩
         buy = score_buyback_cancel(discs, days=days)
         return {'ticker': r['ticker'], 'name': r['name'], 'market': r['market'],
                 'buyback_cancel_flag': float(buy['buyback_cancel_flag']),

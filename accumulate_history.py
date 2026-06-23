@@ -87,6 +87,13 @@ def write_to_sqlite(df, table_name, conn, market):
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)
     )
     if cursor.fetchone():
+        # 스키마 드리프트 방어: CSV엔 있는데 테이블에 없는 컬럼을 TEXT로 자동 추가
+        # (예: stage2/3 CSV가 dart_status 컬럼을 새로 얻은 경우). 기존 행은 NULL.
+        existing = {r[1] for r in cursor.execute(f"PRAGMA table_info({table_name})")}
+        for col in df.columns:
+            if col not in existing:
+                cursor.execute(f'ALTER TABLE {table_name} ADD COLUMN "{col}" TEXT')
+                print(f"     ↪ [스키마] {table_name} 에 컬럼 자동추가: {col}")
         run_ids = df["run_id"].unique().tolist()
         placeholders = ",".join("?" * len(run_ids))
         cursor.execute(

@@ -401,7 +401,7 @@ def run_market(market, api_key, run_id, days, input_csv, workers, with_insider=F
         else:
             ins = _insider_off()        # 기본: 내부자 평가 끔(elestock 호출 안 함 → 종목당 DART 1회 절약)
         # 자사주 소각은 일반 공시목록에서(stage2.fetch_disclosures 재사용)
-        discs = stage2.fetch_disclosures(r["corp_code"], api_key, days_back=days)
+        discs, _dart = stage2.fetch_disclosures(r["corp_code"], api_key, days_back=days)  # (목록, fetch_status) 2-튜플 언팩
         buy = score_buyback_cancel(discs, days=days)
         out = {"ticker": r["ticker"], "name": r["name"]}
         out.update(ins)
