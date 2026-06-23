@@ -128,6 +128,7 @@ def fetch_disclosures(corp_code, api_key, days_back=365):
 
     all_disclosures = []
     page = 1
+    fetch_status = "unknown"   # 정상 응답(000/013) 못 받으면 unknown = 조회 실패(미점검)
     while True:
         try:
             resp = requests.get(
@@ -143,9 +144,13 @@ def fetch_disclosures(corp_code, api_key, days_back=365):
                 timeout=10,
             )
             data = resp.json()
-            if data.get('status') != '000':
+            status = data.get('status')
+            if status == '013':            # 정상: 기간 내 공시 없음(진짜 깨끗) → 검사 성공
+                fetch_status = "ok"
                 break
-
+            if status != '000':            # 010/020/800/900 등 = 조회 실패 → unknown 유지
+                break
+            fetch_status = "ok"            # 000 = 정상 응답
             disclosures = data.get('list', []) or []
             all_disclosures.extend(disclosures)
 
@@ -162,7 +167,7 @@ def fetch_disclosures(corp_code, api_key, days_back=365):
         except Exception:
             break
 
-    return all_disclosures
+    return all_disclosures, fetch_status
 
 
 # ============================================================
@@ -304,9 +309,10 @@ def main():
     # [V2.6 자동화] 병렬 처리
     def check_one(row_dict):
         """한 종목의 DART 공시 위험 검사. 스레드 안전."""
-        disclosures = fetch_disclosures(row_dict['corp_code'], DART_API_KEY, LOOKBACK_DAYS)
+        disclosures, dart_fetch = fetch_disclosures(row_dict['corp_code'], DART_API_KEY, LOOKBACK_DAYS)
         risk = check_risk_keywords(disclosures)
         risk['ticker'] = row_dict['ticker']
+        risk['_dart_fetch'] = dart_fetch
         return row_dict.get('name', row_dict['ticker']), risk
 
     risk_results = []
@@ -352,6 +358,28 @@ def main():
     df_final.loc[df_final['warning_count'] > 0, 'risk_level'] = '주의'
     df_final.loc[df_final['danger_count'] > 0, 'risk_level'] = '위험'
 
+    # [감사 #3] DART 조회 성공 여부 → dart_status(SAFE/RISK/UNKNOWN). fail-open 차단.
+    #   _dart_fetch='unknown'(에러/제한/점검) 또는 검사 자체 실패로 merge에서 빠진(NaN) 종목은
+    #   "위험없음"이 아니라 "확인불가" → 추천 배제. 정상 응답일 땐 UNKNOWN 0 → 기존과 동일(0-diff).
+    if '_dart_fetch' not in df_final.columns:
+        df_final['_dart_fetch'] = 'unknown'
+    df_final['_dart_fetch'] = df_final['_dart_fetch'].fillna('unknown')
+    df_final['dart_status'] = 'SAFE'
+    df_final.loc[df_final['danger_count'] > 0, 'dart_status'] = 'RISK'
+    df_final.loc[df_final['_dart_fetch'] == 'unknown', 'dart_status'] = 'UNKNOWN'
+    df_final = df_final.drop(columns=['_dart_fetch'])
+
+    n_total = len(df_final)
+    n_unknown = int((df_final['dart_status'] == 'UNKNOWN').sum())
+    unk_frac = (n_unknown / n_total) if n_total else 0.0
+    print(f"\n   🔎 DART 조회 상태: 확인 {n_total - n_unknown}개 · "
+          f"UNKNOWN(확인불가) {n_unknown}개 ({unk_frac:.1%}) → 추천 배제")
+    UNKNOWN_GATE_FRAC = 0.10   # 이 비율 넘으면 DART 불안정 → 배포 보류 경고
+    if unk_frac > UNKNOWN_GATE_FRAC:
+        print(f"\n   🛑🛑🛑 커버리지 경고: UNKNOWN {unk_frac:.0%} > {UNKNOWN_GATE_FRAC:.0%}")
+        print("      DART 조회가 불안정합니다(점검/호출제한 가능). 오늘 유니버스가 축소됐으니")
+        print("      이 회차 추천/IC 신뢰도가 낮습니다 — 잠시 후 재실행 권장.")
+
     safe = df_final[df_final['risk_level'] == '안전']
     caution = df_final[df_final['risk_level'] == '주의']
     danger = df_final[df_final['risk_level'] == '위험']
@@ -388,7 +416,9 @@ def main():
 
     # 저장 (CSV 안전성: 셀 내 줄바꿈 → 공백 치환)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    safe_with_caution = df_final[df_final['risk_level'].isin(['안전', '주의'])]
+    # UNKNOWN(확인불가)은 추천 유니버스에서 배제 — 정상일 땐 UNKNOWN 0 이라 기존과 동일.
+    safe_with_caution = df_final[df_final['risk_level'].isin(['안전', '주의'])
+                                 & (df_final['dart_status'] != 'UNKNOWN')]
 
     # [개선 #3] 셀 안의 줄바꿈 문자 제거 (HTML 파싱 안전성)
     safe_with_caution = safe_with_caution.replace(r'[\r\n]+', ' ', regex=True)
