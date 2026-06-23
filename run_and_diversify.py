@@ -140,8 +140,10 @@ def git_push():
             print("      → .gitignore 맨 위에 '.env' 한 줄이 있는지 확인 후 다시 실행.")
             return
 
-    # 변경분 스테이징 (.gitignore가 .env/캐시를 알아서 제외)
-    _git(["add", "-A"])
+    # 변경분 스테이징 — 배포 산출물(docs/)만 allowlist. **git add -A 금지**:
+    #   작업 중인 코드·임시 파일이 자동 커밋되는 것을 막는다(감사 권고). docs/ = Pages 배포면.
+    PUSH_ALLOWLIST = ["docs"]   # 배포 대상이 늘면 여기에 추가(현재는 전부 docs/ 아래)
+    _git(["add", "--"] + PUSH_ALLOWLIST)
     rc_diff, _ = _git(["diff", "--cached", "--quiet"])
     if rc_diff == 0:
         print("   ℹ️  바뀐 내용이 없어 업로드할 게 없습니다 (정상)."); return
@@ -204,6 +206,12 @@ def main():
     #       챔피언/대시보드/텔레그램엔 노출 안 함. 비교는 주 1회 compare_models.py.
     if (HERE / "shadow_run.py").exists():
         run_script(["shadow_run.py"], "2.65단계: 챌린저 섀도우 누적(조용)")
+
+    # 2.66) 점수 동결 저장 — 방금 만들어진 archive(챔피언 v3_archive + 챌린저 {model}_archive)를
+    #       DB v3_scores 에 append-only 적재(감사 #5). 재계산이 아닌 '그날 얼린 원본' 보존 →
+    #       입력 드리프트에 면역. 점수·로직 불변, 새 테이블만 추가. 최신 run 만(빠름).
+    if (HERE / "freeze_scores.py").exists():
+        run_script(["freeze_scores.py", "--latest"], "2.66단계: 점수 동결 저장(append-only, drift 면역)")
 
     # 2) 분산 추천 — v3 점수 기준(파일에 v3 있으면 자동 사용, 없으면 v2.6 폴백)
     if not (HERE / "diversify_picks.py").exists():
