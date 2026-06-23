@@ -1,18 +1,18 @@
 {
   "status": "ok",
-  "generated_at": "2026-06-23 20:58",
-  "n_dates": 23,
-  "n_picks": 2250,
+  "generated_at": "2026-06-23 21:59",
+  "n_dates": 24,
+  "n_picks": 2350,
   "horizons": [
     5,
     20
   ],
   "headline": {
     "horizon": 5,
-    "ic": 0.0,
+    "ic": 0.001,
     "n": 1000,
     "n_groups": 20,
-    "spread": -1.09,
+    "spread": -1.13,
     "score": "final_score_v3",
     "verdict": "⚪ 사실상 무의미"
   },
@@ -21,7 +21,7 @@
       "name": "final_score_v3",
       "label": "최종점수(v3)",
       "ic": {
-        "5": 0.0,
+        "5": 0.001,
         "20": null
       },
       "n": {
@@ -33,7 +33,7 @@
       "name": "oversold_score",
       "label": "과매도",
       "ic": {
-        "5": 0.02,
+        "5": 0.018,
         "20": null
       },
       "n": {
@@ -45,7 +45,7 @@
       "name": "acc_score",
       "label": "매집",
       "ic": {
-        "5": 0.015,
+        "5": 0.016,
         "20": null
       },
       "n": {
@@ -57,7 +57,7 @@
       "name": "trend_score",
       "label": "추세전환",
       "ic": {
-        "5": -0.016,
+        "5": -0.019,
         "20": null
       },
       "n": {
@@ -69,7 +69,7 @@
       "name": "supply_score",
       "label": "수급",
       "ic": {
-        "5": -0.01,
+        "5": -0.009,
         "20": null
       },
       "n": {
@@ -81,11 +81,11 @@
       "name": "fundamental_score",
       "label": "펀더멘털",
       "ic": {
-        "5": -0.003,
+        "5": 0.001,
         "20": null
       },
       "n": {
-        "5": 750,
+        "5": 700,
         "20": 0
       }
     },
@@ -93,7 +93,7 @@
       "name": "ocf_score",
       "label": "현금흐름",
       "ic": {
-        "5": 0.105,
+        "5": 0.106,
         "20": null
       },
       "n": {
@@ -105,7 +105,7 @@
       "name": "momentum_score",
       "label": "모멘텀",
       "ic": {
-        "5": 0.033,
+        "5": 0.03,
         "20": null
       },
       "n": {
