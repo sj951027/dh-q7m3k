@@ -276,6 +276,16 @@ def main():
     if (HERE / "observe_vol.py").exists():
         run_script(["observe_vol.py"], "2.72단계: 실현변동성 관측 컬럼 (점수 불변)")
 
+    # 2.73) 과매도 재출현/신선도 관측 컬럼(os_count_20d·os_streak·os_is_new20) — 가중치 0, 점수 불변. 증분.
+    #        직전 20활성런 중 stage3 재등장 수/연속/신규. validate_scores 가 IC 측정. post-hoc → forward-only 판정.
+    if (HERE / "observe_recurrence.py").exists():
+        run_script(["observe_recurrence.py"], "2.73단계: 과매도 재출현 관측 컬럼 (점수 불변)")
+
+    # 2.74) 급락 급성도 관측 컬럼(drop_acuteness) — 가중치 0, 점수 불변. 증분.
+    #        월 낙폭 중 최근 1주 비율(return_1w_%/return_1m_%). validate_scores 가 IC 측정. post-hoc → forward-only.
+    if (HERE / "observe_acuteness.py").exists():
+        run_script(["observe_acuteness.py"], "2.74단계: 급락 급성도 관측 컬럼 (점수 불변)")
+
     # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
