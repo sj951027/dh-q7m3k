@@ -13,7 +13,7 @@
   body{margin:0;background:var(--bg);color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
     font-size:14px;line-height:1.5}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px}
   h1{font-size:18px;margin:0 0 4px}
   .sub{color:var(--sub);font-size:12px;margin-bottom:14px}
   .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
@@ -42,9 +42,15 @@
   .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
     padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
   .tab.active{border-color:var(--accent);color:var(--accent)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+  .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
+  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub);user-select:none}
+  .fbtn.on{border-color:var(--accent);color:var(--accent);background:#16201c}
+  .fcount{color:var(--sub);font-size:12px;margin-left:auto}
   .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
-  table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:760px}
-  th,td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;min-width:0}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
   th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0;cursor:pointer}
   th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left}
   tr:hover td{background:#1b1f28}
@@ -110,6 +116,16 @@
     <div class="tab" data-mkt="kosdaq">🟠 KOSDAQ</div>
   </div>
 
+  <div class="filters" id="filters">
+    <span class="flabel">필터:</span>
+    <span class="fbtn" data-f="f5pos">외인5일 &gt; 0</span>
+    <span class="fbtn" data-f="i5pos">기관5일 &gt; 0</span>
+    <span class="fbtn" data-f="any5pos">외인/기관 中 매수</span>
+    <span class="fbtn" data-f="roe10">ROE ≥ 10</span>
+    <span class="fbtn" data-f="rev">지난주 하락(반전후보)</span>
+    <span class="fcount" id="fcount"></span>
+  </div>
+
   <div class="tablewrap">
     <table id="tbl"><thead></thead><tbody>
       <tr><td colspan="20" class="loading">데이터 불러오는 중…</td></tr>
@@ -144,6 +160,29 @@ const COLS = [
 
 let curMkt = 'kospi';
 let sortKey = 'rank', sortAsc = true;
+let allRows = [];                 // 필터 전 전체 행
+let activeF = new Set();          // 활성 필터 id
+
+// 필터 정의: id → 행 통과 판정
+const FILTERS = {
+  f5pos:   r => parseFloat(r['foreign_5d_억']) > 0,
+  i5pos:   r => parseFloat(r['inst_5d_억']) > 0,
+  any5pos: r => parseFloat(r['foreign_5d_억']) > 0 || parseFloat(r['inst_5d_억']) > 0,
+  roe10:   r => parseFloat(r['roe_value']) >= 10,
+  rev:     r => parseFloat(r['return_1w_%']) < 0,
+};
+
+function applyFilters(){
+  const rows = allRows.filter(r => [...activeF].every(f => {
+    const fn = FILTERS[f]; if(!fn) return true;
+    const ok = fn(r); return ok === true;  // NaN 비교는 false → 제외
+  }));
+  render(rows);
+  const fc = document.getElementById('fcount');
+  if(fc) fc.textContent = activeF.size
+    ? `${rows.length} / ${allRows.length} 종목 (필터 적용)`
+    : `${allRows.length} 종목`;
+}
 
 function fmt(v, type){
   if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
@@ -196,8 +235,9 @@ function load(mkt){
     .then(r=>{if(!r.ok)throw 0;return r.text()})
     .then(txt=>{
       const rows = parseCSV(txt);
+      allRows = rows;
       sortKey='rank'; sortAsc=true;
-      render(rows);
+      applyFilters();
       const nuni = rows.length? rows[0]['n_universe']:'-';
       document.getElementById('meta').innerHTML =
         `<div class="chip">모델 <b>lv_a</b></div>`+
@@ -213,6 +253,13 @@ function load(mkt){
 }
 
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>load(t.dataset.mkt));
+document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
+  const f=b.dataset.f;
+  if(activeF.has(f)){activeF.delete(f); b.classList.remove('on');}
+  else{activeF.add(f); b.classList.add('on');}
+  sortKey='rank'; sortAsc=true;
+  applyFilters();
+});
 document.getElementById('foot').innerHTML =
   '※ <b>테스트·관측</b> 페이지 · lowvol_score 높을수록 선호(매수 아님) · v3·large 와 별개 트랙<br>'+
   '실현변동성 낮을수록 / 지난주 더 빠졌을수록 / ROE 높을수록 점수↑ · 컬럼 클릭 시 정렬 · 18일 in-sample 가설';
