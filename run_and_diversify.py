@@ -308,6 +308,14 @@ def main():
     if (HERE / "build_v31g_filter.py").exists():
         run_script(["build_v31g_filter.py"], "2.85단계: v31g 챌린저 관측 CSV (섬도우, 점수 불변)")
 
+    # 2.86) 저변동 트랙(lowvol) 관측 — lv_a~d·lv_a3 점수 적재(가중치 0) + lv_a 관측 CSV.
+    #        v3·large 와 완전 분리(별도 테이블 lowvol_scores·전용 lowvol.html). 검증 전 섀도우.
+    #        history.db(stage3)만 읽어 신규 API 0. 실패해도 챔피언 배포 안 막음(비치명).
+    if (HERE / "lowvol_score.py").exists():
+        run_script(["lowvol_score.py"], "2.86단계: 저변동 트랙 점수 적재 (관측, 점수 불변)")
+    if (HERE / "build_lowvol_filter.py").exists():
+        run_script(["build_lowvol_filter.py"], "2.87단계: 저변동 트랙 lv_a 관측 CSV (섀도우)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []
@@ -349,6 +357,16 @@ def main():
                 notify_telegram.send(message=alert)
         except Exception as e:
             print(f"   ⚠️  텔레그램 알림 단계 오류: {e}")
+
+    # 4b) 저변동 트랙 lv_a '테스트·관측' 알림 — 챔피언과 별개. 정상 배포일에만, 조용히 실패.
+    #      검증 전 섀도우라 메시지 전체가 '테스트·매수신호 아님'. 토큰 없으면 건너뜀.
+    if deploy_ok and (HERE / "notify_lowvol_test.py").exists():
+        try:
+            import notify_lowvol_test
+            print(f"\n{'━'*64}\n▶  4b단계: 저변동 트랙 lv_a 테스트 알림\n{'━'*64}")
+            notify_lowvol_test.send()
+        except Exception as e:
+            print(f"   ⚠️  lowvol 테스트 알림 오류(무시·계속): {e}")
 
     print("\n" + "=" * 64)
     print("  ✅ 전체 완료")

@@ -62,3 +62,5 @@ large_report.html
 /_trash/
 # v31g 관측(테스트) — 루트 로컬 사본은 추적 제외, docs/것만 커밋
 /latest_*_v31g.csv
+# lowvol 관측(테스트) — 루트 로컬 사본은 추적 제외, docs/것만 커밋
+/latest_*_lowvol.csv
