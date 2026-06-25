@@ -358,15 +358,8 @@ def main():
         except Exception as e:
             print(f"   ⚠️  텔레그램 알림 단계 오류: {e}")
 
-    # 4b) 저변동 트랙 lv_a '테스트·관측' 알림 — 챔피언과 별개. 정상 배포일에만, 조용히 실패.
-    #      검증 전 섀도우라 메시지 전체가 '테스트·매수신호 아님'. 토큰 없으면 건너뜀.
-    if deploy_ok and (HERE / "notify_lowvol_test.py").exists():
-        try:
-            import notify_lowvol_test
-            print(f"\n{'━'*64}\n▶  4b단계: 저변동 트랙 lv_a 테스트 알림\n{'━'*64}")
-            notify_lowvol_test.send()
-        except Exception as e:
-            print(f"   ⚠️  lowvol 테스트 알림 오류(무시·계속): {e}")
+    # 4b) 저변동 트랙 알림은 별도 메시지로 안 보냄 — v3 메시지 하단 링크로 대체(2026-06-25).
+    #      점수 적재(2.86)·CSV(2.87)·HTML·lowvol_scores 는 그대로 유지. notify_lowvol_test.py 는 수동 미리보기용으로 남김.
 
     print("\n" + "=" * 64)
     print("  ✅ 전체 완료")
