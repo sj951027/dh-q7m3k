@@ -12,6 +12,25 @@
 
 ---
 
+## 📚 Claude/협업자용 — 먼저 읽을 지식 문서 (handoff 시 맥락)
+
+> zip(handoff)만 받았다면 코드 전에 이 문서들을 읽어야 "무엇을/왜"가 잡힌다. 트랙이 **3개**다.
+
+| 문서 | 내용 | 트랙 |
+|---|---|---|
+| `PROJECT_KNOWLEDGE.md` | **메인 핸드오프.** 파이프라인·점수체계·모듈·불변규칙·실험판정(§11)·견고성(§12)·lowvol(§13) | v3(주) |
+| `LARGE_SCORE_DESIGN.md` | 대형 가치주 트랙 설계(시총 상위·금융 포함·과매도 게이트 없음) | large |
+| `LOWVOL_TRACK_DESIGN.md` | 저변동·우량·반전 트랙 설계·검증(lv_a~d·lv_a3) | lowvol |
+| `PREREGISTER_v31f_maturity.md` | v31f/g 챌린저 골대(post-hoc forward-only) | v3 |
+| `PREREGISTER_lowvol.md` | lowvol 골대(OOS 40거래일·Bonferroni 5) | lowvol |
+| `CLEANUP_NOTES.md` | 산출물 보존정책·git 다이어트·handoff 분리 | 운영 |
+
+**3트랙 한눈에**: v3=중소형 과매도 반등(메인, 표시 기준) · large=대형 가치(설계/구축 중) ·
+lowvol=적당히 빠진 우량 저변동(1단계 관측 배포, lv_a 테스트 노출). **셋의 점수·유니버스·표시는 분리**,
+데이터·인프라(history.db·대시보드·텔레그램·git)만 공유.
+
+---
+
 ## 🧠 점수 체계 (2층 구조)
 
 - **v2.6 엔진 (`final_score`)** — 과매도 + 매집 + 추세 + 수급 + 펀더멘털(영업이익 YoY) + 모멘텀 + OCF(현금흐름 질) + 시장 레짐. *원본 점수 엔진.*
