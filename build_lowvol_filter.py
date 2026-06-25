@@ -37,7 +37,7 @@ DISPLAY_COLS = [
 ]
 
 
-def build_one(con, rid, mkt):
+def build_one(con, rid, mkt, sector_map=None):
     ls = pd.read_sql(
         "SELECT ticker, lowvol_score, n_universe FROM lowvol_scores "
         "WHERE run_id=? AND market=? AND model_id=?",
@@ -51,6 +51,13 @@ def build_one(con, rid, mkt):
         con, params=(rid, mkt))
     s3.columns = [c.strip('"') for c in s3.columns]
     g = ls.merge(s3, on="ticker", how="left")
+
+    # 섹터: stage3_final 의 sector 는 비어 있음(100% 결측) → sector_cache.json 으로 채움.
+    #   (PROJECT_KNOWLEDGE §4-C: sector_cache 가 현재 universe 100% 커버.)
+    if sector_map:
+        filled = g["ticker"].astype(str).map(sector_map)
+        # 캐시에 있으면 캐시값, 없으면 기존(보통 빈값) 유지
+        g["sector"] = filled.where(filled.notna(), g.get("sector"))
 
     # v3 bucket 참고용(있으면). 섞지 않고 '비교 표시'만.
     try:
@@ -86,9 +93,19 @@ def main():
     docs = Path(args.docs)
     docs.mkdir(parents=True, exist_ok=True)
 
+    # 섹터 캐시 로드(있으면). stage3_final.sector 가 비어 있어 이걸로 채운다.
+    sector_map = None
+    sc_path = HERE / "sector_cache.json"
+    if sc_path.exists():
+        try:
+            import json
+            sector_map = {str(k): v for k, v in json.loads(sc_path.read_text(encoding="utf-8")).items()}
+        except Exception as e:
+            print(f"  ⚠️ sector_cache.json 로드 실패(섹터 빈칸 유지): {e}")
+
     total = 0
     for mkt in MARKETS:
-        g = build_one(con, rid, mkt)
+        g = build_one(con, rid, mkt, sector_map=sector_map)
         if g is None:
             print(f"  ⚠️ {mkt}: run {rid} lv_a 데이터 없음 — 건너뜀")
             continue

@@ -19,6 +19,16 @@
   .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
     padding:12px 14px;margin-bottom:16px;font-size:12.5px}
   .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;
+    list-style:none;user-select:none}
+  .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px}
+  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
+  .explain-body b{color:var(--txt)}
+  .explain .hl{background:#1f2a26;color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600}
+  .explain .note{color:var(--sub);font-size:11.5px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
   .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
     padding:6px 10px;font-size:12px;color:var(--sub)}
@@ -52,6 +62,28 @@
     점수가 높을수록 "선호"지 "사라" 가 아닙니다.
   </div>
 
+  <details class="explain" open>
+    <summary>📖 점수·지표 읽는 법 (눌러서 접기)</summary>
+    <div class="explain-body">
+      <p><b>lv점수 (lowvol_score)</b> — 이 트랙의 핵심 순위. 세 가지를 "그날 전체 종목 중 몇 등인지"(백분위)로
+      바꿔 더한 값입니다. <b>0~3 범위</b>(3개 항 각 0~1)이고 <b>높을수록 선호</b>. 절대값 자체보다
+      <b>같은 날 종목 간 순위</b>가 의미입니다(날마다 분포가 달라 어제 2.3과 오늘 2.3은 다름).
+      세 항 = ①저변동(변동성 낮을수록↑) ②ROE(높을수록↑) ③단기반전(지난주 더 빠졌을수록↑).</p>
+
+      <p><b>실현변동성 (realized_vol)</b> — 최근 21거래일 일간수익률의 표준편차. <b>작을수록 차분한 주가</b>(=lv점수↑).
+      예: <span class="hl">0.025 = 하루 평균 ±2.5% 안팎</span> 흔들림(낮음), 0.06 = ±6%(높음).
+      이 트랙은 "덜 출렁이는" 종목을 선호합니다 — 18일 분석에서 저변동일수록 5일 뒤 수익이 나았기 때문(가설).</p>
+
+      <p><b>나머지 컬럼</b>: <b>1주%/1개월%</b>=그 기간 등락(음수=하락, 반전 트랙이라 <i>지난주 하락</i>이 점수엔 +).
+      <b>52주고점대비%</b>=1년 최고가 대비 낙폭. <b>과매도</b>=v3 과매도 점수(30~70 구간만 이 트랙 대상).
+      <b>거래대금억</b>=1개월 평균 일거래대금(5억 미만은 제외=유동성 하한). <b>분기YoY%</b>=분기 영업이익 전년比.
+      <b>v3참고</b>=v3 스크리너의 버킷(섞는 게 아니라 비교용 — 이 트랙이 v3와 다른 종목을 보는지 확인).</p>
+
+      <p class="note">⚙️ 유니버스 = 과매도 30~70 + 거래대금 ≥5억 (적당히 빠진 + 거래되는 종목). 컬럼 클릭 시 정렬.</p>
+    </div>
+  </details>
+
+
   <div class="meta" id="meta"></div>
   <div class="tabs">
     <div class="tab active" data-mkt="kospi">🔵 KOSPI</div>
@@ -68,22 +100,22 @@
 </div>
 
 <script>
-// 표시 컬럼 정의: [CSV키, 라벨, 타입]
+// 표시 컬럼 정의: [CSV키, 라벨, 타입, 툴팁]
 const COLS = [
-  ['rank','#','int'],
-  ['lowvol_score','lv점수','score'],
-  ['name','종목','str'],
-  ['ticker','코드','str'],
-  ['sector','업종','str'],
-  ['realized_vol','실현변동성','num4'],
-  ['roe_value','ROE%','num1'],
-  ['return_1w_%','1주%','signed'],
-  ['return_1m_%','1개월%','signed'],
-  ['drawdown_52w_high_%','52주고점대비%','signed'],
-  ['oversold_score','과매도','num1'],
-  ['amt_avg_1m_억','거래대금억','num1'],
-  ['quarterly_yoy_%','분기YoY%','signed'],
-  ['v3_bucket','v3참고','v3'],
+  ['rank','#','int','그날 lv점수 순위'],
+  ['lowvol_score','lv점수','score','저변동+ROE+반전 순위합(0~3). 높을수록 선호. 같은 날 종목 간 순위가 핵심'],
+  ['name','종목','str',''],
+  ['ticker','코드','str',''],
+  ['sector','업종','str','업종(sector_cache 기준)'],
+  ['realized_vol','실현변동성','num4','최근21일 일수익 표준편차. 작을수록 차분(0.025≈하루±2.5%). 낮을수록 점수↑'],
+  ['roe_value','ROE%','num1','자기자본이익률(EPS/BPS). 높을수록 우량=점수↑'],
+  ['return_1w_%','1주%','signed','최근 1주 등락. 반전 트랙이라 더 빠졌을수록(음수) 점수↑'],
+  ['return_1m_%','1개월%','signed','최근 1개월 등락(참고)'],
+  ['drawdown_52w_high_%','52주고점대비%','signed','1년 최고가 대비 낙폭'],
+  ['oversold_score','과매도','num1','v3 과매도 점수. 이 트랙은 30~70 구간만 대상(극단 제외)'],
+  ['amt_avg_1m_억','거래대금억','num1','1개월 평균 일거래대금. 5억 미만은 제외(유동성 하한)'],
+  ['quarterly_yoy_%','분기YoY%','signed','분기 영업이익 전년동기比'],
+  ['v3_bucket','v3참고','v3','v3 스크리너 버킷(비교용 — 섞지 않음)'],
 ];
 
 let curMkt = 'kospi';
@@ -117,7 +149,7 @@ function render(rows){
   const thead = document.querySelector('#tbl thead');
   const tbody = document.querySelector('#tbl tbody');
   thead.innerHTML = '<tr>' + COLS.map(c=>
-    `<th data-key="${c[0]}">${c[1]}${sortKey===c[0]?(sortAsc?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+    `<th data-key="${c[0]}"${c[3]?` title="${c[3]}"`:''}>${c[1]}${sortKey===c[0]?(sortAsc?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
   // 정렬
   rows.sort((a,b)=>{
     let x=a[sortKey], y=b[sortKey];
