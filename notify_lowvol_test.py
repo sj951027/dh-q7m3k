@@ -50,7 +50,8 @@ def _top(con, rid, mkt, n=TOP_N):
     if ls.empty:
         return None
     s3 = pd.read_sql(
-        'SELECT ticker, name, realized_vol, roe_value, "return_1w_%" AS r1w '
+        'SELECT ticker, name, realized_vol, roe_value, "return_1w_%" AS r1w, '
+        '"foreign_20d_억" AS f20, "inst_20d_억" AS i20 '
         "FROM stage3_final WHERE run_id=? AND market=?",
         con, params=(rid, mkt))
     return ls.merge(s3, on="ticker", how="left")
@@ -85,7 +86,10 @@ def build_message(db_path=DB_PATH, rid=None):
             rv = f"{r.realized_vol:.3f}" if pd.notna(r.realized_vol) else "-"
             roe = f"{r.roe_value:.0f}" if pd.notna(r.roe_value) else "-"
             r1w = f"{r.r1w:+.0f}%" if pd.notna(r.r1w) else "-"
+            f20 = f"{r.f20:+.0f}" if pd.notna(r.f20) else "-"
+            i20 = f"{r.i20:+.0f}" if pd.notna(r.i20) else "-"
             lines.append(f" {i}. {nm} (lv {r.lowvol_score:.2f} · 변동성 {rv} · ROE {roe} · 1주 {r1w})")
+            lines.append(f"     └ 수급20일 외인 {f20} · 기관 {i20} (억)")
         lines.append("")
     lines += [
         "※ <b>테스트 관측</b> · 점수 상위만 · v3·large 텔레그램과 <b>별개</b> · 참고용",

@@ -32,7 +32,8 @@ MODEL = "lv_a"   # 노출 모델(견고성 최상위). 나머지는 shadow.
 DISPLAY_COLS = [
     "name", "sector", "oversold_score", "realized_vol", "roe_value",
     '"return_1w_%"', '"return_1m_%"', '"drawdown_52w_high_%"',
-    '"amt_avg_1m_억"', '"foreign_20d_억"', '"inst_20d_억"',
+    '"amt_avg_1m_억"', '"foreign_5d_억"', '"foreign_20d_억"',
+    '"inst_5d_억"', '"inst_20d_억"',
     '"quarterly_yoy_%"', "final_score",
 ]
 

@@ -29,6 +29,11 @@
   .explain-body b{color:var(--txt)}
   .explain .hl{background:#1f2a26;color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600}
   .explain .note{color:var(--sub);font-size:11.5px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  .explain .warnp{background:#1f1a0c;border-left:3px solid var(--warn);border-radius:0;
+    padding:9px 12px;color:#e8dcc0}
+  .explain .warnp b{color:var(--warn)}
+  .explain .note2{color:var(--sub);font-size:11.5px;line-height:1.6;margin-top:6px}
+  .explain .note2 b{color:#c9cfda}
   .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
     padding:6px 10px;font-size:12px;color:var(--sub)}
@@ -70,9 +75,24 @@
       <b>같은 날 종목 간 순위</b>가 의미입니다(날마다 분포가 달라 어제 2.3과 오늘 2.3은 다름).
       세 항 = ①저변동(변동성 낮을수록↑) ②ROE(높을수록↑) ③단기반전(지난주 더 빠졌을수록↑).</p>
 
+      <p class="warnp">❓ <b>점수 높으면 오르나? — 시장 방향대로 작동합니다.</b> 18일 분석 기준,
+      lv점수는 한쪽이 아니라 <b>양방향</b>으로 움직입니다(점수 높을수록 더 뚜렷):<br>
+      • 📈 <b>상승장</b>(5일): 점수 최고그룹 1일 상승확률 <b>~73%</b>, 평균 <b>+2.0%</b> — 점수 높을수록 <b>더 오릅니다.</b><br>
+      • 📉 <b>하락장</b>(18일): 점수 최고그룹 평균 <b>−1.6%</b>(최저그룹 −2.6%) — 점수 높을수록 <b>덜 떨어집니다.</b><br>
+      즉 "시장이 가는 방향으로 더 세게 가는" 종목을 고릅니다. 단 이 기간은 <b>하락장이 압도적</b>(23일 중 18일
+      하락)이라 전체 평균은 마이너스로 보입니다 — 점수 탓이 아니라 장 탓입니다.</p>
+
+      <p class="note2">⚠️ <b>유보</b>: 상승장 표본이 5일뿐이라 +2.0%가 견고하다 단정 못 합니다. 또 상승장의
+      반등이 lv점수(저변동·반전) 덕인지 과매도 종목이 원래 크게 튀는 것인지 아직 못 가립니다. <b>매수신호
+      아니며</b>, 진짜 판정은 등록일 이후 OOS 40거래일(상승·하락 국면이 섞인 뒤) 누적 후입니다.</p>
+
       <p><b>실현변동성 (realized_vol)</b> — 최근 21거래일 일간수익률의 표준편차. <b>작을수록 차분한 주가</b>(=lv점수↑).
       예: <span class="hl">0.025 = 하루 평균 ±2.5% 안팎</span> 흔들림(낮음), 0.06 = ±6%(높음).
       이 트랙은 "덜 출렁이는" 종목을 선호합니다 — 18일 분석에서 저변동일수록 5일 뒤 수익이 나았기 때문(가설).</p>
+
+      <p><b>수급 (외인·기관 5일/20일)</b> — 외국인·기관의 순매수 금액(억). <b>+면 사들이는 중, −면 파는 중</b>.
+      lv점수에는 <b>안 들어가는 참고 지표</b>지만, "기관이 팔고 있는데 저변동인 건지" 같은 맥락 판단에 씁니다.
+      예: 외인20일 +135 = 한 달간 외국인이 135억 순매수. 단 순매수(flow)는 지분율 자체와는 다름에 유의.</p>
 
       <p><b>나머지 컬럼</b>: <b>1주%/1개월%</b>=그 기간 등락(음수=하락, 반전 트랙이라 <i>지난주 하락</i>이 점수엔 +).
       <b>52주고점대비%</b>=1년 최고가 대비 낙폭. <b>과매도</b>=v3 과매도 점수(30~70 구간만 이 트랙 대상).
@@ -114,6 +134,10 @@ const COLS = [
   ['drawdown_52w_high_%','52주고점대비%','signed','1년 최고가 대비 낙폭'],
   ['oversold_score','과매도','num1','v3 과매도 점수. 이 트랙은 30~70 구간만 대상(극단 제외)'],
   ['amt_avg_1m_억','거래대금억','num1','1개월 평균 일거래대금. 5억 미만은 제외(유동성 하한)'],
+  ['foreign_5d_억','외인5일','signed','외국인 최근5일 순매수(억). +면 사들임, −면 팖'],
+  ['foreign_20d_억','외인20일','signed','외국인 최근20일 순매수(억)'],
+  ['inst_5d_억','기관5일','signed','기관 최근5일 순매수(억). +면 사들임, −면 팖'],
+  ['inst_20d_억','기관20일','signed','기관 최근20일 순매수(억)'],
   ['quarterly_yoy_%','분기YoY%','signed','분기 영업이익 전년동기比'],
   ['v3_bucket','v3참고','v3','v3 스크리너 버킷(비교용 — 섞지 않음)'],
 ];
