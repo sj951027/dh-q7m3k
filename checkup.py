@@ -23,10 +23,17 @@ checkup.py — 정기 점검 패널 (research 모드, 읽기 전용)
       python checkup.py --json     # research/checkup_YYYYMMDD.json 저장(추세 추적용)
       python checkup.py --since 20260606   # 특정일 이후 OOS만(판정용)
 """
-import sqlite3, argparse, json, os
+import sqlite3, argparse, json, os, sys
 from datetime import datetime, timezone, timedelta
 import numpy as np, pandas as pd
 from scipy.stats import spearmanr
+
+# Windows 콘솔(cp949)에서 한글 라벨이 깨지지 않도록 stdout을 UTF-8로 강제.
+# (Python 3.7+; 실패해도 무해하게 통과)
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 DB = "history.db"
 KST = timezone(timedelta(hours=9))
@@ -280,14 +287,18 @@ def main():
     prev = None
     hist = sorted([f for f in os.listdir("research") if f.startswith("checkup_") and f.endswith(".json")])
     if hist:
-        try: prev = json.load(open(os.path.join("research", hist[-1])))
-        except Exception: prev = None
+        try:
+            with open(os.path.join("research", hist[-1]), encoding="utf-8") as pf:
+                prev = json.load(pf)
+        except Exception:
+            prev = None
     shifts = detect_shift(rep, prev)
     rep["shift_flags"] = shifts
     print_panel(rep, shifts)
     if a.json:
         fn = f"research/checkup_{datetime.now(KST).strftime('%Y%m%d')}.json"
-        json.dump(rep, open(fn, 'w'), ensure_ascii=False, indent=2, default=str)
+        with open(fn, "w", encoding="utf-8") as f:
+            json.dump(rep, f, ensure_ascii=False, indent=2, default=str)
         print(f"\n저장: {fn}")
 
 if __name__ == "__main__":
