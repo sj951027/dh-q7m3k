@@ -42,6 +42,14 @@ FACTORS = {
     "roe":                  ("roe_value",           True),
     "drawdown":             ('"drawdown_52w_high_%"', True),
     "reversal":             ('"return_1w_%"',       False),
+    # ---- 상승포착(momentum) 대조 관측용 팩터 (2026-06-27 추가) ----
+    # lowvol과 '정반대 방향' 신호. 오프라인 분석에서 forward 5d 시장초과 IC 양수 확인:
+    #   vs_SMA20_%(+0.141)·return_1m_%(+0.125)·vol_1w_vs_1m_ratio(+0.089).
+    # 전부 '큰값=좋음'(20일선 위·1개월 모멘텀↑·거래량 팽창↑) → ascending=True.
+    # 커버리지 100%(과매도30~70 유니버스 내) → 핵심팩터 NaN 문제 없음.
+    "sma20":                ('"vs_SMA20_%"',        True),
+    "mom_1m":               ('"return_1m_%"',       True),
+    "vol_exp":              ("vol_1w_vs_1m_ratio",  True),
 }
 
 # 모델 = {팩터리스트, 유니버스(os_lo, os_hi, liq)}.
@@ -59,6 +67,15 @@ MODELS = {
     #   원본 lv_a와 forward 비교해 좁힌 게 OOS서도 나은지 관찰. (lv_a2=하한제거는 원본과
     #   0-diff라 무의미해 제외 — 유동성 5억이 이미 저과매도 종목 걸러냄을 검증.)
     "lv_a3": {"factors": ["realized_vol", "roe", "reversal"], "uni": (OVERSOLD_LO, 60.0, LIQ_FLOOR)},
+    # ---- 상승포착(momentum) 대조 관측 모델 (2026-06-27 추가, 가중치 0) ----
+    # 목적: lowvol은 '저변동·반전'을 보는데, 상승장 주도주(거래량 터지며 20일선 회복하는
+    #   종목)는 그 정반대 축이다. lowvol과 '같은 유니버스·같은 인프라'에서 대조 관측해,
+    #   상승장이 충분히 낀 뒤 forward로 진짜 상승을 잡는지 판정하려는 준비용 모델.
+    # ⚠️ 정체성은 lowvol과 반대 — model_id 접두사 'mom_'으로 구분(테이블만 공유).
+    # ⚠️ post-hoc·하락장 in-sample 발견 → forward-only. 발견기간(≤20260627) 수치는 가설.
+    #   판정은 등록일(20260627) 이후 OOS 40거래일 + 상승장 표본 충분 시. 그 전 노이즈.
+    # 핵심팩터=sma20(20일선 위치, 커버리지 100%). 보조=1개월 모멘텀·거래량 팽창.
+    "mom_a": {"factors": ["sma20", "mom_1m", "vol_exp"], "uni": DEFAULT_UNI},
 }
 
 def spec_hash(model_id):
@@ -121,7 +138,8 @@ def run(mode_full=False, only_run=None):
     now = datetime.now(KST).isoformat()
 
     cols = ['market','run_id','ticker','oversold_score','"amt_avg_1m_억"',
-            'realized_vol','roe_value','"drawdown_52w_high_%"','"return_1w_%"']
+            'realized_vol','roe_value','"drawdown_52w_high_%"','"return_1w_%"',
+            '"vs_SMA20_%"','"return_1m_%"','vol_1w_vs_1m_ratio']
     q = f"SELECT {','.join(cols)} FROM stage3_final"
     df = pd.read_sql(q, con)
     df.columns = [c.replace('%','pct_').replace('억','uk') for c in df.columns]
