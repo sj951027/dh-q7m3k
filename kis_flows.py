@@ -419,7 +419,24 @@ def collect_short(ticker, token, ak, sk, d1, d2, with_credit, with_loan):
                             "FID_COND_SCR_DIV_CODE": CREDIT_API["scr"],
                             "FID_INPUT_ISCD": ticker,
                             "FID_INPUT_DATE_1": d2})
-            parts.append(parse_credit(j.get(CREDIT_API["out"]) or []))
+            raw = j.get(CREDIT_API["out"])
+            parsed = parse_credit(raw or [])
+            # 진단: 파싱 결과가 비면 응답 구조를 한 번 출력(첫 종목만)
+            if not parsed and not getattr(collect_short, "_credit_warned", False):
+                collect_short._credit_warned = True
+                keys_out = list(j.keys())
+                sample = (raw[0] if isinstance(raw, list) and raw
+                          else raw if isinstance(raw, dict) else None)
+                print(f"   🔬 신용 진단: 응답 최상위 키={keys_out}")
+                print(f"      output 타입={type(raw).__name__} "
+                      f"len={len(raw) if isinstance(raw,(list,dict)) else 'N/A'}")
+                if sample:
+                    print(f"      샘플 키={sorted(sample.keys())[:15]}")
+                # output2 등 다른 키에 있는지
+                for k in ("output1", "output2"):
+                    if j.get(k):
+                        print(f"      ⚠️ {k} 에 데이터 있음(len={len(j[k])})")
+            parts.append(parsed)
         except Exception as e:
             raise RuntimeError(f"신용:{e}")
     if with_loan:
