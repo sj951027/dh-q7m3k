@@ -82,6 +82,36 @@ for _q in DETAIL_COLS:
 
 
 # ============================================================
+# 공매도 / 신용 / 대차 (별도 테이블 short_flows — daily_flows 와 분리)
+# ============================================================
+# [v1.2.0] 공매도(기본 ON)·신용(--with-credit)·대차(--with-loan) 관측 적재.
+#   셋은 각각 별도 KIS API → 종목당 호출 수 = 켠 API 수. 공매도+연기금 기본 ~9분.
+#   데이터 성격이 투자자 수급과 달라 별도 테이블에 저장(daily_flows 0-diff 보존).
+SHORT_API = dict(tr="FHPST04830000",
+                 url="/uapi/domestic-stock/v1/quotations/daily-short-sale", out="output2")
+CREDIT_API = dict(tr="FHPST04760000",
+                  url="/uapi/domestic-stock/v1/quotations/daily-credit-balance",
+                  out="output", scr="20476")
+LOAN_API = dict(tr="HHPST074500C0",
+                url="/uapi/domestic-stock/v1/quotations/daily-loan-trans", out="output1")
+
+SHORT_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS short_flows (
+    ticker TEXT NOT NULL,
+    date   TEXT NOT NULL,
+    short_qty REAL, short_vol_ratio REAL, short_val REAL,
+    credit_bal_qty REAL, credit_bal_amt REAL, credit_bal_rate REAL,
+    loan_bal_qty REAL, loan_bal_amt REAL, loan_chg REAL,
+    fetched_at TEXT,
+    PRIMARY KEY (ticker, date)
+)
+"""
+SHORT_COLS = ["short_qty", "short_vol_ratio", "short_val",
+              "credit_bal_qty", "credit_bal_amt", "credit_bal_rate",
+              "loan_bal_qty", "loan_bal_amt", "loan_chg"]
+
+
+# ============================================================
 # 토큰 (캐시 우선 — 발급은 최후)
 # ============================================================
 def load_cached_token(path=TOKEN_CACHE, now=None):
@@ -275,6 +305,150 @@ def fetch_rows(ticker, token, app_key, app_secret, date):
     return fetch_investor(ticker, token, app_key, app_secret)
 
 
+# ── 공매도/신용/대차 (short_flows) ─────────────────────────
+def ensure_short_table(con):
+    con.execute(SHORT_TABLE_SQL)
+    existing = {r[1] for r in con.execute("PRAGMA table_info(short_flows)")}
+    for col in SHORT_COLS:
+        if col not in existing:
+            con.execute(f'ALTER TABLE short_flows ADD COLUMN "{col}" REAL')
+    con.commit()
+
+
+def parse_short(rows):
+    """공매도 output2 → {date: {필드}}."""
+    out = {}
+    for r in rows or []:
+        d = str(r.get('stck_bsop_date') or '').strip()
+        if len(d) == 8 and d.isdigit():
+            out[d] = {'short_qty': _num(r.get('ssts_cntg_qty')),
+                      'short_vol_ratio': _num(r.get('ssts_vol_rlim')),
+                      'short_val': _num(r.get('ssts_tr_pbmn'))}
+    return out
+
+
+def parse_credit(rows):
+    """신용 output → {date: {필드}}. 날짜키 deal_date."""
+    out = {}
+    for r in rows or []:
+        d = str(r.get('deal_date') or '').strip()
+        if len(d) == 8 and d.isdigit():
+            out[d] = {'credit_bal_qty': _num(r.get('whol_loan_rmnd_stcn')),
+                      'credit_bal_amt': _num(r.get('whol_loan_rmnd_amt')),
+                      'credit_bal_rate': _num(r.get('whol_loan_rmnd_rate'))}
+    return out
+
+
+def parse_loan(rows):
+    """대차 output1 → {date: {필드}}. 날짜키 bsop_date."""
+    out = {}
+    for r in rows or []:
+        d = str(r.get('bsop_date') or '').strip()
+        if len(d) == 8 and d.isdigit():
+            out[d] = {'loan_bal_qty': _num(r.get('rmnd_stcn')),
+                      'loan_bal_amt': _num(r.get('rmnd_amt')),
+                      'loan_chg': _num(r.get('prdy_rmnd_vrss'))}
+    return out
+
+
+def _merge_by_date(*dicts):
+    """{date:{col:val}} 여러 개 → 날짜 합집합 병합."""
+    all_dates = set()
+    for d in dicts:
+        all_dates |= set(d.keys())
+    return {dt: {k: v for d in dicts for k, v in d.get(dt, {}).items()}
+            for dt in all_dates}
+
+
+def _get_short(url, tr, token, ak, sk, params):
+    import requests
+    r = requests.get(f"{BASE}{url}",
+                     headers={"content-type": "application/json",
+                              "authorization": f"Bearer {token}",
+                              "appkey": ak, "appsecret": sk,
+                              "tr_id": tr, "custtype": "P"},
+                     params=params, timeout=10)
+    j = r.json()
+    if j.get("rt_cd") not in (None, "0"):
+        raise RuntimeError(f"rt_cd={j.get('rt_cd')} {j.get('msg1', '')}".strip())
+    return j
+
+
+def collect_short(ticker, token, ak, sk, d1, d2, with_credit, with_loan):
+    """한 종목 공매도(+옵션 신용·대차) → 날짜별 병합 dict."""
+    parts = []
+    j = _get_short(SHORT_API["url"], SHORT_API["tr"], token, ak, sk,
+                   {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": ticker,
+                    "FID_INPUT_DATE_1": d1, "FID_INPUT_DATE_2": d2})
+    parts.append(parse_short(j.get(SHORT_API["out"]) or []))
+    if with_credit:
+        j = _get_short(CREDIT_API["url"], CREDIT_API["tr"], token, ak, sk,
+                       {"FID_COND_MRKT_DIV_CODE": "J",
+                        "FID_COND_SCR_DIV_CODE": CREDIT_API["scr"],
+                        "FID_INPUT_ISCD": ticker})
+        parts.append(parse_credit(j.get(CREDIT_API["out"]) or []))
+    if with_loan:
+        j = _get_short(LOAN_API["url"], LOAN_API["tr"], token, ak, sk,
+                       {"MRKT_DIV_CLS_CODE": "1", "MKSC_SHRN_ISCD": ticker,
+                        "START_DATE": d1, "END_DATE": d2})
+        parts.append(parse_loan(j.get(LOAN_API["out"]) or []))
+    return _merge_by_date(*parts)
+
+
+def upsert_short(con, ticker, by_date, fetched_at):
+    """short_flows 적재. 반환 (신규, 재기록)."""
+    if not by_date:
+        return 0, 0
+    have = {d for (d,) in con.execute(
+        "SELECT date FROM short_flows WHERE ticker=?", (ticker,))}
+    new = sum(1 for d in by_date if d not in have)
+    cols = ["date"] + SHORT_COLS + ["fetched_at"]
+    placeholders = ",".join(["?"] * (len(cols) + 1))
+    col_sql = ",".join(['ticker'] + [f'"{c}"' for c in cols])
+    payload = [tuple([ticker, dt] + [vals.get(c) for c in SHORT_COLS] + [fetched_at])
+               for dt, vals in by_date.items()]
+    con.executemany(
+        f"INSERT OR REPLACE INTO short_flows ({col_sql}) VALUES ({placeholders})", payload)
+    con.commit()
+    return new, len(by_date) - new
+
+
+def run_short_phase(con, tickers, token, ak, sk, sleep, days, with_credit, with_loan):
+    """공매도(+옵션) 적재 단계. main 의 연기금 적재 뒤에 이어서 호출."""
+    from datetime import timedelta
+    today = datetime.now()
+    d2 = today.strftime("%Y%m%d")
+    d1 = (today - timedelta(days=days * 2 + 10)).strftime("%Y%m%d")
+    ensure_short_table(con)
+    apis = "공매도" + ("·신용" if with_credit else "") + ("·대차" if with_loan else "")
+    per = 1 + int(with_credit) + int(with_loan)
+    print("=" * 64)
+    print(f"📉 {apis} 적재 — {len(tickers)}종목 · 종목당 {per}회 · "
+          f"예상 ~{len(tickers) * per * sleep / 60:.1f}분")
+    print("=" * 64)
+    fetched_at = today.strftime("%Y%m%d_%H%M")
+    n_new = n_rep = n_fail = 0
+    t0 = time.time()
+    for i, (tk, name) in enumerate(tickers, 1):
+        time.sleep(sleep)
+        try:
+            by_date = collect_short(tk, token, ak, sk, d1, d2, with_credit, with_loan)
+            a, b = upsert_short(con, tk, by_date, fetched_at)
+            n_new += a
+            n_rep += b
+        except Exception as e:
+            n_fail += 1
+            if n_fail <= 5:
+                print(f"   ⚠️  {name}({tk}) 공매도 실패: {str(e)[:70]}")
+        if i % 100 == 0 or i == len(tickers):
+            el = time.time() - t0
+            print(f"   [{i}/{len(tickers)}] {el:.0f}s · 신규 {n_new} · 재기록 {n_rep} · 실패 {n_fail}")
+    total, days_n = con.execute(
+        "SELECT COUNT(*), COUNT(DISTINCT date) FROM short_flows").fetchone()
+    print(f"💾 short_flows 누적: {total:,}행 · 거래일 {days_n}일"
+          + (f" · 실패 {n_fail}(다음 실행 보충)" if n_fail else ""))
+
+
 def run_verify(con, tickers, token, app_key, app_secret, date, limit):
     """검증 모드: 새 세부 API 의 외인/기관/개인 값이 기존 daily_flows 와 일치하는지 대조.
     DB 에 쓰지 않는다. INSERT OR REPLACE 로 기존 값을 덮기 전에 '같은 숫자인가'를 확인하는 안전장치.
@@ -348,6 +522,14 @@ def main():
     ap.add_argument("--verify", type=int, default=0, metavar="N",
                     help="검증 모드: 상위 N종목만 받아 기존 daily_flows 의 외인/기관 값과 "
                          "대조만 하고 DB 기록 안 함. 첫 실전 전 0-diff 확인용")
+    ap.add_argument("--no-short", action="store_true",
+                    help="공매도 적재 건너뛰기(연기금 수급만). 기본은 공매도까지 적재")
+    ap.add_argument("--with-credit", action="store_true",
+                    help="공매도 단계에 신용잔고도 추가(호출 +1/종목)")
+    ap.add_argument("--with-loan", action="store_true",
+                    help="공매도 단계에 대차잔고도 추가(호출 +1/종목)")
+    ap.add_argument("--short-days", type=int, default=40,
+                    help="공매도/대차 조회 기간(일). 기본 40")
     args = ap.parse_args()
 
     load_env()
@@ -366,6 +548,30 @@ def main():
     # 검증 모드: DB 에 쓰지 않고 기존 값과 대조만.
     if args.verify > 0:
         run_verify(con, tickers, token, app_key, app_secret, date, args.verify)
+        # 공매도(+옵션)도 같이 켰으면 필드 확인
+        if not args.no_short:
+            from datetime import timedelta
+            d2 = datetime.now().strftime("%Y%m%d")
+            d1 = (datetime.now() - timedelta(days=args.short_days * 2 + 10)).strftime("%Y%m%d")
+            print("\n" + "=" * 64)
+            print(f"🔎 공매도 필드 확인 (상위 {min(args.verify,5)}종목)")
+            print("=" * 64)
+            for tk, name in tickers[:min(args.verify, 5)]:
+                time.sleep(args.sleep)
+                try:
+                    bd = collect_short(tk, token, app_key, app_secret, d1, d2,
+                                       args.with_credit, args.with_loan)
+                except Exception as e:
+                    print(f"   ⚠️  {name}({tk}) 실패: {str(e)[:60]}")
+                    continue
+                if not bd:
+                    print(f"   {name}({tk}): 데이터 없음")
+                    continue
+                ds = sorted(bd.keys(), reverse=True)
+                v = bd[ds[0]]
+                print(f"   {name}({tk}) {len(ds)}일치, 최근 {ds[0]}: "
+                      f"공매도량={v.get('short_qty')} 비중={v.get('short_vol_ratio')}% "
+                      f"융자={v.get('credit_bal_qty')} 대차={v.get('loan_bal_qty')}")
         con.close()
         return
 
@@ -394,11 +600,19 @@ def main():
             print(f"   [{i}/{len(tickers)}] {el:.0f}s · 신규 {n_new} · 재기록 {n_rep} · 실패 {n_fail}")
     total, days = con.execute(
         "SELECT COUNT(*), COUNT(DISTINCT date) FROM daily_flows").fetchone()
-    con.close()
     print(f"\n💾 daily_flows 누적: {total:,}행 · 거래일 {days}일")
     if n_fail:
         print(f"   (실패 {n_fail}종목은 저장 안 함 — 내일 윈도 재기록이 자동 보충)")
-    print("✅ 완료. 연기금 등 세부 수급은 이력 누적 후 관측 컬럼으로 분석 예정.")
+    print("✅ 연기금 등 세부 수급 적재 완료.")
+
+    # 공매도(+옵션 신용·대차) 단계 — 같은 토큰·유니버스 재사용. 기본 ON.
+    if not args.no_short:
+        print()
+        run_short_phase(con, tickers, token, app_key, app_secret,
+                        args.sleep, args.short_days, args.with_credit, args.with_loan)
+
+    con.close()
+    print("\n✅ 전체 완료. 수급·공매도는 관측 적재 — 검증 후에만 활용(점수 미투입).")
 
 
 if __name__ == "__main__":
