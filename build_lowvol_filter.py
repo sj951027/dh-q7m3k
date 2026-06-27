@@ -75,6 +75,12 @@ def build_one(con, rid, mkt, sector_map=None):
     g = g.sort_values("lowvol_score", ascending=False).reset_index(drop=True)
     g.insert(0, "rank", g.index + 1)
     g["lowvol_score"] = g["lowvol_score"].round(3)
+    # 표시용 집중도 플래그(점수 불변, 순위 기반 cutoff).
+    #   오프라인 검증: lv_a 상위 10% 롱숏 알파 +4.09%p > 20% +3.26%p(in-sample 가설).
+    #   '상위 10%'를 강조·필터하려는 표시 레이어. 매수신호 아님.
+    n = len(g)
+    g["top10pct"] = (g["rank"] <= max(1, round(n * 0.10))).astype(int)
+    g["top20pct"] = (g["rank"] <= max(1, round(n * 0.20))).astype(int)
     return g
 
 

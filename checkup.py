@@ -157,6 +157,28 @@ def regime_signal(scores, fwd, runs, ridx, act, q=0.8):
     cs = np.corrcoef(t['reg'].iloc[half:], t['bask'].iloc[half:])[0,1] if (len(t)-half) >= 3 else None
     return dict(corr=corr, n=len(t), corr_first=cf, corr_second=cs)
 
+# ---- ④ 집중도 비교: 상위 10% vs 20% 바스켓 롱숏 알파 (lv_a '극단 집중' 추적) ----
+def concentration(scores, fwd, h):
+    """상위/하위 q 바스켓의 롱숏(상위−하위) 알파를 q=0.10, 0.20 두 cutoff로 비교.
+    오프라인 가설: lv_a 상위10% 롱숏 +4.09%p > 20% +3.26%p. OOS서 10%가 진짜 나은지 추적.
+    롱숏 = 베타 제거 근사(상위−하위) → 순수 종목선택력. 전부 가설(OOS<40)."""
+    m = scores.merge(fwd, on=['run_id','market','ticker'], how='inner').dropna(subset=['score'])
+    out = {}
+    for q in (0.10, 0.20):
+        ls = []
+        for (rid, mkt), g in m.groupby(['run_id','market']):
+            if len(g) < 15: continue
+            rp = g['score'].rank(pct=True)
+            longs = g.loc[rp >= 1-q, 'ret']; shorts = g.loc[rp <= q, 'ret']
+            if len(longs) < 3 or len(shorts) < 3: continue
+            ls.append(longs.mean() - shorts.mean())
+        if ls:
+            arr = np.array(ls)
+            out[f"q{int(q*100)}"] = dict(ls_alpha=arr.mean(), ci=boot_ci(arr), n=len(arr))
+        else:
+            out[f"q{int(q*100)}"] = dict(ls_alpha=None, ci=(None,None), n=0)
+    return out
+
 # ---- 판정 룰 ----
 def verdict_ic(stat, oos_days):
     """OOS 거래일과 IC·CI로 노이즈/기움/유의 판정."""
@@ -220,10 +242,12 @@ def build_report(con, since=None):
         h_used = 20 if ic20['n'] > 0 else 5
         beta = beta_track(sc, fwd5, ridx, act)
         regime = regime_signal(sc, fwd5, runs, ridx, act)
+        conc = concentration(sc, fwd5, 5)
         vlabel, vwhy = verdict_ic(ic_main, oos_d)
         rep["models"][mid] = {
             "reg_date": reg_d, "oos_days": oos_d, "h_used": h_used,
             "ic": ic_main, "ic_h5": ic5, "beta": beta, "regime": regime,
+            "concentration": conc,
             "verdict": vlabel, "why": vwhy,
         }
     return rep
@@ -263,6 +287,20 @@ def print_panel(rep, shifts):
             parts.append(f"③레짐 {fmt(r['corr_first'],2)}→{fmt(r['corr_second'],2)}")
         if parts:
             print(f"  {mid:7} " + "  ".join(parts))
+    # 집중도 비교 (상위 10% vs 20% 롱숏 알파) — lv_a 극단집중 추적
+    print("\n[집중도 비교] 상위10% vs 20% 롱숏알파%p (베타뺀 순수선택력, h5, 전부 가설)")
+    for mid in [m for m in order if m in rep['models']]:
+        c = rep['models'][mid].get('concentration')
+        if not c: continue
+        q10, q20 = c.get('q10', {}), c.get('q20', {})
+        a10, a20 = q10.get('ls_alpha'), q20.get('ls_alpha')
+        if a10 is None and a20 is None: continue
+        s10 = f"{a10*100:+.2f}(n{q10['n']})" if a10 is not None else "—"
+        s20 = f"{a20*100:+.2f}(n{q20['n']})" if a20 is not None else "—"
+        better = ""
+        if a10 is not None and a20 is not None:
+            better = " ★10%우위" if a10 > a20 else " (20%우위)"
+        print(f"  {mid:7} 10%: {s10:>14}   20%: {s20:>14}{better}")
     # 기준변화
     print("\n[기준변화 감시]")
     if shifts:
