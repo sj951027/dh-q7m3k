@@ -401,23 +401,36 @@ def _get_short(url, tr, token, ak, sk, params):
 
 
 def collect_short(ticker, token, ak, sk, d1, d2, with_credit, with_loan):
-    """한 종목 공매도(+옵션 신용·대차) → 날짜별 병합 dict."""
+    """한 종목 공매도(+옵션 신용·대차) → 날짜별 병합 dict.
+    어느 단계 실패인지 구분되도록 단계명을 예외에 실어 올린다."""
     parts = []
-    j = _get_short(SHORT_API["url"], SHORT_API["tr"], token, ak, sk,
-                   {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": ticker,
-                    "FID_INPUT_DATE_1": d1, "FID_INPUT_DATE_2": d2})
-    parts.append(parse_short(j.get(SHORT_API["out"]) or []))
+    try:
+        j = _get_short(SHORT_API["url"], SHORT_API["tr"], token, ak, sk,
+                       {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": ticker,
+                        "FID_INPUT_DATE_1": d1, "FID_INPUT_DATE_2": d2})
+        parts.append(parse_short(j.get(SHORT_API["out"]) or []))
+    except Exception as e:
+        raise RuntimeError(f"공매도:{e}")
     if with_credit:
-        j = _get_short(CREDIT_API["url"], CREDIT_API["tr"], token, ak, sk,
-                       {"FID_COND_MRKT_DIV_CODE": "J",
-                        "FID_COND_SCR_DIV_CODE": CREDIT_API["scr"],
-                        "FID_INPUT_ISCD": ticker})
-        parts.append(parse_credit(j.get(CREDIT_API["out"]) or []))
+        try:
+            # 신용은 FID_INPUT_DATE_1(결제일자) 필수. d2(최근일) 기준 과거 30건.
+            j = _get_short(CREDIT_API["url"], CREDIT_API["tr"], token, ak, sk,
+                           {"FID_COND_MRKT_DIV_CODE": "J",
+                            "FID_COND_SCR_DIV_CODE": CREDIT_API["scr"],
+                            "FID_INPUT_ISCD": ticker,
+                            "FID_INPUT_DATE_1": d2})
+            parts.append(parse_credit(j.get(CREDIT_API["out"]) or []))
+        except Exception as e:
+            raise RuntimeError(f"신용:{e}")
     if with_loan:
-        j = _get_short(LOAN_API["url"], LOAN_API["tr"], token, ak, sk,
-                       {"MRKT_DIV_CLS_CODE": "1", "MKSC_SHRN_ISCD": ticker,
-                        "START_DATE": d1, "END_DATE": d2})
-        parts.append(parse_loan(j.get(LOAN_API["out"]) or []))
+        try:
+            # 대차 조회구분 "3"(종목코드 기반) — 코스피/코스닥 무관하게 종목으로.
+            j = _get_short(LOAN_API["url"], LOAN_API["tr"], token, ak, sk,
+                           {"MRKT_DIV_CLS_CODE": "3", "MKSC_SHRN_ISCD": ticker,
+                            "START_DATE": d1, "END_DATE": d2})
+            parts.append(parse_loan(j.get(LOAN_API["out"]) or []))
+        except Exception as e:
+            raise RuntimeError(f"대차:{e}")
     return _merge_by_date(*parts)
 
 
