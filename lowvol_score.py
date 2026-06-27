@@ -42,6 +42,12 @@ FACTORS = {
     "roe":                  ("roe_value",           True),
     "drawdown":             ('"drawdown_52w_high_%"', True),
     "reversal":             ('"return_1w_%"',       False),
+    # ---- 고변동(highvol) 관측 팩터 (2026-06-27 추가) ----
+    # realized_vol 과 '같은 컬럼·반대 방향'(ascending=True = 변동성 클수록 좋음).
+    #   hv_a(고변동 대박 챌린저)용. lv_a 의 저변동을 정확히 뒤집은 대척점.
+    #   가설: 상승장에선 고변동이 크게 튐(상승 run 4개서 >+5% 비율 40% vs 저변동 24%).
+    #   단 하락장 손실 더 큼(-12.66% vs -8.23%), 예측 1.8배 어려움 → forward 검증 필수.
+    "highvol":              ("realized_vol",        True),
     # ---- 상승포착(momentum) 대조 관측용 팩터 (2026-06-27 추가) ----
     # lowvol과 '정반대 방향' 신호. 오프라인 분석에서 forward 5d 시장초과 IC 양수 확인:
     #   vs_SMA20_%(+0.141)·return_1m_%(+0.125)·vol_1w_vs_1m_ratio(+0.089).
@@ -91,6 +97,15 @@ MODELS = {
     #   → 공매도 없는 종목도 lv_a처럼 점수 나옴(공매도만 0.5 중립), 유니버스 동일 유지.
     # ⚠️ post-hoc·하락장 in-sample·run 10개 발견 → forward-only. 등록일 20260627 이후 OOS 40거래일 판정.
     "lv_short": {"factors": ["realized_vol", "roe", "reversal", "short"], "uni": DEFAULT_UNI},
+    # ---- 고변동 대박 챌린저 (2026-06-27 추가, 가중치 0 관측) ----
+    # hv_a = lv_a 의 저변동을 고변동으로 뒤집은 것. 핵심팩터만 highvol 로 교체, 나머지 동일.
+    #   lv_a(저변동+ROE+반전) ↔ hv_a(고변동+ROE+반전) = 정확한 대척점 대조 실험.
+    # 목적: "큰 수익을 노리면(고변동) 반등장에서 어떻게 되나"를 forward 로 관찰.
+    #   오프라인(하락 편중 구간): 고변동은 평균 절대수익 더 나쁨(하락장 손실 큼), 단 상승 run(4개)
+    #   에선 >+5% 비율 40%로 대박 잦음. 상승장 우위는 run 4개 가설 → 상승장 충분히 쌓여야 판정.
+    # ⚠️ 핵심팩터=highvol(realized_vol 실측 필수, lv_a 와 동일 커버리지 43%). 유니버스도 lv_a 동일.
+    # ⚠️ post-hoc·하락장 in-sample 발견 → forward-only. 등록일 20260627, OOS 40거래일 + 상승장 표본.
+    "hv_a": {"factors": ["highvol", "roe", "reversal"], "uni": DEFAULT_UNI},
 }
 
 def spec_hash(model_id):
