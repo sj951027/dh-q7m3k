@@ -425,9 +425,10 @@ def collect_short(ticker, token, ak, sk, d1, d2, with_credit, with_loan):
     if with_loan:
         try:
             # 대차 조회구분 "3"(종목코드 기반) — 코스피/코스닥 무관하게 종목으로.
+            # CTS=연속조회 키(첫 조회는 빈값 필수).
             j = _get_short(LOAN_API["url"], LOAN_API["tr"], token, ak, sk,
                            {"MRKT_DIV_CLS_CODE": "3", "MKSC_SHRN_ISCD": ticker,
-                            "START_DATE": d1, "END_DATE": d2})
+                            "START_DATE": d1, "END_DATE": d2, "CTS": ""})
             parts.append(parse_loan(j.get(LOAN_API["out"]) or []))
         except Exception as e:
             raise RuntimeError(f"대차:{e}")
