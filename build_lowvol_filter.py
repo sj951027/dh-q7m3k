@@ -53,6 +53,22 @@ def build_one(con, rid, mkt, sector_map=None):
     s3.columns = [c.strip('"') for c in s3.columns]
     g = ls.merge(s3, on="ticker", how="left")
 
+    # lv_short 챌린저 점수도 나란히 표시(공매도 추가본). 비교용 — lv_a 와 어느 게 나은지 관찰.
+    #   별도 컬럼 lv_short_score + 그 순위 lv_short_rank. lv_a 점수·순위는 그대로(0-diff).
+    try:
+        lss = pd.read_sql(
+            "SELECT ticker, lowvol_score AS lv_short_score FROM lowvol_scores "
+            "WHERE run_id=? AND market=? AND model_id='lv_short'",
+            con, params=(rid, mkt))
+        if not lss.empty:
+            lss["lv_short_score"] = lss["lv_short_score"].round(3)
+            # lv_short 기준 순위(공매도 반영 순위)
+            lss = lss.sort_values("lv_short_score", ascending=False).reset_index(drop=True)
+            lss["lv_short_rank"] = lss.index + 1
+            g = g.merge(lss, on="ticker", how="left")
+    except Exception:
+        pass
+
     # 섹터: stage3_final 의 sector 는 비어 있음(100% 결측) → sector_cache.json 으로 채움.
     #   (PROJECT_KNOWLEDGE §4-C: sector_cache 가 현재 universe 100% 커버.)
     if sector_map:

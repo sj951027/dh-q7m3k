@@ -50,6 +50,13 @@ FACTORS = {
     "sma20":                ('"vs_SMA20_%"',        True),
     "mom_1m":               ('"return_1m_%"',       True),
     "vol_exp":              ("vol_1w_vs_1m_ratio",  True),
+    # ---- 공매도 관측 팩터 (2026-06-27 추가) ----
+    # short_flows 테이블에서 LEFT JOIN으로 가져옴(stage3엔 없음). 공매도 비중 낮을수록 좋음.
+    #   오프라인 페어비교: lv_a에 더하면 ΔIC +0.034(CI 0밖, 주로 코스닥). 단 run 10개 가설.
+    #   '공매도 적은 저변동 우량주'가 '공매도 많은' 것보다 나음(공매도×고변동 -1.08% 최악).
+    #   ⚠️ 보조 팩터로만 사용(핵심 불가) — short_flows 커버리지가 lv 종목의 일부라
+    #      핵심으로 쓰면 공매도 없는 종목이 전부 제외돼 유니버스가 깨짐.
+    "short":                ("short_vol_ratio",     False),
 }
 
 # 모델 = {팩터리스트, 유니버스(os_lo, os_hi, liq)}.
@@ -76,6 +83,14 @@ MODELS = {
     #   판정은 등록일(20260627) 이후 OOS 40거래일 + 상승장 표본 충분 시. 그 전 노이즈.
     # 핵심팩터=sma20(20일선 위치, 커버리지 100%). 보조=1개월 모멘텀·거래량 팽창.
     "mom_a": {"factors": ["sma20", "mom_1m", "vol_exp"], "uni": DEFAULT_UNI},
+    # ---- 공매도 챌린저 (2026-06-27 추가, 가중치 0 관측) ----
+    # lv_a + 공매도비중(낮을수록 좋음). lv_a와 점수식 동일 + 공매도 1팩터 추가.
+    #   목적: 오프라인서 ΔIC +0.034(유의, 코스닥 위주)로 나온 공매도 효과가 forward(OOS)서도
+    #   유지되는지 lv_a와 나란히 관찰. 유지되면 lv_a 후보로 승격 판단.
+    # 핵심팩터=realized_vol(lv_a와 동일, 실측필수). 보조=roe·reversal·short(NaN은 0.5 중립).
+    #   → 공매도 없는 종목도 lv_a처럼 점수 나옴(공매도만 0.5 중립), 유니버스 동일 유지.
+    # ⚠️ post-hoc·하락장 in-sample·run 10개 발견 → forward-only. 등록일 20260627 이후 OOS 40거래일 판정.
+    "lv_short": {"factors": ["realized_vol", "roe", "reversal", "short"], "uni": DEFAULT_UNI},
 }
 
 def spec_hash(model_id):
@@ -148,6 +163,18 @@ def run(mode_full=False, only_run=None):
            '"amt_avg_1m_uk"':'amt_avg_1m_억'}
     # 위 replace로 따옴표가 남을 수 있어 직접 매핑
     df = df.rename(columns={c: c.strip('"').replace('pct_','%').replace('_uk','_억') for c in df.columns})
+
+    # 공매도 비중을 short_flows 에서 LEFT JOIN (lv_short 챌린저용 관측 팩터).
+    #   short_flows.date == stage3.run_id (둘 다 YYYYMMDD). 없는 종목/날짜는 NaN(보조라 0.5 중립).
+    #   short_flows 테이블이 없으면(미적재 환경) 컬럼만 NaN으로 만들어 안전하게 진행.
+    try:
+        sfdf = pd.read_sql(
+            "SELECT ticker, date AS run_id, short_vol_ratio FROM short_flows", con)
+        sfdf['run_id'] = sfdf['run_id'].astype(str)
+        df['run_id'] = df['run_id'].astype(str)
+        df = df.merge(sfdf, on=['ticker', 'run_id'], how='left')
+    except Exception:
+        df['short_vol_ratio'] = float('nan')   # short_flows 부재 시에도 동작
 
     # 부분적재일 제외(완전성)
     rc = df.groupby('run_id').size()
