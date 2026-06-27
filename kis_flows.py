@@ -414,29 +414,13 @@ def collect_short(ticker, token, ak, sk, d1, d2, with_credit, with_loan):
     if with_credit:
         try:
             # 신용은 FID_INPUT_DATE_1(결제일자) 필수. d2(최근일) 기준 과거 30건.
+            #   결제일 기준이라 최근 1~2거래일은 비어 올 수 있음(정상).
             j = _get_short(CREDIT_API["url"], CREDIT_API["tr"], token, ak, sk,
                            {"FID_COND_MRKT_DIV_CODE": "J",
                             "FID_COND_SCR_DIV_CODE": CREDIT_API["scr"],
                             "FID_INPUT_ISCD": ticker,
                             "FID_INPUT_DATE_1": d2})
-            raw = j.get(CREDIT_API["out"])
-            parsed = parse_credit(raw or [])
-            # 진단: 파싱 결과가 비면 응답 구조를 한 번 출력(첫 종목만)
-            if not parsed and not getattr(collect_short, "_credit_warned", False):
-                collect_short._credit_warned = True
-                keys_out = list(j.keys())
-                sample = (raw[0] if isinstance(raw, list) and raw
-                          else raw if isinstance(raw, dict) else None)
-                print(f"   🔬 신용 진단: 응답 최상위 키={keys_out}")
-                print(f"      output 타입={type(raw).__name__} "
-                      f"len={len(raw) if isinstance(raw,(list,dict)) else 'N/A'}")
-                if sample:
-                    print(f"      샘플 키={sorted(sample.keys())[:15]}")
-                # output2 등 다른 키에 있는지
-                for k in ("output1", "output2"):
-                    if j.get(k):
-                        print(f"      ⚠️ {k} 에 데이터 있음(len={len(j[k])})")
-            parts.append(parsed)
+            parts.append(parse_credit(j.get(CREDIT_API["out"]) or []))
         except Exception as e:
             raise RuntimeError(f"신용:{e}")
     if with_loan:
@@ -631,17 +615,14 @@ def main():
                     continue
                 ds = sorted(bd.keys(), reverse=True)
                 v = bd[ds[0]]
-                # 신용·대차가 채워진 날 수(날짜 불일치 진단)
                 n_credit = sum(1 for d in bd if bd[d].get('credit_bal_qty') is not None)
                 n_loan = sum(1 for d in bd if bd[d].get('loan_bal_qty') is not None)
-                # 융자가 채워진 가장 최근 날(있으면)
                 cd = next((d for d in ds if bd[d].get('credit_bal_qty') is not None), None)
                 cval = bd[cd].get('credit_bal_qty') if cd else None
-                print(f"   {name}({tk}) {len(ds)}일치, 최근 {ds[0]}: "
-                      f"공매도량={v.get('short_qty')} 비중={v.get('short_vol_ratio')}% "
-                      f"대차={v.get('loan_bal_qty')}")
-                print(f"      └ 융자채움 {n_credit}일/대차채움 {n_loan}일"
-                      + (f" · 융자최근 {cd}={cval}" if cd else " · 융자 전부 없음"))
+                print(f"   {name}({tk}) {len(ds)}일: 공매도={v.get('short_qty')} "
+                      f"비중={v.get('short_vol_ratio')}% 대차={v.get('loan_bal_qty')}")
+                print(f"      └ 융자 {n_credit}일(최근 {cd}={cval}) · 대차 {n_loan}일"
+                      if cd else f"      └ 융자 0일 · 대차 {n_loan}일")
         con.close()
         return
 
