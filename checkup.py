@@ -48,6 +48,7 @@ REG_DATE = {
     "lv_a": "20260625", "lv_b": "20260625", "lv_c": "20260625",
     "lv_d": "20260625", "lv_a3": "20260625",
     "mom_a": "20260627",
+    "lv_short": "20260627", "hv_a": "20260627",
 }
 
 def boot_ci(arr, n=2000, seed=42):
@@ -261,7 +262,7 @@ def print_panel(rep, shifts):
     print("="*78)
     print(f"{'모델':7} {'OOS일':>5} {'판정':10} {'IC(h)':>9} {'CI하한':>8} {'방향%':>6} {'베타':>6} {'레짐상관':>8}")
     print("-"*78)
-    order = ['v30','v31a','v31b','v31c','v31d','v31f','v31g','lv_a','lv_a3','lv_b','lv_c','lv_d','mom_a']
+    order = ['v30','v31a','v31b','v31c','v31d','v31f','v31g','lv_a','lv_a3','lv_b','lv_c','lv_d','lv_short','mom_a','hv_a']
     for mid in [m for m in order if m in rep['models']]:
         d = rep['models'][mid]
         ic = d['ic']
