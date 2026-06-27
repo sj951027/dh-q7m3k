@@ -631,9 +631,17 @@ def main():
                     continue
                 ds = sorted(bd.keys(), reverse=True)
                 v = bd[ds[0]]
+                # 신용·대차가 채워진 날 수(날짜 불일치 진단)
+                n_credit = sum(1 for d in bd if bd[d].get('credit_bal_qty') is not None)
+                n_loan = sum(1 for d in bd if bd[d].get('loan_bal_qty') is not None)
+                # 융자가 채워진 가장 최근 날(있으면)
+                cd = next((d for d in ds if bd[d].get('credit_bal_qty') is not None), None)
+                cval = bd[cd].get('credit_bal_qty') if cd else None
                 print(f"   {name}({tk}) {len(ds)}일치, 최근 {ds[0]}: "
                       f"공매도량={v.get('short_qty')} 비중={v.get('short_vol_ratio')}% "
-                      f"융자={v.get('credit_bal_qty')} 대차={v.get('loan_bal_qty')}")
+                      f"대차={v.get('loan_bal_qty')}")
+                print(f"      └ 융자채움 {n_credit}일/대차채움 {n_loan}일"
+                      + (f" · 융자최근 {cd}={cval}" if cd else " · 융자 전부 없음"))
         con.close()
         return
 
