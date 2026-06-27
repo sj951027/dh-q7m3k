@@ -42,7 +42,24 @@ from catalyst_insider import load_env   # .env 로더 재사용 (KIS_APP_KEY/SEC
 DB_PATH = Path("history.db")
 TOKEN_CACHE = Path("kis_token.json")
 BASE = "https://openapi.koreainvestment.com:9443"      # 실전투자 도메인 (조회)
-TR_INVESTOR = "FHKST01010900"                          # 주식현재가 투자자(일별)
+TR_INVESTOR = "FHKST01010900"                          # 주식현재가 투자자(일별) — 구버전(보존)
+# [v1.1.0] 종목별 투자자매매동향(일별): 기관을 연기금·투신·증권·사모·보험·은행으로 세분.
+#   한 번 호출에 ~30거래일 윈도(output2)를 돌려줌(기존 inquire-investor와 동일 패턴).
+#   외인/기관계/개인 필드명도 동일(frgn/orgn/prsn_ntby_qty) → 기존 컬럼 0-diff 호환.
+TR_INVESTOR_DETAIL = "FHPTJ04160001"
+USE_DETAIL = True                                      # True=세부API(연기금 포함). False=구버전 폴백.
+
+# 세부 투자자 추가 컬럼(daily_flows 에 ALTER 로 자동 추가). 기금=연기금등.
+#   {DB컬럼: (수량 API키, 대금 API키)}
+DETAIL_COLS = {
+    "pension_net_qty": ("fund_ntby_qty",   "fund_ntby_tr_pbmn"),   # 연기금등(기금)
+    "trust_net_qty":   ("ivtr_ntby_qty",   "ivtr_ntby_tr_pbmn"),   # 투자신탁(투신)
+    "secfirm_net_qty": ("scrt_ntby_qty",   "scrt_ntby_tr_pbmn"),   # 금융투자(증권)
+    "prveq_net_qty":   ("pe_fund_ntby_vol", "pe_fund_ntby_tr_pbmn"), # 사모펀드
+    "insu_net_qty":    ("insu_ntby_qty",   "insu_ntby_tr_pbmn"),   # 보험
+    "bank_net_qty":    ("bank_ntby_qty",   "bank_ntby_tr_pbmn"),   # 은행
+}
+# 대금 컬럼은 _qty → _val 로 파생(아래 parse 에서 함께 채움)
 KIS_REQ_INTERVAL = 0.55                                # 호출 간격(초) — 트래커와 동일
 TOKEN_MIN_LEFT = 1800                                  # 잔여 30분 미만이면 재발급
 
@@ -57,6 +74,11 @@ CREATE TABLE IF NOT EXISTS daily_flows (
     PRIMARY KEY (ticker, date)
 )
 """
+# 세부 투자자 컬럼(수량+대금). 기존 테이블엔 ensure_table 이 ALTER 로 추가.
+DETAIL_DDL_COLS = []
+for _q in DETAIL_COLS:
+    DETAIL_DDL_COLS.append(_q)                  # *_net_qty
+    DETAIL_DDL_COLS.append(_q.replace("_net_qty", "_net_val"))  # *_net_val
 
 
 # ============================================================
@@ -148,6 +170,11 @@ def parse_rows(output_rows, fetched_at):
             'inst_net_val': pick('orgn_ntby_tr_pbmn', 'orgn_shnu_tr_pbmn'),
             'fetched_at': fetched_at,
         }
+        # 세부 투자자(연기금 등) — 세부 API 응답에만 존재. 구버전 응답엔 키가 없어 None(무해).
+        for db_qty, (api_qty, api_val) in DETAIL_COLS.items():
+            db_val = db_qty.replace("_net_qty", "_net_val")
+            row[db_qty] = pick(api_qty)
+            row[db_val] = pick(api_val)
         if row['foreign_net_qty'] is None and row['inst_net_qty'] is None and not warned:
             print(f"   ⚠️  예상 필드 없음 — 응답 키 진단: {sorted(r.keys())[:20]}")
             warned = True
@@ -160,24 +187,31 @@ def parse_rows(output_rows, fetched_at):
 # ============================================================
 def ensure_table(con):
     con.execute(TABLE_SQL)
+    # 세부 투자자 컬럼 자가치유: 기존 daily_flows 에 없으면 ALTER 로 추가(있으면 skip).
+    #   accumulate_history.write_to_sqlite 와 동일한 안전 패턴. 기존 행은 NULL 로 남음(무해).
+    existing = {r[1] for r in con.execute("PRAGMA table_info(daily_flows)")}
+    for col in DETAIL_DDL_COLS:
+        if col not in existing:
+            con.execute(f'ALTER TABLE daily_flows ADD COLUMN "{col}" REAL')
     con.commit()
 
 
 def upsert_flows(con, ticker, rows):
-    """INSERT OR REPLACE. 반환 (신규 날짜 수, 재기록 수). 행이 없으면 (0,0) — 에러 미저장."""
+    """INSERT OR REPLACE. 반환 (신규 날짜 수, 재기록 수). 행이 없으면 (0,0) — 에러 미저장.
+    기존 9컬럼 + 세부 투자자 컬럼을 동적으로 구성(누락/순서 오류 방지)."""
     if not rows:
         return 0, 0
     have = {d for (d,) in con.execute(
         "SELECT date FROM daily_flows WHERE ticker=?", (ticker,))}
     new = sum(1 for r in rows if r['date'] not in have)
+    base_cols = ['date', 'close', 'person_net_qty', 'foreign_net_qty', 'inst_net_qty',
+                 'person_net_val', 'foreign_net_val', 'inst_net_val', 'fetched_at']
+    cols = base_cols + DETAIL_DDL_COLS                 # 세부 컬럼 뒤에 append
+    placeholders = ",".join(["?"] * (len(cols) + 1))   # +1 = ticker
+    col_sql = ",".join(['ticker'] + [f'"{c}"' for c in cols])
     con.executemany(
-        "INSERT OR REPLACE INTO daily_flows "
-        "(ticker, date, close, person_net_qty, foreign_net_qty, inst_net_qty, "
-        " person_net_val, foreign_net_val, inst_net_val, fetched_at) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?)",
-        [(ticker, r['date'], r['close'], r['person_net_qty'], r['foreign_net_qty'],
-          r['inst_net_qty'], r['person_net_val'], r['foreign_net_val'],
-          r['inst_net_val'], r['fetched_at']) for r in rows])
+        f"INSERT OR REPLACE INTO daily_flows ({col_sql}) VALUES ({placeholders})",
+        [tuple([ticker] + [r.get(c) for c in cols]) for r in rows])
     con.commit()
     return new, len(rows) - new
 
@@ -198,6 +232,7 @@ def load_universe_tickers(db_path=DB_PATH, run_id=None, top=None):
 # KIS 호출 (네트워크 — 사용자 PC 전용)
 # ============================================================
 def fetch_investor(ticker, token, app_key, app_secret):
+    """구버전: 주식현재가 투자자(일별). output 1개 키. 외인/기관/개인만. (폴백·보존)"""
     import requests
     r = requests.get(
         f"{BASE}/uapi/domestic-stock/v1/quotations/inquire-investor",
@@ -213,12 +248,106 @@ def fetch_investor(ticker, token, app_key, app_secret):
     return j.get("output") or []
 
 
+def fetch_investor_detail(ticker, token, app_key, app_secret, date):
+    """[v1.1.0] 종목별 투자자매매동향(일별). 일자별 데이터는 output2(~30거래일).
+    외인/기관계/개인 + 연기금 등 세부. date=기준일(YYYYMMDD), 그날 포함 과거 윈도 반환."""
+    import requests
+    r = requests.get(
+        f"{BASE}/uapi/domestic-stock/v1/quotations/investor-trade-by-stock-daily",
+        headers={"content-type": "application/json",
+                 "authorization": f"Bearer {token}",
+                 "appkey": app_key, "appsecret": app_secret,
+                 "tr_id": TR_INVESTOR_DETAIL, "custtype": "P"},
+        params={"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": ticker,
+                "FID_INPUT_DATE_1": date, "FID_ORG_ADJ_PRC": "", "FID_ETC_CLS_CODE": ""},
+        timeout=10)
+    j = r.json()
+    if j.get("rt_cd") not in (None, "0"):
+        raise RuntimeError(f"rt_cd={j.get('rt_cd')} {j.get('msg1', '')}".strip())
+    # 일자별 세부는 output2. (output1 은 현재가 요약 — 사용 안 함)
+    return j.get("output2") or []
+
+
+def fetch_rows(ticker, token, app_key, app_secret, date):
+    """USE_DETAIL 스위치에 따라 세부/구버전 호출. parse_rows 에 넘길 list[dict] 반환."""
+    if USE_DETAIL:
+        return fetch_investor_detail(ticker, token, app_key, app_secret, date)
+    return fetch_investor(ticker, token, app_key, app_secret)
+
+
+def run_verify(con, tickers, token, app_key, app_secret, date, limit):
+    """검증 모드: 새 세부 API 의 외인/기관/개인 값이 기존 daily_flows 와 일치하는지 대조.
+    DB 에 쓰지 않는다. INSERT OR REPLACE 로 기존 값을 덮기 전에 '같은 숫자인가'를 확인하는 안전장치.
+    세부 API 가 다른 숫자를 주면(예: 잠정/확정 차이) 여기서 불일치로 드러나 오염을 막는다."""
+    print("=" * 64)
+    print(f"🔎 검증 모드 — 새 세부 API vs 기존 daily_flows (상위 {limit}종목, DB 미기록)")
+    print(f"   기준일 {date} · 외인/기관/개인 net_qty 가 같은 날짜에서 일치하는지 대조")
+    print("=" * 64)
+    checked = match = mismatch = nodata = 0
+    examples = []
+    for tk, name in tickers[:limit]:
+        time.sleep(KIS_REQ_INTERVAL)
+        try:
+            rows = parse_rows(fetch_investor_detail(tk, token, app_key, app_secret, date),
+                              datetime.now().strftime("%Y%m%d_%H%M"))
+        except Exception as e:
+            print(f"   ⚠️  {name}({tk}) 호출 실패: {str(e)[:70]}")
+            continue
+        new_by_date = {r['date']: r for r in rows}
+        # 기존 DB 의 같은 종목 행
+        old = con.execute(
+            "SELECT date, foreign_net_qty, inst_net_qty, person_net_qty "
+            "FROM daily_flows WHERE ticker=?", (tk,)).fetchall()
+        if not old:
+            nodata += 1
+            continue
+        for d, of, oi, op in old:
+            nr = new_by_date.get(d)
+            if nr is None:
+                continue  # 새 윈도에 없는 과거 날짜는 스킵
+            checked += 1
+            # 부동소수 안전 비교(정수 수량이라 1주 이내면 동일로 간주)
+            def eq(a, b):
+                if a is None or b is None:
+                    return a is None and b is None
+                return abs(a - b) < 1.0
+            if eq(of, nr['foreign_net_qty']) and eq(oi, nr['inst_net_qty']) and eq(op, nr['person_net_qty']):
+                match += 1
+            else:
+                mismatch += 1
+                if len(examples) < 8:
+                    examples.append(
+                        f"     {name}({tk}) {d}: 외인 기존{of}/신{nr['foreign_net_qty']} "
+                        f"기관 기존{oi}/신{nr['inst_net_qty']}")
+    print(f"\n[검증 결과] 대조 {checked}건 · 일치 {match} · 불일치 {mismatch} · DB무종목 {nodata}")
+    if examples:
+        print("  불일치 예시:")
+        for e in examples:
+            print(e)
+    print()
+    if checked == 0:
+        print("⚠️  대조할 겹치는 날짜가 없음 — --date 를 기존 데이터(최근) 범위로 맞춰 재시도.")
+    elif mismatch == 0:
+        print("✅ 외인/기관/개인 값 100% 일치 — 새 API 로 교체해도 기존 컬럼 0-diff. 안전.")
+        print("   이제 --verify 없이 정상 실행하면 연기금 등 세부 컬럼이 추가 적재된다.")
+    else:
+        rate = 100 * mismatch / checked
+        print(f"❌ 불일치 {rate:.1f}% — 두 API 가 다른 숫자를 줌. 교체 보류 권장.")
+        print("   원인 후보: 잠정치 vs 확정치, 수정주가 기준 차이. 위 예시를 Claude 에게 전달.")
+    return mismatch == 0 and checked > 0
+
+
 def main():
     ap = argparse.ArgumentParser(description="KIS 일별 투자자 수급 증분 적재(조회 전용)")
     ap.add_argument("--run-id", default=None, help="유니버스 run (기본: large_universe 최신)")
     ap.add_argument("--top", type=int, default=None, help="시총 상위 N만 (기본: 적재분 전체=500)")
     ap.add_argument("--sleep", type=float, default=KIS_REQ_INTERVAL)
     ap.add_argument("--db", default=str(DB_PATH))
+    ap.add_argument("--date", default=None,
+                    help="세부 API 기준일 YYYYMMDD (기본: 오늘). 그날 포함 과거 ~30거래일 윈도 반환")
+    ap.add_argument("--verify", type=int, default=0, metavar="N",
+                    help="검증 모드: 상위 N종목만 받아 기존 daily_flows 의 외인/기관 값과 "
+                         "대조만 하고 DB 기록 안 함. 첫 실전 전 0-diff 확인용")
     args = ap.parse_args()
 
     load_env()
@@ -228,21 +357,31 @@ def main():
         raise SystemExit("❌ .env 의 KIS_APP_KEY / KIS_APP_SECRET 확인")
 
     rid, tickers = load_universe_tickers(Path(args.db), args.run_id, args.top)
-    print("=" * 64)
-    print(f"🏛️  KIS 일별 투자자 수급 적재 — 유니버스 run {rid}, {len(tickers)}종목 "
-          f"(간격 {args.sleep}s, 예상 ~{len(tickers) * args.sleep / 60:.1f}분)")
-    print("=" * 64)
+    date = args.date or datetime.now().strftime("%Y%m%d")   # 세부 API 기준일
 
     token = get_token(app_key, app_secret)
     con = sqlite3.connect(args.db)
     ensure_table(con)
+
+    # 검증 모드: DB 에 쓰지 않고 기존 값과 대조만.
+    if args.verify > 0:
+        run_verify(con, tickers, token, app_key, app_secret, date, args.verify)
+        con.close()
+        return
+
+    mode = "세부(연기금 포함)" if USE_DETAIL else "구버전(외인/기관만)"
+    print("=" * 64)
+    print(f"🏛️  KIS 일별 투자자 수급 적재 — 유니버스 run {rid}, {len(tickers)}종목 · {mode}")
+    print(f"   기준일 {date} · 간격 {args.sleep}s · 예상 ~{len(tickers) * args.sleep / 60:.1f}분")
+    print("=" * 64)
+
     fetched_at = datetime.now().strftime("%Y%m%d_%H%M")
     n_new = n_rep = n_fail = 0
     t0 = time.time()
     for i, (tk, name) in enumerate(tickers, 1):
         time.sleep(args.sleep)
         try:
-            rows = parse_rows(fetch_investor(tk, token, app_key, app_secret), fetched_at)
+            rows = parse_rows(fetch_rows(tk, token, app_key, app_secret, date), fetched_at)
             a, b = upsert_flows(con, tk, rows)
             n_new += a
             n_rep += b
@@ -259,7 +398,7 @@ def main():
     print(f"\n💾 daily_flows 누적: {total:,}행 · 거래일 {days}일")
     if n_fail:
         print(f"   (실패 {n_fail}종목은 저장 안 함 — 내일 윈도 재기록이 자동 보충)")
-    print("✅ 완료. 수급 리버설 팩터는 이력 60일+ 누적 후 large_score 관측 컬럼으로 배선 예정.")
+    print("✅ 완료. 연기금 등 세부 수급은 이력 누적 후 관측 컬럼으로 분석 예정.")
 
 
 if __name__ == "__main__":
