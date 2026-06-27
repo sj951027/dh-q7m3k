@@ -258,6 +258,32 @@ def load_universe_tickers(db_path=DB_PATH, run_id=None, top=None):
     return str(rid), rows
 
 
+def load_lowvol_tickers(db_path=DB_PATH, run_id=None):
+    """lv_a 유니버스: stage3 최신 run 과매도 30~70 + 유동성 5억(LOWVOL §2)."""
+    with sqlite3.connect(db_path) as con:
+        rid = run_id or con.execute("SELECT MAX(run_id) FROM stage3_final").fetchone()[0]
+        rows = con.execute(
+            'SELECT ticker, name FROM stage3_final '
+            'WHERE run_id=? AND oversold_score>=30 AND oversold_score<70 '
+            'AND "amt_avg_1m_억">=5 ORDER BY "amt_avg_1m_억" DESC',
+            (str(rid),)).fetchall()
+    return str(rid), rows
+
+
+def load_combined_tickers(db_path=DB_PATH, top=None):
+    """large(대형 시총상위) + lv_a(중소형 과매도) 합집합, 종목 중복 제거.
+    연기금은 대형주 현상이라 large 가 주력이지만, 공매도는 중소형(lv_a)에서도
+    신호 가능성이 있어 두 유니버스를 합쳐 한 번에 받는다."""
+    lrid, large = load_universe_tickers(db_path, None, top)
+    srid, lowvol = load_lowvol_tickers(db_path, None)
+    seen, merged = set(), []
+    for tk, name in list(large) + list(lowvol):   # large 우선(시총순), 그다음 lv_a
+        if tk not in seen:
+            seen.add(tk)
+            merged.append((tk, name))
+    return f"large{lrid}+lv{srid}", merged
+
+
 # ============================================================
 # KIS 호출 (네트워크 — 사용자 PC 전용)
 # ============================================================
@@ -514,6 +540,8 @@ def run_verify(con, tickers, token, app_key, app_secret, date, limit):
 def main():
     ap = argparse.ArgumentParser(description="KIS 일별 투자자 수급 증분 적재(조회 전용)")
     ap.add_argument("--run-id", default=None, help="유니버스 run (기본: large_universe 최신)")
+    ap.add_argument("--universe", choices=["large", "combined"], default="combined",
+                    help="종목 출처: large(대형500만) / combined(large+lv_a 중소형, 기본)")
     ap.add_argument("--top", type=int, default=None, help="시총 상위 N만 (기본: 적재분 전체=500)")
     ap.add_argument("--sleep", type=float, default=KIS_REQ_INTERVAL)
     ap.add_argument("--db", default=str(DB_PATH))
@@ -538,7 +566,10 @@ def main():
     if not (app_key and app_secret):
         raise SystemExit("❌ .env 의 KIS_APP_KEY / KIS_APP_SECRET 확인")
 
-    rid, tickers = load_universe_tickers(Path(args.db), args.run_id, args.top)
+    if args.universe == "combined":
+        rid, tickers = load_combined_tickers(Path(args.db), args.top)
+    else:
+        rid, tickers = load_universe_tickers(Path(args.db), args.run_id, args.top)
     date = args.date or datetime.now().strftime("%Y%m%d")   # 세부 API 기준일
 
     token = get_token(app_key, app_secret)
