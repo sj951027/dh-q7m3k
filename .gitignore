@@ -50,6 +50,8 @@ large_report.html
 # 아래는 전부 루트 앵커(/) — docs/ 안의 동명 파일은 계속 추적된다(Pages용).
 # 추가 후 1회: git rm -r --cached 로 기존 추적 해제 필요(CLEANUP_NOTES.md 참고).
 /history.db
+# B 트랙 일별 OHLCV raw (별도 DB, 282MB+ 예상 — git 제외, 백업은 별도)
+/ohlcv.db
 /archive/
 /snapshots/
 /diversified_picks_*.csv
