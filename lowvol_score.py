@@ -106,6 +106,15 @@ MODELS = {
     # ⚠️ 핵심팩터=highvol(realized_vol 실측 필수, lv_a 와 동일 커버리지 43%). 유니버스도 lv_a 동일.
     # ⚠️ post-hoc·하락장 in-sample 발견 → forward-only. 등록일 20260627, OOS 40거래일 + 상승장 표본.
     "hv_a": {"factors": ["highvol", "roe", "reversal"], "uni": DEFAULT_UNI},
+    # ---- 초소형(small) 트랙 (2026-06-27 추가, 가중치 0 관측) ----
+    # sm_a = lv_a 와 점수식 동일(저변동+ROE+반전), 유니버스만 '거래대금 1~5억 초소형'.
+    #   lv_a 가 유동성 하한(5억)으로 *버리는* 영역. 유동성 프리미엄 가설:
+    #   오프라인서 거래대금 작을수록 단조롭게 시장초과↑ (h20: 초소형 +6.41% vs 대형 -6.10%).
+    #   초소형+저변동 결합이 변동성·꼬리위험 줄임(변동성 9.8→8.6%). 핵심팩터=realized_vol(실측).
+    # uni 4번째 원소 = 유동성 상한(5억). 하한 1억(<1억은 거래 거의 불가라 제외).
+    # ⚠️ 실거래 제약: 중앙값 거래대금 2억 → 소액만 가능(슬리피지·거래불가 위험 = 프리미엄의 정체).
+    #   관찰·소액 전용. post-hoc·하락장 in-sample → forward-only. 등록 20260627, OOS 40거래일(h20 위주).
+    "sm_a": {"factors": ["realized_vol", "roe", "reversal"], "uni": (OVERSOLD_LO, OVERSOLD_HI, 1.0, 5.0)},
 }
 
 def spec_hash(model_id):
@@ -223,10 +232,12 @@ def run(mode_full=False, only_run=None):
             if len(sub)==0: continue
             for mid, mdef in MODELS.items():
                 if (rid, mid) in done_set: continue
-                os_lo, os_hi, liq = mdef["uni"]
-                # 모델별 유니버스: 과매도 구간 + 유동성 하한
+                u = mdef["uni"]
+                os_lo, os_hi, liq = u[0], u[1], u[2]
+                liq_hi = u[3] if len(u) > 3 else float("inf")  # 유동성 상한(optional)
+                # 모델별 유니버스: 과매도 구간 + 유동성 하한(+선택적 상한)
                 uni = sub[(sub[universe_col]>=os_lo)&(sub[universe_col]<os_hi)
-                          &(sub[liq_col]>=liq)].copy()
+                          &(sub[liq_col]>=liq)&(sub[liq_col]<liq_hi)].copy()
                 if len(uni)<10:  # 너무 작으면 순위 무의미
                     continue
                 n_uni = len(uni)
