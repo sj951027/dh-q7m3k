@@ -40,6 +40,13 @@ python large_universe.py
 python catalyst_large.py
 python large_score.py
 python kis_flows.py
+
+echo.
+echo ========================================================================
+echo   [B track] daily_ohlcv increment (full universe OHLCV, approx 6 min)
+echo ========================================================================
+python universe_ohlcv.py
+
 python build_large_report.py
 
 echo.

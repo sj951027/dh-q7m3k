@@ -25,9 +25,11 @@ import argparse
 import sqlite3
 import time
 import sys
+import os
 from datetime import datetime, timedelta
 
-DB_PATH = "ohlcv.db"          # ★ history.db 와 분리
+DB_DIR = os.path.join("..", "dh-q7m3k-data")  # ★ 레포 바깥(git·핸드오프 범위 밖). raw 데이터 격리.
+DB_PATH = os.path.join(DB_DIR, "ohlcv.db")
 INCREMENTAL_WINDOW = 7        # 일상 증분 시 최근 며칠 재확인(공백/정정 흡수)
 SLEEP = 0.0                   # FDR 은 rate limit 부담 적음. 필요시 0.1~0.3 으로.
 
@@ -58,6 +60,12 @@ CREATE TABLE IF NOT EXISTS ohlcv_skips (
     fetched_at TEXT
 );
 """
+
+
+def _connect():
+    """DB 폴더(레포 바깥)가 없으면 만들고 연결."""
+    os.makedirs(DB_DIR, exist_ok=True)
+    return sqlite3.connect(DB_PATH)
 
 
 def ensure_schema(con):
@@ -157,7 +165,7 @@ def record_skip(con, code, reason, at_date, fetched_at):
 def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_WINDOW):
     fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     today = datetime.now()
-    con = sqlite3.connect(DB_PATH)
+    con = _connect()
     ensure_schema(con)
 
     universe = get_universe()
@@ -221,7 +229,7 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
 
 
 def status():
-    con = sqlite3.connect(DB_PATH)
+    con = _connect()
     ensure_schema(con)
     c = con.cursor()
     n = c.execute("SELECT COUNT(*) FROM daily_ohlcv").fetchone()[0]
