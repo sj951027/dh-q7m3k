@@ -40,6 +40,9 @@ from pathlib import Path
 from catalyst_insider import load_env   # .env 로더 재사용 (KIS_APP_KEY/SECRET)
 
 DB_PATH = Path("history.db")
+# 전체 종목 유니버스(--universe all)는 ohlcv.db(레포 밖)의 종목 목록을 사용.
+# 수급/공매도 저장은 여전히 history.db(점수 코드 호환). raw 분석은 §21-8 참고.
+OHLCV_DB = Path("..") / "dh-q7m3k-data" / "ohlcv.db"
 TOKEN_CACHE = Path("kis_token.json")
 BASE = "https://openapi.koreainvestment.com:9443"      # 실전투자 도메인 (조회)
 TR_INVESTOR = "FHKST01010900"                          # 주식현재가 투자자(일별) — 구버전(보존)
@@ -282,6 +285,25 @@ def load_combined_tickers(db_path=DB_PATH, top=None):
             seen.add(tk)
             merged.append((tk, name))
     return f"large{lrid}+lv{srid}", merged
+
+
+def load_all_tickers(ohlcv_path=OHLCV_DB):
+    """ohlcv.db(전체 종목 raw)에서 활발 거래 전체 종목을 유니버스로.
+    수급/공매도를 전체 KOSPI/KOSDAQ 으로 확장(§21-8 — KIS는 과거 못 받으니 일찍 넓게).
+    저장은 history.db 그대로(점수 코드 호환). 최신일 거래정지 종목(죽은 종목)은 제외.
+    name 은 ohlcv 에 없으므로 ticker 로 대체(수급 적재엔 name 불필요)."""
+    if not Path(ohlcv_path).exists():
+        raise RuntimeError(
+            f"ohlcv.db 없음({ohlcv_path}) — universe_ohlcv.py 로 먼저 적재 필요")
+    with sqlite3.connect(ohlcv_path) as con:
+        latest = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
+        rows = con.execute(
+            """SELECT ticker FROM daily_ohlcv
+               WHERE date=? AND is_suspended=0 AND close IS NOT NULL
+               ORDER BY close*COALESCE(shares,0) DESC""",
+            (latest,)).fetchall()
+    tickers = [(r[0], r[0]) for r in rows]   # (ticker, name=ticker)
+    return f"all_ohlcv_{latest}", tickers
 
 
 # ============================================================
@@ -555,8 +577,9 @@ def run_verify(con, tickers, token, app_key, app_secret, date, limit):
 def main():
     ap = argparse.ArgumentParser(description="KIS 일별 투자자 수급 증분 적재(조회 전용)")
     ap.add_argument("--run-id", default=None, help="유니버스 run (기본: large_universe 최신)")
-    ap.add_argument("--universe", choices=["large", "combined"], default="combined",
-                    help="종목 출처: large(대형500만) / combined(large+lv_a 중소형, 기본)")
+    ap.add_argument("--universe", choices=["large", "combined", "all"], default="combined",
+                    help="종목 출처: large(대형500만) / combined(large+lv_a, 기본) / "
+                         "all(ohlcv.db 전체 KOSPI·KOSDAQ ~2645)")
     ap.add_argument("--top", type=int, default=None, help="시총 상위 N만 (기본: 적재분 전체=500)")
     ap.add_argument("--sleep", type=float, default=KIS_REQ_INTERVAL)
     ap.add_argument("--db", default=str(DB_PATH))
@@ -581,7 +604,9 @@ def main():
     if not (app_key and app_secret):
         raise SystemExit("❌ .env 의 KIS_APP_KEY / KIS_APP_SECRET 확인")
 
-    if args.universe == "combined":
+    if args.universe == "all":
+        rid, tickers = load_all_tickers()
+    elif args.universe == "combined":
         rid, tickers = load_combined_tickers(Path(args.db), args.top)
     else:
         rid, tickers = load_universe_tickers(Path(args.db), args.run_id, args.top)
