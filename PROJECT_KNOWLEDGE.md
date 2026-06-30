@@ -1015,7 +1015,9 @@ mom_a +0.050→−0.893) = 최근 평균회귀 장세 심화. 두 신호 일관(
     ③ `large_score.py`(daily_flows 언급뿐 미사용). 셋 다 `con=connect(history)` 단일연결로 읽던 구조.
   - **수정(전부 폴백 유지 — ohlcv 없으면 history)**:
     · `lowvol_score.py`(+22줄): short_flows 를 ohlcv.db 에서 우선 읽고 없으면 history 폴백.
-    · `build_large_report.py`(+13줄): ohlcv.db ATTACH → daily_flows 임시뷰로 노출(기존 쿼리 무수정).
+    · `build_large_report.py`(+16줄): ohlcv.db ATTACH → daily_flows 임시뷰로 노출(기존 쿼리 무수정).
+      **+ NA버그 수정**: fnet/fmtc 의 `isinstance(v,float) and pd.isna(v)` 가 pd.NA(NAType, float 아님) 못 걸러 `float(NA)` 터짐
+      → `pd.isna(v)` 단독으로(None·nan·NA 모두). ATTACH 데이터가 nullable 로 와서 드러난 **잠복버그**(원본도 터짐, Phase1 무관). 0-diff(정상값 동일, pd.NA만 "·").
     · `kis_flows.py`(+6줄): `--flows-db` 옵션 — 저장만 ohlcv 로 분리(종목목록은 여전히 history/ohlcv 읽기). 수집/저장 로직 md5 동일.
   - **이전 스크립트**: `migrate_flows_to_ohlcv.py`(1회) — history flows→ohlcv 복사(INSERT OR REPLACE), 검증 후 `--drop-source` 로 history 삭제.
   - **0-diff 검증 ✅✅**: lowvol_score 는 stage3+short_flows만 읽고 네트워크 0 → Claude 완전 검증 가능.
@@ -1024,3 +1026,37 @@ mom_a +0.050→−0.893) = 최근 평균회귀 장세 심화. 두 신호 일관(
   - **적용 절차(사용자)**: ① `migrate_flows_to_ohlcv.py` 실행(복사+검증) ② 검증 OK 시 `--drop-source` 로 history flows 삭제
     ③ `.bat` 의 kis_flows 에 `--flows-db ../dh-q7m3k-data/ohlcv.db` 추가 ④ lowvol/large 는 코드상 자동으로 ohlcv 읽음.
   - **다음(Phase 2, 미착수)**: 스크리너가 ohlcv 가격 재활용(가격 중복 제거 → 추가 단축). 단 v2.6 엔진 수정+0-diff라 신중.
+
+### 21-10. Phase 2 완료 — 스크리너가 ohlcv 가격 재활용 (2026-06-30)
+> §21-8 구조개편의 마지막. 가격 단일 원천화: 스크리너가 fdr 대신 ohlcv.db 가격을 읽어 과매도 점수 계산.
+- **동기**: 전엔 가격을 2번 받음 — ① 스크리너(fdr.DataReader 종목별) ② universe_ohlcv(fdr). 중복 제거.
+- **수정(`screener_fdr_v2_6.py`, +51줄/-3줄)**:
+  · 어댑터 `_get_prices(ticker, from, to)` 추가: ohlcv.db 우선 읽기 → fdr 형식(대문자 OHLCV, 날짜 인덱스) 변환. 없으면 fdr 폴백.
+  · `analyze_ticker` 의 `fdr.DataReader` 한 줄만 `_get_prices` 로 교체. **점수 계산 로직(RSI~oversold)은 byte 동일(0-diff)**.
+  · `time.sleep(REQUEST_DELAY)` 를 폴백(fdr) 시에만 — ohlcv 읽기는 sleep 0(네트워크 0) → 스크리너 가속.
+  · 안전장치: `USE_OHLCV_PRICES=0`(env) 으로 즉시 fdr 롤백. `OHLCV_DB` 로 경로 지정.
+- **`.bat` 순서 변경(필수)**: universe_ohlcv 를 스크리너 **앞으로**. ohlcv 최신일==오늘 보장(최신일 정합).
+  순서: `universe_ohlcv → run_and_diversify(스크리너) → large → kis_flows`.
+- **0-diff 검증(`verify_ohlcv_screener.py`)**: analyze_ticker 를 fdr경로/ohlcv경로 둘로 돌려 과매도점수+11지표 비교.
+  · **결정적 발견**: 1차 검증서 30/30 불일치 → 원인=**ohlcv 최신일 1일 뒤처짐**(스크리너 to_date=오늘, ohlcv=어제). 가격오류 아님.
+    return_1w 부호가 fdr+/ohlcv− 로 갈린 게 증거(그날 시장 상승 미반영). **universe_ohlcv 먼저 돌리니 30/30·200/200 0-diff 통과.**
+  · 교훈: Phase2 는 fdr(네트워크) vs ohlcv 비교라 Claude 검증 불가 → **Jin 실측이 0-diff 보증**(Phase1 과 다른 점).
+- **시간 효과**: 가격을 1번만 받음(전엔 2번). 스크리너 가격수집(수분) 사라지고 universe_ohlcv(5분) 앞에 추가. 순이득=중복분. **정확한 수치는 실측 필요(미측정)**.
+- **남은 정리(Phase 3 후보, 급하지 않음 / 미착수)**:
+  · `large_universe` 시총: fdr StockListing → ohlcv 의 `close×shares` 로 계산 가능(중복 제거). 단 0-diff 검증 필요.
+  · StockListing(종목목록) 파이프라인서 3회 호출(universe_ohlcv/large_universe/diversify_picks) — 이득 작아 후순위.
+  · `history_backup.db` 며칠 후 삭제. 스크리너 시간 실측 1회 권장.
+- **핸드오프 갱신(`make_handoff.py`, +44줄) — Phase1 부수효과 대응**:
+  · 문제: Phase1 으로 수급/공매도가 ohlcv 로 이전 → 전엔 history(perf zip)에 있어 IC 분석 가능했으나 **이제 perf zip 에서 빠짐**.
+  · 해결: perf zip 생성 시 ohlcv 에서 `daily_flows·short_flows` 만 발췌한 `_flows_from_ohlcv.db`(~22MB) 동봉.
+    가격(daily_ohlcv 185만행)은 제외 — 전체 295MB 는 핸드오프 부담. flows 만이면 OK. zip 후 임시발췌 자동 삭제.
+  · 효과: 앞으로 `python make_handoff.py` 의 perf zip 만으로 lv_short IC·수급 분석 가능(ohlcv 통째 전송 불필요).
+    가격 raw 가 필요한 특수분석(전체장 팩터 IC 등)만 ohlcv.db 별도 첨부.
+  · (구 메모 "make_handoff 무수정" 은 폐기 — Phase1 후 flows 발췌 위해 수정됨.)
+- **구조 점검 결과(2026-06-30)**: 인덱스(ohlcv daily_ohlcv 의 ticker/date — Phase2 쿼리가 탐) ✅ / DB 분리·크기(ohlcv 295MB·hist 가벼움) ✅ /
+  OneDrive 동기화 ❌없음(경로 `C:\Users\SAMSUNG\Documents\...` 깨끗) → 구조적 추가 개선 불필요. 디렉토리 대청소는 위험>이득이라 하지 않음.
+
+> **§21-8~10 최종 아키텍처(달성)**: ohlcv.db=raw 단일허브(가격+수급+공매도, 전체종목, 분석, 핸드오프밖) /
+> history.db=점수 본진(stage·v3·lowvol·large, 매일갱신, 가벼움, 핸드오프). 가격·수급·공매도 중복 0, 역할 분리 완성.
+> 읽기 방향: 스크리너·large·lowvol 이 ohlcv 를 읽어 점수 생성. 쓰기: universe_ohlcv(가격)·kis_flows(수급/공매도) 가 ohlcv 에 적재.
+> 핸드오프: code zip(코드) / perf zip(history.db + ohlcv flows 발췌 + docs json). 가격 raw 필요시에만 ohlcv.db 별도.
