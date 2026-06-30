@@ -19,8 +19,8 @@ set SCREENER_NO_SNAPSHOTS=1
 
 echo.
 echo ========================================================================
-echo   [B track] daily_ohlcv increment FIRST (Phase2: 스크리너가 ohlcv 가격 재활용)
-echo   universe_ohlcv 를 스크리너보다 먼저 — ohlcv 최신일==오늘 보장 (최신일 정합)
+echo   [B track] daily_ohlcv FIRST (Phase2: screener reuses ohlcv prices)
+echo   universe_ohlcv before screener - ensures ohlcv latest date == today
 echo ========================================================================
 python universe_ohlcv.py
 
@@ -51,7 +51,7 @@ python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv
 
 echo.
 echo ========================================================================
-echo   [Large] build report (daily_ohlcv 는 위에서 이미 갱신됨)
+echo   [Large] build report (daily_ohlcv already updated above)
 echo ========================================================================
 python build_large_report.py
 
