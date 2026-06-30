@@ -16,6 +16,14 @@ echo It can take 60-120 minutes. Please do not close this window.
 echo.
 
 set SCREENER_NO_SNAPSHOTS=1
+
+echo.
+echo ========================================================================
+echo   [B track] daily_ohlcv increment FIRST (Phase2: 스크리너가 ohlcv 가격 재활용)
+echo   universe_ohlcv 를 스크리너보다 먼저 — ohlcv 최신일==오늘 보장 (최신일 정합)
+echo ========================================================================
+python universe_ohlcv.py
+
 python run_and_diversify.py
 
 set EXIT_CODE=%ERRORLEVEL%
@@ -43,10 +51,8 @@ python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv
 
 echo.
 echo ========================================================================
-echo   [B track] daily_ohlcv increment (full universe OHLCV, approx 6 min)
+echo   [Large] build report (daily_ohlcv 는 위에서 이미 갱신됨)
 echo ========================================================================
-python universe_ohlcv.py
-
 python build_large_report.py
 
 echo.

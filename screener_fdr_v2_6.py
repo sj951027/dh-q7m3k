@@ -56,6 +56,55 @@ warnings.filterwarnings('ignore')
 # 공통 설정
 # ============================================================
 LOOKBACK_DAYS = 400
+
+# ─── Phase 2: 가격 소스를 ohlcv.db 로 (fdr 중복 수집 제거) ───────────────
+# analyze_ticker 가 종목별로 fdr.DataReader 하던 것을, ohlcv.db(전체 OHLCV)에서 읽어 재활용.
+# 0-diff 보장: ohlcv 도 fdr 로 적재된 수정주가 → verify_ohlcv_screener.py 로 30종목 동일 확인.
+# 전제(필수): universe_ohlcv.py 가 스크리너보다 '먼저' 돌아 ohlcv 최신일==오늘 이어야 함.
+# 안전망: USE_OHLCV_PRICES=0 (env) 로 끄면 기존 fdr 경로. ohlcv 없거나 종목 결손 시 fdr 폴백.
+import os as _os
+USE_OHLCV_PRICES = _os.environ.get("USE_OHLCV_PRICES", "1") != "0"
+OHLCV_DB_PATH = _os.environ.get(
+    "OHLCV_DB", _os.path.join("..", "dh-q7m3k-data", "ohlcv.db"))
+_OHLCV_OK = USE_OHLCV_PRICES and _os.path.exists(OHLCV_DB_PATH)
+
+
+def _read_prices_ohlcv(ticker, from_date, to_date):
+    """ohlcv.db 에서 한 종목 OHLCV 를 fdr.DataReader 와 동일 형식으로 반환.
+    fdr: index=날짜(Timestamp), cols=Open/High/Low/Close/Volume(대문자).
+    실패/결손 시 None → 호출부가 fdr 폴백."""
+    if not _OHLCV_OK:
+        return None
+    import sqlite3
+    fd = from_date.replace("-", "")
+    td = to_date.replace("-", "")
+    try:
+        con = sqlite3.connect(OHLCV_DB_PATH)
+        df = pd.read_sql(
+            "SELECT date, open, high, low, close, volume FROM daily_ohlcv "
+            "WHERE ticker=? AND date>=? AND date<=? AND is_suspended=0 ORDER BY date",
+            con, params=(ticker, fd, td))
+        con.close()
+    except Exception:
+        return None
+    if df.empty:
+        return None
+    df["date"] = pd.to_datetime(df["date"], format="%Y%m%d")
+    df = df.set_index("date").rename(columns={
+        "open": "Open", "high": "High", "low": "Low",
+        "close": "Close", "volume": "Volume"})
+    return df[["Open", "High", "Low", "Close", "Volume"]]
+
+
+def _get_prices(ticker, from_date, to_date):
+    """가격 로드: ohlcv 우선, 없으면 fdr 폴백(네트워크). analyze_ticker 의 단일 진입점.
+    ohlcv 적중 시 sleep 없음(네트워크 0) → 스크리너 가속. 폴백 시에만 REQUEST_DELAY."""
+    df = _read_prices_ohlcv(ticker, from_date, to_date)
+    if df is not None and len(df) >= 50:
+        return df
+    time.sleep(REQUEST_DELAY)                          # fdr 호출 전에만 예의상 지연
+    return fdr.DataReader(ticker, from_date, to_date)   # 폴백(기존 경로)
+# ────────────────────────────────────────────────────────────────────────
 TOP_N = 30
 MAX_WORKERS = 3
 REQUEST_DELAY = 0.15
@@ -880,8 +929,7 @@ def calculate_supply_score(row):
 
 def analyze_ticker(ticker, name_map, sector_map, from_date, to_date):
     try:
-        time.sleep(REQUEST_DELAY)
-        df = fdr.DataReader(ticker, from_date, to_date)
+        df = _get_prices(ticker, from_date, to_date)   # Phase2: ohlcv 우선, fdr 폴백(폴백 시 내부 sleep)
 
         if df is None or len(df) < 50:
             return None
