@@ -69,6 +69,22 @@ def build_one(con, rid, mkt, sector_map=None):
     except Exception:
         pass
 
+    # lv_b 점수도 나란히 표시(저변동+ROE, 반전 제외). 비교용 — IC 백테스트에서 lv_b 가
+    #   lv_a 보다 강함(h20 +0.115 vs +0.077, 전체장 in-sample)을 관찰 페이지에서 같이 본다.
+    #   별도 컬럼 lv_b_score + 그 순위 lv_b_rank. lv_a 점수·순위는 그대로(0-diff).
+    try:
+        lbs = pd.read_sql(
+            "SELECT ticker, lowvol_score AS lv_b_score FROM lowvol_scores "
+            "WHERE run_id=? AND market=? AND model_id='lv_b'",
+            con, params=(rid, mkt))
+        if not lbs.empty:
+            lbs["lv_b_score"] = lbs["lv_b_score"].round(3)
+            lbs = lbs.sort_values("lv_b_score", ascending=False).reset_index(drop=True)
+            lbs["lv_b_rank"] = lbs.index + 1
+            g = g.merge(lbs, on="ticker", how="left")
+    except Exception:
+        pass
+
     # 섹터: stage3_final 의 sector 는 비어 있음(100% 결측) → sector_cache.json 으로 채움.
     #   (PROJECT_KNOWLEDGE §4-C: sector_cache 가 현재 universe 100% 커버.)
     if sector_map:
