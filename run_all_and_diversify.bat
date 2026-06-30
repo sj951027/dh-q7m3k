@@ -39,7 +39,7 @@ echo ========================================================================
 python large_universe.py
 python catalyst_large.py
 python large_score.py
-python kis_flows.py --universe all --sleep 0.1
+python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db
 
 echo.
 echo ========================================================================

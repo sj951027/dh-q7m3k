@@ -118,14 +118,14 @@ def load(db_path, run_id=None):
 
 
 def fmt(v, pat="{:.2f}", dash="·"):
-    if v is None or (isinstance(v, float) and pd.isna(v)):
+    if pd.isna(v):
         return dash
     return pat.format(v)
 
 
 def fmtc(v, small=2, dash="·"):
     # 자릿수 적응(좁은 칸 잘림 방지): |v|≥100 → 0자리, ≥10 → 1자리, 그 미만 → small자리.
-    if v is None or (isinstance(v, float) and pd.isna(v)):
+    if pd.isna(v):
         return dash
     v = float(v); a = abs(v)
     if a >= 100:
@@ -192,7 +192,7 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
         return max(1, int(round(100 * (sp > v).mean() + 0.0)))  # 상위 X%
     def fnet(v):
         # 순매수 누적(억): 부호 숫자(콤마·화살표 미사용 → parseFloat 정렬 가능).
-        if v is None or (isinstance(v, float) and pd.isna(v)):
+        if pd.isna(v):
             return "·"
         v = float(v)
         return "0" if abs(v) < 0.5 else f"{v:+.0f}"
