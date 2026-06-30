@@ -62,6 +62,19 @@ def load_flow_windows(con, rid, short=5, long=20):
 
 def load(db_path, run_id=None):
     con = sqlite3.connect(db_path)
+    # Phase1: 수급(daily_flows)이 ohlcv.db 로 이전됨. 있으면 ATTACH 해서 임시뷰로 노출
+    #   → 아래 daily_flows 쿼리들이 수정 없이 ohlcv 의 것을 읽음. 없으면 history 폴백(0-diff).
+    import os
+    _OHLCV = os.path.join(os.path.dirname(os.path.abspath(db_path)),
+                          "..", "dh-q7m3k-data", "ohlcv.db")
+    _has_local = con.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='daily_flows'").fetchone()
+    if not _has_local and os.path.exists(_OHLCV):
+        try:
+            con.execute("ATTACH DATABASE ? AS ohlcvdb", (_OHLCV,))
+            con.execute("CREATE TEMP VIEW daily_flows AS SELECT * FROM ohlcvdb.daily_flows")
+        except Exception:
+            pass
     try:
         rid = run_id or con.execute("SELECT MAX(run_id) FROM large_final").fetchone()[0]
         if not rid:

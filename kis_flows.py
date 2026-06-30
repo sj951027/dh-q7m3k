@@ -583,6 +583,9 @@ def main():
     ap.add_argument("--top", type=int, default=None, help="시총 상위 N만 (기본: 적재분 전체=500)")
     ap.add_argument("--sleep", type=float, default=KIS_REQ_INTERVAL)
     ap.add_argument("--db", default=str(DB_PATH))
+    ap.add_argument("--flows-db", default=None,
+                    help="수급/공매도 저장 DB(미지정 시 --db). Phase1: ohlcv.db 로 분리 저장 "
+                         "(예: ../dh-q7m3k-data/ohlcv.db). 종목 목록은 --db/ohlcv 에서 읽고 저장만 여기로.")
     ap.add_argument("--date", default=None,
                     help="세부 API 기준일 YYYYMMDD (기본: 오늘). 그날 포함 과거 ~30거래일 윈도 반환")
     ap.add_argument("--verify", type=int, default=0, metavar="N",
@@ -613,7 +616,9 @@ def main():
     date = args.date or datetime.now().strftime("%Y%m%d")   # 세부 API 기준일
 
     token = get_token(app_key, app_secret)
-    con = sqlite3.connect(args.db)
+    # 저장 대상: --flows-db 지정 시 거기로(Phase1: ohlcv.db), 아니면 --db(기존 history).
+    flows_db = args.flows_db or args.db
+    con = sqlite3.connect(flows_db)
     ensure_table(con)
 
     # 검증 모드: DB 에 쓰지 않고 기존 값과 대조만.

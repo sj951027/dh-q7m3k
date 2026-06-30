@@ -999,3 +999,28 @@ mom_a +0.050→−0.893) = 최근 평균회귀 장세 심화. 두 신호 일관(
   - **주의**: ohlcv.db 에 수급 칸 만들어도 **과거는 빈칸**(오늘부터 채워짐). 통합이 기간을 만들진 않음 — 여전히 40→100일 대기.
 - **장기 비전(미착수)**: 스크리너가 ohlcv.db 가격을 **재활용**해 과매도 점수 계산 → 가격 단일 원천(현재 stage1+ohlcv 중복 제거).
   단 스크리너 재배선 + 0-diff 검증 필요한 큰 작업. 지금은 ATTACH 조인으로 충분, 급하지 않음.
+
+### 21-9. Phase 0~1 실행 완료 (2026-06-30)
+> §21-8 구조개편을 단계 실행. Phase0=수집시간 단축(sleep), Phase1=수급/공매도를 ohlcv.db로 이전.
+- **Phase 0 — KIS 호출간격 단축(sleep 0.1) ✅**:
+  - **KIS 실전 한도 = 초당 20건**(공식 확인, apiportal). 신규고객 3일 제한은 가입 3일 지나 무관(기본유량 상향됨).
+  - 기존 0.55초(초당1.8건)는 한도의 9%로 과보수. **0.1초(초당10건=한도 절반)로 단축** → 실측 실패 0(EGW00201 없음).
+  - 전체 2536종목 수급+공매도: 65분 → **~20분**(수급11+공매도9.5). 타임아웃 1종목은 네트워크(rate 아님), 내일 윈도 자동보충.
+  - `.bat` 반영: `kis_flows.py --universe all --sleep 0.1`. 파이프라인 ~1시간(스크리너30+large8+flows20) → **새벽 분리 불필요, 낮에 한 번**.
+  - 0.05초(한도 100%)는 위험(순간초과)·타임아웃↑. **0.1초가 sweet spot**(마진 50%).
+- **Phase 1 — 수급/공매도를 ohlcv.db로 이전 ✅ (0-diff 검증 완료)**:
+  - **동기**: raw(가격·수급·공매도)는 ohlcv.db(전체·긴시계열·분석), 점수는 history.db. history 가벼움 유지(핸드오프).
+    전체종목 flows를 history에 두면 1년 +165MB → 핸드오프 부담. ohlcv(핸드오프 밖)가 맞음.
+  - **읽는 코드 3곳 파악**: ① `lowvol_score.py`(short_flows→lv_short 점수) ② `build_large_report.py`(daily_flows→표시,점수아님)
+    ③ `large_score.py`(daily_flows 언급뿐 미사용). 셋 다 `con=connect(history)` 단일연결로 읽던 구조.
+  - **수정(전부 폴백 유지 — ohlcv 없으면 history)**:
+    · `lowvol_score.py`(+22줄): short_flows 를 ohlcv.db 에서 우선 읽고 없으면 history 폴백.
+    · `build_large_report.py`(+13줄): ohlcv.db ATTACH → daily_flows 임시뷰로 노출(기존 쿼리 무수정).
+    · `kis_flows.py`(+6줄): `--flows-db` 옵션 — 저장만 ohlcv 로 분리(종목목록은 여전히 history/ohlcv 읽기). 수집/저장 로직 md5 동일.
+  - **이전 스크립트**: `migrate_flows_to_ohlcv.py`(1회) — history flows→ohlcv 복사(INSERT OR REPLACE), 검증 후 `--drop-source` 로 history 삭제.
+  - **0-diff 검증 ✅✅**: lowvol_score 는 stage3+short_flows만 읽고 네트워크 0 → Claude 완전 검증 가능.
+    history flows 삭제 + ohlcv 읽기 재계산 → lv_short 해시 `153b5a32...` = history 읽기 재계산과 **byte-identical**.
+    (기준선 `64417632` 과의 차이는 공매도가 그새 갱신된 것 — ohlcv 이전과 무관, 같은 입력이면 같은 출력 증명됨.)
+  - **적용 절차(사용자)**: ① `migrate_flows_to_ohlcv.py` 실행(복사+검증) ② 검증 OK 시 `--drop-source` 로 history flows 삭제
+    ③ `.bat` 의 kis_flows 에 `--flows-db ../dh-q7m3k-data/ohlcv.db` 추가 ④ lowvol/large 는 코드상 자동으로 ohlcv 읽음.
+  - **다음(Phase 2, 미착수)**: 스크리너가 ohlcv 가격 재활용(가격 중복 제거 → 추가 단축). 단 v2.6 엔진 수정+0-diff라 신중.

@@ -24,6 +24,9 @@ import sqlite3, argparse, hashlib, json, sys
 from datetime import datetime, timezone, timedelta
 
 DB = "history.db"
+# 수급·공매도는 ohlcv.db(전체 종목 raw)로 이전(§21-8 Phase1). short_flows 를 거기서 읽음.
+# 없으면(구 환경) history.db 의 short_flows 로 폴백 — 0-diff 보장.
+OHLCV_DB = "../dh-q7m3k-data/ohlcv.db"
 KST = timezone(timedelta(hours=9))
 
 # ---- 유니버스 파라미터 (전부 데이터 근거, 매직넘버 아님) ----
@@ -190,14 +193,28 @@ def run(mode_full=False, only_run=None):
 
     # 공매도 비중을 short_flows 에서 LEFT JOIN (lv_short 챌린저용 관측 팩터).
     #   short_flows.date == stage3.run_id (둘 다 YYYYMMDD). 없는 종목/날짜는 NaN(보조라 0.5 중립).
-    #   short_flows 테이블이 없으면(미적재 환경) 컬럼만 NaN으로 만들어 안전하게 진행.
-    try:
-        sfdf = pd.read_sql(
-            "SELECT ticker, date AS run_id, short_vol_ratio FROM short_flows", con)
+    #   Phase1: ohlcv.db(전체 raw)에서 우선 읽고, 없으면 history.db 폴백 → 0-diff 보장.
+    sfdf = None
+    import os
+    if os.path.exists(OHLCV_DB):
+        try:
+            ocon = sqlite3.connect(OHLCV_DB)
+            sfdf = pd.read_sql(
+                "SELECT ticker, date AS run_id, short_vol_ratio FROM short_flows", ocon)
+            ocon.close()
+        except Exception:
+            sfdf = None
+    if sfdf is None:   # 폴백: history.db 의 short_flows (구 환경/이전 전)
+        try:
+            sfdf = pd.read_sql(
+                "SELECT ticker, date AS run_id, short_vol_ratio FROM short_flows", con)
+        except Exception:
+            sfdf = None
+    if sfdf is not None:
         sfdf['run_id'] = sfdf['run_id'].astype(str)
         df['run_id'] = df['run_id'].astype(str)
         df = df.merge(sfdf, on=['ticker', 'run_id'], how='left')
-    except Exception:
+    else:
         df['short_vol_ratio'] = float('nan')   # short_flows 부재 시에도 동작
 
     # 부분적재일 제외(완전성)
