@@ -27,6 +27,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 OUT_DIR = HERE / "handoff"
+# Phase1 후 수급/공매도가 ohlcv.db 로 이전됨 → perf zip 에 flows 만 발췌해 동봉.
+#   (가격 daily_ohlcv 185만행은 제외 — 전체 295MB 는 핸드오프 부담. flows 만 ~23MB.)
+OHLCV_DB = HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"
+FLOWS_EXTRACT = HERE / "_flows_from_ohlcv.db"   # perf zip 용 임시 발췌(매번 새로)
 
 # code zip에서 항상 제외 (git 추적 여부와 무관하게 — 데이터는 perf 쪽 담당)
 CODE_EXCLUDE = [
@@ -76,6 +80,39 @@ def list_code_files(with_docs_csv=False):
     return files
 
 
+def _extract_flows_from_ohlcv():
+    """ohlcv.db 에서 daily_flows·short_flows 만 발췌해 작은 db 생성(가격 제외).
+    Phase1 후 수급/공매도가 ohlcv 로 이전 → perf 분석(lv_short IC 등)에 필요.
+    반환: 발췌 db 경로 또는 None(ohlcv 없거나 flows 없음)."""
+    import sqlite3
+    if not OHLCV_DB.exists():
+        print("   ⚠️  ohlcv.db 없음 — 수급/공매도 발췌 생략(IC 분석 시 별도 첨부 필요).")
+        return None
+    src = sqlite3.connect(str(OHLCV_DB))
+    has = [t for (t,) in src.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('daily_flows','short_flows')")]
+    if not has:
+        src.close()
+        print("   ⚠️  ohlcv.db 에 flows 없음 — 발췌 생략.")
+        return None
+    if FLOWS_EXTRACT.exists():
+        FLOWS_EXTRACT.unlink()
+    dst = sqlite3.connect(str(FLOWS_EXTRACT))
+    for t in has:
+        schema = src.execute(
+            f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{t}'").fetchone()[0]
+        dst.execute(schema)
+        ncol = len(src.execute(f"PRAGMA table_info({t})").fetchall())
+        rows = src.execute(f"SELECT * FROM {t}").fetchall()
+        dst.executemany(f"INSERT INTO {t} VALUES ({','.join(['?']*ncol)})", rows)
+    dst.commit()
+    src.close()
+    dst.close()
+    mb = FLOWS_EXTRACT.stat().st_size / 1048576
+    print(f"   • ohlcv→flows 발췌: {FLOWS_EXTRACT.name} ({mb:.1f} MB, daily/short_flows)")
+    return FLOWS_EXTRACT
+
+
 def list_perf_files(with_models=False, with_price=False):
     files = []
     db = HERE / "history.db"
@@ -83,6 +120,10 @@ def list_perf_files(with_models=False, with_price=False):
         files.append(db)
     else:
         print("   ⚠️  history.db 가 없습니다 — perf zip의 핵심이 빠집니다.")
+    # Phase1: 수급/공매도(ohlcv 이전분) 발췌 동봉 — lv_short IC·수급 분석용.
+    fx = _extract_flows_from_ohlcv()
+    if fx is not None:
+        files.append(fx)
     v3 = HERE / "v3_archive"
     if v3.exists():
         files += sorted(v3.glob("*.csv"))
@@ -128,8 +169,10 @@ def main():
         write_zip("handoff_code", files)
     if do_perf:
         files = list_perf_files(args.with_model_archives, args.with_price_cache)
-        print(f"— [성능] perf zip: history.db + v3_archive + docs/*.json 등 {len(files)}개")
+        print(f"— [성능] perf zip: history.db + flows(ohlcv 발췌) + v3_archive + docs/*.json 등 {len(files)}개")
         write_zip("handoff_perf", files)
+        if FLOWS_EXTRACT.exists():   # zip 에 담은 뒤 임시 발췌 정리(레포 오염 방지)
+            FLOWS_EXTRACT.unlink()
     print("\n규칙: 동작 작업=code / 성능·판정=perf / 점수·출력을 바꾸는 변경=둘 다(0 diff 검증용)")
 
 
