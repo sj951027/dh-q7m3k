@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-03 00:48 KST",
+  "generated_at": "2026-07-03 01:22 KST",
   "runs": {
     "kospi": [
       {
         "run_id": "20260703",
         "market_regime": "조정",
         "regime_score": -5,
-        "usdkrw": 1539.58,
+        "usdkrw": 1539.18,
         "foreign_5d": -198096.0,
         "stage1_count": 720
       },
@@ -248,7 +248,7 @@
         "run_id": "20260703",
         "market_regime": "약세",
         "regime_score": -7,
-        "usdkrw": 1540.14,
+        "usdkrw": 1539.68,
         "foreign_5d": -452.0,
         "stage1_count": 1542
       },
@@ -499,18 +499,18 @@
           "q_basis": "3개월"
         },
         {
-          "ticker": "033530",
-          "name": "SJG세종",
-          "sector": "자동차·부품",
+          "ticker": "272550",
+          "name": "삼양패키징",
+          "sector": "고무·플라스틱",
           "final_score_v3": 81.6,
           "grade": "A",
           "bucket": "BUY",
           "q_basis": "3개월"
         },
         {
-          "ticker": "272550",
-          "name": "삼양패키징",
-          "sector": "고무·플라스틱",
+          "ticker": "033530",
+          "name": "SJG세종",
+          "sector": "자동차·부품",
           "final_score_v3": 81.6,
           "grade": "A",
           "bucket": "BUY",
@@ -764,7 +764,7 @@
         "run_id": "20260703",
         "market_regime": "조정",
         "regime_score": -5,
-        "usdkrw": 1539.58,
+        "usdkrw": 1539.18,
         "foreign_5d": -198096.0,
         "stage1_count": 720
       },
@@ -1047,7 +1047,7 @@
         "run_id": "20260703",
         "market_regime": "약세",
         "regime_score": -7,
-        "usdkrw": 1540.14,
+        "usdkrw": 1539.68,
         "foreign_5d": -452.0,
         "stage1_count": 1542
       },
