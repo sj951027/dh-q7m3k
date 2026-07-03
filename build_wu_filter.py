@@ -196,6 +196,27 @@ def build(con, rid, sector_map=None, use_ohlcv=True):
     if sector_map:
         g["sector"] = g["ticker"].map(sector_map)
 
+    # 업종 폴백: sector_cache 에 없는 금융·지주·우선주는 large_final.sector 로 보충.
+    #   (sector_cache 는 v3 스크리너 캐시라 v3가 제외하는 금융·우선주가 없음 → 전체 유니버스인
+    #    wu 에선 이들 업종이 비어버림. large_final 은 이미 계산된 실제 업종 라벨이라 이를 폴백으로만
+    #    사용 — 점수·순위·유니버스는 섞지 않음, 표시 메타데이터만. large_final 없으면 갱신 없이 통과.)
+    #    2026-07-04 실측: 결측 97개 중 50개(금융지주 등) 복구, 나머지는 시총상위500 밖 초소형 갭.
+    try:
+        if "sector" not in g.columns:
+            g["sector"] = None
+        need = g["sector"].isna() | (g["sector"].astype(str).str.strip() == "")
+        if need.any():
+            lf = pd.read_sql(
+                "SELECT ticker, sector FROM large_final WHERE run_id=?", con, params=(rid,))
+            lf["ticker"] = lf["ticker"].astype(str)
+            lf = lf.dropna(subset=["sector"])
+            lf = lf[lf["sector"].astype(str).str.strip() != ""]
+            smap = dict(zip(lf["ticker"], lf["sector"]))
+            idx = g.index[need]
+            g.loc[idx, "sector"] = g.loc[idx, "ticker"].astype(str).map(smap)
+    except Exception:
+        pass
+
     # v3 bucket 참고(같은 run 있으면). 섞지 않고 '비교 표시'만.
     try:
         v3 = pd.read_sql(

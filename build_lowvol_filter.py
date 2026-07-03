@@ -16,14 +16,17 @@ filter.html 재활용이 아니라 전용 페이지(lowvol.html)를 쓴다. 비�
    v3·large 산출물은 일절 안 건드린다. 점수는 history.db 만 읽어 계산(네트워크 불필요).
 """
 import argparse
+import os
 import sqlite3
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "history.db"
+OHLCV_DB = os.environ.get("OHLCV_DB", str(HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
 DOCS = HERE / "docs"
 MARKETS = ["kospi", "kosdaq"]
 MODEL = "lv_a"   # 노출 모델(견고성 최상위). 나머지는 shadow.
@@ -64,6 +67,60 @@ def _name_fallback(con, g):
     return g
 
 
+def _ohlcv_fill(g, rid):
+    """stage3_final 에 없어서 비어버린 표시지표를 ohlcv 가격으로 채운다(결측분에만, 원본 보존).
+    채우는 것: realized_vol, return_1w/1m_%, drawdown_52w_high_%, amt_avg_1m_억 (가격 유도).
+    채우지 못하는 것(데이터 갭, 재무 소스 필요): oversold_score, roe_value, quarterly_yoy_%,
+    final_score → 그대로 NaN. lv_a 유니버스(과매도 원본 stage1)와 표시지표 소스(stage3=과매도+DART
+    통과분)의 유니버스 불일치로 60개 종목이 지표 전체 결측인 문제(2026-07-04 실측) 중 가격계만 복구.
+    ⚠️ stage3 에 값이 있는 종목은 stage3 값을 그대로 둔다(계산값으로 덮으면 수정주가·실행일 차이로
+    미세 불일치 → 0-diff 파괴). 오프라인 검증됨: stage3 보유 행은 전부 불변.
+    ROE·oversold·YoY 는 상상으로 만들지 않는다(매직넘버 금지) — 갭으로 명시."""
+    PRICE_COLS = ["realized_vol", "return_1w_%", "return_1m_%",
+                  "drawdown_52w_high_%", "amt_avg_1m_억"]
+    have = [c for c in PRICE_COLS if c in g.columns]
+    if not have:
+        return g
+    need_mask = g[have].isna().any(axis=1)
+    if not need_mask.any():
+        return g
+    if not os.path.exists(OHLCV_DB):
+        print(f"  ⚠️ ohlcv.db 없음({OHLCV_DB}) — 결측 가격지표 채우지 못함(갭 유지)")
+        return g
+    try:
+        oc = sqlite3.connect(f"file:{OHLCV_DB}?mode=ro", uri=True)
+        dates = [d for (d,) in oc.execute(
+            "SELECT DISTINCT date FROM daily_ohlcv WHERE date<=? ORDER BY date", (rid,))]
+        if not dates:
+            oc.close(); return g
+        cutoff = dates[max(0, len(dates) - 290)]
+        df = pd.read_sql("SELECT ticker,date,close,volume FROM daily_ohlcv "
+                         "WHERE date>=? AND date<=?", oc, params=(cutoff, rid))
+        oc.close()
+        c = df.pivot_table(index="date", columns="ticker", values="close", aggfunc="last").sort_index()
+        v = df.pivot_table(index="date", columns="ticker", values="volume", aggfunc="last").reindex(c.index)
+        r = c.pct_change(fill_method=None)
+        if rid not in c.index:
+            return g
+        t = c.index.get_loc(rid)
+        calc = pd.DataFrame(index=c.columns)
+        calc["realized_vol"] = r.rolling(21, min_periods=8).std().iloc[t]
+        calc["return_1w_%"] = (c.iloc[t] / c.iloc[max(0, t - 5)] - 1) * 100
+        calc["return_1m_%"] = (c.iloc[t] / c.iloc[max(0, t - 20)] - 1) * 100
+        calc["drawdown_52w_high_%"] = (c.iloc[t] / c.rolling(252, min_periods=60).max().iloc[t] - 1) * 100
+        calc["amt_avg_1m_억"] = (c * v).rolling(20, min_periods=10).mean().iloc[t] / 1e8
+        rnd = {"realized_vol": 4, "return_1w_%": 1, "return_1m_%": 1,
+               "drawdown_52w_high_%": 1, "amt_avg_1m_억": 1}
+        idx = g.index[need_mask]
+        for col in have:
+            fill = g.loc[idx, "ticker"].astype(str).map(calc[col]).round(rnd[col])
+            g.loc[idx, col] = g.loc[idx, col].where(g.loc[idx, col].notna(), fill)
+        return g
+    except Exception as e:
+        print(f"  ⚠️ ohlcv 가격지표 폴백 실패(갭 유지): {e}")
+        return g
+
+
 def build_one(con, rid, mkt, sector_map=None):
     ls = pd.read_sql(
         "SELECT ticker, lowvol_score, n_universe FROM lowvol_scores "
@@ -79,6 +136,7 @@ def build_one(con, rid, mkt, sector_map=None):
     s3.columns = [c.strip('"') for c in s3.columns]
     g = ls.merge(s3, on="ticker", how="left")
     g = _name_fallback(con, g)   # stage3에서 안 붙은 종목명을 stage1+large로 보충(원본 보존)
+    g = _ohlcv_fill(g, rid)      # stage3 결측 종목의 가격계 지표를 ohlcv로 보충(재무지표는 갭)
 
     # lv_short 챌린저 점수도 나란히 표시(공매도 추가본). 비교용 — lv_a 와 어느 게 나은지 관찰.
     #   별도 컬럼 lv_short_score + 그 순위 lv_short_rank. lv_a 점수·순위는 그대로(0-diff).
