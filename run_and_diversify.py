@@ -316,6 +316,14 @@ def main():
     if (HERE / "build_lowvol_filter.py").exists():
         run_script(["build_lowvol_filter.py"], "2.87단계: 저변동 트랙 lv_a 관측 CSV (섀도우)")
 
+    # 2.88) 전체종목 트랙(wu) 관측 — wu_a·wu_b 점수 적재(가중치 0, 새 테이블 wu_scores) + wu_a 관측 CSV.
+    #        v3·large·lowvol 과 완전 분리(전용 wu.html). 검증 전 섀도우(OOS 40거래일 전 노이즈).
+    #        ohlcv.db(가격)만 읽어 신규 API 0. 실패해도 챔피언 배포 안 막음(비치명).
+    if (HERE / "wu_score.py").exists():
+        run_script(["wu_score.py"], "2.88단계: 전체종목 트랙 점수 적재 (관측, 점수 불변)")
+    if (HERE / "build_wu_filter.py").exists():
+        run_script(["build_wu_filter.py"], "2.89단계: 전체종목 트랙 wu_a 관측 CSV (섀도우)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []
