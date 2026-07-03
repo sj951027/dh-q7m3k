@@ -230,6 +230,17 @@ def run(mode_full=False, only_run=None):
 
     # 이미 적재된 (run,model) 스킵 (증분), --full이면 전체
     if not mode_full:
+        # [idempotent 재적재] --run 으로 특정일을 지정하면, 그날 기존 행을 먼저 지우고 다시 쓴다.
+        #   근거: 같은 날 배치가 두 번 돌면 stage3_final 은 덮어써지는데(최신), lowvol_scores 는
+        #   append-only 라 새벽분이 스킵되어 유니버스가 어긋난다(2026-07-03 사건). --run 재적재는
+        #   "지금 stage3 기준으로 이 날을 다시 만든다"는 의도이므로, 그날을 지우고 재계산해야 정합.
+        #   (전체 증분 실행에는 영향 없음 — only_run 이 있을 때만.)
+        if only_run:
+            deleted = con.execute(
+                "DELETE FROM lowvol_scores WHERE run_id=?", (only_run,)).rowcount
+            con.commit()
+            if deleted:
+                print(f"[idempotent] --run {only_run}: 기존 {deleted}행 삭제 후 재적재")
         done = pd.read_sql("SELECT DISTINCT run_id, model_id FROM lowvol_scores", con)
         done_set = set(zip(done.run_id, done.model_id))
     else:

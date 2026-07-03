@@ -72,6 +72,46 @@ def make_run_id(timestamp):
     return timestamp.split("_")[0]
 
 
+# 환경변수로 강제 지정 가능(예: 어제 걸 오늘 재적재). "20260702" 형식.
+#   RUN_ID_OVERRIDE 가 있으면 그 값을 run_id 로 그대로 쓴다(자정 넘김·수동 재적재 대응).
+def _override_run_id():
+    v = os.environ.get("RUN_ID_OVERRIDE", "").strip()
+    return v if (len(v) == 8 and v.isdigit()) else None
+
+
+def trading_run_id_from_ts(run_ts):
+    """run_timestamp(YYYYMMDD_HHMM)에서 '거래일 기준' run_id 를 만든다.
+
+    문제: run_id 는 스크리너 실행 시각의 날짜였다(make_run_id). 7/2 밤에 시작해 자정을 넘겨
+    스크리너가 파일을 찍으면 run_id 가 7/3 이 되어, 실제로는 7/2 장 데이터인데 7/3 으로 기록된다.
+    (2026-07-03 사건의 근본 원인.)
+
+    규칙(순수 날짜 계산, 네트워크 불필요):
+      - RUN_ID_OVERRIDE 가 있으면 최우선(수동 교정용).
+      - 실행 시각이 그날 09:00(장 시작) '이전'이면 → 그날이 아니라 '직전 영업일'을 run_id 로.
+        (자정~장전 새벽 실행 = 전일 장 마감 데이터라는 뜻)
+      - 그 외(09:00 이후)는 그날 날짜 그대로.
+      - 주말/공휴일 보정: 직전 영업일로 물러날 때 토(→금)·일(→금)을 스킵. 공휴일 캘린더는
+        네트워크가 필요해 여기선 다루지 않음(주말만). 공휴일에 새벽 실행하는 경우는 드물고,
+        틀리면 RUN_ID_OVERRIDE 로 교정.
+    """
+    ov = _override_run_id()
+    if ov:
+        return ov
+    try:
+        d = datetime.strptime(run_ts.split("_")[0], "%Y%m%d")
+        hhmm = run_ts.split("_")[1] if "_" in run_ts else "1200"
+        hour = int(hhmm[:2])
+    except Exception:
+        return make_run_id(run_ts)   # 파싱 실패 시 기존 동작
+    from datetime import timedelta
+    if hour < 9:                      # 장 시작 전(새벽) = 전일 데이터
+        d = d - timedelta(days=1)
+    while d.weekday() >= 5:            # 5=토,6=일 → 금요일로
+        d = d - timedelta(days=1)
+    return d.strftime("%Y%m%d")
+
+
 def load_csv_with_meta(csv_path, run_id, run_ts, market):
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
     df.insert(0, "market", market)
@@ -156,7 +196,10 @@ def accumulate_market(market, date_str, conn, archive=False):
 
     ref_csv = csvs.get("stage1", next(iter(csvs.values())))[0]
     run_ts = extract_timestamp_from_filename(ref_csv.name)
-    run_id = make_run_id(run_ts)
+    run_id = trading_run_id_from_ts(run_ts)   # 거래일 기준(자정 넘김·override 대응)
+    if run_id != make_run_id(run_ts):
+        print(f"  [{market}] ⚠️ run_id 보정: 실행시각 {run_ts} → 거래일 run_id={run_id} "
+              f"(자정 넘김/override). 원 날짜와 다르면 의도 확인.")
     print(f"  [{market}] run_id={run_id}, timestamp={run_ts}")
 
     df_stage1_for_meta = pd.DataFrame()
