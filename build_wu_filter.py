@@ -83,13 +83,36 @@ def _name_map(con):
     return nm[["ticker", "name"]]
 
 
+def _apply_pref_fallback(g, name_map_df):
+    """결측 이름에 한해 우선주 유도명을 채운다(원본 이름은 절대 덮지 않음).
+    한국 코드 관례: 보통주 XXXXX0, 우선주 XXXXX5/7/9·신형 …K·구형 …B. stage/large 어디에도
+    없는 우선주·초소형주가 코드만 뜨는 문제(2026-07-03 실측 41개 대부분 우선주) 완화."""
+    if "name" not in g.columns:
+        return g
+    base = dict(zip(name_map_df["ticker"].astype(str), name_map_df["name"])) if len(name_map_df) else {}
+    miss = g["name"].isna()
+    if not miss.any() or not base:
+        return g
+
+    def derive(tk):
+        tk = str(tk)
+        if len(tk) == 6 and tk[-1] != "0" and tk[:-1].isdigit():
+            common = tk[:-1] + "0"
+            if common in base:
+                return base[common] + ("우" if tk[-1] in "5B" else f"우{tk[-1]}")
+        return None
+
+    g.loc[miss, "name"] = g.loc[miss, "ticker"].map(derive)
+    return g
+
+
 def _flows_metrics(rid, tickers, hist_con=None):
     """외인/기관 5·20거래일 순매수(억) — daily_flows(KIS, ohlcv.db 우선·history 폴백) 합산.
-    단위: net_val(백만원)/100 = 억. **적재된 날만 합산** — 부분합 오표시 방지 위해
-    5일창은 ≥4일, 20일창은 ≥15일 있을 때만 표시(미달=빈칸). 전체 유니버스 적재는
-    2026-06 말 시작이라 초기엔 combined(대형+lv_a) 외 20일값이 빈칸일 수 있음(누적되며 자동 해소).
-    표시 전용 — 점수 미투입. 소스 없으면 None(수급 컬럼만 빈칸)."""
-    MIN5, MIN20 = 4, 15
+    단위: net_val(백만원)/100 = 억. flows에 존재하는 최근 거래일 기준으로 5·20일 창을 잡으므로
+    당일(run) flows가 아직 적재 전이어도 '최근 5거래일'은 flows 최신일 기준으로 채워진다
+    (파이프라인상 wu 단계가 KIS flows 적재보다 앞서는 문제를 흡수 — 2026-07-03 실측 반영).
+    20일 창은 종목별 실제 적재일이 부족하면(초기 구간) NaN. 표시 전용 — 점수 미투입."""
+    MIN5, MIN20 = 3, 12
     src, own = None, False
     try:
         oc = sqlite3.connect(f"file:{OHLCV_DB}?mode=ro", uri=True)
@@ -109,23 +132,17 @@ def _flows_metrics(rid, tickers, hist_con=None):
         print("  ⚠️ daily_flows 없음(ohlcv/history) — 수급 컬럼 빈칸으로 진행")
         return None
     try:
-        # 거래일 그리드: ohlcv 우선, 없으면 flows 자체 날짜
-        try:
-            grid_con = sqlite3.connect(f"file:{OHLCV_DB}?mode=ro", uri=True)
-            dates = [d for (d,) in grid_con.execute(
-                "SELECT DISTINCT date FROM daily_ohlcv WHERE date<=? ORDER BY date", (rid,))]
-            grid_con.close()
-        except Exception:
-            dates = []
-        if not dates:
-            dates = [d for (d,) in src.execute(
-                "SELECT DISTINCT date FROM daily_flows WHERE date<=? ORDER BY date", (rid,))]
-        if not dates:
+        # 거래일 그리드: **flows에 실제 존재하는 거래일**을 기준으로 창을 잡는다.
+        #   (ohlcv 그리드를 쓰면 당일 flows 미적재 시 5일창이 4일 미만으로 떨어져 전부 NaN이 됨.
+        #    파이프라인상 wu 단계가 flows 적재보다 앞서므로 이 방어가 필요 — 2026-07-03 실측 반영.)
+        fdates = [d for (d,) in src.execute(
+            "SELECT DISTINCT date FROM daily_flows WHERE date<=? ORDER BY date", (rid,))]
+        if not fdates:
             return None
-        last5, last20 = set(dates[-5:]), set(dates[-20:])
+        last5, last20 = set(fdates[-5:]), set(fdates[-20:])
         fl = pd.read_sql(
             "SELECT ticker, date, foreign_net_val, inst_net_val FROM daily_flows "
-            "WHERE date>=? AND date<=?", src, params=(min(last20), rid))
+            "WHERE date>=? AND date<=?", src, params=(min(last20), max(fdates)))
         fl["ticker"] = fl["ticker"].astype(str)
         out = pd.DataFrame(index=pd.Index(tickers, name="ticker"))
         for win, wset, mn in (("5d", last5, MIN5), ("20d", last20, MIN20)):
@@ -169,7 +186,9 @@ def build(con, rid, sector_map=None, use_ohlcv=True):
     #   wu 는 전체 상장 유니버스라 stage1(v3 유니버스)에 없는 대형주가 있음(예: 금융지주)
     #   → large 트랙 이름으로 보충. 어느 쪽도 없으면 코드만 표시.
     try:
-        g = g.merge(_name_map(con), on="ticker", how="left")
+        _nm = _name_map(con)
+        g = g.merge(_nm, on="ticker", how="left")
+        g = _apply_pref_fallback(g, _nm)   # 결측 우선주·초소형주 이름 유도(원본 보존)
     except Exception:
         g["name"] = None
 

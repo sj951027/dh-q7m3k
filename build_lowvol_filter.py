@@ -38,6 +38,32 @@ DISPLAY_COLS = [
 ]
 
 
+def _name_fallback(con, g):
+    """stage3_final 조인에서 비어버린 종목명을 stage1_oversold(과매도 원본, 더 넓음)+
+    large_universe 로 보충한다(원본 이름은 절대 덮지 않음).
+    근거: lv_a 유니버스는 과매도 원본(stage1)에서 오는데 표시 이름은 stage3(과매도+DART 필터
+    통과분)에서만 조인 → stage3 탈락 종목이 이름만 비는 표시 결함(2026-07-03 실측 60개, 전부 보통주).
+    lv 유니버스엔 우선주가 없어 우선주 유도는 불필요 — 순수 이름 폴백만."""
+    if "name" not in g.columns or not g["name"].isna().any():
+        return g
+    frames = []
+    for q in ("SELECT ticker, name, run_id FROM stage1_oversold",
+              "SELECT ticker, name, run_id FROM large_universe"):
+        try:
+            frames.append(pd.read_sql(q, con))
+        except Exception:
+            pass
+    if not frames:
+        return g
+    nm = pd.concat(frames, ignore_index=True).dropna(subset=["name"])
+    nm["ticker"] = nm["ticker"].astype(str)
+    nm = nm.sort_values("run_id").drop_duplicates("ticker", keep="last")
+    namemap = dict(zip(nm["ticker"], nm["name"]))
+    miss = g["name"].isna()
+    g.loc[miss, "name"] = g.loc[miss, "ticker"].astype(str).map(namemap)
+    return g
+
+
 def build_one(con, rid, mkt, sector_map=None):
     ls = pd.read_sql(
         "SELECT ticker, lowvol_score, n_universe FROM lowvol_scores "
@@ -52,6 +78,7 @@ def build_one(con, rid, mkt, sector_map=None):
         con, params=(rid, mkt))
     s3.columns = [c.strip('"') for c in s3.columns]
     g = ls.merge(s3, on="ticker", how="left")
+    g = _name_fallback(con, g)   # stage3에서 안 붙은 종목명을 stage1+large로 보충(원본 보존)
 
     # lv_short 챌린저 점수도 나란히 표시(공매도 추가본). 비교용 — lv_a 와 어느 게 나은지 관찰.
     #   별도 컬럼 lv_short_score + 그 순위 lv_short_rank. lv_a 점수·순위는 그대로(0-diff).
