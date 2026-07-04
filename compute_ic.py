@@ -147,24 +147,28 @@ def main():
     # [이중실행일 게이트] 같은 run_id 를 하루에 두 번 돌리면 stage3_final 은 덮어써지지만(최신),
     #  v3_scores(동결점수)는 append-only 라 두 실행의 종목이 섞인다(새벽 유니버스 + 오후 유니버스).
     #  그 run 은 유니버스가 오염돼 IC 가 왜곡되므로 판정서 제외한다. 크기 게이트로는 못 잡힌다
-    #  (오후분이 정상 크기라 통과). 하드코딩(특정 날짜) 아님 — frozen_at 개수로 자동 탐지.
-    #  근거: 2026-07-03(v30 새벽 00:39 1230행 + 오후 21:28 96행). 동결점수는 사후 수정 안 하고
-    #  (최초 동결값이 진실), 오염된 '하루'만 판정에서 뺀다(§11 정신).
+    #  (오후분이 정상 크기라 통과). 하드코딩(특정 날짜) 아님 — frozen_at 시간간격으로 자동 탐지.
+    #  근거: 2026-07-03(v30 새벽 00:39 1230행 + 오후 21:28 96행 = 간격 21시간). 동결점수는 사후
+    #  수정 안 하고, 오염된 '하루'만 판정에서 뺀다(§11 정신).
+    #  ⚠️ distinct 개수가 아니라 '최대 시간 간격'으로 판별 — 정상 1회 적재도 종목마다 초 단위로
+    #     다른 frozen_at 을 가져(14:31:29~:33) distinct 다종이 됨. 실측: 정상일 gap 0분, 이중
+    #     1249분 → 임계 60분. (2026-07-05 오탐 교정)
     try:
         import sqlite3 as _sq
+        import pandas as _pd
         _con = _sq.connect(str(db))
         _cols = [c[1] for c in _con.execute("PRAGMA table_info(v3_scores)")]
         if "frozen_at" in _cols:
-            # run_id 별 서로 다른 '날짜부(앞 10자)'가 아니라, 시각까지 다른 frozen_at 이 2개 이상이면
-            #  = 서로 다른 실행 배치가 같은 run_id 에 적재된 것. (한 배치는 frozen_at 단일.)
-            _dup = _con.execute(
-                "SELECT run_id, COUNT(DISTINCT frozen_at) c FROM v3_scores "
-                "WHERE model_id='v30' GROUP BY run_id HAVING c >= 2").fetchall()
+            _fa = _pd.read_sql("SELECT run_id, frozen_at FROM v3_scores WHERE model_id='v30'", _con)
             _con.close()
-            _bad2 = {str(r[0]) for r in _dup}
+            _fa["ts"] = _pd.to_datetime(_fa["frozen_at"], errors="coerce", utc=True)
+            _bad2 = set()
+            for _rid, _g in _fa.dropna(subset=["ts"]).groupby("run_id"):
+                if (_g["ts"].max() - _g["ts"].min()).total_seconds() / 60.0 >= 60:
+                    _bad2.add(str(_rid))
             if _bad2:
                 picks = picks[~picks["run_id"].astype(str).isin(_bad2)].reset_index(drop=True)
-                print("   [게이트] 이중실행일 IC 제외(frozen_at 다중): %s" % sorted(_bad2))
+                print("   [게이트] 이중실행일 IC 제외(frozen_at 간격>60분): %s" % sorted(_bad2))
         else:
             _con.close()
     except Exception as _e:
