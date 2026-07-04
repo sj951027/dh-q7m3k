@@ -202,6 +202,24 @@ def accumulate_market(market, date_str, conn, archive=False):
               f"(자정 넘김/override). 원 날짜와 다르면 의도 확인.")
     print(f"  [{market}] run_id={run_id}, timestamp={run_ts}")
 
+    # [중복 실행 가드] 이 (market, run_id) 가 이미 적재돼 있으면 기본 스킵(정상 no-op).
+    #   근거: run_id 가 거래일 기준이 되면서(위 보정) 주말·심야 재실행이 기존 거래일과 같은
+    #   run_id 를 갖는다(예: 토·일·월 새벽 배치 → 전부 금요일 run_id). 이때 재적재하면 stage 는
+    #   덮어써지고 lowvol·동결점수(append-only)는 스킵돼 유니버스 불일치가 재발한다(2026-07-03 사건).
+    #   의도적 재적재(그날을 다시 만들기)는 FORCE_REINGEST=1 로만 — 이후 반드시
+    #   `python lowvol_score.py --run <run_id>` 로 저변동 트랙 재정합 필수.
+    if os.environ.get("FORCE_REINGEST", "") != "1":
+        try:
+            n_exist = conn.execute(
+                "SELECT COUNT(*) FROM stage1_oversold WHERE market=? AND run_id=?",
+                (market, run_id)).fetchone()[0]
+        except Exception:
+            n_exist = 0
+        if n_exist > 0:
+            print(f"  [{market}] ⏭ run_id={run_id} 이미 적재({n_exist}행) — 중복 실행 가드 스킵(정상). "
+                  f"의도적 재적재: FORCE_REINGEST=1 + 이후 `python lowvol_score.py --run {run_id}` 필수")
+            return "SKIP"
+
     df_stage1_for_meta = pd.DataFrame()
     final_csv_path = None
     for stage_name, (csv_path, table) in csvs.items():
@@ -286,12 +304,19 @@ def main():
 
     conn = sqlite3.connect(DB_PATH)
     any_loaded = False
+    any_skipped = False
     for market in targets:
-        any_loaded = accumulate_market(market, args.date, conn, archive=args.archive) or any_loaded
+        res = accumulate_market(market, args.date, conn, archive=args.archive)
+        any_loaded = (res is True) or any_loaded
+        any_skipped = (res == "SKIP") or any_skipped
     conn.commit()
     conn.close()
 
     if not any_loaded:
+        if any_skipped:
+            # 중복 실행 가드로 전 시장 스킵 = 이미 처리된 거래일의 재실행(주말 새벽 등) — 정상 no-op.
+            print("\n⏭ 중복 실행 가드: 전 시장이 이미 적재된 run_id — 정상 종료(no-op).")
+            return
         print("\n❌ 적재할 CSV가 하나도 없었습니다.")
         sys.exit(1)
 

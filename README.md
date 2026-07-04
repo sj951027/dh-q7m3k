@@ -23,10 +23,13 @@
 | `LOWVOL_TRACK_DESIGN.md` | 저변동·우량·반전 트랙 설계·검증(lv_a~d·lv_a3) | lowvol |
 | `PREREGISTER_v31f_maturity.md` | v31f/g 챌린저 골대(post-hoc forward-only) | v3 |
 | `PREREGISTER_lowvol.md` | lowvol 골대(OOS 40거래일·Bonferroni 5) | lowvol |
+| `PREREGISTER_wu.md` | wu 골대(등록 20260702·OOS 40거래일·h=20d·Bonferroni 11) | wu |
 | `CLEANUP_NOTES.md` | 산출물 보존정책·git 다이어트·handoff 분리 | 운영 |
 
-**3트랙 한눈에**: v3=중소형 과매도 반등(메인, 표시 기준) · large=대형 가치(설계/구축 중) ·
-lowvol=적당히 빠진 우량 저변동(1단계 관측 배포, lv_a 테스트 노출). **셋의 점수·유니버스·표시는 분리**,
+**4트랙 한눈에**: v3=중소형 과매도 반등(메인, 표시 기준) · large=대형 가치(설계/구축 중) ·
+lowvol=적당히 빠진 우량 저변동(1단계 관측 배포, lv_a 테스트 노출) ·
+wu=전체 상장 저변동63+고점근접+12-1모멘텀+시총(관측 배포, wu_a 테스트 노출, 골대 PREREGISTER_wu.md).
+**넷의 점수·유니버스·표시는 분리**,
 데이터·인프라(history.db·대시보드·텔레그램·git)만 공유.
 
 ---

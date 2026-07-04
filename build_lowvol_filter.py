@@ -121,6 +121,35 @@ def _ohlcv_fill(g, rid):
         return g
 
 
+def _stage1_fill(con, rid, mkt, g):
+    """stage3_final 에 없어서 비어버린 항목 중 stage1_oversold 에 실재하는 값으로 채운다(결측분만).
+    채우는 것: oversold_score(과매도), foreign/inst 5d·20d(수급) — 모두 stage1 에 존재.
+    근거: lv_a 유니버스(stage1/2 기반)에서 과매도<40 등으로 stage3 탈락한 종목은 stage3 지표가
+    비지만, 그 종목의 과매도·수급은 stage1 에 그대로 남아 있음(2026-07-04 실측: 과매도 60/60 복구).
+    ⚠️ stage3 에 값이 있으면 유지(0-diff). 재무(ROE·YoY)는 stage1 에도 없어 갭으로 남김(매직넘버 금지)."""
+    S1_MAP = {"oversold_score": "oversold_score",
+              "foreign_5d_억": '"foreign_5d_억"', "foreign_20d_억": '"foreign_20d_억"',
+              "inst_5d_억": '"inst_5d_억"', "inst_20d_억": '"inst_20d_억"'}
+    targets = [c for c in S1_MAP if c in g.columns]
+    if not targets or not g[targets].isna().any().any():
+        return g
+    try:
+        sel = ", ".join(f"{S1_MAP[c]} AS {c}" for c in targets)
+        s1 = pd.read_sql(
+            f"SELECT ticker, {sel} FROM stage1_oversold WHERE run_id=? AND market=?",
+            con, params=(rid, mkt))
+        s1["ticker"] = s1["ticker"].astype(str)
+        s1 = s1.drop_duplicates("ticker").set_index("ticker")
+        for col in targets:
+            need = g[col].isna()
+            if need.any():
+                fill = g.loc[need, "ticker"].astype(str).map(s1[col])
+                g.loc[need, col] = g.loc[need, col].where(g.loc[need, col].notna(), fill)
+    except Exception:
+        pass
+    return g
+
+
 def build_one(con, rid, mkt, sector_map=None):
     ls = pd.read_sql(
         "SELECT ticker, lowvol_score, n_universe FROM lowvol_scores "
@@ -136,7 +165,8 @@ def build_one(con, rid, mkt, sector_map=None):
     s3.columns = [c.strip('"') for c in s3.columns]
     g = ls.merge(s3, on="ticker", how="left")
     g = _name_fallback(con, g)   # stage3에서 안 붙은 종목명을 stage1+large로 보충(원본 보존)
-    g = _ohlcv_fill(g, rid)      # stage3 결측 종목의 가격계 지표를 ohlcv로 보충(재무지표는 갭)
+    g = _stage1_fill(con, rid, mkt, g)  # 과매도·수급을 stage1에서 보충(stage3 결측분, 재무는 갭)
+    g = _ohlcv_fill(g, rid)      # 가격계 지표 + 수급 잔여를 ohlcv로 보충(재무지표는 갭)
 
     # lv_short 챌린저 점수도 나란히 표시(공매도 추가본). 비교용 — lv_a 와 어느 게 나은지 관찰.
     #   별도 컬럼 lv_short_score + 그 순위 lv_short_rank. lv_a 점수·순위는 그대로(0-diff).
