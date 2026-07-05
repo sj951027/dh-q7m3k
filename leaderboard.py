@@ -220,14 +220,18 @@ def main():
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        # 콘솔 요약
-        print(f"[leaderboard] 게이트 제외: 부분실행 {sorted(partial)} · 이중실행 {sorted(dbl)}")
-        print(f"{'트랙':7s} {'모델':10s} {'h20 IC':>8s} {'n':>3s} {'95%CI':>20s} {'판정':>6s}")
-        for r in results:
-            s = r["h20"]; ic = f"{s['ic']:+.3f}" if s["ic"] is not None else "  n/a"
-            ci = f"[{s['ci'][0]:+.3f},{s['ci'][1]:+.3f}]" if s["ci"][0] is not None else "-"
-            print(f"{r['track']:7s} {r['model']:10s} {ic:>8s} {s['n']:3d} {ci:>20s} {r['verdict']:>6s}")
-        print("\n※ 트랙 간 IC 절대값 비교 금지 · h=20d 주지표 · OOS<40거래일=노이즈(기본값)")
+        # 콘솔 요약 — JSON 저장 '후'의 표시 단계. 여기서 예외(파이프 끊김 등)가 나도
+        # 이미 저장된 산출물을 pending 으로 덮어쓰면 안 되므로 별도 try 로 격리한다.
+        try:
+            print(f"[leaderboard] 게이트 제외: 부분실행 {sorted(partial)} · 이중실행 {sorted(dbl)}")
+            print(f"{'트랙':7s} {'모델':10s} {'h20 IC':>8s} {'n':>3s} {'95%CI':>20s} {'판정':>6s}")
+            for r in results:
+                s = r["h20"]; ic = f"{s['ic']:+.3f}" if s["ic"] is not None else "  n/a"
+                ci = f"[{s['ci'][0]:+.3f},{s['ci'][1]:+.3f}]" if s["ci"][0] is not None else "-"
+                print(f"{r['track']:7s} {r['model']:10s} {ic:>8s} {s['n']:3d} {ci:>20s} {r['verdict']:>6s}")
+            print("\n※ 트랙 간 IC 절대값 비교 금지 · h=20d 주지표 · OOS<40거래일=노이즈(기본값)")
+        except Exception:
+            pass   # 표시 실패는 무해 — 산출물(leaderboard.json)은 이미 저장됨
     except Exception as e:
         _pending(f"예외(비치명): {e}\n{traceback.format_exc()[:500]}")
 
