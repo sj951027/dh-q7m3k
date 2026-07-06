@@ -148,97 +148,16 @@
       "denom": 7
     },
     {
-      "track": "v3",
-      "model": "v31f",
-      "reg_date": "20260622",
-      "oos_days": 9,
-      "h5": {
-        "ic": 0.1086,
-        "n": 5,
-        "ci": [
-          0.0911,
-          0.1269
-        ],
-        "pos": 1.0
-      },
-      "h20": {
-        "ic": null,
-        "n": 0,
-        "ci": [
-          null,
-          null
-        ],
-        "pos": null
-      },
-      "verdict": "노이즈",
-      "why": "OOS 9/40거래일 — 표본 부족(기본값)",
-      "denom": 7
-    },
-    {
-      "track": "v3",
-      "model": "v31g",
-      "reg_date": "20260622",
-      "oos_days": 9,
-      "h5": {
-        "ic": 0.1154,
-        "n": 5,
-        "ci": [
-          0.0918,
-          0.1353
-        ],
-        "pos": 1.0
-      },
-      "h20": {
-        "ic": null,
-        "n": 0,
-        "ci": [
-          null,
-          null
-        ],
-        "pos": null
-      },
-      "verdict": "노이즈",
-      "why": "OOS 9/40거래일 — 표본 부족(기본값)",
-      "denom": 7
-    },
-    {
       "track": "lowvol",
-      "model": "lv_c",
+      "model": "lv_b",
       "reg_date": "20260625",
       "oos_days": 6,
       "h5": {
-        "ic": 0.0686,
+        "ic": 0.2706,
         "n": 2,
         "ci": [
-          0.0618,
-          0.0754
-        ],
-        "pos": 1.0
-      },
-      "h20": {
-        "ic": null,
-        "n": 0,
-        "ci": [
-          null,
-          null
-        ],
-        "pos": null
-      },
-      "verdict": "노이즈",
-      "why": "OOS 6/40거래일 — 표본 부족(기본값)",
-      "denom": 9
-    },
-    {
-      "track": "lowvol",
-      "model": "lv_d",
-      "reg_date": "20260625",
-      "oos_days": 6,
-      "h5": {
-        "ic": 0.1359,
-        "n": 2,
-        "ci": [
-          0.0768,
-          0.195
+          0.2383,
+          0.3028
         ],
         "pos": 1.0
       },
@@ -284,69 +203,15 @@
     },
     {
       "track": "lowvol",
-      "model": "sm_a",
-      "reg_date": "20260627",
-      "oos_days": 5,
-      "h5": {
-        "ic": 0.1294,
-        "n": 1,
-        "ci": [
-          0.1294,
-          0.1294
-        ],
-        "pos": 1.0
-      },
-      "h20": {
-        "ic": null,
-        "n": 0,
-        "ci": [
-          null,
-          null
-        ],
-        "pos": null
-      },
-      "verdict": "노이즈",
-      "why": "OOS 5/40거래일 — 표본 부족(기본값)",
-      "denom": 9
-    },
-    {
-      "track": "lowvol",
-      "model": "hv_a",
-      "reg_date": "20260627",
-      "oos_days": 5,
-      "h5": {
-        "ic": -0.1743,
-        "n": 1,
-        "ci": [
-          -0.1743,
-          -0.1743
-        ],
-        "pos": 0.0
-      },
-      "h20": {
-        "ic": null,
-        "n": 0,
-        "ci": [
-          null,
-          null
-        ],
-        "pos": null
-      },
-      "verdict": "노이즈",
-      "why": "OOS 5/40거래일 — 표본 부족(기본값)",
-      "denom": 9
-    },
-    {
-      "track": "lowvol",
-      "model": "lv_a",
+      "model": "lv_a3",
       "reg_date": "20260625",
       "oos_days": 6,
       "h5": {
-        "ic": 0.2069,
+        "ic": 0.2088,
         "n": 2,
         "ci": [
-          0.1761,
-          0.2376
+          0.1653,
+          0.2524
         ],
         "pos": 1.0
       },
@@ -365,15 +230,15 @@
     },
     {
       "track": "lowvol",
-      "model": "lv_b",
+      "model": "lv_a",
       "reg_date": "20260625",
       "oos_days": 6,
       "h5": {
-        "ic": 0.2706,
+        "ic": 0.2069,
         "n": 2,
         "ci": [
-          0.2383,
-          0.3028
+          0.1761,
+          0.2376
         ],
         "pos": 1.0
       },
@@ -419,15 +284,15 @@
     },
     {
       "track": "lowvol",
-      "model": "lv_a3",
+      "model": "lv_d",
       "reg_date": "20260625",
       "oos_days": 6,
       "h5": {
-        "ic": 0.2088,
+        "ic": 0.1359,
         "n": 2,
         "ci": [
-          0.1653,
-          0.2524
+          0.0768,
+          0.195
         ],
         "pos": 1.0
       },
@@ -442,6 +307,141 @@
       },
       "verdict": "노이즈",
       "why": "OOS 6/40거래일 — 표본 부족(기본값)",
+      "denom": 9
+    },
+    {
+      "track": "lowvol",
+      "model": "sm_a",
+      "reg_date": "20260627",
+      "oos_days": 5,
+      "h5": {
+        "ic": 0.1294,
+        "n": 1,
+        "ci": [
+          0.1294,
+          0.1294
+        ],
+        "pos": 1.0
+      },
+      "h20": {
+        "ic": null,
+        "n": 0,
+        "ci": [
+          null,
+          null
+        ],
+        "pos": null
+      },
+      "verdict": "노이즈",
+      "why": "OOS 5/40거래일 — 표본 부족(기본값)",
+      "denom": 9
+    },
+    {
+      "track": "v3",
+      "model": "v31g",
+      "reg_date": "20260622",
+      "oos_days": 9,
+      "h5": {
+        "ic": 0.1154,
+        "n": 5,
+        "ci": [
+          0.0918,
+          0.1353
+        ],
+        "pos": 1.0
+      },
+      "h20": {
+        "ic": null,
+        "n": 0,
+        "ci": [
+          null,
+          null
+        ],
+        "pos": null
+      },
+      "verdict": "노이즈",
+      "why": "OOS 9/40거래일 — 표본 부족(기본값)",
+      "denom": 7
+    },
+    {
+      "track": "v3",
+      "model": "v31f",
+      "reg_date": "20260622",
+      "oos_days": 9,
+      "h5": {
+        "ic": 0.1086,
+        "n": 5,
+        "ci": [
+          0.0911,
+          0.1269
+        ],
+        "pos": 1.0
+      },
+      "h20": {
+        "ic": null,
+        "n": 0,
+        "ci": [
+          null,
+          null
+        ],
+        "pos": null
+      },
+      "verdict": "노이즈",
+      "why": "OOS 9/40거래일 — 표본 부족(기본값)",
+      "denom": 7
+    },
+    {
+      "track": "lowvol",
+      "model": "lv_c",
+      "reg_date": "20260625",
+      "oos_days": 6,
+      "h5": {
+        "ic": 0.0686,
+        "n": 2,
+        "ci": [
+          0.0618,
+          0.0754
+        ],
+        "pos": 1.0
+      },
+      "h20": {
+        "ic": null,
+        "n": 0,
+        "ci": [
+          null,
+          null
+        ],
+        "pos": null
+      },
+      "verdict": "노이즈",
+      "why": "OOS 6/40거래일 — 표본 부족(기본값)",
+      "denom": 9
+    },
+    {
+      "track": "lowvol",
+      "model": "hv_a",
+      "reg_date": "20260627",
+      "oos_days": 5,
+      "h5": {
+        "ic": -0.1743,
+        "n": 1,
+        "ci": [
+          -0.1743,
+          -0.1743
+        ],
+        "pos": 0.0
+      },
+      "h20": {
+        "ic": null,
+        "n": 0,
+        "ci": [
+          null,
+          null
+        ],
+        "pos": null
+      },
+      "verdict": "노이즈",
+      "why": "OOS 5/40거래일 — 표본 부족(기본값)",
       "denom": 9
     },
     {

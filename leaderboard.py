@@ -250,7 +250,8 @@ def main():
                                     verdict=vd, why=why, denom=denom[trk]))
         con.close()
 
-        results.sort(key=lambda r: (r["h20"]["ic"] is None, -(r["h20"]["ic"] or -9)))
+        results.sort(key=lambda r: (r["h20"]["ic"] is None, -(r["h20"]["ic"] or -9),
+                                    r["h5"]["ic"] is None, -(r["h5"]["ic"] or -9)))
         payload = dict(
             status="ok",
             note="트랙 간 IC 절대값 비교 금지(유니버스 상이). h=20d 주지표, OOS<40거래일=노이즈.",
@@ -262,11 +263,16 @@ def main():
 
         # 콘솔 요약
         print(f"[leaderboard] 게이트 제외: 부분실행 {sorted(partial)} · 이중실행 {sorted(dbl)}")
-        print(f"{'트랙':7s} {'모델':10s} {'h20 IC':>8s} {'n':>3s} {'OOS':>4s} {'95%CI':>20s} {'판정':>6s}")
+        # h5 는 §11 명시 보조지표("보조로 h=5d 같이 본다") — 판정은 여전히 h20 게이트만.
+        print(f"{'트랙':7s} {'모델':10s} {'h20 IC':>8s} {'n':>3s} {'OOS':>4s} {'95%CI':>20s}"
+              f" {'h5 IC(보조)':>12s} {'n':>3s} {'판정':>6s}")
         for r in results:
             s = r["h20"]; ic = f"{s['ic']:+.3f}" if s["ic"] is not None else "  n/a"
             ci = f"[{s['ci'][0]:+.3f},{s['ci'][1]:+.3f}]" if s["ci"][0] is not None else "-"
-            print(f"{r['track']:7s} {r['model']:10s} {ic:>8s} {s['n']:3d} {r['oos_days']:4d} {ci:>20s} {r['verdict']:>6s}")
+            a = r["h5"]; ic5 = f"{a['ic']:+.3f}" if a["ic"] is not None else "  n/a"
+            ci5 = f" CI[{a['ci'][0]:+.2f},{a['ci'][1]:+.2f}]" if a["ci"][0] is not None else ""
+            print(f"{r['track']:7s} {r['model']:10s} {ic:>8s} {s['n']:3d} {r['oos_days']:4d} {ci:>20s}"
+                  f" {ic5:>8s}{ci5} {a['n']:3d} {r['verdict']:>6s}")
         print("\n※ 트랙 간 IC 절대값 비교 금지 · h=20d 주지표 · OOS<40거래일=노이즈(기본값)")
     except Exception as e:
         _pending(f"예외(비치명): {e}\n{traceback.format_exc()[:500]}")
