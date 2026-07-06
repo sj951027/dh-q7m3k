@@ -29,6 +29,13 @@ DB = HERE / "history.db"
 OHLCV_DB = os.environ.get("OHLCV_DB", str(HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
 OUT = HERE / "docs" / "leaderboard.json"
 
+# 등록일 원장: checkup.py REG_DATE 단일소스(중복 하드코딩 금지).
+# wu 는 PREREGISTER_wu.md 명시 등록일 20260702 (원장 미기재분 보충 — 원장 갱신되면 그쪽 우선).
+from checkup import REG_DATE as _REG
+REG_DATE = dict(_REG)
+REG_DATE.setdefault("wu_a", "20260702")
+REG_DATE.setdefault("wu_b", "20260702")
+
 ENTRY_LAG = 1                 # validate_scores 와 동일(추천 +1거래일 종가 매수)
 H_PRIMARY = 20                # §11 주지표
 HORIZONS = [5, 20]
@@ -114,14 +121,39 @@ def anchor(rid, didx):
     return None
 
 
-def model_ic(scores, close, N, didx, excl):
-    """scores: DataFrame(run_id, market, ticker, score). 게이트 제외 후 h별 그룹 IC + 부트스트랩."""
+def dedupe_by_anchor(scores, didx, excl, reg=None):
+    """앵커 거래일 중복 제거 — 주말/공휴일 run 은 직전 거래일로 앵커되어 같은 날이
+    이중 계상됨(유사복제 → n 부풀림·CI 과소). v3_backtest 의 '정적/주말 제거'와 동일 사상.
+    거래일 run 자체가 있으면 그것을, 없으면(예: 공휴일 등록 첫 run) 최소 run_id 를 유지.
+    reg 필터를 중복제거보다 먼저 적용 — 등록일 run(예: v30 의 20260606 공휴일 run)이
+    등록 전 run 에 밀려 탈락하는 순서 버그 방지."""
+    cand = {}
+    for rid in scores["run_id"].astype(str).unique():
+        if rid in excl or (reg and rid < reg):
+            continue
+        t = anchor(rid, didx)
+        if t is None:
+            continue
+        cand.setdefault(t, []).append(rid)
+    keep = set()
+    for t, rids in cand.items():
+        trade = [r for r in rids if r in didx]
+        keep.add(min(trade) if trade else min(rids))
+    return keep
+
+
+def model_ic(scores, close, N, didx, excl, reg=None):
+    """scores: DataFrame(run_id, market, ticker, score). 게이트 제외 후 h별 그룹 IC + 부트스트랩.
+    reg: 등록일(YYYYMMDD). 등록 전 run 은 post-hoc 백필이므로 IC 표본에서 제외(§11 forward-only).
+    반환에 oos_days(등록 후 경과 유효 거래일 수 — §11 판정 게이트) 포함."""
     out = {}
+    keep = dedupe_by_anchor(scores, didx, excl, reg=reg)
+    out["oos_days"] = len(keep)
     for h in HORIZONS:
-        per_run = []          # (run별 그룹평균 IC) 리스트 — n = 유효 거래일 수
+        per_run = []          # (앵커 거래일별 그룹평균 IC) 리스트 — n = 유효 거래일 수
         for rid, g in scores.groupby("run_id"):
             rid = str(rid)
-            if rid in excl:
+            if rid in excl or rid not in keep:
                 continue
             t = anchor(rid, didx)
             if t is None or t + h >= N:
@@ -158,11 +190,15 @@ def model_ic(scores, close, N, didx, excl):
     return out
 
 
-def verdict(stat, denom):
-    """§11 판정. stat=model_ic()[H_PRIMARY]. denom=Bonferroni 동시검정 수."""
+def verdict(stat, denom, oos_days):
+    """§11 판정. stat=model_ic()[H_PRIMARY]. denom=Bonferroni 동시검정 수.
+    게이트는 §11 원문대로 '등록 후 경과 OOS 거래일'(h20 표본수 아님 — 표본수 기준이면
+    판정이 등록+60거래일로 밀려 사전등록 시점표와 어긋남)."""
     n, ic, ci = stat["n"], stat["ic"], stat["ci"]
-    if n < MIN_OOS:
-        return "노이즈", f"OOS {n}/{MIN_OOS}거래일 — 표본 부족(기본값)"
+    if oos_days < MIN_OOS:
+        return "노이즈", f"OOS {oos_days}/{MIN_OOS}거래일 — 표본 부족(기본값)"
+    if n == 0:
+        return "노이즈", f"OOS {oos_days}일이나 h20 창 닫힌 표본 0 — 산출 불가"
     if ic is None:
         return "노이즈", "IC 산출 불가"
     lo, hi = ci
@@ -203,9 +239,13 @@ def main():
                     f"SELECT run_id, market, ticker, {sc} AS score FROM {tb} WHERE model_id=?",
                     con, params=(mid,))
                 s["ticker"] = s["ticker"].astype(str)
-                stat = model_ic(s, close, N, didx, excl)
-                vd, why = verdict(stat[H_PRIMARY], denom[trk])
-                results.append(dict(track=trk, model=mid,
+                reg = REG_DATE.get(mid)
+                stat = model_ic(s, close, N, didx, excl, reg=reg)
+                vd, why = verdict(stat[H_PRIMARY], denom[trk], stat["oos_days"])
+                if reg is None:
+                    why += " · ⚠원장(REG_DATE) 미등록 — 등록일 필터 미적용"
+                results.append(dict(track=trk, model=mid, reg_date=reg,
+                                    oos_days=stat["oos_days"],
                                     h5=stat[5], h20=stat[20],
                                     verdict=vd, why=why, denom=denom[trk]))
         con.close()
@@ -220,18 +260,14 @@ def main():
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        # 콘솔 요약 — JSON 저장 '후'의 표시 단계. 여기서 예외(파이프 끊김 등)가 나도
-        # 이미 저장된 산출물을 pending 으로 덮어쓰면 안 되므로 별도 try 로 격리한다.
-        try:
-            print(f"[leaderboard] 게이트 제외: 부분실행 {sorted(partial)} · 이중실행 {sorted(dbl)}")
-            print(f"{'트랙':7s} {'모델':10s} {'h20 IC':>8s} {'n':>3s} {'95%CI':>20s} {'판정':>6s}")
-            for r in results:
-                s = r["h20"]; ic = f"{s['ic']:+.3f}" if s["ic"] is not None else "  n/a"
-                ci = f"[{s['ci'][0]:+.3f},{s['ci'][1]:+.3f}]" if s["ci"][0] is not None else "-"
-                print(f"{r['track']:7s} {r['model']:10s} {ic:>8s} {s['n']:3d} {ci:>20s} {r['verdict']:>6s}")
-            print("\n※ 트랙 간 IC 절대값 비교 금지 · h=20d 주지표 · OOS<40거래일=노이즈(기본값)")
-        except Exception:
-            pass   # 표시 실패는 무해 — 산출물(leaderboard.json)은 이미 저장됨
+        # 콘솔 요약
+        print(f"[leaderboard] 게이트 제외: 부분실행 {sorted(partial)} · 이중실행 {sorted(dbl)}")
+        print(f"{'트랙':7s} {'모델':10s} {'h20 IC':>8s} {'n':>3s} {'OOS':>4s} {'95%CI':>20s} {'판정':>6s}")
+        for r in results:
+            s = r["h20"]; ic = f"{s['ic']:+.3f}" if s["ic"] is not None else "  n/a"
+            ci = f"[{s['ci'][0]:+.3f},{s['ci'][1]:+.3f}]" if s["ci"][0] is not None else "-"
+            print(f"{r['track']:7s} {r['model']:10s} {ic:>8s} {s['n']:3d} {r['oos_days']:4d} {ci:>20s} {r['verdict']:>6s}")
+        print("\n※ 트랙 간 IC 절대값 비교 금지 · h=20d 주지표 · OOS<40거래일=노이즈(기본값)")
     except Exception as e:
         _pending(f"예외(비치명): {e}\n{traceback.format_exc()[:500]}")
 
