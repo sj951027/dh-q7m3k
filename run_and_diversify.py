@@ -337,6 +337,12 @@ def main():
     if (HERE / "accumulate_valuation.py").exists():
         run_script(["accumulate_valuation.py"], "2.895단계: 밸류 스냅샷 적재 (관측 축적)")
 
+    # 2.9) 판정일 도달 알림 — 모델별 OOS 40거래일 첫 도달 시 텔레그램 1회 알림(§11 시즌
+    #      안전장치, 2026-07-11). history.db 직접 계산(leaderboard.json 신선도 무의존).
+    #      판정 자체는 안 함(leaderboard.py 몫). 상태는 verdict_notified.json(로컬). 비치명.
+    if (HERE / "notify_verdict_ready.py").exists():
+        run_script(["notify_verdict_ready.py"], "2.9단계: 판정일 도달 알림 (1회성)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []

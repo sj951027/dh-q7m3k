@@ -1309,6 +1309,12 @@ lv_a 계열(6/5 등록)은 ohlcv 최신 7/3 기준 20거래일 앞이 아직 0�
   (repo 밖 ohlcv.db, 연 ~35MB). 당시 결정은 합리적이었음(stage3 roe_value 만 소비).
 - **비권장 명시**: 호가/틱/일중(관리 부담≫이득), 뉴스·감성(검증 불가), 재무제표 전체 소급
   (DART 대량 — 판정 후 필요 시).
+- **백업 체계 확장(2026-07-11 저녁)**: cleanup.backup_db 에 ⓐ `BACKUP_DIR` env — .env 에
+  OneDrive 등 동기화 폴더 지정 시 오프사이트 자동 ⓑ `BACKUP_OHLCV`=full(기본)/core/off —
+  full 은 **sqlite 백업 API** 로 ohlcv.db 전체 정합 복제(keep 2), core 는 재생성불가 5테이블만.
+  ⚠️ 근거 실측: 핫카피(쓰기 중 파일복사) ohlcv 사본이 malformed 로 확인됨 — 단순 복사 금지,
+  백업 API 필수. 핸드오프 zip 생성(make_handoff)도 같은 위험 — 개선 후보. 판정일 알림
+  `notify_verdict_ready.py`(2.9단계, 1회성, verdict_notified.json 로컬 상태)도 같은 날 추가.
 - **전종목 신규 팩터 스캔(연계)**: 상세 research/RESEARCH_wufactors_20260711.md —
   **upratio63(상승일 비율) 채택 후보**(c3 조합이 wu_a를 3개 연도 전부 우위, 누적 +161 vs +101),
   기각: OBV매집·Amihud비유동·amt_trend(전부 방향 반대)·FIP(0)·max5(lv63과 0.62 중복).

@@ -38,6 +38,7 @@ import argparse
 import datetime as dt
 import glob
 import gzip
+import os
 import re
 import shutil
 import sqlite3
@@ -163,14 +164,16 @@ def collect_dart(args):
 
 
 def backup_db(keep=4, min_gap_days=7):
-    """history.db gzip 백업. 매일 호출해도 안전 — 최신 백업이 min_gap_days 이내면 건너뜀
-    (주 1회 백업 유지). keep=4 → 주간 백업 약 한 달치 보존. (2026-07-11: .bat 매일 호출용 가드)"""
+    """history.db gzip 백업 + ohlcv 재생성불가 테이블 덤프. 매일 호출해도 안전 —
+    최신 백업이 min_gap_days 이내면 건너뜀(주 1회 유지). keep=4 → 약 한 달치 보존.
+    (2026-07-11: .bat 매일 호출용 가드 + BACKUP_DIR 환경변수 지원 — .env 에
+     BACKUP_DIR=OneDrive 등 동기화 폴더를 지정하면 오프사이트 백업이 자동화됨.)"""
     src = HERE / "history.db"
     if not src.exists():
         print("   ⚠️  history.db 없음 — 백업 생략")
         return
-    bdir = HERE / "backup"
-    bdir.mkdir(exist_ok=True)
+    bdir = Path(os.environ.get("BACKUP_DIR", "").strip() or (HERE / "backup"))
+    bdir.mkdir(parents=True, exist_ok=True)
     olds = sorted(bdir.glob("history_*.db.gz"))
     if olds:
         try:
@@ -188,6 +191,97 @@ def backup_db(keep=4, min_gap_days=7):
     for p in olds[:-keep]:
         p.unlink()
         print(f"   🗑  오래된 백업 삭제: {p.name}")
+    mode = os.environ.get("BACKUP_OHLCV", "full").strip().lower()
+    if mode == "full":
+        backup_ohlcv_full(bdir, keep=2)   # 전체 사본(주 1회, ~수백MB) — 복원 최단
+    elif mode == "core":
+        backup_ohlcv_core(bdir, keep=keep)  # 재생성불가 테이블만(몇 MB) — 경량
+    # "off" 면 생략
+
+
+def backup_ohlcv_full(bdir, keep=2):
+    """ohlcv.db 전체를 sqlite 백업 API 로 정합하게 복제 후 gzip (2026-07-11).
+    ⚠️ 단순 파일복사는 쓰기 중이면 malformed 사본이 나올 수 있음(실측) —
+    Connection.backup() 은 페이지 단위 정합 복제라 안전. keep=2(용량 고려)."""
+    ohlcv = Path(os.environ.get("OHLCV_DB", "").strip()
+                 or (HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
+    if not ohlcv.exists():
+        print(f"   ⚠️  ohlcv.db 없음({ohlcv}) — 전체 백업 생략")
+        return
+    tmp = bdir / f"_t_ohlcv_{dt.date.today():%Y%m%d}.db"
+    out = bdir / f"ohlcv_full_{dt.date.today():%Y%m%d}.db.gz"
+    try:
+        if tmp.exists():
+            tmp.unlink()
+        src_con = sqlite3.connect(f"file:{ohlcv}?mode=ro", uri=True)
+        dst_con = sqlite3.connect(tmp)
+        src_con.backup(dst_con)
+        dst_con.close(); src_con.close()
+        with open(tmp, "rb") as f_in, gzip.open(out, "wb", compresslevel=6) as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        tmp.unlink()
+        print(f"   💾 ohlcv 전체 백업: {out.name} ({out.stat().st_size/1048576:.1f} MB)")
+        olds = sorted(bdir.glob("ohlcv_full_*.db.gz"))
+        for p in olds[:-keep]:
+            p.unlink()
+            print(f"   🗑  오래된 백업 삭제: {p.name}")
+    except Exception as e:
+        print(f"   ⚠️  ohlcv 전체 백업 실패(비치명): {e}")
+        if tmp.exists():
+            tmp.unlink()
+
+
+def backup_ohlcv_core(bdir, keep=4):
+    """ohlcv.db 중 '재생성 불가' 테이블만 작은 sqlite 로 덤프 후 gzip (2026-07-11, §26-5).
+    시세(daily_ohlcv)는 FDR 로 재생성 가능해 제외 — 아래 테이블은 소실 시 복구 불가:
+      daily_flows(KIS 30일 윈도)·short_flows·valuation_daily(CSV 7일 회전)·
+      universe_events·market_daily. 몇 MB 수준이라 부담 없음. 없는 테이블은 건너뜀."""
+    ohlcv = Path(os.environ.get("OHLCV_DB", "").strip()
+                 or (HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
+    if not ohlcv.exists():
+        print(f"   ⚠️  ohlcv.db 없음({ohlcv}) — 핵심테이블 백업 생략")
+        return
+    import sqlite3
+    tables = ["daily_flows", "short_flows", "valuation_daily",
+              "universe_events", "market_daily"]
+    tmp = bdir / f"_t_ohlcv_core_{dt.date.today():%Y%m%d}.db"
+    out = bdir / f"ohlcv_core_{dt.date.today():%Y%m%d}.db.gz"
+    try:
+        if tmp.exists():
+            tmp.unlink()
+        dst = sqlite3.connect(tmp)
+        dst.execute("ATTACH DATABASE ? AS src", (str(ohlcv),))
+        copied = []
+        for t in tables:
+            try:
+                row = dst.execute(
+                    "SELECT 1 FROM src.sqlite_master WHERE type='table' AND name=?", (t,)).fetchone()
+                if not row:
+                    continue
+                dst.execute(f"CREATE TABLE {t} AS SELECT * FROM src.{t}")
+                copied.append(t)
+            except Exception as te:  # 손상 테이블 하나가 전체 덤프를 못 막게(테이블별 내성)
+                dst.execute(f"DROP TABLE IF EXISTS {t}")
+                print(f"   ⚠️  {t} 덤프 실패 건너뜀: {te}")
+        dst.commit()
+        dst.close()
+        if not copied:
+            tmp.unlink()
+            print("   ⚠️  ohlcv 핵심테이블 없음 — 덤프 생략")
+            return
+        with open(tmp, "rb") as f_in, gzip.open(out, "wb", compresslevel=6) as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        tmp.unlink()
+        print(f"   💾 ohlcv 핵심 백업: {out.name} ({out.stat().st_size/1048576:.1f} MB, "
+              f"{len(copied)}테이블: {','.join(copied)})")
+        olds = sorted(bdir.glob("ohlcv_core_*.db.gz"))
+        for p in olds[:-keep]:
+            p.unlink()
+            print(f"   🗑  오래된 백업 삭제: {p.name}")
+    except Exception as e:
+        print(f"   ⚠️  ohlcv 핵심 백업 실패(비치명): {e}")
+        if tmp.exists():
+            tmp.unlink()
 
 
 def empty_trash():
