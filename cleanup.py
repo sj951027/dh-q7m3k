@@ -162,13 +162,24 @@ def collect_dart(args):
     return old, tmps
 
 
-def backup_db(keep=4):
+def backup_db(keep=4, min_gap_days=7):
+    """history.db gzip 백업. 매일 호출해도 안전 — 최신 백업이 min_gap_days 이내면 건너뜀
+    (주 1회 백업 유지). keep=4 → 주간 백업 약 한 달치 보존. (2026-07-11: .bat 매일 호출용 가드)"""
     src = HERE / "history.db"
     if not src.exists():
         print("   ⚠️  history.db 없음 — 백업 생략")
         return
     bdir = HERE / "backup"
     bdir.mkdir(exist_ok=True)
+    olds = sorted(bdir.glob("history_*.db.gz"))
+    if olds:
+        try:
+            last = dt.datetime.strptime(olds[-1].stem.split("_")[1].split(".")[0], "%Y%m%d").date()
+            if (dt.date.today() - last).days < min_gap_days:
+                print(f"   ⏭  DB 백업 건너뜀 — 최신 백업 {last} ({min_gap_days}일 이내)")
+                return
+        except Exception:
+            pass  # 이름 파싱 실패 시 안전하게 백업 진행
     out = bdir / f"history_{dt.date.today():%Y%m%d}.db.gz"
     with open(src, "rb") as f_in, gzip.open(out, "wb", compresslevel=6) as f_out:
         shutil.copyfileobj(f_in, f_out)

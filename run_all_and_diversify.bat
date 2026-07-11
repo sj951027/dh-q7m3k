@@ -63,6 +63,12 @@ python -c "import run_and_diversify as r; r.git_push()"
 
 echo.
 echo ========================================================================
+echo   [Cleanup] rotate old outputs + weekly DB backup (7d guard inside)
+echo ========================================================================
+python cleanup.py --yes --backup-db
+
+echo.
+echo ========================================================================
 echo   [OK] Done.  End: %DATE% %TIME%
 echo ========================================================================
 echo   Output:
