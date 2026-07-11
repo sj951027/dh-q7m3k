@@ -316,6 +316,12 @@ def main():
     if (HERE / "build_lowvol_filter.py").exists():
         run_script(["build_lowvol_filter.py"], "2.87단계: 저변동 트랙 lv_a 관측 CSV (섀도우)")
 
+    # 2.87b) 모멘텀 대조 모델(mom_a) 관측 CSV — mom.html 이 fetch할 docs/latest_*_mom.csv 갱신.
+    #        점수 적재는 2.86(lowvol_score)이 이미 처리(mom_a 는 lowvol_scores 공유, §15).
+    #        표시 전용 신규 파일만 생성 — v3·large·lv_a 산출물 0-diff. 실패해도 비치명.
+    if (HERE / "build_mom_filter.py").exists():
+        run_script(["build_mom_filter.py"], "2.87b단계: 모멘텀 mom_a 관측 CSV (섀도우)")
+
     # 2.88) 전체종목 트랙(wu) 관측 — wu_a·wu_b 점수 적재(가중치 0, 새 테이블 wu_scores) + wu_a 관측 CSV.
     #        v3·large·lowvol 과 완전 분리(전용 wu.html). 검증 전 섀도우(OOS 40거래일 전 노이즈).
     #        ohlcv.db(가격)만 읽어 신규 API 0. 실패해도 챔피언 배포 안 막음(비치명).

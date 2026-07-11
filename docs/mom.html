@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모멘텀 대조 모델 (mom_a) · 테스트·관측</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
+    --accent:#e8a33d; --warn:#f0b429; --warnbg:#2a230f; --good:#2dd4a7; --bad:#f0997b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    font-size:14px;line-height:1.5}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:12px;margin-bottom:14px}
+  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px}
+  .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;
+    list-style:none;user-select:none}
+  .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px}
+  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
+  .explain-body b{color:var(--txt)}
+  .explain .hl{background:#2a2113;color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600}
+  .explain .note{color:var(--sub);font-size:11.5px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  .explain .warnp{background:#1f1a0c;border-left:3px solid var(--warn);border-radius:0;
+    padding:9px 12px;color:#e8dcc0}
+  .explain .warnp b{color:var(--warn)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 10px;font-size:12px;color:var(--sub)}
+  .chip b{color:var(--txt)}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
+  .tab.active{border-color:var(--accent);color:var(--accent)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+  .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
+  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub);user-select:none}
+  .fbtn.on{border-color:var(--accent);color:var(--accent);background:#221c11}
+  .fcount{color:var(--sub);font-size:12px;margin-left:auto}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;min-width:0}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0;cursor:pointer}
+  th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left}
+  .top10row td{background:#221c11}
+  .top10row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .top10row td:nth-child(2){color:var(--accent);font-weight:700}
+  tr:hover td{background:#1b1f28}
+  .score{color:var(--accent);font-weight:700}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .v3{color:var(--sub);font-size:11px}
+  .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7}
+  .loading{padding:40px;text-align:center;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧪 모멘텀 대조 모델 <span style="color:var(--accent)">mom_a</span> · 테스트·관측</h1>
+  <div class="sub">20일선 이격 + 1개월 모멘텀 + 거래량 팽창 순위합 · lowvol 트랙의 대조 관측(별개 점수)</div>
+
+  <div class="warn">
+    ⚠️ <b>검증 전 관측 모델 — 매수신호 아님.</b> mom_a 는 사후(post-hoc) 발견이라 forward-only 로만
+    판정하며, 등록일(2026-06-27) 이후 <b>OOS 40거래일 + 상승장 표본</b> 누적 전엔 노이즈로 간주합니다.
+    특히 유니버스가 <b>과매도(30~70) 종목</b>이라 진짜 상승 주도주는 애초에 풀에 없습니다 — 하락장에선
+    이 점수가 '상승포착'이 아니라 <b>"그나마 덜 빠진 종목"(상대방어)</b>로 작동합니다(§15 실측).
+    실제 추천 기준은 여전히 v3입니다.
+  </div>
+
+  <details class="explain" open>
+    <summary>📖 점수·지표 읽는 법 (눌러서 접기)</summary>
+    <div class="explain-body">
+      <p><b>mom점수 (mom_score)</b> — 이 페이지의 핵심 순위. 세 가지를 "그날 전체 종목 중 몇 등인지"(백분위)로
+      바꿔 더한 값입니다. <b>0~3 범위</b>이고 <b>높을수록 선호</b>. 절대값보다 <b>같은 날 종목 간 순위</b>가
+      의미입니다. 세 항 = ①20일선 이격(선 위로 회복할수록↑) ②1개월 모멘텀(최근 한 달 올랐을수록↑)
+      ③거래량 팽창(최근 1주 변동성/거래가 터질수록↑). 셋 다 <b>lv점수와 정반대 축</b>의 신호입니다
+      (실측 상관 +0.07 = 거의 직교).</p>
+
+      <p><b>왜 만들었나</b> — lowvol(저변동·반전)은 "덜 빠질 종목"을 고르는 방어형이라 상승장 주도주를
+      구조적으로 놓칩니다. 전체종목 분석에서도 상승률 상위 종목의 공통점은 <span class="hl">신고가 근접 +
+      모멘텀 + 거래량</span>이었습니다. mom_a 는 같은 유니버스·같은 인프라에서 그 반대 축이 실제로
+      먹히는지 <b>대조 관측</b>하는 모델입니다.</p>
+
+      <p class="warnp">❗ <b>핵심 한계 — 지금은 '상승포착'이 아닙니다.</b> 측정구간이 하락장이라 mom_a 상위
+      종목도 20일선 이격이 대부분 음수(선 아래)입니다. 즉 현재는 "과매도 중 그나마 덜 빠진 종목"을 고르는
+      중입니다. 진짜 주도주 포착력은 <b>상승장이 충분히 낀 뒤 forward 로만</b> 판정합니다. 참고로 등록 후
+      초기 관측(n=4, 노이즈 구간)에선 h5 IC +0.31로 lowvol 트랙 내 선두 '기움'이지만 표본이 너무 작습니다.</p>
+
+      <p><b>20일선% (vs_SMA20_%)</b> — 현재가가 20일 이동평균선보다 몇 % 위(+)/아래(−)인지. mom_a 의
+      <b>핵심 팩터</b>(이 값이 없으면 점수 제외). +면 단기 추세 회복, −면 선 아래.</p>
+
+      <p><b>1개월% / 거래량팽창</b> — 1개월 등락(오를수록 점수↑)과 std5/std21 비율(1보다 크면 최근 1주가
+      최근 1달보다 출렁임=에너지 유입 가설). 둘은 보조 팩터(결측 시 0.5 중립).</p>
+
+      <p><b>lv_a순위</b> — 같은 유니버스에서 lv_a(저변동·방어)가 매긴 순위. mom순위(#)와 크게 다르면
+      두 모델이 서로 다른 종목을 보고 있다는 뜻입니다(대조 확인용 — 섞지 않음).</p>
+
+      <p><b>수급 (외인·기관 5일/20일)</b> — 순매수 금액(억). 점수에 <b>안 들어가는 참고 지표</b>입니다.</p>
+
+      <p class="note">⚙️ 유니버스 = 과매도 30~70 + 거래대금 ≥5억 (lowvol 과 동일 — 대조 목적).
+      컬럼 클릭 시 정렬. 판정: 등록 20260627 이후 OOS 40거래일 + 상승장 표본, h=20d 주지표.</p>
+    </div>
+  </details>
+
+  <div class="meta" id="meta"></div>
+  <div class="tabs">
+    <div class="tab active" data-mkt="kospi">🔵 KOSPI</div>
+    <div class="tab" data-mkt="kosdaq">🟠 KOSDAQ</div>
+  </div>
+
+  <div class="filters" id="filters">
+    <span class="flabel">필터:</span>
+    <span class="fbtn" data-f="top10">★ 상위 10%만</span>
+    <span class="fbtn" data-f="sma20pos">20일선 위</span>
+    <span class="fbtn" data-f="m1pos">1개월 상승</span>
+    <span class="fbtn" data-f="volup">거래량팽창 &gt; 1</span>
+    <span class="fbtn" data-f="f5pos">외인5일 &gt; 0</span>
+    <span class="fbtn" data-f="i5pos">기관5일 &gt; 0</span>
+    <span class="fcount" id="fcount"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="tbl"><thead></thead><tbody>
+      <tr><td colspan="20" class="loading">데이터 불러오는 중…</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+// 표시 컬럼 정의: [CSV키, 라벨, 타입, 툴팁]
+const COLS = [
+  ['rank','#','int','그날 mom점수 순위'],
+  ['mom_score','mom점수','score','20일선이격+1개월모멘텀+거래량팽창 순위합(0~3). 높을수록 선호. 같은 날 순위가 핵심'],
+  ['name','종목','str',''],
+  ['ticker','코드','str',''],
+  ['sector','업종','str','업종(sector_cache 기준)'],
+  ['vs_SMA20_%','20일선%','signed','현재가 vs 20일 이동평균(%). 핵심 팩터 — +면 선 위(회복), −면 선 아래'],
+  ['return_1m_%','1개월%','signed','최근 1개월 등락. 오를수록 점수↑ (보조)'],
+  ['vol_1w_vs_1m_ratio','거래량팽창','num2','std5/std21. 1보다 크면 최근 1주가 더 출렁임=에너지 유입 가설 (보조)'],
+  ['return_1w_%','1주%','signed','최근 1주 등락(참고 — 점수 미포함)'],
+  ['drawdown_52w_high_%','52주고점대비%','signed','1년 최고가 대비 낙폭(참고)'],
+  ['oversold_score','과매도','num1','v3 과매도 점수. 이 유니버스는 30~70 구간만(lowvol 과 동일)'],
+  ['amt_avg_1m_억','거래대금억','num1','1개월 평균 일거래대금. 5억 미만 제외(유동성 하한)'],
+  ['foreign_5d_억','외인5일','signed','외국인 최근5일 순매수(억)'],
+  ['foreign_20d_억','외인20일','signed','외국인 최근20일 순매수(억)'],
+  ['inst_5d_억','기관5일','signed','기관 최근5일 순매수(억)'],
+  ['inst_20d_억','기관20일','signed','기관 최근20일 순매수(억)'],
+  ['quarterly_yoy_%','분기YoY%','signed','분기 영업이익 전년동기比(참고)'],
+  ['lv_a_rank','lv_a순위','int','같은 유니버스에서 lv_a(저변동·방어)가 매긴 순위 — 대조 확인용'],
+  ['v3_bucket','v3참고','v3','v3 스크리너 버킷(비교용 — 섞지 않음)'],
+];
+
+let curMkt = 'kospi';
+let sortKey = 'rank', sortAsc = true;
+let allRows = [];
+let activeF = new Set();
+
+const FILTERS = {
+  sma20pos: r => parseFloat(r['vs_SMA20_%']) > 0,
+  m1pos:    r => parseFloat(r['return_1m_%']) > 0,
+  volup:    r => parseFloat(r['vol_1w_vs_1m_ratio']) > 1,
+  f5pos:    r => parseFloat(r['foreign_5d_억']) > 0,
+  i5pos:    r => parseFloat(r['inst_5d_억']) > 0,
+  top10:    r => parseInt(r['top10pct']) === 1,
+};
+
+function applyFilters(){
+  const rows = allRows.filter(r => [...activeF].every(f => {
+    const fn = FILTERS[f]; if(!fn) return true;
+    const ok = fn(r); return ok === true;
+  }));
+  render(rows);
+  const fc = document.getElementById('fcount');
+  if(fc) fc.textContent = activeF.size
+    ? `${rows.length} / ${allRows.length} 종목 (필터 적용)`
+    : `${allRows.length} 종목`;
+}
+
+function fmt(v, type){
+  if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
+  if(type==='int'){const n=parseInt(v);return isNaN(n)?'<span class="v3">-</span>':n}
+  if(type==='score') return '<span class="score">'+parseFloat(v).toFixed(3)+'</span>';
+  if(type==='num1'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(1)}
+  if(type==='num2'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(2)}
+  if(type==='signed'){const n=parseFloat(v);if(isNaN(n))return '-';
+    return '<span class="'+(n>=0?'pos':'neg')+'">'+(n>=0?'+':'')+n.toFixed(1)+'</span>'}
+  if(type==='v3') return '<span class="v3">'+v+'</span>';
+  return v;
+}
+
+function parseCSV(txt){
+  const lines = txt.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.length);
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line=>{
+    const vals = line.split(',');
+    const row = {};
+    headers.forEach((h,i)=> row[h.trim()] = (vals[i]??'').trim());
+    return row;
+  });
+}
+
+function render(rows){
+  const thead = document.querySelector('#tbl thead');
+  const tbody = document.querySelector('#tbl tbody');
+  thead.innerHTML = '<tr>' + COLS.map(c=>
+    `<th data-key="${c[0]}"${c[3]?` title="${c[3]}"`:''}>${c[1]}${sortKey===c[0]?(sortAsc?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+  rows.sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    const nx=parseFloat(x), ny=parseFloat(y);
+    if(!isNaN(nx)&&!isNaN(ny)){x=nx;y=ny}
+    if(x<y)return sortAsc?-1:1; if(x>y)return sortAsc?1:-1; return 0;
+  });
+  tbody.innerHTML = rows.map(r=>{
+    const isTop = parseInt(r['top10pct']) === 1;
+    return '<tr'+(isTop?' class="top10row"':'')+'>'+COLS.map(c=>`<td>${fmt(r[c[0]],c[2])}</td>`).join('')+'</tr>';
+  }).join('');
+  thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.key; if(k===sortKey){sortAsc=!sortAsc}else{sortKey=k;sortAsc=(k==='rank')}
+    render(rows);
+  });
+}
+
+function load(mkt){
+  curMkt = mkt;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mkt===mkt));
+  document.querySelector('#tbl tbody').innerHTML='<tr><td colspan="20" class="loading">불러오는 중…</td></tr>';
+  fetch('latest_'+mkt+'_mom.csv?ts='+Date.now())
+    .then(r=>{if(!r.ok)throw 0;return r.text()})
+    .then(txt=>{
+      const rows = parseCSV(txt);
+      allRows = rows;
+      sortKey='rank'; sortAsc=true;
+      applyFilters();
+      const nuni = rows.length? rows[0]['n_universe']:'-';
+      document.getElementById('meta').innerHTML =
+        `<div class="chip">모델 <b>mom_a</b></div>`+
+        `<div class="chip">종목 <b>${rows.length}</b></div>`+
+        `<div class="chip">유니버스 <b>${nuni}</b></div>`+
+        `<div class="chip">구성 <b>20일선+1개월모멘텀+거래량팽창</b></div>`+
+        `<div class="chip">유니버스컷 <b>과매도30~70·유동≥5억</b></div>`;
+    })
+    .catch(()=>{
+      document.querySelector('#tbl tbody').innerHTML=
+        '<tr><td colspan="20" class="loading">데이터 없음 (latest_'+mkt+'_mom.csv)</td></tr>';
+    });
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>load(t.dataset.mkt));
+document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
+  const f=b.dataset.f;
+  if(activeF.has(f)){activeF.delete(f); b.classList.remove('on');}
+  else{activeF.add(f); b.classList.add('on');}
+  sortKey='rank'; sortAsc=true;
+  applyFilters();
+});
+document.getElementById('foot').innerHTML =
+  '※ <b>테스트·관측</b> 페이지 · mom_score 높을수록 선호(매수 아님) · v3·large·lv_a 와 별개 표시<br>'+
+  '20일선 위·1개월 상승·거래량 터질수록 점수↑ · 하락장에선 "덜 빠진 종목"으로 작동(§15) · 판정은 OOS 40거래일+상승장 표본';
+load('kospi');
+</script>
+</body>
+</html>

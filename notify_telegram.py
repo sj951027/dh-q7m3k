@@ -35,6 +35,8 @@ V31G_FILTER_URL = "https://sj951027.github.io/dh-q7m3k/filter_v31g.html"
 LOWVOL_URL = "https://sj951027.github.io/dh-q7m3k/lowvol.html"
 # 전체종목 트랙 wu_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
 WU_URL = "https://sj951027.github.io/dh-q7m3k/wu.html"
+# 모멘텀 대조 모델 mom_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
+MOM_URL = "https://sj951027.github.io/dh-q7m3k/mom.html"
 
 TOP_N = 3   # 버킷별로 보여줄 상위 후보 수
 
@@ -166,6 +168,7 @@ def build_message():
         f'🧪 <a href="{V31G_FILTER_URL}">v31g 챌린저</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_a</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
+        f'🧪 <a href="{MOM_URL}">모멘텀 mom_a</a> (테스트 · 관측데이터, 검증 전)',
     ]
     return "\n".join(lines)
 
