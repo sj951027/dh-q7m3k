@@ -1284,3 +1284,32 @@ lv_a 계열(6/5 등록)은 ohlcv 최신 7/3 기준 20거래일 앞이 아직 0�
   신호일 대비 진입 지연·슬리피지·모델 페이퍼 수익 vs 실거래 수익 갭("모델 판정"과 "실행 판정"
   분리). Jin 결정(2026-07-11): 두 프로그램 분리 유지가 지금은 장점 — **판정 종료 후 착수**.
   트래커 v5.12에 #모멘텀 태그 추가됨(매도 20건 재채점 계약)이라 그때쯤 실거래 표본도 준비됨.
+
+### 26-5. 데이터 갭 로드맵 (2026-07-11 점검) + 전종목 팩터 스캔 결과
+- **P0 (즉시 해결됨) — 버려지던 전종목 밸류 스냅샷**: fetch_valuation 의 valuation_*.csv 가
+  전종목 2,720개 PBR/PER/DIV/BPS/EPS 일일 스냅샷인데 7일 회전으로 소실 중이었음.
+  **`accumulate_valuation.py` 신설**(2.895단계, 비치명) → ohlcv.db `valuation_daily` 증분 적재
+  (PK ticker+date, idempotent 검증). 몇 달 쌓이면 전종목 가치·품질 팩터의 포인트-인-타임
+  백테스트 가능(RESEARCH_wholeuniverse §6 '가치 갭' 해소 경로). CSV 회전은 그대로.
+- **P1 (시간이 해결) — 수급·공매도**: daily_flows 50일(연기금 등 세부 포함)·short_flows 125일.
+  KIS API ~30일 윈도라 **과거 백필 불가 확정**(kis_flows 주석) — 계속 쌓기만.
+  **100거래일 도달(9월경) 시 수급 축 재스캔** — 첫 관찰(n=3, 순참고): 외국인 20일 순매수
+  추종이 3앵커 전부 음수(−0.14) = '외인 따라사기 역효과' 가설.
+- **P2 (구현됨 2026-07-11)**: **`market_series.py`** 신설 — KOSPI(KS11)·KOSDAQ(KQ11)·USDKRW
+  일별 종가를 ohlcv.db `market_daily` 에 증분 적재(최초 2023-06-01 백필, FDR, 비치명).
+  .bat 에서 universe_ohlcv 다음 호출. §17 노출/베타 레이어의 기반. ⚠️ 네트워크 — 실행 검증은
+  다음 파이프라인 로그로(오프라인 안전생략 경로만 검증됨).
+- **P3 (구현됨 2026-07-11)**: **`universe_events.py`** 신설 — 직전 거래일 대비 diff 로
+  DISAPPEARED/NEW/REAPPEARED/SUSPENDED/RESUMED 를 ohlcv.db `universe_events` 에 기록
+  (PK date+ticker+event, idempotent — 합성 DB로 검출·재실행 0행 검증). 생존편향 전진 차단.
+  최초 1회 `--backfill` 로 과거 741일 소급 가능(권장). ⚠️ P0의 밸류 원값 주의: FDR 의 0.0 은
+  결측(적자 PER 등)일 수 있음 — 가공 없이 원값 적재, 해석은 분석 시(매직넘버 금지).
+- **CSV 회전은 유지**: P0 적재는 CLEANUP_NOTES 의 원래 의도(repo 다이어트)를 깨지 않음 —
+  회전 전제("쓰는 값은 DB에 있음")가 전체종목 트랙 등장으로 바뀐 것이라 적재처만 추가
+  (repo 밖 ohlcv.db, 연 ~35MB). 당시 결정은 합리적이었음(stage3 roe_value 만 소비).
+- **비권장 명시**: 호가/틱/일중(관리 부담≫이득), 뉴스·감성(검증 불가), 재무제표 전체 소급
+  (DART 대량 — 판정 후 필요 시).
+- **전종목 신규 팩터 스캔(연계)**: 상세 research/RESEARCH_wufactors_20260711.md —
+  **upratio63(상승일 비율) 채택 후보**(c3 조합이 wu_a를 3개 연도 전부 우위, 누적 +161 vs +101),
+  기각: OBV매집·Amihud비유동·amt_trend(전부 방향 반대)·FIP(0)·max5(lv63과 0.62 중복).
+  등록은 wu 판정 후 `wu_c` PREREGISTER 로만(분모 보호).

@@ -24,6 +24,13 @@ echo   universe_ohlcv before screener - ensures ohlcv latest date == today
 echo ========================================================================
 python universe_ohlcv.py
 
+echo.
+echo ========================================================================
+echo   [B track] market series + universe events (P2/P3 data layers, non-fatal)
+echo ========================================================================
+python market_series.py
+python universe_events.py
+
 python run_and_diversify.py
 
 set EXIT_CODE=%ERRORLEVEL%

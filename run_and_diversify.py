@@ -330,6 +330,13 @@ def main():
     if (HERE / "build_wu_filter.py").exists():
         run_script(["build_wu_filter.py"], "2.89단계: 전체종목 트랙 wu_a 관측 CSV (섀도우)")
 
+    # 2.895) 전종목 밸류 스냅샷 적재 — fetch_valuation 의 당일 valuation_*.csv(전종목
+    #        PBR/PER/DIV/BPS/EPS)를 ohlcv.db `valuation_daily` 에 증분 적재.
+    #        7일 회전으로 버려지던 포인트-인-타임 펀더멘털의 보존(2026-07-11, §26-5).
+    #        순수 축적 — 점수·표시 미연결. 실패해도 비치명.
+    if (HERE / "accumulate_valuation.py").exists():
+        run_script(["accumulate_valuation.py"], "2.895단계: 밸류 스냅샷 적재 (관측 축적)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []
