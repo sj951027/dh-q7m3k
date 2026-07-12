@@ -1309,6 +1309,10 @@ lv_a 계열(6/5 등록)은 ohlcv 최신 7/3 기준 20거래일 앞이 아직 0�
   (repo 밖 ohlcv.db, 연 ~35MB). 당시 결정은 합리적이었음(stage3 roe_value 만 소비).
 - **비권장 명시**: 호가/틱/일중(관리 부담≫이득), 뉴스·감성(검증 불가), 재무제표 전체 소급
   (DART 대량 — 판정 후 필요 시).
+- **미국판은 별도 프로젝트로 독립(2026-07-12)**: repo `us-screener` + Release 데이터 저장소,
+  GitHub Actions 완전 자동(수집→score_daily 관측→Pages/텔레그램→백업). 지식 문서는
+  **us-screener/US_PROJECT_KNOWLEDGE.md** — 이 문서와 규칙만 공유하고 코드·데이터·점수는
+  절대 섞지 않음. 교차시장 재현 발견(upratio63·vol_cv, lv 미국 약함)은 그쪽 §4 참조.
 - **백업 체계 확장(2026-07-11 저녁)**: cleanup.backup_db 에 ⓐ `BACKUP_DIR` env — .env 에
   OneDrive 등 동기화 폴더 지정 시 오프사이트 자동 ⓑ `BACKUP_OHLCV`=full(기본)/core/off —
   full 은 **sqlite 백업 API** 로 ohlcv.db 전체 정합 복제(keep 2), core 는 재생성불가 5테이블만.
