@@ -9,13 +9,21 @@ wu_score.py — 전체종목(whole-universe) 트랙 관측 적재 (wu 1단계)
 - 모델(spec 동결): wu_a = lv63+nh252+mom12+big / wu_b = nh252+mom12
   순위합(cross-sectional pct rank, 전체 유니버스 단일 순위): 핵심팩터(첫번째) 실측필수(NaN=제외),
   보조 NaN=0.5 중립 — lowvol_score.score_run 규칙 상속.
+- [2026-07-14 추가] le_a = dlow52+obv63(↓)+amt20f / sv_a = svr5 단독.
+  근거: RESEARCH_tail_anatomy_20260714.md(저점탈출 lift 3.06)·RESEARCH_winners_20260714.md
+  (svr5 국면독립 IC) + 익일시가 진입 재계산(저점탈출 +0.92%/5d 생존). 골대: PREREGISTER_le_sv.md.
+  둘 다 발견은 post-hoc → REG_DATE 20260715부터 forward-only OOS만 판정에 사용.
+  sv_a 주의: 배치 순서상 wu_score 는 kis_flows 이전 실행 → 당일 short_flows 미적재 가능.
+  svr5 는 rolling(5, min 3) 평균이라 자동으로 '직전 적재분'을 쓴다(스펙의 일부, 동결).
 - 가중치 0 관측: 계산·저장만. 추천/표시/텔레그램 사용 안 함(§11 판정 전).
-- 불변: v3/large/lowvol 테이블·표시 0-diff — 이 스크립트는 history.db에 새 테이블 wu_scores만 쓴다.
+- 불변: v3/large/lowvol 테이블·표시 0-diff — 이 스크립트는 history.db에 wu_scores만 쓴다.
+  build_wu_filter.py 는 MODEL="wu_a" 하드코딩이라 le_a/sv_a 는 어떤 표시에도 안 나감.
 - PIT: 날짜 t 점수는 t 이하 데이터만 사용(룩백 273거래일 미달 날짜는 스킵).
 - 증분(OOS 청결 규칙):
     * 최초 실행(빈 테이블) = ohlcv '최신 1일'만 적재 → 그 날짜가 등록일(OOS 시작).
     * 이후 = 등록일 이후의 미적재 날짜 자동 보충(갭 포함; 원천이 raw 가격이라 재계산 PIT-안전).
     * 등록일 '이전' 백필은 발견기간(in-sample) 오염 → 기본 금지, --backfill-from 명시 시만(경고 출력).
+    * 신규 모델(le_a/sv_a)은 기존 run_id 에 소급 적재하지 않는다 — 다음 신규 run부터 자연 시작.
 - 네트워크 0: ohlcv.db(읽기)·history.db(wu_scores 쓰기)만. Claude 오프라인 검증 가능.
 
 사용:
@@ -48,10 +56,17 @@ FACTORS = {
     "nh252": (True,  "close/rolling_max(close,252,min_periods=120)-1"),
     "mom12": (True,  "close.shift(21)/close.shift(252)-1"),
     "big":   (True,  "log10(close*shares)"),
+    # [2026-07-14 추가 — PREREGISTER_le_sv.md 동결]
+    "dlow52": (True,  "close/rolling_min(close,252,min_periods=120)-1"),
+    "obv63":  (False, "sum(sign(pct_change)*volume,63,min_periods=30)/sum(volume,63,min_periods=30)"),
+    "amt20f": (True,  "mean(close*volume,20,min_periods=10)/1e8"),
+    "svr5":   (True,  "mean(short_flows.short_vol_ratio,5,min_periods=3)"),
 }
 MODELS = {
     "wu_a": ["lv63", "nh252", "mom12", "big"],   # 균형·방어형
     "wu_b": ["nh252", "mom12"],                   # 순수선택 대조(size 무베팅)
+    "le_a": ["dlow52", "obv63", "amt20f"],        # 저점탈출(핵심)+OBV미매집+유동성 [REG 20260715]
+    "sv_a": ["svr5"],                             # 공매도비중 단독(국면독립 가설) [REG 20260715]
 }
 GUARD_SPEC = {"rv21_floor": VOL_FLOOR, "flat63_max": MAX_FLAT, "jump21_max": MAX_JUMP,
               "amt20_floor_억": LIQ_FLOOR, "suspended": 0, "lookback_min": LOOKBACK_MIN}
@@ -85,23 +100,42 @@ def load_window(ohlcv_con, all_dates, first_target):
         "WHERE date >= ?", ohlcv_con, params=(cutoff,))
     piv = lambda v: df.pivot_table(index="date", columns="ticker", values=v, aggfunc="last").sort_index()
     close = piv("close")
+    # [2026-07-14] sv_a 용 short_flows (없으면 빈 프레임 — sv_a 만 0행, 나머지 모델 무영향)
+    try:
+        sf = pd.read_sql(
+            "SELECT ticker,date,short_vol_ratio FROM short_flows WHERE date >= ?",
+            ohlcv_con, params=(cutoff,))
+        sf["short_vol_ratio"] = pd.to_numeric(sf["short_vol_ratio"], errors="coerce")
+        svr = (sf.pivot_table(index="date", columns="ticker", values="short_vol_ratio", aggfunc="last")
+               .reindex(index=close.index, columns=close.columns))
+    except Exception as e:
+        print(f"[경고] short_flows 로딩 실패({e}) — sv_a 는 이번 실행에서 0행")
+        svr = pd.DataFrame(np.nan, index=close.index, columns=close.columns)
     return dict(close=close,
                 vol=piv("volume").reindex(close.index),
                 shares=piv("shares").reindex(close.index),
                 susp=piv("is_suspended").reindex(close.index).fillna(0),
-                mkt=df.groupby("ticker")["market"].last())
+                mkt=df.groupby("ticker")["market"].last(),
+                svr=svr)
 
 def compute_frames(W):
     c = W["close"]; r = c.pct_change(fill_method=None)
+    amt20 = (c * W["vol"]).rolling(20, min_periods=10).mean() / 1e8
     F = {}
     F["lv63"] = r.rolling(63, min_periods=30).std()
     F["nh252"] = c / c.rolling(252, min_periods=120).max() - 1
     F["mom12"] = c.shift(21) / c.shift(252) - 1
     F["big"] = np.log10((c * W["shares"]).where(lambda x: x > 0))
+    # [2026-07-14 추가]
+    F["dlow52"] = c / c.rolling(252, min_periods=120).min() - 1
+    vol63 = W["vol"].rolling(63, min_periods=30).sum()
+    F["obv63"] = (np.sign(r) * W["vol"]).rolling(63, min_periods=30).sum() / vol63.where(vol63 > 0)
+    F["amt20f"] = amt20
+    F["svr5"] = W["svr"].rolling(5, min_periods=3).mean()
     G = dict(rv21=r.rolling(21, min_periods=8).std(),
              flat63=(r.abs() < 1e-9).rolling(63, min_periods=20).mean(),
              jump21=r.abs().rolling(21, min_periods=5).max(),
-             amt20=(c * W["vol"]).rolling(20, min_periods=10).mean() / 1e8)
+             amt20=amt20)
     return F, G
 
 def guard_row(W, G, d):

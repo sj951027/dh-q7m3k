@@ -49,6 +49,8 @@ REG_DATE = {
     "lv_d": "20260625", "lv_a3": "20260625",
     "mom_a": "20260627",
     "lv_short": "20260627", "hv_a": "20260627", "sm_a": "20260627",
+    "wu_a": "20260702", "wu_b": "20260702",            # PREREGISTER_wu.md (원장 정식 등재)
+    "le_a": "20260715", "sv_a": "20260715",            # PREREGISTER_le_sv.md
 }
 
 def boot_ci(arr, n=2000, seed=42):
