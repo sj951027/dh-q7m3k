@@ -136,32 +136,80 @@ def _ic_line():
         return "📊 검증 IC: 데이터 쌓는 중"
 
 
+def _model_status_lines():
+    """docs/leaderboard.json → 트랙별 선두 모델 현황(§11 정직 표기: n·CI·노이즈 라벨).
+    2026-07-17: 종목 top3 나열(_picks_by_bucket) 대신 이걸 본문으로 사용(사용자 결정).
+    데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신. 없거나 깨지면 비치명 스킵."""
+    p = HERE / "docs" / "leaderboard.json"
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        if d.get("status") != "ok" or not d.get("models"):
+            return ["📊 모델 현황: 리더보드 갱신 대기중(leaderboard.py)"]
+        min_oos = d.get("min_oos", 40)
+        by_track = {}
+        for m in d["models"]:
+            by_track.setdefault(m["track"], []).append(m)
+
+        def metric(m):
+            h20, h5 = m.get("h20") or {}, m.get("h5") or {}
+            if h20.get("ic") is not None:
+                return "h20", h20
+            if h5.get("ic") is not None:
+                return "h5", h5
+            return None, None
+
+        # 표시용 '계열' 분리: mom_* 은 lowvol 테이블을 빌려 쓰지만 정체성이 달라 따로 보여줌.
+        FAMILY = [("v3", "🔵", "과매도 v3"), ("lowvol", "🟢", "저변동"),
+                  ("mom", "🟠", "모멘텀"), ("wu", "🟣", "전체종목")]
+        by_fam = {}
+        for ms in by_track.values():
+            for m in ms:
+                fam = "mom" if str(m["model"]).startswith("mom") else m["track"]
+                by_fam.setdefault(fam, []).append(m)
+
+        def bar(oos):
+            k = max(0, min(8, round(8 * oos / min_oos)))
+            return "▓" * k + "░" * (8 - k)
+
+        out = [f"📊 <b>모델 관측 현황</b> — 전부 판정 전(40거래일 필요)"]
+        for fam, emoji, label in FAMILY:
+            ms = by_fam.get(fam)
+            if not ms:
+                continue
+            best, bh, bs = None, None, None
+            for m in ms:
+                h, s = metric(m)
+                if s is None:
+                    continue
+                if best is None or s["ic"] > bs["ic"]:
+                    best, bh, bs = m, h, s
+            if best is None:
+                m0 = max(ms, key=lambda m: m.get("oos_days", 0))
+                out.append(f"{emoji} {label} — <b>{m0['model']}</b> 관측 시작 · "
+                           f"{bar(m0['oos_days'])} {m0['oos_days']}/{min_oos}일")
+                continue
+            v = best.get("verdict", "노이즈")
+            v_s = "" if v == "노이즈" else f" · {v}"
+            out.append(
+                f"{emoji} {label} — 선두 <b>{best['model']}</b> · {bar(best['oos_days'])} "
+                f"{best['oos_days']}/{min_oos}일 · IC {bs['ic']:+.2f}({bh}·n{bs['n']}){v_s}")
+        out.append("※ 참고용 · 계열 간 IC 비교 금지 · 상세는 리더보드")
+        return out
+    except Exception:
+        return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
+
+
 def build_message():
     today = datetime.now().strftime("%Y-%m-%d")
     lines = [f"✅ <b>스크리너 완료</b> · {today}", ""]
 
-    ic = _ic_line()
-    if ic:
-        lines += [ic, ""]
-
-    for mkt, emoji, label in [("kospi", "🔵", "KOSPI"), ("kosdaq", "🟠", "KOSDAQ")]:
-        groups = _picks_by_bucket(mkt)
-        lines.append(f"{emoji} <b>{label}</b>")
-        if not groups:
-            lines.append("  후보 없음 (BUY/WAIT 없음)")
-        else:
-            for bk in ["BUY", "WAIT", "REF"]:
-                rows = groups.get(bk)
-                if not rows:
-                    continue
-                lines.append(BUCKET_LABEL[bk])            # 버킷은 소제목 한 줄
-                for i, (name, sc, _g) in enumerate(rows, 1):
-                    nm = html.escape(str(name), quote=False)   # 종목명 안전 처리
-                    lines.append(f" {i}. {nm} ({sc:.1f})")     # 한 종목당 한 줄
-        lines.append("")
+    # 2026-07-17 사용자 결정: v3 top3 종목 나열은 도움 안 됨 → 모델 관측 현황으로 대체.
+    #   (종목 상세는 대시보드·필터 링크에서. _picks_by_bucket/_ic_line 은 보존 — 재활성화 가능.)
+    lines += _model_status_lines()
+    lines.append("")
 
     lines += [
-        "※ BUY/WAIT 등급만 · 위험종목 제외 · 참고용",
+        "※ 매수신호 아님 · 종목 상세는 아래 링크에서",
         f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
         f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a>',
         f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',

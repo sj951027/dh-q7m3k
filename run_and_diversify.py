@@ -343,6 +343,12 @@ def main():
     if (HERE / "notify_verdict_ready.py").exists():
         run_script(["notify_verdict_ready.py"], "2.9단계: 판정일 도달 알림 (1회성)")
 
+    # 2.91) 전 트랙 리더보드 갱신 — 텔레그램 '모델 관측 현황'(notify_telegram)의 데이터 소스.
+    #      2026-07-17: 텔레 본문이 종목 top3 → 모델 현황으로 바뀌면서 매일 신선도 필요해짐.
+    #      leaderboard.py 는 읽기전용(history/ohlcv)·비치명(실패 시 pending 기록) 설계.
+    if (HERE / "leaderboard.py").exists():
+        run_script(["leaderboard.py"], "2.91단계: 전 트랙 리더보드 갱신 (leaderboard.json)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []
