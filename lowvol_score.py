@@ -92,6 +92,15 @@ MODELS = {
     #   판정은 등록일(20260627) 이후 OOS 40거래일 + 상승장 표본 충분 시. 그 전 노이즈.
     # 핵심팩터=sma20(20일선 위치, 커버리지 100%). 보조=1개월 모멘텀·거래량 팽창.
     "mom_a": {"factors": ["sma20", "mom_1m", "vol_exp"], "uni": DEFAULT_UNI},
+    # ---- 모멘텀+눌림목 챌린저 (2026-07-17 추가, 가중치 0 관측) ----
+    # mom_b = mom_a + 되돌림(reversal) 보조 1개 추가 — "추세는 있는데 지난주 급하게 눌린 종목".
+    #   발견(post-hoc, outputs research_overlay 2026-07-17): stage3 41 run(5/23~7/16) in-sample,
+    #   mom_a 상위10 풀 내 return_1w_% day-IC −0.269 CI[−0.356,−0.178](n=28일),
+    #   top10→눌림5 교체 시뮬 Δ+2.29%p/5d CI[+0.49,+5.06] — 후보 22개 중 최강(다중검정 생존급).
+    # ⚠️ 급락→반등 단일 레짐 발견 → forward-only. 등록 20260717(REG_DATE 원장·PREREGISTER_mom_b.md).
+    #   lowvol 트랙 관례상 백필 행(<20260717)이 생기지만 판정에선 REG_DATE 게이트로 자동 제외.
+    # 핵심팩터=sma20(mom_a와 동일, 실측필수). 보조=mom_1m·vol_exp·reversal(NaN=0.5).
+    "mom_b": {"factors": ["sma20", "mom_1m", "vol_exp", "reversal"], "uni": DEFAULT_UNI},
     # ---- 공매도 챌린저 (2026-06-27 추가, 가중치 0 관측) ----
     # lv_a + 공매도비중(낮을수록 좋음). lv_a와 점수식 동일 + 공매도 1팩터 추가.
     #   목적: 오프라인서 ΔIC +0.034(유의, 코스닥 위주)로 나온 공매도 효과가 forward(OOS)서도

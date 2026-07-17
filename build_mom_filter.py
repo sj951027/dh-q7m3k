@@ -174,6 +174,20 @@ def build_one(con, rid, mkt, sector_map=None):
     except Exception:
         pass
 
+    # mom_b 순위 참고 컬럼(mom_a+눌림목 챌린저, 등록 20260717 — 섞지 않고 비교 표시만).
+    #   PREREGISTER_mom_b.md. 관측용 병기이며 매수신호 아님. 없으면(구 DB) 컬럼 생략.
+    try:
+        mb = pd.read_sql(
+            "SELECT ticker, lowvol_score AS mom_b_score FROM lowvol_scores "
+            "WHERE run_id=? AND market=? AND model_id='mom_b'",
+            con, params=(rid, mkt))
+        if not mb.empty:
+            mb = mb.sort_values("mom_b_score", ascending=False).reset_index(drop=True)
+            mb["mom_b_rank"] = mb.index + 1
+            g = g.merge(mb[["ticker", "mom_b_rank"]], on="ticker", how="left")
+    except Exception:
+        pass
+
     # 섹터 채움(sector_cache)
     if sector_map:
         filled = g["ticker"].astype(str).map(sector_map)
