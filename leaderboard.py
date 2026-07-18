@@ -91,14 +91,21 @@ def build_gates(con, close_index):
     #      크게 벌어짐(20260703: 00:39 vs 21:28 = 21시간). 실측상 정상일 gap 0분 vs 이중 1249분
     #      → 임계 60분이면 안전. (2026-07-05 오탐 교정)
     DOUBLE_GAP_MIN = 60
+    #   ⚠️ 2026-07-18 오탐 수정: 신규 모델 '백필'(예: mom_b — 과거 run_id 행이 나중 날짜
+    #      frozen_at)이 섞이면 run 전체 gap 이 며칠로 벌어져 전 run 이 이중실행으로 오탐
+    #      → 전 트랙 표본 전멸. 실측 근거로 규칙 교정: 진짜 이중실행(20260703)은 '같은
+    #      model_id 안에서' 시각이 벌어지고(v30 00:39~21:28 — 배치 간 유니버스 차이로
+    #      INSERT OR IGNORE 를 뚫고 양쪽 행이 공존), 백필·모델추가는 모델 '간'에만
+    #      벌어진다(각 모델의 배치는 원자적 = 모델 내 gap 0). → gap 을 (run_id, model_id)
+    #      내부에서 계산. 시간 창 같은 추가 매직넘버 불필요.
     dbl = set()
     for tb, sc, _ in TRACKS.values():
         cols = [c[1] for c in con.execute(f"PRAGMA table_info({tb})")]
         if "frozen_at" not in cols:
             continue
-        fa = pd.read_sql(f"SELECT run_id, frozen_at FROM {tb}", con)
+        fa = pd.read_sql(f"SELECT run_id, model_id, frozen_at FROM {tb}", con)
         fa["ts"] = pd.to_datetime(fa["frozen_at"], errors="coerce", utc=True)
-        for rid, g in fa.dropna(subset=["ts"]).groupby("run_id"):
+        for (rid, _mid), g in fa.dropna(subset=["ts"]).groupby(["run_id", "model_id"]):
             gap = (g["ts"].max() - g["ts"].min()).total_seconds() / 60.0
             if gap >= DOUBLE_GAP_MIN:
                 dbl.add(str(rid))
