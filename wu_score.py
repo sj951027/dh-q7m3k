@@ -15,15 +15,20 @@ wu_score.py — 전체종목(whole-universe) 트랙 관측 적재 (wu 1단계)
   둘 다 발견은 post-hoc → REG_DATE 20260715부터 forward-only OOS만 판정에 사용.
   sv_a 주의: 배치 순서상 wu_score 는 kis_flows 이전 실행 → 당일 short_flows 미적재 가능.
   svr5 는 rolling(5, min 3) 평균이라 자동으로 '직전 적재분'을 쓴다(스펙의 일부, 동결).
+- [2026-07-22 추가] qs_a = lv63+nh252+amt20l(↓) — '조용한 강자'(저변동+52주고가근접+저거래대금).
+  근거: factor_scan(748거래일 전 구간, 2023-06~2026-07) — lv h20 IC −0.12, nh +0.05, 저거래대금 −0.05,
+  결합 +0.107 CI[+0.040,+0.147], 3폴드 일관. 골대: PREREGISTER_qs.md.
+  발견은 전부 in-sample → 첫 적재일(REG_DATE)부터 forward 데이터만 §11 판정에 사용.
+  amt20l 은 amt20f 와 동일 프레임(mean(close·vol,20)/1e8)의 방향 반전(작을수록 상위) — 신규 계산 없음.
 - 가중치 0 관측: 계산·저장만. 추천/표시/텔레그램 사용 안 함(§11 판정 전).
 - 불변: v3/large/lowvol 테이블·표시 0-diff — 이 스크립트는 history.db에 wu_scores만 쓴다.
-  build_wu_filter.py 는 MODEL="wu_a" 하드코딩이라 le_a/sv_a 는 어떤 표시에도 안 나감.
+  build_wu_filter.py 는 MODEL="wu_a" 하드코딩이라 le_a/sv_a/qs_a 는 어떤 표시에도 안 나감.
 - PIT: 날짜 t 점수는 t 이하 데이터만 사용(룩백 273거래일 미달 날짜는 스킵).
 - 증분(OOS 청결 규칙):
     * 최초 실행(빈 테이블) = ohlcv '최신 1일'만 적재 → 그 날짜가 등록일(OOS 시작).
     * 이후 = 등록일 이후의 미적재 날짜 자동 보충(갭 포함; 원천이 raw 가격이라 재계산 PIT-안전).
     * 등록일 '이전' 백필은 발견기간(in-sample) 오염 → 기본 금지, --backfill-from 명시 시만(경고 출력).
-    * 신규 모델(le_a/sv_a)은 기존 run_id 에 소급 적재하지 않는다 — 다음 신규 run부터 자연 시작.
+    * 신규 모델(le_a/sv_a/qs_a)은 기존 run_id 에 소급 적재하지 않는다 — 다음 신규 run부터 자연 시작.
 - 네트워크 0: ohlcv.db(읽기)·history.db(wu_scores 쓰기)만. Claude 오프라인 검증 가능.
 
 사용:
@@ -61,12 +66,15 @@ FACTORS = {
     "obv63":  (False, "sum(sign(pct_change)*volume,63,min_periods=30)/sum(volume,63,min_periods=30)"),
     "amt20f": (True,  "mean(close*volume,20,min_periods=10)/1e8"),
     "svr5":   (True,  "mean(short_flows.short_vol_ratio,5,min_periods=3)"),
+    # [2026-07-22 추가 — PREREGISTER_qs.md 동결] amt20f 동일 정의의 방향 반전(저거래대금 우대)
+    "amt20l": (False, "mean(close*volume,20,min_periods=10)/1e8"),
 }
 MODELS = {
     "wu_a": ["lv63", "nh252", "mom12", "big"],   # 균형·방어형
     "wu_b": ["nh252", "mom12"],                   # 순수선택 대조(size 무베팅)
     "le_a": ["dlow52", "obv63", "amt20f"],        # 저점탈출(핵심)+OBV미매집+유동성 [REG 20260715]
     "sv_a": ["svr5"],                             # 공매도비중 단독(국면독립 가설) [REG 20260715]
+    "qs_a": ["lv63", "nh252", "amt20l"],          # 조용한 강자: 저변동(핵심)+고가근접+저거래대금 [PREREGISTER_qs.md]
 }
 GUARD_SPEC = {"rv21_floor": VOL_FLOOR, "flat63_max": MAX_FLAT, "jump21_max": MAX_JUMP,
               "amt20_floor_억": LIQ_FLOOR, "suspended": 0, "lookback_min": LOOKBACK_MIN}
@@ -132,6 +140,8 @@ def compute_frames(W):
     F["obv63"] = (np.sign(r) * W["vol"]).rolling(63, min_periods=30).sum() / vol63.where(vol63 > 0)
     F["amt20f"] = amt20
     F["svr5"] = W["svr"].rolling(5, min_periods=3).mean()
+    # [2026-07-22 추가] qs_a — amt20f 동일 프레임, 방향만 FACTORS에서 반전
+    F["amt20l"] = amt20
     G = dict(rv21=r.rolling(21, min_periods=8).std(),
              flat63=(r.abs() < 1e-9).rolling(63, min_periods=20).mean(),
              jump21=r.abs().rolling(21, min_periods=5).max(),
