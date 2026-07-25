@@ -1149,7 +1149,7 @@
     {
       "track": "wu",
       "model": "qs_a",
-      "reg_date": null,
+      "reg_date": "20260723",
       "oos_days": 2,
       "h5": {
         "ic": null,
@@ -1197,7 +1197,7 @@
         "pos": null
       },
       "verdict": "노이즈",
-      "why": "OOS 2/40거래일 — 표본 부족(기본값) · ⚠원장(REG_DATE) 미등록 — 등록일 필터 미적용",
+      "why": "OOS 2/40거래일 — 표본 부족(기본값)",
       "denom": 5
     }
   ]

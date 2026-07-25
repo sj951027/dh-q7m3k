@@ -40,6 +40,7 @@
   .b-lean{background:#2a230f;color:var(--warn)}
   .b-sig{background:#0f2a22;color:var(--good)}
   .b-nm{background:#242a35;color:#6b7484}
+  .b-rev{background:#2a1712;color:var(--bad)}
   .why{color:var(--sub);font-size:11px}
   .track{color:var(--sub);font-size:11.5px}
   .ci{color:#b8c0cd;font-size:11.5px}
@@ -104,7 +105,7 @@
   const sci=(ci)=>{ if(!ci||ci[0]==null) return '<span class="na">-</span>';
     const a=(ci[0]>0?'+':'')+ci[0].toFixed(2), b=(ci[1]>0?'+':'')+ci[1].toFixed(2);
     return '<span class="ci">['+a+','+b+']</span>'; };
-  const badge=(v)=>{ const m={'유의':'b-sig','기움':'b-lean','노이즈':'b-noise'};
+  const badge=(v)=>{ const m={'유의':'b-sig','기움':'b-lean','노이즈':'b-noise','역작동':'b-rev'};
     return '<span class="badge '+(m[v]||'b-nm')+'">'+(v||'측정불가')+'</span>'; };
   const icn=(o)=> (o&&o.n>0) ? sic(o.ic)+' <span class="ci">('+o.n+')</span>'
     : '<span class="na">n/a</span>';

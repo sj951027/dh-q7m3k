@@ -52,6 +52,7 @@ REG_DATE = {
     "lv_short": "20260627", "hv_a": "20260627", "sm_a": "20260627",
     "wu_a": "20260702", "wu_b": "20260702",            # PREREGISTER_wu.md (원장 정식 등재)
     "le_a": "20260715", "sv_a": "20260715",            # PREREGISTER_le_sv.md
+    "qs_a": "20260723",                                # PREREGISTER_qs.md (첫 적재 20260723)
 }
 
 def boot_ci(arr, n=2000, seed=42):
