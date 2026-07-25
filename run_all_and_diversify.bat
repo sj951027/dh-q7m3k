@@ -54,7 +54,8 @@ echo ========================================================================
 python large_universe.py
 python catalyst_large.py
 python large_score.py
-python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db
+python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --with-credit --with-loan
+python fetch_consensus.py
 
 echo.
 echo ========================================================================
