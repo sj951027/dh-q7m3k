@@ -73,6 +73,9 @@
         구간 전체가 0보다 위여야 우연이 아니라고 볼 최소 요건.</p>
       <p><b>판정</b> — OOS≥40 + CI&gt;0 + 주간 방향 일관성 60%↑ + 다중검정 보정 통과 = <b>유의</b>,
         경계면 <b>기움</b>, 그 외 <b>노이즈</b>.</p>
+      <p><b>초과%p</b> — "그 모델 상위 20종목을 샀으면 시장 대비 몇 %p 좋았나".
+        상위 20종목 평균수익 − 같은 유니버스 중앙값(시장 대체). 관측 전용, 판정 미사용.
+        마우스를 올리면 CI·n이 보인다. 시장이 빠지면 +여도 절대수익은 마이너스일 수 있다.</p>
     </div>
   </details>
 
@@ -82,13 +85,13 @@
         <tr>
           <th>트랙</th><th>모델</th><th>등록일</th><th>OOS</th>
           <th>h1 IC</th><th>h3 IC</th>
-          <th>h5 IC</th><th>n</th><th>h5 95%CI</th>
+          <th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th>
           <th>h10 IC</th>
-          <th>h20 IC</th><th>n</th><th>h20 95%CI</th>
+          <th>h20 IC</th><th>n</th><th>h20 95%CI</th><th>h20 초과%p</th>
           <th>판정</th><th>사유</th>
         </tr>
       </thead>
-      <tbody id="tbody"><tr><td colspan="15" class="err">로딩 중…</td></tr></tbody>
+      <tbody id="tbody"><tr><td colspan="17" class="err">로딩 중…</td></tr></tbody>
     </table>
     <div class="foot" id="gates"></div>
   </div>
@@ -109,6 +112,10 @@
     return '<span class="badge '+(m[v]||'b-nm')+'">'+(v||'측정불가')+'</span>'; };
   const icn=(o)=> (o&&o.n>0) ? sic(o.ic)+' <span class="ci">('+o.n+')</span>'
     : '<span class="na">n/a</span>';
+  const exc=(o)=>{ if(!o||o.mean==null) return '<span class="na">n/a</span>';
+    const cls=o.mean>0?'pos':(o.mean<0?'neg':'');
+    return '<span class="'+cls+'" title="95%CI ['+(o.ci&&o.ci[0])+', '+(o.ci&&o.ci[1])+'] · n='+o.n+'">'
+      +(o.mean>0?'+':'')+o.mean.toFixed(1)+'</span>'; };
 
   fetch('leaderboard.json?t='+Date.now())
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
@@ -135,15 +142,17 @@
           +'<td>'+(h5.n>0?sic(h5.ic):'<span class="na">n/a</span>')+'</td>'
           +'<td>'+(h5.n||0)+'</td>'
           +'<td>'+(h5.n>0?sci(h5.ci):'<span class="na">-</span>')+'</td>'
+          +'<td>'+exc(m.exc5)+'</td>'
           +'<td>'+icn(m.h10)+'</td>'
           +'<td>'+(h20.n>0?sic(h20.ic):'<span class="na">n/a</span>')+'</td>'
           +'<td>'+(h20.n||0)+'</td>'
           +'<td>'+(h20.n>0?sci(h20.ci):'<span class="na">-</span>')+'</td>'
+          +'<td>'+exc(m.exc20)+'</td>'
           +'<td>'+badge(m.verdict)+'</td>'
           +'<td class="why">'+(m.why||'')+'</td>'
           +'</tr>';
       }).join('');
-      document.getElementById('tbody').innerHTML=rows||'<tr><td colspan="15" class="err">모델 없음</td></tr>';
+      document.getElementById('tbody').innerHTML=rows||'<tr><td colspan="17" class="err">모델 없음</td></tr>';
       const g=d.gates||{};
       const gp=(g.partial_run||[]).join(', '), gd=(g.double_run||[]).join(', ');
       document.getElementById('gates').textContent=
@@ -154,7 +163,7 @@
     })
     .catch(e=>{
       document.getElementById('tbody').innerHTML=
-        '<tr><td colspan="15" class="err">leaderboard.json 로드 실패: '+e.message
+        '<tr><td colspan="17" class="err">leaderboard.json 로드 실패: '+e.message
         +' (파이프라인이 아직 안 돌았거나 경로 문제)</td></tr>';
       document.getElementById('meta').textContent='로드 실패';
     });

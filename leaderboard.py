@@ -41,6 +41,7 @@ H_PRIMARY = 20                # §11 주지표
 HORIZONS = [1, 3, 5, 10, 20] # h1·h3·h10 은 관측 전용(2026-07-25 추가) — 판정은 H_PRIMARY(h20)만
 MIN_OOS = 40                  # §11 판정 최소 거래일
 MIN_GROUP = 8                 # 그룹 IC 최소 종목쌍
+TOP_EXC = 20                  # 시장초과 관측용 상위 종목 수(시장별) — 분산추천 개수와 동일 (2026-07-25)
 JUMP_CAP = 0.32               # 이상치(우선주 점프 등) 컷
 BOOT = 2000
 GATE_FRAC = 0.30              # 부분실행일: 유니버스 < 중앙값*이 비율
@@ -158,6 +159,7 @@ def model_ic(scores, close, N, didx, excl, reg=None):
     out["oos_days"] = len(keep)
     for h in HORIZONS:
         per_run = []          # (앵커 거래일별 그룹평균 IC) 리스트 — n = 유효 거래일 수
+        per_exc = []          # 상위 TOP_EXC 종목 평균수익 − 유니버스 중앙값 (관측 전용, h5/h20만 저장)
         for rid, g in scores.groupby("run_id"):
             rid = str(rid)
             if rid in excl or rid not in keep:
@@ -174,6 +176,7 @@ def model_ic(scores, close, N, didx, excl, reg=None):
             fwd_all = fwd_all.where(jump <= JUMP_CAP)
             # 시장별 cross-sectional IC → 평균 (grouped_spearman_ic 와 동일 사상)
             day_ics = []
+            day_excs = []
             for mk, gm in g.groupby("market"):
                 s = gm.set_index("ticker")["score"].astype(float)
                 s.index = s.index.astype(str)
@@ -182,8 +185,23 @@ def model_ic(scores, close, N, didx, excl, reg=None):
                 if m.sum() < MIN_GROUP or s[m].nunique() < 3 or b[m].nunique() < 3:
                     continue
                 day_ics.append(np.corrcoef(s[m].rank(), b[m].rank())[0, 1])
+                # 시장초과 관측: 상위 TOP_EXC 평균수익 − 유니버스 중앙값 (v3_backtest 와 동일 사상)
+                top = s[m].sort_values(ascending=False).head(TOP_EXC).index
+                day_excs.append(float(b[m].reindex(top).mean() - b[m].median()))
             if day_ics:
                 per_run.append(float(np.mean(day_ics)))
+            if day_excs:
+                per_exc.append(float(np.mean(day_excs)))
+        if h in (5, 20):      # 시장초과 관측치 저장(별도 rng — 기존 IC 부트스트랩과 완전 분리)
+            ae = np.array(per_exc)
+            if len(ae) == 0:
+                out[f"exc{h}"] = dict(mean=None, n=0, ci=[None, None])
+            else:
+                rng2 = np.random.default_rng(11)
+                bo = [rng2.choice(ae, len(ae)).mean() for _ in range(BOOT)]
+                out[f"exc{h}"] = dict(mean=round(float(ae.mean() * 100), 2), n=len(ae),
+                                      ci=[round(float(np.percentile(bo, 2.5) * 100), 2),
+                                          round(float(np.percentile(bo, 97.5) * 100), 2)])
         arr = np.array(per_run)
         if len(arr) == 0:
             out[h] = dict(ic=None, n=0, ci=[None, None], pos=None)
@@ -255,6 +273,7 @@ def main():
                                     oos_days=stat["oos_days"],
                                     h5=stat[5], h20=stat[20],
                                     h1=stat[1], h3=stat[3], h10=stat[10],   # 관측 전용 — 판정·정렬 미사용
+                                    exc5=stat.get("exc5"), exc20=stat.get("exc20"),  # 시장초과 %p (관측 전용)
                                     verdict=vd, why=why, denom=denom[trk]))
         con.close()
 
