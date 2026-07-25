@@ -37,6 +37,8 @@ LOWVOL_URL = "https://sj951027.github.io/dh-q7m3k/lowvol.html"
 WU_URL = "https://sj951027.github.io/dh-q7m3k/wu.html"
 # 모멘텀 대조 모델 mom_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
 MOM_URL = "https://sj951027.github.io/dh-q7m3k/mom.html"
+# 전 트랙 모델 리더보드 상세(§11 판정 + h1~h20 관측) — 2026-07-25 추가
+LEADERBOARD_URL = "https://sj951027.github.io/dh-q7m3k/leaderboard.html"
 
 TOP_N = 3   # 버킷별로 보여줄 상위 후보 수
 
@@ -212,6 +214,7 @@ def build_message():
         "※ 매수신호 아님 · 종목 상세는 아래 링크에서",
         f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
         f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a>',
+        f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드 상세</a> (판정·h1~h20 관측)',
         f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',
         f'🧪 <a href="{V31G_FILTER_URL}">v31g 챌린저</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_a</a> (테스트 · 관측데이터, 검증 전)',

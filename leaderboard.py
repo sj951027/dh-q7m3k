@@ -38,7 +38,7 @@ REG_DATE.setdefault("wu_b", "20260702")
 
 ENTRY_LAG = 1                 # validate_scores 와 동일(추천 +1거래일 종가 매수)
 H_PRIMARY = 20                # §11 주지표
-HORIZONS = [5, 20]
+HORIZONS = [1, 3, 5, 10, 20] # h1·h3·h10 은 관측 전용(2026-07-25 추가) — 판정은 H_PRIMARY(h20)만
 MIN_OOS = 40                  # §11 판정 최소 거래일
 MIN_GROUP = 8                 # 그룹 IC 최소 종목쌍
 JUMP_CAP = 0.32               # 이상치(우선주 점프 등) 컷
@@ -254,6 +254,7 @@ def main():
                 results.append(dict(track=trk, model=mid, reg_date=reg,
                                     oos_days=stat["oos_days"],
                                     h5=stat[5], h20=stat[20],
+                                    h1=stat[1], h3=stat[3], h10=stat[10],   # 관측 전용 — 판정·정렬 미사용
                                     verdict=vd, why=why, denom=denom[trk]))
         con.close()
 
