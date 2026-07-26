@@ -119,13 +119,13 @@
         <tr>
           <th>트랙</th><th>모델</th><th>등록일</th><th>OOS</th>
           <th>h1 IC</th><th>h3 IC</th>
-          <th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th>
+          <th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th><th>h5 추이</th>
           <th>h10 IC</th>
           <th>h20 IC</th><th>n</th><th>h20 95%CI</th><th>h20 초과%p</th>
           <th>판정</th><th>사유</th>
         </tr>
       </thead>
-      <tbody id="tbody"><tr><td colspan="17" class="err">로딩 중…</td></tr></tbody>
+      <tbody id="tbody"><tr><td colspan="18" class="err">로딩 중…</td></tr></tbody>
     </table>
     <div class="foot" id="gates"></div>
   </div>
@@ -151,9 +151,29 @@
     return '<span class="'+cls+'" title="95%CI ['+(o.ci&&o.ci[0])+', '+(o.ci&&o.ci[1])+'] · n='+o.n+'">'
       +(o.mean>0?'+':'')+o.mean.toFixed(1)+'</span>'; };
 
-  fetch('leaderboard.json?t='+Date.now())
-    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(d=>{
+  const spark=(hist,model)=>{
+    if(!hist) return '<span class="na">축적중</span>';
+    const pts=[];
+    hist.forEach(e=>{ const m=(e.models||[]).find(x=>x.m===model);
+      if(m && m.i5!=null) pts.push(m.i5); });
+    if(pts.length<2) return '<span class="na">축적중('+pts.length+')</span>';
+    const w=110,hh=26,n=pts.length;
+    const lo=Math.min(0,...pts), hi=Math.max(0,...pts), rng=(hi-lo)||1;
+    const y=v=>hh-3-(v-lo)/rng*(hh-6), x=i=>i/(n-1)*(w-4)+2;
+    const line=pts.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+    const col=pts[n-1]>0?'var(--good)':'var(--bad)';
+    return '<svg width="'+w+'" height="'+hh+'" style="vertical-align:middle">'
+      +'<line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+w+'" y2="'+y(0).toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>'
+      +'<polyline fill="none" stroke="'+col+'" stroke-width="1.5" points="'+line+'"/></svg>';
+  };
+
+  Promise.all([
+    fetch('leaderboard.json?t='+Date.now())
+      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+    fetch('leaderboard_history.json?t='+Date.now())
+      .then(r=>r.ok?r.json():null).catch(()=>null)
+  ])
+    .then(([d,hist])=>{
       const ms=(d.models||[]).slice();
       ms.sort((a,b)=>{
         const ah=(a.h20&&a.h20.n>0)?a.h20.ic:null, bh=(b.h20&&b.h20.n>0)?b.h20.ic:null;
@@ -177,6 +197,7 @@
           +'<td>'+(h5.n||0)+'</td>'
           +'<td>'+(h5.n>0?sci(h5.ci):'<span class="na">-</span>')+'</td>'
           +'<td>'+exc(m.exc5)+'</td>'
+          +'<td>'+spark(hist,m.model)+'</td>'
           +'<td>'+icn(m.h10)+'</td>'
           +'<td>'+(h20.n>0?sic(h20.ic):'<span class="na">n/a</span>')+'</td>'
           +'<td>'+(h20.n||0)+'</td>'
@@ -186,7 +207,7 @@
           +'<td class="why">'+(m.why||'')+'</td>'
           +'</tr>';
       }).join('');
-      document.getElementById('tbody').innerHTML=rows||'<tr><td colspan="17" class="err">모델 없음</td></tr>';
+      document.getElementById('tbody').innerHTML=rows||'<tr><td colspan="18" class="err">모델 없음</td></tr>';
       const g=d.gates||{};
       const gp=(g.partial_run||[]).join(', '), gd=(g.double_run||[]).join(', ');
       document.getElementById('gates').textContent=
@@ -197,7 +218,7 @@
     })
     .catch(e=>{
       document.getElementById('tbody').innerHTML=
-        '<tr><td colspan="17" class="err">leaderboard.json 로드 실패: '+e.message
+        '<tr><td colspan="18" class="err">leaderboard.json 로드 실패: '+e.message
         +' (파이프라인이 아직 안 돌았거나 경로 문제)</td></tr>';
       document.getElementById('meta').textContent='로드 실패';
     });

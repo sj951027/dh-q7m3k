@@ -597,6 +597,8 @@ def main():
                     help="공매도 단계에 신용잔고도 추가(호출 +1/종목)")
     ap.add_argument("--with-loan", action="store_true",
                     help="공매도 단계에 대차잔고도 추가(호출 +1/종목)")
+    ap.add_argument("--force-daily", action="store_true",
+                    help="15:40 이전이어도 일별 수급 조회 강행(시간가드 무시)")
     ap.add_argument("--short-days", type=int, default=40,
                     help="공매도/대차 조회 기간(일). 기본 40")
     args = ap.parse_args()
@@ -662,29 +664,42 @@ def main():
     print(f"   기준일 {date} · 간격 {args.sleep}s · 예상 ~{len(tickers) * args.sleep / 60:.1f}분")
     print("=" * 64)
 
-    fetched_at = datetime.now().strftime("%Y%m%d_%H%M")
-    n_new = n_rep = n_fail = 0
-    t0 = time.time()
-    for i, (tk, name) in enumerate(tickers, 1):
-        time.sleep(args.sleep)
-        try:
-            rows = parse_rows(fetch_rows(tk, token, app_key, app_secret, date), fetched_at)
-            a, b = upsert_flows(con, tk, rows)
-            n_new += a
-            n_rep += b
-        except Exception as e:
-            n_fail += 1
-            if n_fail <= 5:
-                print(f"   ⚠️  {name}({tk}) 실패: {str(e)[:80]}")
-        if i % 100 == 0 or i == len(tickers):
-            el = time.time() - t0
-            print(f"   [{i}/{len(tickers)}] {el:.0f}s · 신규 {n_new} · 재기록 {n_rep} · 실패 {n_fail}")
-    total, days = con.execute(
-        "SELECT COUNT(*), COUNT(DISTINCT date) FROM daily_flows").fetchone()
-    print(f"\n💾 daily_flows 누적: {total:,}행 · 거래일 {days}일")
-    if n_fail:
-        print(f"   (실패 {n_fail}종목은 저장 안 함 — 내일 윈도 재기록이 자동 보충)")
-    print("✅ 연기금 등 세부 수급 적재 완료.")
+    # [2026-07-25] 시간가드: KIS가 당일 기준 일별수급 조회를 00:00~15:40 차단(주말 포함, 실측
+    #   "TIME LIMIT 00:00 ~ 15:40" rt_cd=2 전량 실패). 헛호출로 수십 분 낭비 방지 — 스킵하고
+    #   공매도 단계(시간 무관)는 계속. 15:40 이후 재실행이 자동 백필(윈도 ~30거래일).
+    skip_daily = False
+    if (not args.force_daily
+            and date == datetime.now().strftime("%Y%m%d")
+            and datetime.now().strftime("%H%M") < "1540"):
+        skip_daily = True
+        print("⏭  일별 수급(daily_flows) 스킵 — KIS 당일 조회 차단 시간대(00:00~15:40).")
+        print("   15:40 이후 재실행하면 자동 백필됩니다(윈도 ~30거래일). 공매도 단계는 계속 진행.")
+        print("   (강제 시도: --force-daily)")
+
+    if not skip_daily:
+        fetched_at = datetime.now().strftime("%Y%m%d_%H%M")
+        n_new = n_rep = n_fail = 0
+        t0 = time.time()
+        for i, (tk, name) in enumerate(tickers, 1):
+            time.sleep(args.sleep)
+            try:
+                rows = parse_rows(fetch_rows(tk, token, app_key, app_secret, date), fetched_at)
+                a, b = upsert_flows(con, tk, rows)
+                n_new += a
+                n_rep += b
+            except Exception as e:
+                n_fail += 1
+                if n_fail <= 5:
+                    print(f"   ⚠️  {name}({tk}) 실패: {str(e)[:80]}")
+            if i % 100 == 0 or i == len(tickers):
+                el = time.time() - t0
+                print(f"   [{i}/{len(tickers)}] {el:.0f}s · 신규 {n_new} · 재기록 {n_rep} · 실패 {n_fail}")
+        total, days = con.execute(
+            "SELECT COUNT(*), COUNT(DISTINCT date) FROM daily_flows").fetchone()
+        print(f"\n💾 daily_flows 누적: {total:,}행 · 거래일 {days}일")
+        if n_fail:
+            print(f"   (실패 {n_fail}종목은 저장 안 함 — 내일 윈도 재기록이 자동 보충)")
+        print("✅ 연기금 등 세부 수급 적재 완료.")
 
     # 공매도(+옵션 신용·대차) 단계 — 같은 토큰·유니버스 재사용. 기본 ON.
     if not args.no_short:

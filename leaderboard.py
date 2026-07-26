@@ -288,6 +288,25 @@ def main():
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
+        # [2026-07-25] 추이 축적 — 날짜별 요약을 leaderboard_history.json 에 append.
+        #   재실행이면 당일 항목 교체(중복 방지). 비치명: 실패해도 본체 무영향.
+        #   스파크라인(leaderboard.html '추이' 컬럼)의 데이터 소스. 최근 260일만 보관.
+        try:
+            from datetime import datetime as _dt
+            hp = OUT.parent / "leaderboard_history.json"
+            hist = json.loads(hp.read_text(encoding="utf-8")) if hp.exists() else []
+            _today = _dt.now().strftime("%Y%m%d")
+            hist = [e for e in hist if e.get("date") != _today]
+            hist.append(dict(date=_today, models=[
+                dict(m=r["model"], t=r["track"], o=r["oos_days"], v=r["verdict"],
+                     i5=r["h5"]["ic"], n5=r["h5"]["n"],
+                     i20=r["h20"]["ic"], n20=r["h20"]["n"])
+                for r in results]))
+            hist = hist[-260:]
+            hp.write_text(json.dumps(hist, ensure_ascii=False), encoding="utf-8")
+        except Exception as e:
+            print(f"   ⚠️ leaderboard_history 기록 실패(비치명): {e}")
+
         # 콘솔 요약
         print(f"[leaderboard] 게이트 제외: 부분실행 {sorted(partial)} · 이중실행 {sorted(dbl)}")
         # h5 는 §11 명시 보조지표("보조로 h=5d 같이 본다") — 판정은 여전히 h20 게이트만.
