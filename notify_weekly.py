@@ -20,8 +20,17 @@ notify_weekly.py — 주간 리캡 텔레그램 (일요일 1회, 표시 전용)
 import argparse
 import json
 import sqlite3
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+
+# [2026-07-26] 리다이렉트 인코딩 방어: 스케줄러가 출력을 파일로 보내면 cp949 가 되어
+# 이모지 print 에서 UnicodeEncodeError 로 죽는다(locktest 실측). UTF-8 로 강제.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 HERE = Path(__file__).resolve().parent
 HDB = HERE / "history.db"

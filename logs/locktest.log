@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k\notify_telegram.py", line 245, in send
+    print("   \u2705 텔레그램 알림 전송 완료")
+UnicodeEncodeError: 'cp949' codec can't encode character '\u2705' in position 3: illegal multibyte sequence
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k\notify_weekly.py", line 168, in <module>
+    main()
+  File "C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k\notify_weekly.py", line 164, in main
+    notify_telegram.send(message=msg)
+  File "C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k\notify_telegram.py", line 250, in send
+    print(f"   \u26a0\ufe0f  텔레그램 전송 오류: {e}")
+UnicodeEncodeError: 'cp949' codec can't encode character '\u26a0' in position 3: illegal multibyte sequence
