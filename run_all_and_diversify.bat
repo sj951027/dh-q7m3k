@@ -43,7 +43,7 @@ if %EXIT_CODE% NEQ 0 (
     echo   set up your .env file (see .env.example^) and try again.
     echo ========================================================================
     echo.
-    pause
+    if not defined AUTO pause
     exit /b %EXIT_CODE%
 )
 
@@ -84,9 +84,11 @@ echo     - latest_kospi_final.csv / latest_kosdaq_final.csv
 echo     - diversified_picks_*.csv
 echo ========================================================================
 echo.
-echo Opening result folder...
-start "" "%~dp0"
-echo.
-echo Press any key to close this window.
-pause > nul
+if not defined AUTO (
+  echo Opening result folder...
+  start "" "%~dp0"
+  echo.
+  echo Press any key to close this window.
+  pause > nul
+)
 
