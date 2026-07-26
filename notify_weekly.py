@@ -135,6 +135,8 @@ def build_message():
     except Exception as e:
         lines.append(f"⚠️ 미실행 감지 실패(비치명): {str(e)[:60]}")
 
+    # ※ 포지션 트래커 요약은 여기 넣지 않는다(2026-07-26 사용자 결정) — 이 메시지는
+    #   '공유 채팅방'으로 가므로 개인 자산 정보 금지. 트래커 소식은 트래커 봇(개인 챗) 몫.
     lines.append("")
     lines.append('🔗 <a href="https://sj951027.github.io/dh-q7m3k/leaderboard.html">리더보드 상세</a>')
     return "\n".join(lines)
@@ -164,11 +166,11 @@ def main():
     ap = argparse.ArgumentParser(description="주간 리캡 텔레그램(표시 전용)")
     ap.add_argument("--dry-run", action="store_true", help="콘솔 출력만, 전송 안 함")
     args = ap.parse_args()
+    _load_dotenv()
     msg = build_message()
     if args.dry_run:
         print(msg)
         return
-    _load_dotenv()
     import notify_telegram
     notify_telegram.send(message=msg)
 
