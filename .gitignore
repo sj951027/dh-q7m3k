@@ -70,6 +70,8 @@ large_report.html
 /latest_*_lowvol.csv
 # mom_a 관측(테스트) — 루트 로컬 사본은 추적 제외, docs/것만 커밋
 /latest_*_mom.csv
+# qs_a 관측(테스트) — 루트 로컬 사본은 추적 제외, docs/것만 커밋 (2026-07-29 배선)
+/latest_qs.csv
 # wu 관측(테스트) — 루트 로컬 사본은 추적 제외, docs/것만 커밋
 #   (과거 실수로 추적됨 — 해제는 1회: git rm --cached latest_wu.csv)
 /latest_wu.csv

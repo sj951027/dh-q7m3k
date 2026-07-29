@@ -64,3 +64,13 @@ amt20≥5억 · 미정지 · 종가 존재). 순위합 = cross-sectional pct ran
 1. repo의 `wu_score.py`를 이 수정본으로 교체(다른 파일 변경 없음).
 2. 다음 일일 파이프라인이 돌면 qs_a 첫 적재 → 그 run_id가 REG_DATE.
 3. 첫 적재 확인 후 `checkup.py` REG_DATE에 한 줄 추가: `"qs_a": "<첫 run_id>",` (예상 20260723).
+
+## 6. 개정 기록
+
+- **2026-07-29 (사용자 결정): '판정 전 표시·텔레그램 사용 금지' 조항을 '관측 페이지 노출 허용'으로
+  개정.** 다른 관측 모델(wu_a·lv_b·mom_a·v31g)과 동일한 "테스트·관측·검증 전" 라벨로
+  docs/qs.html + 텔레그램 링크 배선. **spec·점수·§11 판정 규칙·REG_DATE(20260723)는 불변** —
+  노출은 표시 전용이며 IC 계산에 영향 없음. 개정 시점 OOS 4거래일(h1 IC +0.306, n=2)은
+  §11 기준 노이즈 구간임을 인지한 상태의 결정임(추이 관측 목적).
+  변경 파일: build_wu_filter.py(--model/--out 파라미터화, 기본값 wu_a 0-diff),
+  docs/qs.html(신규), run_and_diversify.py(2.89b단계), notify_telegram.py(QS_URL 링크).

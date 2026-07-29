@@ -37,6 +37,9 @@ LOWVOL_URL = "https://sj951027.github.io/dh-q7m3k/lowvol.html"
 WU_URL = "https://sj951027.github.io/dh-q7m3k/wu.html"
 # 모멘텀 대조 모델 mom_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
 MOM_URL = "https://sj951027.github.io/dh-q7m3k/mom.html"
+# 조용한 강자 qs_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
+#   2026-07-29 PREREGISTER_qs.md §6 개정으로 노출 허용(점수·판정 불변)
+QS_URL = "https://sj951027.github.io/dh-q7m3k/qs.html"
 # 전 트랙 모델 리더보드 상세(§11 판정 + h1~h20 관측) — 2026-07-25 추가
 LEADERBOARD_URL = "https://sj951027.github.io/dh-q7m3k/leaderboard.html"
 
@@ -220,6 +223,7 @@ def build_message():
         f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_b</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{MOM_URL}">모멘텀 mom_a</a> (테스트 · 관측데이터, 검증 전)',
+        f'🧪 <a href="{QS_URL}">조용한 강자 qs_a</a> (테스트 · 관측데이터, 검증 전)',
     ]
     return "\n".join(lines)
 

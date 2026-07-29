@@ -30,7 +30,8 @@ HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "history.db"
 OHLCV_DB = os.environ.get("OHLCV_DB", str(HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
 DOCS = HERE / "docs"
-MODEL = "wu_a"     # 노출 모델. wu_b 는 비교 컬럼으로만.
+MODEL = "wu_a"     # 기본 노출 모델(--model 로 변경 가능). wu_b 는 wu_a 일 때만 비교 컬럼으로.
+                   # [2026-07-29] qs_a 배선(PREREGISTER_qs.md §6) — 기본 호출은 종전과 0-diff.
 LOAD_PAD = 290     # 표시지표 계산 룩백(wu_score.py 와 동일)
 
 
@@ -161,26 +162,27 @@ def _flows_metrics(rid, tickers, hist_con=None):
             src.close()
 
 
-def build(con, rid, sector_map=None, use_ohlcv=True):
+def build(con, rid, sector_map=None, use_ohlcv=True, model=MODEL):
     g = pd.read_sql(
         "SELECT wu_rank AS rank, ticker, market, wu_score, n_universe FROM wu_scores "
-        "WHERE run_id=? AND model_id=? ORDER BY wu_rank", con, params=(rid, MODEL))
+        "WHERE run_id=? AND model_id=? ORDER BY wu_rank", con, params=(rid, model))
     if g.empty:
         return None
     g["ticker"] = g["ticker"].astype(str)
     g["wu_score"] = g["wu_score"].round(3)
 
-    # wu_b(순수선택 대조) 나란히 — wu_a 점수·순위는 그대로(0-diff).
-    try:
-        wb = pd.read_sql(
-            "SELECT ticker, wu_score AS wu_b_score, wu_rank AS wu_b_rank FROM wu_scores "
-            "WHERE run_id=? AND model_id='wu_b'", con, params=(rid,))
-        if not wb.empty:
-            wb["ticker"] = wb["ticker"].astype(str)
-            wb["wu_b_score"] = wb["wu_b_score"].round(3)
-            g = g.merge(wb, on="ticker", how="left")
-    except Exception:
-        pass
+    # wu_b(순수선택 대조) 나란히 — wu_a 일 때만(다른 모델엔 무의미). wu_a 점수·순위는 그대로(0-diff).
+    if model == "wu_a":
+        try:
+            wb = pd.read_sql(
+                "SELECT ticker, wu_score AS wu_b_score, wu_rank AS wu_b_rank FROM wu_scores "
+                "WHERE run_id=? AND model_id='wu_b'", con, params=(rid,))
+            if not wb.empty:
+                wb["ticker"] = wb["ticker"].astype(str)
+                wb["wu_b_score"] = wb["wu_b_score"].round(3)
+                g = g.merge(wb, on="ticker", how="left")
+        except Exception:
+            pass
 
     # 종목명: stage1_oversold(전 run 통합, 최신 우선) + large_universe 폴백.
     #   wu 는 전체 상장 유니버스라 stage1(v3 유니버스)에 없는 대형주가 있음(예: 금융지주)
@@ -246,17 +248,22 @@ def build(con, rid, sector_map=None, use_ohlcv=True):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="wu(wu_a) 관측 CSV 생성(로컬)")
+    ap = argparse.ArgumentParser(description="wu 트랙 관측 CSV 생성(로컬)")
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--db", default=str(DB_PATH))
     ap.add_argument("--docs", default=str(DOCS))
     ap.add_argument("--no-ohlcv", action="store_true", help="표시지표 계산 생략(점수·순위만)")
+    ap.add_argument("--model", default=MODEL,
+                    help="wu_scores 의 model_id (기본 wu_a — 종전과 0-diff). 예: qs_a")
+    ap.add_argument("--out", default="latest_wu.csv",
+                    help="출력 CSV 파일명 (docs/·루트에 저장, 기본 latest_wu.csv)")
     args = ap.parse_args()
 
     con = sqlite3.connect(args.db)
-    runs = pd.read_sql("SELECT DISTINCT run_id FROM wu_scores", con)
+    runs = pd.read_sql("SELECT DISTINCT run_id FROM wu_scores WHERE model_id=?",
+                       con, params=(args.model,))
     if runs.empty:
-        print("❌ wu_scores 비어 있음 — 먼저 `python wu_score.py`."); sys.exit(1)
+        print(f"❌ wu_scores 에 {args.model} 없음 — 먼저 `python wu_score.py`."); sys.exit(1)
     rid = str(args.run_id) if args.run_id else str(runs["run_id"].astype(str).max())
 
     sector_map = None
@@ -267,18 +274,18 @@ def main():
         except Exception as e:
             print(f"  ⚠️ sector_cache.json 로드 실패(업종 빈칸 유지): {e}")
 
-    g = build(con, rid, sector_map=sector_map, use_ohlcv=not args.no_ohlcv)
+    g = build(con, rid, sector_map=sector_map, use_ohlcv=not args.no_ohlcv, model=args.model)
     con.close()
     if g is None:
-        print(f"❌ run {rid} wu_a 데이터 없음"); sys.exit(1)
+        print(f"❌ run {rid} {args.model} 데이터 없음"); sys.exit(1)
 
     docs = Path(args.docs); docs.mkdir(parents=True, exist_ok=True)
-    for path in (docs / "latest_wu.csv", HERE / "latest_wu.csv"):
+    for path in (docs / args.out, HERE / args.out):
         g.to_csv(path, index=False, encoding="utf-8-sig")
     n_uni = int(g["n_universe"].iloc[0]) if "n_universe" in g else len(g)
     nm_cov = g["name"].notna().mean() * 100 if "name" in g else 0
-    print(f"  ✓ {len(g)}종목(유니버스 {n_uni}, 종목명 커버 {nm_cov:.0f}%) → docs/latest_wu.csv")
-    print(f"💾 wu(wu_a) 관측 CSV 생성 — run {rid}. wu.html 을 docs/ 에 두고 커밋하면 열람.")
+    print(f"  ✓ {len(g)}종목(유니버스 {n_uni}, 종목명 커버 {nm_cov:.0f}%) → docs/{args.out}")
+    print(f"💾 wu 트랙({args.model}) 관측 CSV 생성 — run {rid}.")
     print("   (v3·large·lowvol 산출물 불변 — history.db·ohlcv.db 읽기 전용)")
 
 
