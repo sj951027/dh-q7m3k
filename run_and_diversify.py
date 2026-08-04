@@ -121,11 +121,19 @@ def _git(args):
 
 
 def check_completeness(db_path, run_id=None, floor_frac=0.5, recent_n=10):
-    """degraded(부분수집) 데이터의 공개 배포를 막는 게이트. 최신 run 의 stage1/stage3 행수가 최근 중앙값 대비 floor_frac 미만이면 degraded. 반환=(ok, issues, details)."""
+    """degraded(부분수집) 데이터의 공개 배포를 막는 게이트.
+    게이트 판정은 stage1(수집 완전성의 직접 지표)만 사용한다. stage3 는 '과매도 40점 이상'
+    종목 수라 반등장에서 정상적으로 급감할 수 있어(시장 의존) 게이트에서 제외하고
+    참고(details)로만 남긴다.
+    2026-08-04 변경: 반등장 오탐으로 배포 보류(kospi 117/중앙값 311, stage1·stage2 정상).
+    전체 53개 run PIT 재현으로 검증 — 진짜 수집 실패(20260608, stage1 75/20행)는 stage1
+    게이트 단독으로도 동일하게 검출, 시장 요인 2건(20260617·20260804)만 보류 해제됨.
+    반환=(ok, issues, details)."""
     issues, details = [], []
     con = sqlite3.connect(str(db_path))
     try:
-        for table, label in (("stage1_oversold", "stage1"), ("stage3_final", "stage3")):
+        for table, label, gates in (("stage1_oversold", "stage1", True),
+                                    ("stage3_final", "stage3", False)):
             try:
                 rid = run_id or con.execute(f"SELECT MAX(run_id) FROM {table}").fetchone()[0]
             except sqlite3.OperationalError:
@@ -144,7 +152,12 @@ def check_completeness(db_path, run_id=None, floor_frac=0.5, recent_n=10):
                 med = statistics.median(hist)
                 details.append(f"{label}·{mkt} {cur}")
                 if med > 0 and cur < med * floor_frac:
-                    issues.append(f"{label} {mkt}: {cur}행 (최근 중앙값 {int(med)}의 {cur/med:.0%}, 기준 {floor_frac:.0%} 미만)")
+                    msg = f"{label} {mkt}: {cur}행 (최근 중앙값 {int(med)}의 {cur/med:.0%}, 기준 {floor_frac:.0%} 미만)"
+                    if gates:
+                        issues.append(msg)
+                    else:
+                        # 시장 의존 지표 — 게이트 아님, 로그로만 남김
+                        print(f"   ℹ️  {msg} — 시장 요인 가능(게이트 제외)")
         return (len(issues) == 0), issues, details
     finally:
         con.close()
