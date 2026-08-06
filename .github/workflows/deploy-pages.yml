@@ -48,3 +48,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # 2026-08-06: Pages 배포 큐 지연으로 기본 10분 타임아웃 초과(#144·#145 실패,
+          # #143은 8분23초 턱걸이 성공) → 30분으로 상향. 큐가 정상이면 영향 없음.
+          timeout: 1800000
