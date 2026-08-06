@@ -35,6 +35,8 @@ from checkup import REG_DATE as _REG
 REG_DATE = dict(_REG)
 REG_DATE.setdefault("wu_a", "20260702")
 REG_DATE.setdefault("wu_b", "20260702")
+# ls_t1: 대형 트랙 테스트 모델(PREREGISTER_ls_t1.md) — 등록 20260806, forward-only.
+REG_DATE.setdefault("ls_t1", "20260806")
 
 ENTRY_LAG = 1                 # validate_scores 와 동일(추천 +1거래일 종가 매수)
 H_PRIMARY = 20                # §11 주지표
@@ -275,6 +277,37 @@ def main():
                                     h1=stat[1], h3=stat[3], h10=stat[10],   # 관측 전용 — 판정·정렬 미사용
                                     exc5=stat.get("exc5"), exc20=stat.get("exc20"),  # 시장초과 %p (관측 전용)
                                     verdict=vd, why=why, denom=denom[trk]))
+        # ---- large 트랙 테스트 모델 ls_t1 (관측 전용 — PREREGISTER_ls_t1.md) ----
+        #   점수: run 내 ep(1/PER)·bp(1/PBR)·rim_spread·div_yield 백분위 랭크 '동일가중' 평균
+        #   (결측 제외, 최소 2개). 가중 탐색 없음(매직넘버 금지). large_final 은 run별 동결
+        #   적재라 언제 재계산해도 동일(PIT) → 별도 동결 테이블 없이 재현 가능.
+        #   ⚠️ 대형 설계 판정 호라이즌은 60~120d(§9) — 여기 h20 판정 라벨은 '참고'로만.
+        #   Bonferroni 분모=1(대형 동시검정 1개). 비치명: 실패해도 기존 트랙 무영향.
+        try:
+            lg = pd.read_sql("SELECT run_id, market, ticker, per, pbr, rim_spread, "
+                             "div_yield FROM large_final", con)
+            lg["ticker"] = lg["ticker"].astype(str)
+            fz = pd.DataFrame(index=lg.index)
+            fz["ep"] = 1.0 / lg["per"].where(lg["per"] > 0)
+            fz["bp"] = 1.0 / lg["pbr"].where(lg["pbr"] > 0)
+            fz["rim"] = lg["rim_spread"]
+            fz["dv"] = lg["div_yield"]
+            rk = fz.groupby(lg["run_id"]).rank(pct=True)
+            lg["score"] = rk.mean(axis=1).where(rk.notna().sum(axis=1) >= 2)
+            s = lg.dropna(subset=["score"])[["run_id", "market", "ticker", "score"]]
+            reg = REG_DATE.get("ls_t1")
+            stat = model_ic(s, close, N, didx, excl, reg=reg)
+            vd, why = verdict(stat[H_PRIMARY], 1, stat["oos_days"])
+            why += " · ⚠대형 설계 판정 h=60~120d — h20 라벨은 참고"
+            results.append(dict(track="large", model="ls_t1", reg_date=reg,
+                                oos_days=stat["oos_days"],
+                                h5=stat[5], h20=stat[20],
+                                h1=stat[1], h3=stat[3], h10=stat[10],
+                                exc5=stat.get("exc5"), exc20=stat.get("exc20"),
+                                verdict=vd, why=why, denom=1))
+        except Exception as e:
+            print(f"   ⚠️ large 테스트 모델 ls_t1 실패(비치명): {e}")
+
         con.close()
 
         results.sort(key=lambda r: (r["h20"]["ic"] is None, -(r["h20"]["ic"] or -9),

@@ -82,3 +82,8 @@ large_report.html
 #   (과거 실수로 locktest.log·weekly_run.log 추적됨 — 해제는 1회:
 #    git rm --cached logs/locktest.log logs/weekly_run.log)
 /logs/
+
+# v2 루트 스냅샷 CSV — history.db 로 재현 가능, 용량만 쌓임 (2026-08-06 추가)
+#   docs/ 쪽 산출물엔 영향 없음. 기존 추적분 16개 해제는 1회(선택):
+#   git rm --cached v2_*.csv  (파일 자체는 남고 추적만 해제)
+/v2_*.csv

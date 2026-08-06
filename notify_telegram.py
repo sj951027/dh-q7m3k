@@ -40,6 +40,8 @@ MOM_URL = "https://sj951027.github.io/dh-q7m3k/mom.html"
 # 조용한 강자 qs_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
 #   2026-07-29 PREREGISTER_qs.md §6 개정으로 노출 허용(점수·판정 불변)
 QS_URL = "https://sj951027.github.io/dh-q7m3k/qs.html"
+# 대형 트랙 테스트 모델 ls_t1 점수 페이지 — 메인/필터 미링크 비공개 경로(테스트·검증 전)
+LARGE_TEST_URL = "https://sj951027.github.io/dh-q7m3k/_large_test.html"
 # 전 트랙 모델 리더보드 상세(§11 판정 + h1~h20 관측) — 2026-07-25 추가
 LEADERBOARD_URL = "https://sj951027.github.io/dh-q7m3k/leaderboard.html"
 
@@ -165,7 +167,8 @@ def _model_status_lines():
 
         # 표시용 '계열' 분리: mom_* 은 lowvol 테이블을 빌려 쓰지만 정체성이 달라 따로 보여줌.
         FAMILY = [("v3", "🔵", "과매도 v3"), ("lowvol", "🟢", "저변동"),
-                  ("mom", "🟠", "모멘텀"), ("wu", "🟣", "전체종목")]
+                  ("mom", "🟠", "모멘텀"), ("wu", "🟣", "전체종목"),
+                  ("large", "🏛️", "대형 가치(판정 60~120d)")]
         by_fam = {}
         for ms in by_track.values():
             for m in ms:
@@ -219,6 +222,7 @@ def build_message():
         f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a>',
         f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드 상세</a> (판정·h1~h20 관측)',
         f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',
+        f'🧪 <a href="{LARGE_TEST_URL}">대형 테스트 ls_t1</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{V31G_FILTER_URL}">v31g 챌린저</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_b</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
