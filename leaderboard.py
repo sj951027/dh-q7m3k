@@ -80,10 +80,16 @@ def load_ohlcv():
 def build_gates(con, close_index):
     """게이트 대상 run_id 집합 산출(부분실행·이중실행)."""
     didx = {d: i for i, d in enumerate(close_index)}
-    # ① 부분실행일: stage3_final 유니버스가 중앙값의 GATE_FRAC 미만
+    # ① 부분실행일: stage1_oversold(수집 완전성의 직접 지표)가 중앙값의 GATE_FRAC 미만.
+    #   [2026-08-07 변경] 기존 stage3_final 기준은 '과매도 40점 이상' 종목 수라 시장 의존 —
+    #   반등장(예: 20260731 +17.9% 후 0804~0807)에 정상 축소를 수집 실패로 오탐해 멀쩡한
+    #   거래일을 IC 표본에서 제외(OOS 카운트 정지). run_and_diversify.check_completeness 의
+    #   2026-08-04 결정(stage1만 게이트, PIT 53 run 재현: 진짜 실패 20260608 은 stage1 단독
+    #   검출)과 동일 원칙으로 통일. 오프라인 재현: 변경 후 partial={20260608}(진짜 실패만),
+    #   0804~0807 표본 복귀 확인.
     partial = set()
     try:
-        cnt = pd.read_sql("SELECT run_id, COUNT(*) n FROM stage3_final GROUP BY run_id", con)
+        cnt = pd.read_sql("SELECT run_id, COUNT(*) n FROM stage1_oversold GROUP BY run_id", con)
         med = cnt["n"].median()
         partial = set(cnt.loc[cnt["n"] < med * GATE_FRAC, "run_id"].astype(str))
     except Exception:
