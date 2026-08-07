@@ -65,7 +65,6 @@ echo ========================================================================
 echo   [Large] build report (daily_ohlcv already updated above)
 echo ========================================================================
 python build_large_report.py
-REM ls_t1 테스트 점수 페이지(docs/_large_test.html) — 관측 전용, PREREGISTER_ls_t1.md (2026-08-06)
 python build_large_test.py
 
 echo.

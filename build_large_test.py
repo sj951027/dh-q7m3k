@@ -155,7 +155,7 @@ def main():
     ic = insample_ic(lg)
     OUT.write_text(render(g, rid, str(g['run_timestamp'].iloc[0])[:16], ic), encoding="utf-8")
     n = g["ls_t1"].notna().sum()
-    print(f"[large_test] {OUT.name} 생성 — run {rid}, 점수 산출 {n}종목")
+    print(f"[large_test] {OUT.name} 생성 - run {rid}, 점수 산출 {n}종목")
     top = g.sort_values('ls_t1', ascending=False).head(10)
     for _, x in top.iterrows():
         print(f"  {x['name']:12s} {x['ticker']} ls_t1={x['ls_t1']*100:.1f} gate={'O' if x['quality_gate'] else '·'}")
