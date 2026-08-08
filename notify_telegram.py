@@ -29,8 +29,7 @@ DASHBOARD_URL = "https://sj951027.github.io/dh-q7m3k/"
 FILTER_URL = "https://sj951027.github.io/dh-q7m3k/filter.html"
 # 대형 가치 트랙 관측 리포트 — 메인/필터 어디에도 링크하지 않는 비공개 경로(검증 전 관측 전용)
 LARGE_OBS_URL = "https://sj951027.github.io/dh-q7m3k/_large_obs.html"
-# v31g 챌린저 테스트 필터 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
-V31G_FILTER_URL = "https://sj951027.github.io/dh-q7m3k/filter_v31g.html"
+# [2026-08-09] v31g 링크 제거 — §11 첫 판정 기각(VERDICT_20260809.md). 페이지 파일은 보존.
 # 저변동 트랙 lv_b 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
 LOWVOL_URL = "https://sj951027.github.io/dh-q7m3k/lowvol.html"
 # 전체종목 트랙 wu_a 테스트 페이지 — 메인/필터 미링크 비공개 경로(검증 전 관측 전용)
@@ -223,7 +222,6 @@ def build_message():
         f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드 상세</a> (판정·h1~h20 관측)',
         f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',
         f'🧪 <a href="{LARGE_TEST_URL}">대형 테스트 ls_t1</a> (테스트 · 관측데이터, 검증 전)',
-        f'🧪 <a href="{V31G_FILTER_URL}">v31g 챌린저</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_b</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{MOM_URL}">모멘텀 mom_a</a> (테스트 · 관측데이터, 검증 전)',

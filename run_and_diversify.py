@@ -318,8 +318,8 @@ def main():
 
     # 2.85) v31g 챌린저 관측 CSV 생성 — filter_v31g.html 이 fetch할 docs/latest_*_v31g.csv 갱신.
     #        push(3) 전에 두어야 당일 반영. 점수 미투입·섬도우(검증 전). history.db만 사용.
-    if (HERE / "build_v31g_filter.py").exists():
-        run_script(["build_v31g_filter.py"], "2.85단계: v31g 챌린저 관측 CSV (섬도우, 점수 불변)")
+    # [2026-08-09] 2.85단계(v31g 관측 CSV) 중지 — §11 첫 판정에서 v31g 기각(VERDICT_20260809.md).
+    #   build_v31g_filter.py·docs/filter_v31g.html 파일은 보존(수동 실행 가능), 자동 갱신·링크만 제거.
 
     # 2.86) 저변동 트랙(lowvol) 관측 — lv_a~d·lv_a3 점수 적재(가중치 0) + lv_a 관측 CSV.
     #        v3·large 와 완전 분리(별도 테이블 lowvol_scores·전용 lowvol.html). 검증 전 섀도우.

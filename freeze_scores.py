@@ -184,8 +184,9 @@ def main():
             verify(con)
             return
         ensure_table(con)
+        # [2026-08-09] 기각 모델(v3_rescore.RETIRED)은 기본 동결 대상에서 제외(기존 행 보존).
         models = (args.models.split(",") if args.models
-                  else list(ARCHIVE_MAP.keys()))
+                  else [m for m in ARCHIVE_MAP if m not in getattr(v3, "RETIRED", set())])
         run_id = None
         if args.backfill:
             run_id = None

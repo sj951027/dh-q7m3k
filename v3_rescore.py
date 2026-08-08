@@ -246,6 +246,11 @@ MODELS = {
     "v31g": _spec("v31g · F2 거래량팽창 가산(섀도우)",   volexp_tilt_w=VOLEXP_TILT_W),
 }
 
+# [2026-08-09] §11 첫 판정(VERDICT_20260809.md): 챌린저 6개 전원 기각 → 챔피언 v30 유지.
+#   기각 모델은 일일 섀도우·동결 '중지'만 한다(스펙·엔진·기존 v3_scores 행은 §불변 규칙대로 보존).
+#   재도전은 새 model_id + 사전등록으로만. v31f 는 h10 재현 있었으나 h20 채택기준 미달(기움) — 기록.
+RETIRED = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g"}
+
 
 # ------------------------------------------------------------ 조립
 def rescore(df, run_id=None, market=None, oversold_cap=None, spec=None):

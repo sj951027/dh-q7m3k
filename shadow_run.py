@@ -52,7 +52,9 @@ def main():
         return 1
 
     run_id = args.run_id or latest_run_id()
-    models = args.models or [m for m in v3.MODELS if m != "v30"]
+    # [2026-08-09] §11 판정 기각 모델(v3_rescore.RETIRED)은 섀도우 중지 — --models 명시 시만 수동 가능.
+    models = args.models or [m for m in v3.MODELS
+                             if m != "v30" and m not in getattr(v3, "RETIRED", set())]
     allruns = v3.load_runs(str(DB))
 
     print(f"[shadow] run_id={run_id} · 챌린저={models}")
