@@ -42,10 +42,18 @@ REG_DATE = {
     "lv_d": "20260625", "lv_a3": "20260625",
     "mom_a": "20260627", "lv_short": "20260627", "hv_a": "20260627", "sm_a": "20260627",
     "wu_a": "20260702", "wu_b": "20260702",
+    # [2026-08-07 보수] 7/2 이후 등록분 누락 복구 + px_a 신규. ls_t1(large)은 판정
+    # 호라이즌이 h60~120(§9)이라 40거래일 알림 대상 아님 — 의도적 제외.
+    "sv_a": "20260715", "le_a": "20260715",
+    "mom_b": "20260717", "qs_a": "20260723",
+    "px_a": "20260810",
 }
 TABLE = {"v3": "v3_scores", "lowvol": "lowvol_scores", "wu": "wu_scores"}
 TRACK = {m: ("v3" if m.startswith("v3") else "wu" if m.startswith("wu") else "lowvol")
          for m in REG_DATE}
+# [2026-08-07 보수] 휴리스틱('wu' 접두어)이 못 잡는 wu 트랙 모델 명시 매핑 —
+# sv_a·le_a·qs_a 는 wu_scores 소속인데 기존 코드는 lowvol_scores 를 조회(알림 불능 결함).
+TRACK.update({"sv_a": "wu", "le_a": "wu", "qs_a": "wu", "px_a": "wu"})
 
 
 def load_env():

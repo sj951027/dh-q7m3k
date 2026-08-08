@@ -68,6 +68,10 @@ FACTORS = {
     "svr5":   (True,  "mean(short_flows.short_vol_ratio,5,min_periods=3)"),
     # [2026-07-22 추가 — PREREGISTER_qs.md 동결] amt20f 동일 정의의 방향 반전(저거래대금 우대)
     "amt20l": (False, "mean(close*volume,20,min_periods=10)/1e8"),
+    # [2026-08-07 추가 — PREREGISTER_px_a.md 동결] 가격 4팩터 챌린저 성분
+    "lv60": (False, "std(pct_change(close),60,min_periods=30)"),
+    "lv20": (False, "std(pct_change(close),20,min_periods=10)"),
+    "to20": (False, "mean(volume/shares,20,min_periods=10)"),
 }
 MODELS = {
     "wu_a": ["lv63", "nh252", "mom12", "big"],   # 균형·방어형
@@ -75,6 +79,10 @@ MODELS = {
     "le_a": ["dlow52", "obv63", "amt20f"],        # 저점탈출(핵심)+OBV미매집+유동성 [REG 20260715]
     "sv_a": ["svr5"],                             # 공매도비중 단독(국면독립 가설) [REG 20260715]
     "qs_a": ["lv63", "nh252", "amt20l"],          # 조용한 강자: 저변동(핵심)+고가근접+저거래대금 [PREREGISTER_qs.md]
+    # [2026-08-07 등록 — PREREGISTER_px_a.md] 저변동60(핵심)+저회전20+저변동20+52주고근접.
+    #   근거: 3년 월간 walk-forward(train ~2025-06 선정, test 생존) + lv_b 동결점수 짝비교
+    #   h10/h20 CI>0 (NEW_MODEL_SEARCH_20260807.md). 첫 적재부터 forward-only.
+    "px_a": ["lv60", "to20", "lv20", "nh252"],
 }
 GUARD_SPEC = {"rv21_floor": VOL_FLOOR, "flat63_max": MAX_FLAT, "jump21_max": MAX_JUMP,
               "amt20_floor_억": LIQ_FLOOR, "suspended": 0, "lookback_min": LOOKBACK_MIN}
@@ -142,6 +150,10 @@ def compute_frames(W):
     F["svr5"] = W["svr"].rolling(5, min_periods=3).mean()
     # [2026-07-22 추가] qs_a — amt20f 동일 프레임, 방향만 FACTORS에서 반전
     F["amt20l"] = amt20
+    # [2026-08-07 추가] px_a 성분 — 전부 기존 W 데이터만 사용(신규 원천 0)
+    F["lv60"] = r.rolling(60, min_periods=30).std()
+    F["lv20"] = r.rolling(20, min_periods=10).std()
+    F["to20"] = (W["vol"] / W["shares"].where(W["shares"] > 0)).rolling(20, min_periods=10).mean()
     G = dict(rv21=r.rolling(21, min_periods=8).std(),
              flat63=(r.abs() < 1e-9).rolling(63, min_periods=20).mean(),
              jump21=r.abs().rolling(21, min_periods=5).max(),

@@ -1417,3 +1417,15 @@ lv_a 계열(6/5 등록)은 ohlcv 최신 7/3 기준 20거래일 앞이 아직 0�
   (실측) — 상향 무의미. 대비책: docs/.nojekyll 추가(브랜치 배포 전환 시 밑줄 파일 보호).
 - 잔여 백로그: consensus_daily 2일치뿐(fetch_consensus 주간 가드/실패 여부 로그 확인 필요),
   v2 루트 스냅샷 CSV는 .gitignore(/v2_*.csv) 처리.
+
+### 28-4. px_a 챌린저 사전등록 (2026-08-07, wu 트랙)
+- **스펙(동결)**: px_a = lv60(핵심)+to20+lv20+nh252 순위합 — PREREGISTER_px_a.md. 신규 원천 0
+  (close/volume/shares만), wu_score.py FACTORS/MODELS 확장으로 배선, checkup REG_DATE=20260810
+  (첫 적재 예정 — 신규 모델 소급 금지 규칙에 따라 다음 신규 거래일부터 자연 시작).
+- **근거(가설)**: 3년 월간 walk-forward 생존(test IC +0.139) + lv_b 동결점수 짝비교 h10 diff
+  +0.048 CI>0 / h20 +0.083 CI>0 — NEW_MODEL_SEARCH_20260807.md. 기각: +공매도비율 유해(CI<0),
+  밸류 결합은 valuation_daily 2~3개월 적재 후 재시도.
+- **검증**: 사본 DB에서 원본 vs 패치판 재적재 비교 — 기존 5개 모델 5,324행 **0 diff**,
+  px_a 1,066행 정상. 실 DB 무접촉.
+- **파급 인지**: wu 트랙 Bonferroni 분모 5→6(실측 자동) — 기존 wu 모델 판정도 분모 상향.
+- 표시 배선 없음(관측 전용). 판정 §11 + post-hoc 가중(h10 재현 요구).
