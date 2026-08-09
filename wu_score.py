@@ -81,7 +81,7 @@ MODELS = {
     "qs_a": ["lv63", "nh252", "amt20l"],          # 조용한 강자: 저변동(핵심)+고가근접+저거래대금 [PREREGISTER_qs.md]
     # [2026-08-07 등록 — PREREGISTER_px_a.md] 저변동60(핵심)+저회전20+저변동20+52주고근접.
     #   근거: 3년 월간 walk-forward(train ~2025-06 선정, test 생존) + lv_b 동결점수 짝비교
-    #   h10/h20 CI>0 (NEW_MODEL_SEARCH_20260807.md). 첫 적재부터 forward-only.
+    #   h10/h20 CI>0 (research/NEW_MODEL_SEARCH_20260807.md). 첫 적재부터 forward-only.
     "px_a": ["lv60", "to20", "lv20", "nh252"],
 }
 GUARD_SPEC = {"rv21_floor": VOL_FLOOR, "flat63_max": MAX_FLAT, "jump21_max": MAX_JUMP,

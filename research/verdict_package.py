@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# [경로 이식] Claude 세션에서 작성 — research/ 에서 실행하면 경로 자동 해결.
+from pathlib import Path as _P
+_HERE = _P(__file__).resolve().parent
+_REPO = _HERE.parent
+_DATA = _REPO.parent / 'dh-q7m3k-data'
+
 """verdict_package.py — §11 첫 판정 계산 (v31a~d·f·g, 오프라인 정본 보조)
 - 점수 챌린저(b/d/f/g): 짝지은 IC diff(챌린저-v30) h20 주지표 + h10(post-hoc 재현용),
   95% CI와 Bonferroni(0.05/6 ≈ 99.2%) CI, 주별 방향 일관성, 보조 BUY+WAIT 수익.
@@ -10,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-REPO = Path('/sessions/eager-inspiring-planck/mnt/dh-q7m3k')
+REPO = Path(str(_REPO))
 sys.path.insert(0, str(REPO))
 import leaderboard as lb
 
