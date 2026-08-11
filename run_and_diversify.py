@@ -350,6 +350,13 @@ def main():
         run_script(["build_wu_filter.py", "--model", "qs_a", "--out", "latest_qs.csv"],
                    "2.89b단계: 조용한 강자 qs_a 관측 CSV (섀도우)")
 
+    # 2.89c) 가격 4팩터(px_a) 관측 CSV — px.html 이 fetch할 docs/latest_px.csv 갱신.
+    #        점수 적재는 2.88(wu_score)이 이미 처리(px_a 는 wu_scores 공유, PREREGISTER_px_a.md).
+    #        2026-08-11 사용자 결정: 테스트 열람용 표시 배선 — 표시 전용(판정·점수 0-diff), 실패해도 비치명.
+    if (HERE / "build_wu_filter.py").exists():
+        run_script(["build_wu_filter.py", "--model", "px_a", "--out", "latest_px.csv"],
+                   "2.89c단계: 가격 4팩터 px_a 관측 CSV (섀도우)")
+
     # 2.895) 전종목 밸류 스냅샷 적재 — fetch_valuation 의 당일 valuation_*.csv(전종목
     #        PBR/PER/DIV/BPS/EPS)를 ohlcv.db `valuation_daily` 에 증분 적재.
     #        7일 회전으로 버려지던 포인트-인-타임 펀더멘털의 보존(2026-07-11, §26-5).

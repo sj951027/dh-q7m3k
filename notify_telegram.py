@@ -178,7 +178,8 @@ def _model_status_lines():
             k = max(0, min(8, round(8 * oos / min_oos)))
             return "▓" * k + "░" * (8 - k)
 
-        out = [f"📊 <b>모델 관측 현황</b> — 전부 판정 전(40거래일 필요)"]
+        # 2026-08-11 사용자 결정: '모델 관측 현황' 헤더 제거 — 제목 아래 리더보드 링크가 그 역할.
+        out = []
         for fam, emoji, label in FAMILY:
             ms = by_fam.get(fam)
             if not ms:
@@ -208,24 +209,27 @@ def _model_status_lines():
 
 def build_message():
     today = datetime.now().strftime("%Y-%m-%d")
-    lines = [f"✅ <b>스크리너 완료</b> · {today}", ""]
+    # 2026-08-11 사용자 결정: 제목 바로 아래 리더보드 링크 + 빈 줄 → 현황 줄들(헤더 없음).
+    lines = [f"✅ <b>스크리너 완료</b> · {today}",
+             f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드 상세</a> (판정·h1~h20 관측)',
+             ""]
 
     # 2026-07-17 사용자 결정: v3 top3 종목 나열은 도움 안 됨 → 모델 관측 현황으로 대체.
     #   (종목 상세는 대시보드·필터 링크에서. _picks_by_bucket/_ic_line 은 보존 — 재활성화 가능.)
     lines += _model_status_lines()
-    lines.append("")
 
     lines += [
         "※ 매수신호 아님 · 종목 상세는 아래 링크에서",
-        f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
-        f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a>',
-        f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드 상세</a> (판정·h1~h20 관측)',
+        # 2026-08-11 사용자 결정: 대시보드 링크 제거(거의 안 봄). DASHBOARD_URL 상수는 보존 — 재활성화 가능.
+        # f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
+        f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a> (챔피언 v30 기준)',
         f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',
-        f'🧪 <a href="{LARGE_TEST_URL}">대형 테스트 ls_t1</a> (테스트 · 관측데이터, 검증 전)',
         f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_b</a> (테스트 · 관측데이터, 검증 전)',
-        f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
-        f'🧪 <a href="{MOM_URL}">모멘텀 mom_a</a> (테스트 · 관측데이터, 검증 전)',
-        f'🧪 <a href="{QS_URL}">조용한 강자 qs_a</a> (테스트 · 관측데이터, 검증 전)',
+        # 2026-08-11 사용자 결정: ls_t1·wu_a·mom_a·qs_a 링크 제거(링크만 — 관측·적재·페이지는 유지, 리더보드에서 확인 가능).
+        # f'🧪 <a href="{LARGE_TEST_URL}">대형 테스트 ls_t1</a> (테스트 · 관측데이터, 검증 전)',
+        # f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
+        # f'🧪 <a href="{MOM_URL}">모멘텀 mom_a</a> (테스트 · 관측데이터, 검증 전)',
+        # f'🧪 <a href="{QS_URL}">조용한 강자 qs_a</a> (테스트 · 관측데이터, 검증 전)',
     ]
     return "\n".join(lines)
 

@@ -132,6 +132,7 @@
     <span class="fbtn" data-f="any5pos">외인/기관 中 매수</span>
     <span class="fbtn" data-f="roe10">ROE ≥ 10</span>
     <span class="fbtn" data-f="rev">지난주 하락</span>
+    <span class="fbtn" data-f="nh3rd" title="52주고점대비% 상위 1/3 (0에 가까운 = 신고가 근접). 2026-08-11 탐색 관측 — 검증 전 가설, 참고용">신고가 근접 ⅓</span>
     <span class="fcount" id="fcount"></span>
   </div>
 
@@ -169,6 +170,7 @@ const COLS = [
 let curMkt = 'kospi';
 let sortKey = 'rank', sortAsc = true;
 let allRows = [];                 // 필터 전 전체 행
+let nhCut = null;                 // 신고가근접 상위⅓ 컷(로드 시 분위 계산 — 고정 임계값 없음)
 let activeF = new Set();          // 활성 필터 id
 
 // 필터 정의: id → 행 통과 판정
@@ -179,6 +181,7 @@ const FILTERS = {
   roe10:   r => parseFloat(r['roe_value']) >= 10,
   rev:     r => parseFloat(r['return_1w_%']) < 0,
   top10:   r => parseInt(r['top10pct']) === 1,
+  nh3rd:   r => nhCut !== null && parseFloat(r['drawdown_52w_high_%']) >= nhCut,
 };
 
 function applyFilters(){
@@ -248,6 +251,8 @@ function load(mkt){
     .then(txt=>{
       const rows = parseCSV(txt);
       allRows = rows;
+      const dd = rows.map(r=>parseFloat(r['drawdown_52w_high_%'])).filter(Number.isFinite).sort((a,b)=>a-b);
+      nhCut = dd.length ? dd[Math.floor(dd.length*2/3)] : null;
       sortKey='rank'; sortAsc=true;
       applyFilters();
       const nuni = rows.length? rows[0]['n_universe']:'-';

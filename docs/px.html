@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가격 4팩터 (px_a) · 테스트·관측</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
+    --accent:#5aa9ff; --warn:#f0b429; --warnbg:#2a230f; --good:#2dd4a7; --bad:#f0997b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    font-size:14px;line-height:1.5}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:12px;margin-bottom:14px}
+  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px}
+  .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;
+    list-style:none;user-select:none}
+  .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px}
+  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
+  .explain-body b{color:var(--txt)}
+  .explain .warnp{background:#1f1a0c;border-left:3px solid var(--warn);
+    padding:9px 12px;color:#e8dcc0}
+  .explain .warnp b{color:var(--warn)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 10px;font-size:12px;color:var(--sub)}
+  .chip b{color:var(--txt)}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
+  .tab.active{border-color:var(--accent);color:var(--accent)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+  .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
+  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub);user-select:none}
+  .fbtn.on{border-color:var(--accent);color:var(--accent);background:#141c26}
+  .fcount{color:var(--sub);font-size:12px;margin-left:auto}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;min-width:0}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0;cursor:pointer}
+  th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left}
+  .top50row td{background:#131b26}
+  .top50row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .top50row td:nth-child(2){color:var(--accent);font-weight:700}
+  tr:hover td{background:#1b1f28}
+  .score{color:var(--accent);font-weight:700}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .v3{color:var(--sub);font-size:11px}
+  .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7}
+  .loading{padding:40px;text-align:center;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧪 가격 4팩터 <span style="color:var(--accent)">px_a</span> · 테스트·관측</h1>
+  <div class="sub">저변동60 + 저회전율20 + 저변동20 + 52주고근접 순위합 · 전체 상장(과매도 게이트 없음) · v3·large·lowvol·wu_a 와 별개 관측 모델</div>
+
+  <div class="warn">
+    ⚠️ <b>검증 전 섀도우 — 매수신호 아님.</b> 이 점수(px_a, wu_score 컬럼)는 3년 walk-forward
+    스캔에서 발견한 <b>사후 탐색(post-hoc) 가설</b>입니다(PREREGISTER_px_a.md, 등록 2026-08-07 ·
+    첫 적재 2026-08-10). 등록일 이후 <b>OOS 40거래일</b> 누적 전엔 §11 기준 무조건 노이즈로
+    간주합니다(판정 예상 2026-10 초 · post-hoc 출신이라 h10 재현까지 요구). 실제 추천 기준은
+    여전히 v3입니다. 점수가 높을수록 "선호"지 "사라"가 아닙니다.
+  </div>
+
+  <details class="explain" open>
+    <summary>📖 점수·지표 읽는 법 (눌러서 접기)</summary>
+    <div class="explain-body">
+      <p><b>px점수 (wu_score 컬럼)</b> — 네 가지를 "그날 전체 유니버스에서 몇 등인지"(백분위)로 바꿔
+      더한 값입니다. <b>0~4 범위</b>(4개 항 각 0~1, 보조항 결측=0.5), <b>높을수록 선호</b>, 같은 날
+      종목 간 순위가 의미. 네 항 = ①저변동60(60일 변동성 <b>낮을수록</b>↑ · 핵심, 실측 필수)
+      ②저회전율20(20일 회전율 <b>낮을수록</b>↑) ③저변동20(20일 변동성 <b>낮을수록</b>↑)
+      ④52주고근접(고점에 가까울수록↑).</p>
+
+      <p class="warnp">❓ <b>관전 포인트(사전 서약, PREREGISTER_px_a.md)</b> — ① 3년 walk-forward
+      test 구간 IC +0.139가 forward에서 재현되는가 ② lv_b 동결점수 대비 짝비교 우위(h20 diff
+      +0.083)가 유지되는가 ③ <b>post-hoc 출신</b>이라 h20뿐 아니라 별도 호라이즌(h10) 재현까지
+      통과해야 '유의'. 이 셋을 OOS 40거래일로 확인하는 게 이 페이지의 목적입니다.</p>
+
+      <p><b>변동성63</b> — 63거래일 일수익 표준편차(점수의 저변동60·저변동20과 유사한 참고 표시).
+      <b>고점대비%</b> — 52주 최고가 대비 현재가(0에 가까울수록 ④항 점수↑). <b>거래대금억</b> —
+      20일 평균 일거래대금(표시·가드용 — 5억 미만 제외. 점수 성분은 거래대금이 아니라 회전율).
+      <b>12-1모멘텀%·최근20일%·시총</b>은 참고용(점수 미포함).</p>
+    </div>
+  </details>
+
+  <div class="meta" id="meta"></div>
+
+  <div class="tabs">
+    <span class="tab active" data-mkt="all">전체</span>
+    <span class="tab" data-mkt="KOSPI">KOSPI</span>
+    <span class="tab" data-mkt="KOSDAQ">KOSDAQ</span>
+  </div>
+
+  <div class="filters">
+    <span class="flabel">필터:</span>
+    <span class="fbtn" data-f="top50">top50</span>
+    <span class="fbtn" data-f="nearhigh">고점 −10% 이내</span>
+    <span class="fbtn" data-f="amtlow">거래대금 ≤ 50억</span>
+    <span class="fbtn" data-f="f5pos">외인5일 +</span>
+    <span class="fbtn" data-f="i5pos">기관5일 +</span>
+    <span class="fbtn" data-f="any5pos">외인·기관 한쪽 +</span>
+    <span class="fcount" id="fcount"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="tbl"><thead></thead><tbody>
+      <tr><td colspan="20" class="loading">데이터 불러오는 중…</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+// 표시 컬럼 정의: [CSV키, 라벨, 타입, 툴팁]
+const COLS = [
+  ['rank','#','int','그날 px_a 전체 유니버스 단일 순위'],
+  ['wu_score','px점수','score','저변동60+저회전율20+저변동20+52주고근접 순위합(0~4). 높을수록 선호'],
+  ['name','종목','str',''],
+  ['ticker','코드','str',''],
+  ['market','시장','str',''],
+  ['sector','업종','str','업종(sector_cache 기준, 전체 유니버스라 일부 빈칸)'],
+  ['mcap_조','시총(조)','num2','당일 종가×상장주식수. 참고용(점수 미포함)'],
+  ['lv63','변동성63','num4','63거래일 일수익 표준편차. 낮을수록 점수↑ (핵심, 실측 필수)'],
+  ['nh252_%','고점대비%','signed','52주 최고가 대비. 0에 가까울수록 점수↑'],
+  ['amt20_억','거래대금억','num1','20일 평균 일거래대금. 낮을수록 점수↑ (5억 미만 가드 제외)'],
+  ['mom12_%','12-1모멘텀%','signed','참고용(점수 미포함)'],
+  ['r20d_%','최근20일%','signed','참고용(점수 미포함)'],
+  ['foreign_5d_억','외인5일','signed','외국인 최근5거래일 순매수(억, KIS). 적재된 날만 합산(4일 미만이면 빈칸)'],
+  ['foreign_20d_억','외인20일','signed','외국인 최근20거래일 순매수(억). 15일 미만 적재 종목은 빈칸'],
+  ['inst_5d_억','기관5일','signed','기관 최근5거래일 순매수(억, KIS). 적재된 날만 합산(4일 미만이면 빈칸)'],
+  ['inst_20d_억','기관20일','signed','기관 최근20거래일 순매수(억). 15일 미만 적재 종목은 빈칸'],
+  ['v3_bucket','v3참고','v3','v3 스크리너 버킷(비교용 — 섞지 않음. 전체 유니버스라 대부분 빈칸)'],
+];
+
+let curMkt = 'all';
+let sortKey = 'rank', sortAsc = true;
+let allRows = [];
+let activeF = new Set();
+
+const FILTERS = {
+  top50:    r => parseInt(r['top50']) === 1,
+  nearhigh: r => parseFloat(r['nh252_%']) >= -10,
+  amtlow:   r => parseFloat(r['amt20_억']) <= 50,
+  f5pos:    r => parseFloat(r['foreign_5d_억']) > 0,
+  i5pos:    r => parseFloat(r['inst_5d_억']) > 0,
+  any5pos:  r => parseFloat(r['foreign_5d_억']) > 0 || parseFloat(r['inst_5d_억']) > 0,
+};
+
+function applyFilters(){
+  let rows = allRows;
+  if(curMkt !== 'all') rows = rows.filter(r => r['market'] === curMkt);
+  rows = rows.filter(r => [...activeF].every(f => {
+    const fn = FILTERS[f]; if(!fn) return true;
+    return fn(r) === true;   // NaN 비교는 false → 제외
+  }));
+  render(rows.slice());
+  const fc = document.getElementById('fcount');
+  if(fc) fc.textContent = (activeF.size || curMkt!=='all')
+    ? `${rows.length} / ${allRows.length} 종목 (필터 적용)`
+    : `${allRows.length} 종목`;
+}
+
+function fmt(v, type){
+  if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
+  if(type==='int'){const n=parseInt(v);return isNaN(n)?'<span class="v3">-</span>':n}
+  if(type==='score'){const n=parseFloat(v);return isNaN(n)?'-':'<span class="score">'+n.toFixed(3)+'</span>'}
+  if(type==='num1'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(1)}
+  if(type==='num2'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(2)}
+  if(type==='num4'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(4)}
+  if(type==='signed'){const n=parseFloat(v);if(isNaN(n))return '-';
+    return '<span class="'+(n>=0?'pos':'neg')+'">'+(n>=0?'+':'')+n.toFixed(1)+'</span>'}
+  if(type==='v3') return '<span class="v3">'+v+'</span>';
+  return v;
+}
+
+function parseCSV(txt){
+  const lines = txt.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.length);
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line=>{
+    const vals = line.split(',');   // 간단 파서(값에 콤마 없음 가정)
+    const row = {};
+    headers.forEach((h,i)=> row[h.trim()] = (vals[i]??'').trim());
+    return row;
+  });
+}
+
+function render(rows){
+  const thead = document.querySelector('#tbl thead');
+  const tbody = document.querySelector('#tbl tbody');
+  thead.innerHTML = '<tr>' + COLS.map(c=>
+    `<th data-key="${c[0]}"${c[3]?` title="${c[3]}"`:''}>${c[1]}${sortKey===c[0]?(sortAsc?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+  rows.sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    const nx=parseFloat(x), ny=parseFloat(y);
+    if(!isNaN(nx)&&!isNaN(ny)){x=nx;y=ny}
+    if(x<y)return sortAsc?-1:1; if(x>y)return sortAsc?1:-1; return 0;
+  });
+  tbody.innerHTML = rows.map(r=>{
+    const isTop = parseInt(r['top50']) === 1;
+    return '<tr'+(isTop?' class="top50row"':'')+'>'+COLS.map(c=>`<td>${fmt(r[c[0]],c[2])}</td>`).join('')+'</tr>';
+  }).join('');
+  thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.key; if(k===sortKey){sortAsc=!sortAsc}else{sortKey=k;sortAsc=(k==='rank')}
+    render(rows);
+  });
+}
+
+function load(){
+  fetch('latest_px.csv?ts='+Date.now())
+    .then(r=>{if(!r.ok)throw 0;return r.text()})
+    .then(txt=>{
+      allRows = parseCSV(txt);
+      sortKey='rank'; sortAsc=true;
+      applyFilters();
+      const nuni = allRows.length? allRows[0]['n_universe']:'-';
+      document.getElementById('meta').innerHTML =
+        `<div class="chip">모델 <b>px_a</b> (가격 4팩터)</div>`+
+        `<div class="chip">run <b>${allRows.length? '유효':''} ${allRows.length}</b> 종목</div>`+
+        `<div class="chip">유니버스 <b>${nuni}</b></div>`+
+        `<div class="chip">구성 <b>저변동60+저회전율20+저변동20+52주고근접</b></div>`+
+        `<div class="chip">가드 <b>변동성·거래정지·점프컷·유동≥5억</b></div>`;
+    })
+    .catch(()=>{
+      document.querySelector('#tbl tbody').innerHTML=
+        '<tr><td colspan="20" class="loading">데이터 없음 (latest_px.csv)</td></tr>';
+    });
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  curMkt = t.dataset.mkt;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x===t));
+  sortKey='rank'; sortAsc=true;
+  applyFilters();
+});
+document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
+  const f=b.dataset.f;
+  if(activeF.has(f)){activeF.delete(f); b.classList.remove('on');}
+  else{activeF.add(f); b.classList.add('on');}
+  sortKey='rank'; sortAsc=true;
+  applyFilters();
+});
+document.getElementById('foot').innerHTML =
+  '※ <b>테스트·관측</b> 페이지 · px점수 높을수록 선호(매수 아님) · v3·large·lowvol·wu_a 와 별개 관측 모델<br>'+
+  '발견은 walk-forward 스캔(post-hoc) — 판정은 첫 적재(2026-08-10) 후 OOS 40거래일(§11, h10 재현 포함) · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
+load();
+</script>
+</body>
+</html>
