@@ -29,6 +29,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# [2026-08-11] 2.66 침묵 실패 수정: 8/09 RETIRED 제외 패치가 v3.RETIRED 를 참조하는데
+#   import 가 누락돼 NameError 로 즉사(에러는 stderr 라 auto_run.log 에 안 남았음 — 실측).
+#   v3_rescore 부재/실패 시엔 기존 동작(전 모델 동결)으로 폴백.
+try:
+    import v3_rescore as v3
+except Exception:
+    class v3:
+        RETIRED = set()
+
 HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "history.db"
 

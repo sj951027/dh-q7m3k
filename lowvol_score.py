@@ -226,12 +226,22 @@ def run(mode_full=False, only_run=None):
     else:
         df['short_vol_ratio'] = float('nan')   # short_flows 부재 시에도 동작
 
-    # 부분적재일 제외(완전성)
-    rc = df.groupby('run_id').size()
-    med = rc.median()
-    bad = set(rc[rc < med*0.5].index)
+    # 부분적재일 제외(완전성) — [2026-08-11 교정] stage3 행수 기준 → stage1 행수 기준.
+    #   근거: 약세장에서 stage3(추천)가 실제로 축소되면 정상 run 이 부분실행으로 오탐됨
+    #   (실측: 20260723·20260804~0810 6개 run 오탐 제외, stage1 은 2,270~2,300행 정상 —
+    #    리더보드 §28-2 게이트 교정과 동일 원리). 파이프라인 완주 여부는 stage1 이 판정.
+    try:
+        s1 = pd.read_sql("SELECT run_id, COUNT(*) n FROM stage1_oversold GROUP BY run_id",
+                         con).set_index('run_id')['n']
+        s1.index = s1.index.astype(str)
+        med1 = s1.median()
+        bad = set(s1[s1 < med1 * 0.5].index) | (set(df.run_id.unique()) - set(s1.index))
+        bad &= set(df.run_id.unique())
+    except Exception:   # stage1 부재(구 환경) 폴백: 종전 stage3 기준
+        rc = df.groupby('run_id').size()
+        bad = set(rc[rc < rc.median() * 0.5].index)
     if bad:
-        print(f"[완전성] 부분적재 의심 run 제외: {sorted(bad)}")
+        print(f"[완전성] 부분실행 의심 run 제외(stage1 기준): {sorted(bad)}")
     df = df[~df.run_id.isin(bad)].copy()
 
     if only_run:
