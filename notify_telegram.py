@@ -178,6 +178,36 @@ def _model_status_lines():
             k = max(0, min(8, round(8 * oos / min_oos)))
             return "▓" * k + "░" * (8 - k)
 
+        # 2026-08-12 사용자 결정: 선두 모델의 최신 run 유니버스 크기 병기.
+        #   근거: lv 유니버스가 381→26으로 마르는 걸 표시로 알 수 없었음(8/12 발견).
+        #   판정 표본이 얇아지는 걸 실시간 인지하는 용도 — 표시 전용, 실패해도 생략(비치명).
+        def uni_size(model):
+            try:
+                import sqlite3
+                con = sqlite3.connect(f"file:{Path(__file__).resolve().parent / 'history.db'}?mode=ro",
+                                      uri=True)
+                for tbl, mcol in (("v3_scores", "model_id"), ("lowvol_scores", "model_id"),
+                                  ("wu_scores", "model_id"), ("large_final", None)):
+                    try:
+                        if mcol:
+                            r = con.execute(
+                                f"SELECT COUNT(*) FROM {tbl} WHERE {mcol}=? AND run_id="
+                                f"(SELECT MAX(run_id) FROM {tbl} WHERE {mcol}=?)",
+                                (model, model)).fetchone()
+                            if r and r[0]:
+                                con.close(); return r[0]
+                        elif model == "ls_t1":
+                            r = con.execute("SELECT COUNT(*) FROM large_final WHERE run_id="
+                                            "(SELECT MAX(run_id) FROM large_final)").fetchone()
+                            if r and r[0]:
+                                con.close(); return r[0]
+                    except Exception:
+                        continue
+                con.close()
+            except Exception:
+                pass
+            return None
+
         # 2026-08-11 사용자 결정: '모델 관측 현황' 헤더 제거 — 제목 아래 리더보드 링크가 그 역할.
         out = []
         for fam, emoji, label in FAMILY:
@@ -193,14 +223,18 @@ def _model_status_lines():
                     best, bh, bs = m, h, s
             if best is None:
                 m0 = max(ms, key=lambda m: m.get("oos_days", 0))
+                u = uni_size(m0["model"])
+                u_s = f" · uni {u}" if u else ""
                 out.append(f"{emoji} {label} — <b>{m0['model']}</b> 관측 시작 · "
-                           f"{bar(m0['oos_days'])} {m0['oos_days']}/{min_oos}일")
+                           f"{bar(m0['oos_days'])} {m0['oos_days']}/{min_oos}일{u_s}")
                 continue
             v = best.get("verdict", "노이즈")
             v_s = "" if v == "노이즈" else f" · {v}"
+            u = uni_size(best["model"])
+            u_s = f" · uni {u}" if u else ""
             out.append(
                 f"{emoji} {label} — 선두 <b>{best['model']}</b> · {bar(best['oos_days'])} "
-                f"{best['oos_days']}/{min_oos}일 · IC {bs['ic']:+.2f}({bh}·n{bs['n']}){v_s}")
+                f"{best['oos_days']}/{min_oos}일 · IC {bs['ic']:+.2f}({bh}·n{bs['n']}){u_s}{v_s}")
         out.append("※ 참고용 · 계열 간 IC 비교 금지 · 상세는 리더보드")
         return out
     except Exception:
