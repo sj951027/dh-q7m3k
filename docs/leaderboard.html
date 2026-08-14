@@ -53,6 +53,9 @@
   <h1>📊 모델 리더보드</h1>
   <div class="sub" id="meta">leaderboard.json 로딩 중…</div>
 
+  <!-- [2026-08-14] 요약 카드 + 판정 캘린더 — 표를 안 읽어도 3초 만에 상태 파악 (표시 전용, JS가 채움) -->
+  <div id="summary" style="display:none;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:12px;line-height:1.9"></div>
+
   <div class="warn" id="rulebox">
     <b>§11 판정 규칙</b> — OOS 40거래일 미만은 숫자가 좋아 보여도 무조건 <b>노이즈</b>(표본 부족 기본값).
     트랙 간 IC 절대값 비교 금지(유니버스가 다름). h=20d가 주지표, h5는 보조.
@@ -109,7 +112,18 @@
 
       <p><b>트랙 = 모델이 뛰는 리그</b> — v3(과매도 중소형주) · lowvol(저변동) ·
         wu(전체 종목)는 고르는 종목 풀 자체가 다르다. 반이 다르면 등수 비교가 무의미하듯,
-        <b>트랙이 다른 모델끼리 IC 크기를 직접 비교하면 안 된다.</b> 같은 트랙 안에서만 비교.</p>
+        <b>트랙이 다른 모델끼리 IC 크기를 직접 비교하면 안 된다.</b> 같은 트랙 안에서만 비교.
+        트랙을 건너 비교하고 싶으면 아래 <b>💼 공통 잣대 모의계좌</b>(같은 기간·같은 규칙·
+        같은 벤치마크)를 볼 것.</p>
+
+      <p><b>❓ IC는 낮은데 모의계좌 수익이 더 높은 모델이 있다?</b> (예: lv_a vs lv_b) —
+        모순이 아니라 <b>재는 게 다르기 때문</b>이다. IC는 유니버스 <b>전체</b> 순위를 얼마나
+        잘 맞추나(줄 세우기 실력), 모의계좌는 <b>상위 20개만</b>의 평균 수익(꼭대기의 성적).
+        예컨대 lv_a의 반전 항은 전체 순위를 흐트러뜨려 IC를 깎지만, 반등장에선 상위 20에
+        "지난주 급락한 저변동주"를 끼워 넣어 한 방 수익을 만든다 — 대신 변동성·MDD가 커진다
+        (공짜 아님). 통계적으로 안정적인 건 IC(표본 전체 사용)이고, 바스켓 수익은 소수 급등
+        종목·짧은 창에 좌우되는 노이즈가 크다. 그래서 <b>판정(§11)은 IC가 정본</b>이고
+        모의계좌는 "실전 감각" 참고용이다.</p>
     </div>
   </details>
 
@@ -183,8 +197,18 @@
       .then(r=>r.ok?r.json():null).catch(()=>null)
   ])
     .then(([d,hist])=>{
-      const ms=(d.models||[]).slice();
-      ms.sort((a,b)=>{
+      // ---- [2026-08-14] 간단히/자세히 보기 + 은퇴 접기 (표시 전용) ----
+      // RETIRED: 2026-08-09 §11 첫 판정 기각·동결(VERDICT_20260809.md) — 역사 기록으로만 표시.
+      //   json의 '유의' 라벨은 '자기 IC의 통계 유의'지 챔피언 대비 채택이 아니라서 그대로 두면
+      //   오독을 유발 → 표시에서 '기각·은퇴'로 덮어씀(데이터 무변경).
+      const RETIRED=new Set(['v31a','v31b','v31c','v31d','v31f','v31g']);
+      const TRACK_ORDER=['v3','lowvol','wu','large'];
+      const MINOOS=d.min_oos||40;
+      const VIEW={mode:'simple', retired:false};
+      const badge2=(m)=> RETIRED.has(m.model)
+        ? '<span class="badge b-noise" title="2026-08-09 §11 판정: 챔피언 v30 대비 기각 → 동결·은퇴 (역사 기록)">🪦 기각·은퇴</span>'
+        : badge(m.verdict);
+      const byH20=(a,b)=>{
         const ah=(a.h20&&a.h20.n>0)?a.h20.ic:null, bh=(b.h20&&b.h20.n>0)?b.h20.ic:null;
         if(ah!=null&&bh!=null) return bh-ah;
         if(ah!=null) return -1; if(bh!=null) return 1;
@@ -192,8 +216,14 @@
         if(a5!=null&&b5!=null) return b5-a5;
         if(a5!=null) return -1; if(b5!=null) return 1;
         return (b.oos_days||0)-(a.oos_days||0);
-      });
-      const rows=ms.map(m=>{
+      };
+      const FULL_HEAD='<tr><th>트랙</th><th>모델</th><th>등록일</th><th>OOS</th>'
+        +'<th>h1 IC</th><th>h3 IC</th><th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th>'
+        +'<th>h5 추이</th><th>h10 IC</th><th>h20 IC</th><th>n</th><th>h20 95%CI</th>'
+        +'<th>h20 초과%p</th><th>판정</th><th>사유</th></tr>';
+      const SIMPLE_HEAD='<tr><th>모델</th><th title="쌓인 검증일 / 판정까지 남은 거래일">OOS · 판정</th>'
+        +'<th>h20 IC (n)</th><th>h20 95%CI</th><th>h20 초과%p</th><th>h5 IC (n)</th><th>판정</th></tr>';
+      const rowFull=(m)=>{
         const h20=m.h20||{}, h5=m.h5||{};
         return '<tr>'
           +'<td class="track">'+(m.track||'')+'</td>'
@@ -212,18 +242,95 @@
           +'<td>'+(h20.n||0)+'</td>'
           +'<td>'+(h20.n>0?sci(h20.ci):'<span class="na">-</span>')+'</td>'
           +'<td>'+exc(m.exc20)+'</td>'
-          +'<td>'+badge(m.verdict)+'</td>'
+          +'<td>'+badge2(m)+'</td>'
           +'<td class="why">'+(m.why||'')+'</td>'
           +'</tr>';
-      }).join('');
-      document.getElementById('tbody').innerHTML=rows||'<tr><td colspan="18" class="err">모델 없음</td></tr>';
+      };
+      const rowSimple=(m)=>{
+        const h20=m.h20||{}, h5=m.h5||{};
+        const left=MINOOS-(m.oos_days||0);
+        const dday=left<=0?'<span class="pos" title="판정 표본 도달">'+m.oos_days+'/'+MINOOS+' 도달</span>'
+                         :(m.oos_days||0)+'/'+MINOOS+' · <b>D-'+left+'</b>';
+        return '<tr>'
+          +'<td>'+mlink(m.model)+(RETIRED.has(m.model)?' 🪦':'')+'</td>'
+          +'<td>'+dday+'</td>'
+          +'<td>'+(h20.n>0?sic(h20.ic)+' <span class="ci">('+h20.n+')</span>':'<span class="na">n/a</span>')+'</td>'
+          +'<td>'+(h20.n>0?sci(h20.ci):'<span class="na">-</span>')+'</td>'
+          +'<td>'+exc(m.exc20)+'</td>'
+          +'<td>'+(h5.n>0?sic(h5.ic)+' <span class="ci">('+h5.n+')</span>':'<span class="na">n/a</span>')+'</td>'
+          +'<td title="'+String(m.why||'').replace(/"/g,'&quot;')+'">'+badge2(m)+'</td>'
+          +'</tr>';
+      };
+      function render(){
+        const all=(d.models||[]).slice();
+        const shown=all.filter(m=>VIEW.retired||!RETIRED.has(m.model));
+        const nCols=VIEW.mode==='full'?18:7;
+        document.querySelector('#tbl thead').innerHTML=VIEW.mode==='full'?FULL_HEAD:SIMPLE_HEAD;
+        let html='';
+        if(VIEW.mode==='full'){
+          shown.sort(byH20);
+          html=shown.map(rowFull).join('');
+        } else {
+          for(const trk of TRACK_ORDER){
+            const g=shown.filter(m=>m.track===trk).sort(byH20);
+            if(!g.length) continue;
+            const nm={v3:'🔵 과매도 v3',lowvol:'🟢 저변동(+모멘텀 관측)',wu:'🟣 전체종목',large:'🏛️ 대형 가치(판정 60~120d)'}[trk]||trk;
+            html+='<tr><td colspan="'+nCols+'" style="background:var(--card);color:var(--sub);font-weight:600;text-align:left">'+nm+'</td></tr>';
+            html+=g.map(rowSimple).join('');
+          }
+        }
+        document.getElementById('tbody').innerHTML=html||'<tr><td colspan="'+nCols+'" class="err">모델 없음</td></tr>';
+        const nRet=all.filter(m=>RETIRED.has(m.model)).length;
+        document.getElementById('vmode').textContent=VIEW.mode==='full'?'간단히 보기':'자세히 보기(전체 컬럼)';
+        document.getElementById('vret').textContent=(VIEW.retired?'🪦 은퇴 숨기기':'🪦 은퇴 '+nRet+'개 보기');
+      }
+      // ---- [2026-08-14] 요약 카드 + 판정 캘린더 (표시 전용 · 전부 json에서 파생) ----
+      try{
+        const v30=all.find(m=>m.model==='v30');
+        const champ=v30?('🏆 <b>지금 기준</b> — 챔피언 <b>v30</b> '+badge(v30.verdict)
+          +' <span class="ci">('+v30.oos_days+'일 · h20 '+(v30.h20&&v30.h20.ic!=null?(v30.h20.ic>0?'+':'')+v30.h20.ic.toFixed(2):'-')+')</span>'
+          +' · 저변동 표시 기준 <b>lv_b</b> <span class="ci">(7/25 전환)</span>'):'';
+        // 판정 캘린더: 미은퇴·40일 미달 모델 — 트랙별 압축(선두만 이름, 나머지 묶음) D-day 순
+        const wait=all.filter(m=>!RETIRED.has(m.model)&&(m.oos_days||0)<MINOOS&&m.track!=='large')
+          .map(m=>({m:m.model, t:m.track, d:MINOOS-(m.oos_days||0)})).sort((a,b)=>a.d-b.d);
+        const done=all.filter(m=>!RETIRED.has(m.model)&&(m.oos_days||0)>=MINOOS&&m.track!=='large');
+        const LEAD={lowvol:'lv_b', wu:'sv_a'};   // 각 트랙 대표(표시·관심 기준) — 판정 후 갱신
+        const parts=[];
+        for(const trk of [...new Set(wait.map(x=>x.t))]){
+          const g=wait.filter(x=>x.t===trk);
+          const lead=g.find(x=>x.m===LEAD[trk])||g[0];
+          const rest=g.filter(x=>x!==lead);
+          let s='<b>'+lead.m+'</b> D-'+lead.d;
+          if(rest.length===1) s+=' · <b>'+rest[0].m+'</b> D-'+rest[0].d;
+          else if(rest.length>1) s+=' <span class="ci">(외 '+rest.length+'개 D-'
+            +Math.min(...rest.map(x=>x.d))+'~'+Math.max(...rest.map(x=>x.d))+')</span>';
+          parts.push(s);
+        }
+        const cal='📅 <b>판정 캘린더</b> — '
+          +(done.length?done.map(x=>'<b>'+x.model+'</b> <span class="pos">도달</span>').join(' · ')+' · ':'')
+          +parts.join(' · ')
+          +' · <span class="ci">ls_t1은 h60~120d 별도(11월~)</span>';
+        document.getElementById('summary').innerHTML=champ+'<br>'+cal;
+        document.getElementById('summary').style.display='block';
+      }catch(e){}
+
+      const ctl=document.createElement('div');
+      ctl.style.cssText='display:flex;gap:8px;margin:0 0 8px';
+      ctl.innerHTML='<button id="vmode" class="fbtn" style="background:var(--card);border:1px solid var(--line);'
+        +'border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub)"></button>'
+        +'<button id="vret" style="background:var(--card);border:1px solid var(--line);'
+        +'border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub)"></button>';
+      document.getElementById('tbl').parentNode.insertBefore(ctl, document.getElementById('tbl'));
+      ctl.querySelector('#vmode').onclick=()=>{VIEW.mode=VIEW.mode==='full'?'simple':'full';render();};
+      ctl.querySelector('#vret').onclick=()=>{VIEW.retired=!VIEW.retired;render();};
+      render();
       const g=d.gates||{};
       const gp=(g.partial_run||[]).join(', '), gd=(g.double_run||[]).join(', ');
       document.getElementById('gates').textContent=
         '게이트 제외 — 부분실행: '+(gp||'없음')+' · 이중실행: '+(gd||'없음')
         +' · 판정 기준 OOS '+(d.min_oos||40)+'거래일';
       document.getElementById('meta').textContent=
-        '모델 '+ms.length+'개 · '+(d.note||'');
+        '모델 '+(d.models||[]).length+'개 · '+(d.note||'');
     })
     .catch(e=>{
       document.getElementById('tbody').innerHTML=
