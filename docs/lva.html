@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>저변동 트랙 (lv_b) · 테스트·관측</title>
+<title>저변동 원본 (lv_a) · 테스트·관측</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -66,7 +66,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🧪 저변동 트랙 <span style="color:var(--accent)">lv_b</span> · 테스트·관측</h1>
+  <h1>🧪 저변동 원본 <span style="color:var(--accent)">lv_a</span> · 테스트·관측</h1>
   <div class="sub">저변동 + ROE 순위합 (반전 제외) · v3 과매도 스크리너와 별개 트랙</div>
 
   <div class="warn">
@@ -79,16 +79,17 @@
   <details class="explain" open>
     <summary>📖 점수·지표 읽는 법 (눌러서 접기)</summary>
     <div class="explain-body">
-      <p><b>lv_b점수 (lowvol_score)</b> — 이 트랙의 핵심 순위. 두 가지를 "그날 전체 종목 중 몇 등인지"(백분위)로
-      바꿔 더한 값입니다. <b>0~2 범위</b>(2개 항 각 0~1)이고 <b>높을수록 선호</b>. 절대값 자체보다
-      <b>같은 날 종목 간 순위</b>가 의미입니다(날마다 분포가 달라 어제 1.7과 오늘 1.7은 다름).
-      두 항 = ①저변동(변동성 낮을수록↑) ②ROE(높을수록↑).</p>
+      <p><b>lv_a점수 (lowvol_score)</b> — 세 가지를 "그날 전체 종목 중 몇 등인지"(백분위)로
+      바꿔 더한 값입니다. <b>0~3 범위</b>(3개 항 각 0~1)이고 <b>높을수록 선호</b>. 절대값 자체보다
+      <b>같은 날 종목 간 순위</b>가 의미입니다.
+      세 항 = ①저변동(변동성 낮을수록↑) ②ROE(높을수록↑) ③단기반전(지난주 더 빠졌을수록↑).</p>
 
-      <p><b>왜 lv_b 인가</b> — 원래 이 페이지는 반전 항까지 더한 lv_a(저변동+ROE+단기반전)를 보여줬는데,
-      백테스트·관측에서 <b>반전 항이 오히려 신호를 깎는 패턴</b>이 일관되게 나와(lv_b &gt; lv_a)
-      2026-07-25부터 <b>표시 기준을 lv_b 로 전환</b>했습니다. lv_a·lv_short(공매도 추가) 등 나머지 모델은
-      계속 적재·측정 중이며, 모델 간 비교는 <a href="leaderboard.html" style="color:var(--accent)">리더보드</a>에서
-      봅니다. ⚠️ lv_b 도 검증 전(OOS 40거래일 미달) — 판정은 리더보드 몫입니다.</p>
+      <p><b>이 페이지는 뭐냐 — lv_a는 "원본" 모델</b> — 공식 표시 기준은 2026-07-25부터
+      <a href="lowvol.html" style="color:var(--accent)">lv_b(반전 제외)</a>입니다. 순위 맞히기 실력(IC)은
+      lv_b가 앞서지만, 리더보드의 모의계좌에서는 반등장에 반전 항이 튀는 종목을 잡아 lv_a의 수익이
+      더 높게 나오는 국면이 관측돼(변동성·낙폭도 더 큼 — 공짜 아님) <b>비교 열람용</b>으로 이 페이지를
+      둡니다. 어느 쪽이 진짜인지는 <a href="leaderboard.html" style="color:var(--accent)">리더보드</a>의
+      §11 판정이 가립니다. ⚠️ lv_a 도 검증 전 — 매수신호 아닙니다.</p>
 
       <p class="warnp">❓ <b>점수 높으면 오르나? — 시장 방향대로 작동합니다.</b> (구 lv_a 기준) 18일 분석 기준,
       lv점수는 한쪽이 아니라 <b>양방향</b>으로 움직입니다(점수 높을수록 더 뚜렷):<br>
@@ -109,7 +110,7 @@
       lv점수에는 <b>안 들어가는 참고 지표</b>지만, "기관이 팔고 있는데 저변동인 건지" 같은 맥락 판단에 씁니다.
       예: 외인20일 +135 = 한 달간 외국인이 135억 순매수. 단 순매수(flow)는 지분율 자체와는 다름에 유의.</p>
 
-      <p><b>나머지 컬럼</b>: <b>1주%/1개월%</b>=그 기간 등락(참고용 — lv_b 점수에는 안 들어감).
+      <p><b>나머지 컬럼</b>: <b>1주%</b>=최근 1주 등락 — lv_a에서는 참고가 아니라 <b>반전 항 그 자체</b>(더 빠졌을수록 점수↑). <b>1개월%</b>=참고용.
       <b>52주고점대비%</b>=1년 최고가 대비 낙폭. <b>과매도</b>=v3 과매도 점수(30~70 구간만 이 트랙 대상).
       <b>거래대금억</b>=1개월 평균 일거래대금(5억 미만은 제외=유동성 하한). <b>분기YoY%</b>=분기 영업이익 전년比.</p>
 
@@ -148,14 +149,14 @@
 <script>
 // 표시 컬럼 정의: [CSV키, 라벨, 타입, 툴팁]
 const COLS = [
-  ['rank','#','int','그날 lv_b점수 순위 (★강조·상위10% 필터도 이 순위 기준)'],
-  ['lowvol_score','lv_b점수','score','저변동+ROE 순위합(0~2, 반전 제외). 높을수록 선호. 같은 날 종목 간 순위가 핵심'],
+  ['rank','#','int','그날 lv_a점수 순위 (★강조·상위10% 필터도 이 순위 기준)'],
+  ['lowvol_score','lv_a점수','score','저변동+ROE+단기반전 순위합(0~3). 높을수록 선호. 같은 날 종목 간 순위가 핵심'],
   ['name','종목','str',''],
   ['ticker','코드','str',''],
   ['sector','업종','str','업종(sector_cache 기준)'],
   ['realized_vol','실현변동성','num4','최근21일 일수익 표준편차. 작을수록 차분(0.025≈하루±2.5%). 낮을수록 점수↑'],
   ['roe_value','ROE%','num1','자기자본이익률(EPS/BPS). 높을수록 우량=점수↑'],
-  ['return_1w_%','1주%','signed','최근 1주 등락(참고 — lv_b 점수에는 미반영)'],
+  ['return_1w_%','1주%','signed','최근 1주 등락 — lv_a 반전 항(더 빠졌을수록 점수 가산)'],
   ['return_1m_%','1개월%','signed','최근 1개월 등락(참고)'],
   ['drawdown_52w_high_%','52주고점대비%','signed','1년 최고가 대비 낙폭'],
   ['oversold_score','과매도','num1','v3 과매도 점수. 이 트랙은 30~70 구간만 대상(극단 제외)'],
@@ -246,7 +247,7 @@ function load(mkt){
   curMkt = mkt;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mkt===mkt));
   document.querySelector('#tbl tbody').innerHTML='<tr><td colspan="20" class="loading">불러오는 중…</td></tr>';
-  fetch('latest_'+mkt+'_lowvol.csv?ts='+Date.now())
+  fetch('latest_'+mkt+'_lva.csv?ts='+Date.now())
     .then(r=>{if(!r.ok)throw 0;return r.text()})
     .then(txt=>{
       const rows = parseCSV(txt);
@@ -257,15 +258,15 @@ function load(mkt){
       applyFilters();
       const nuni = rows.length? rows[0]['n_universe']:'-';
       document.getElementById('meta').innerHTML =
-        `<div class="chip">모델 <b>lv_b</b></div>`+
+        `<div class="chip">모델 <b>lv_a</b></div>`+
         `<div class="chip">종목 <b>${rows.length}</b></div>`+
         `<div class="chip">유니버스 <b>${nuni}</b></div>`+
-        `<div class="chip">구성 <b>저변동+ROE (반전 제외)</b></div>`+
+        `<div class="chip">구성 <b>저변동+ROE+단기반전</b></div>`+
         `<div class="chip">유니버스컷 <b>과매도30~70·유동≥5억</b></div>`;
     })
     .catch(()=>{
       document.querySelector('#tbl tbody').innerHTML=
-        '<tr><td colspan="20" class="loading">데이터 없음 (latest_'+mkt+'_lowvol.csv)</td></tr>';
+        '<tr><td colspan="20" class="loading">데이터 없음 (latest_'+mkt+'_lva.csv)</td></tr>';
     });
 }
 

@@ -169,7 +169,7 @@
       +(o.mean>0?'+':'')+o.mean.toFixed(1)+'</span>'; };
 
   // 2026-08-11: 모델 셀 → 해당 표시 페이지 링크 (페이지가 실존하는 모델만. 은퇴 모델·페이지 없는 모델은 링크 없음)
-  const MODEL_PAGES={ 'v30':'filter.html', 'lv_b':'lowvol.html', 'wu_a':'wu.html',
+  const MODEL_PAGES={ 'v30':'filter.html', 'lv_b':'lowvol.html', 'lv_a':'lva.html', 'wu_a':'wu.html',
     'mom_a':'mom.html', 'qs_a':'qs.html', 'ls_t1':'_large_test.html', 'px_a':'px.html' };
   const mlink=(model)=>{ const p=MODEL_PAGES[model];
     return p ? '<a href="'+p+'"><b>'+model+'</b></a>' : '<b>'+(model||'')+'</b>'; };

@@ -196,11 +196,16 @@ def build_one(con, rid, mkt, sector_map=None):
 
 
 def main():
+    global MODEL
     ap = argparse.ArgumentParser(description=f"lowvol {MODEL} 관측 CSV 생성(로컬)")
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--db", default=str(DB_PATH))
     ap.add_argument("--docs", default=str(DOCS))
+    # [2026-08-14] lv_a 열람 페이지 배선(lva.html) — 기본 호출은 종전과 0-diff(lv_b·lowvol).
+    ap.add_argument("--model", default=MODEL, help="lowvol_scores 의 model_id (기본 lv_b)")
+    ap.add_argument("--suffix", default="lowvol", help="출력 파일명 latest_{mkt}_{suffix}.csv (기본 lowvol)")
     args = ap.parse_args()
+    MODEL = args.model
 
     con = sqlite3.connect(args.db)
     runs = pd.read_sql("SELECT DISTINCT run_id FROM lowvol_scores", con)
@@ -227,10 +232,10 @@ def main():
         if g is None:
             print(f"  ⚠️ {mkt}: run {rid} {MODEL} 데이터 없음 — 건너뜀")
             continue
-        for path in (docs / f"latest_{mkt}_lowvol.csv", HERE / f"latest_{mkt}_lowvol.csv"):
+        for path in (docs / f"latest_{mkt}_{args.suffix}.csv", HERE / f"latest_{mkt}_{args.suffix}.csv"):
             g.to_csv(path, index=False, encoding="utf-8-sig")
         n_uni = int(g["n_universe"].iloc[0]) if "n_universe" in g else len(g)
-        print(f"  ✓ {mkt}: {len(g)}종목(유니버스 {n_uni}) → docs/latest_{mkt}_lowvol.csv")
+        print(f"  ✓ {mkt}: {len(g)}종목(유니버스 {n_uni}) → docs/latest_{mkt}_{args.suffix}.csv")
         total += len(g)
     con.close()
     print(f"💾 lowvol({MODEL}) 관측 CSV 생성 — run {rid}, 합계 {total}종목.")

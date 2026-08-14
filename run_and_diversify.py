@@ -329,6 +329,13 @@ def main():
     if (HERE / "build_lowvol_filter.py").exists():
         run_script(["build_lowvol_filter.py"], "2.87단계: 저변동 트랙 lv_a 관측 CSV (섀도우)")
 
+    # 2.87c) 저변동 원본(lv_a) 관측 CSV — lva.html 이 fetch할 docs/latest_*_lva.csv 갱신.
+    #        2026-08-14 사용자 결정: 리더보드에서 lv_a 열람 배선(비교 관측용).
+    #        기본 호출(lv_b) 산출물과 완전 분리 — 표시 전용, 실패해도 비치명.
+    if (HERE / "build_lowvol_filter.py").exists():
+        run_script(["build_lowvol_filter.py", "--model", "lv_a", "--suffix", "lva"],
+                   "2.87c단계: 저변동 원본 lv_a 관측 CSV (섀도우)")
+
     # 2.87b) 모멘텀 대조 모델(mom_a) 관측 CSV — mom.html 이 fetch할 docs/latest_*_mom.csv 갱신.
     #        점수 적재는 2.86(lowvol_score)이 이미 처리(mom_a 는 lowvol_scores 공유, §15).
     #        표시 전용 신규 파일만 생성 — v3·large·lv_a 산출물 0-diff. 실패해도 비치명.
