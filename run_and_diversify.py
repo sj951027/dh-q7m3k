@@ -376,6 +376,11 @@ def main():
     if (HERE / "leaderboard.py").exists():
         run_script(["leaderboard.py"], "2.91단계: 전 트랙 리더보드 갱신 (leaderboard.json)")
 
+    # 2.915) 공통 잣대 모의계좌 JSON — leaderboard.html 하단 관측 섹션용 (2026-08-14).
+    #        판정(leaderboard.py)과 완전 분리 · 표시 전용 · 실패해도 비치명.
+    if (HERE / "build_cross_sim.py").exists():
+        run_script(["build_cross_sim.py"], "2.915단계: 공통 잣대 모의계좌 (관측, 판정 무관)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []

@@ -130,6 +130,9 @@
     <div class="foot" id="gates"></div>
   </div>
 
+  <!-- [2026-08-14] 공통 잣대 모의계좌 — 트랙 간 비교용 관측 섹션 (판정 무관, build_cross_sim.py) -->
+  <div id="crosssim" style="margin-top:18px"></div>
+
   <div class="foot">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는
     docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다.</div>
 </div>
@@ -228,6 +231,32 @@
         +' (파이프라인이 아직 안 돌았거나 경로 문제)</td></tr>';
       document.getElementById('meta').textContent='로드 실패';
     });
+
+  // ---- [2026-08-14] 공통 잣대 모의계좌 (관측 전용 · build_cross_sim.py → cross_sim.json) ----
+  fetch('cross_sim.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); })
+    .then(cs=>{
+      if(cs.status!=='ok'||!cs.panels) return;
+      const pn=(v,d)=>{ const s=(v>0?'+':'')+v.toFixed(d===undefined?1:d);
+        return '<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+s+'</span>'; };
+      let h='<div style="font-size:15px;font-weight:600;margin-bottom:4px">💼 공통 잣대 모의계좌 '
+        +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 같은 기간에 각 모델 상위'
+        +cs.topn+'을 매일 따라 샀다면 (ENTRY_LAG=1 · 수수료 0 · <b>관측 전용, §11 판정 무관</b>)</span></div>';
+      for(const p of cs.panels){
+        h+='<div class="foot" style="margin:8px 0 2px">'+p.label+' → '+p.end.slice(4,6)+'/'+p.end.slice(6)
+          +' · 전체상장EW '+pn(p.bench_cum)+'% · KOSPI '+pn(p.kospi_cum)+'%</div>'
+          +'<table style="margin-bottom:6px"><thead><tr><th>모델</th><th>누적수익%</th>'
+          +'<th title="공통벤치(전체상장 가드EW) 대비 일평균 초과, bp">벤치초과bp/일</th>'
+          +'<th>일변동성%</th><th title="최대낙폭 — 기간 중 고점 대비 최대 하락. 따라가려면 견뎌야 하는 멀미의 크기">MDD%</th><th>n일</th></tr></thead><tbody>';
+        for(const r of p.rows){
+          h+='<tr><td><b>'+r.model+'</b></td><td>'+pn(r.cum)+'</td><td>'+pn(r.exc_bp)+'</td>'
+            +'<td>'+r.vol.toFixed(2)+'</td><td>'+pn(r.mdd)+'</td><td>'+r.n+'</td></tr>';
+        }
+        h+='</tbody></table>';
+      }
+      h+='<div class="foot">⚠ 짧은 창·단일 국면·거래비용 0 — "이 기간 이 장에서"의 성적일 뿐 일반화 금지. '
+        +'통계적 판정은 위 §11 표가 정본.</div>';
+      document.getElementById('crosssim').innerHTML=h;
+    }).catch(()=>{});
 })();
 </script>
 </body>
