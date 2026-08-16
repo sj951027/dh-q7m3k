@@ -112,6 +112,7 @@ def main():
         bench_total = round(float(((1 + bench).cumprod().iloc[-1] - 1) * 100), 1)
         for r in rows:
             r["exc_cum"] = round(r["cum"] - bench_total, 1)   # 시장평균 대비 누적 %p (직관 표시용)
+            r["day_avg"] = round(((1 + r["cum"] / 100) ** (1 / max(r["n"], 1)) - 1) * 100, 2)  # 기하 일평균 %
         panels.append(dict(label=label, start=start, end=end,
                            bench_cum=round(float(((1 + bench).cumprod().iloc[-1] - 1) * 100), 1),
                            kospi_cum=kospi_cum, rows=rows))
