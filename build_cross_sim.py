@@ -32,10 +32,12 @@ MODELS = [
     ("wu_a",  "wu_scores",     "wu_score",       "wu_a",  "20260702"),
     ("sv_a",  "wu_scores",     "wu_score",       "sv_a",  "20260715"),
     ("qs_a",  "wu_scores",     "wu_score",       "qs_a",  "20260723"),
+    ("px_a",  "wu_scores",     "wu_score",       "px_a",  "20260810"),
 ]
+MIN_DAYS = 10   # 표시 기준: 공통창 유효 거래일 10 미만 모델은 자동 대기(가독성 — 창이 차면 저절로 등장)
 PANELS = [
     ("주력 공통창 (7/02~)", ["v30", "lv_b", "lv_a", "mom_a", "wu_a"], "20260702"),
-    ("전 모델 공통창 (7/24~ · 짧음)", ["v30", "lv_b", "lv_a", "mom_a", "wu_a", "sv_a", "qs_a"], "20260724"),
+    ("전 모델 공통창 (7/24~ · 짧음)", ["v30", "lv_b", "lv_a", "mom_a", "wu_a", "sv_a", "qs_a", "px_a"], "20260724"),
 ]
 
 
@@ -43,6 +45,7 @@ def main():
     hc = sqlite3.connect(f"file:{HERE/'history.db'}?mode=ro", uri=True)
     oc = sqlite3.connect(f"file:{OHLCV}?mode=ro", uri=True)
     scores = {}
+    reg_map = {name: reg for name, tbl, col, mid, reg in MODELS}
     for name, tbl, col, mid, reg in MODELS:
         scores[name] = pd.read_sql(
             f"SELECT run_id, ticker, {col} AS s FROM {tbl} WHERE model_id=? AND run_id>=?",
@@ -96,12 +99,19 @@ def main():
                     return None
                 return [c for c in sub.nlargest(TOPN, "s").ticker if c in R.columns]
             s = daily_series(top, start, end)
+            eff = max(0, int((s.index >= reg_map[m]).sum())) if m in reg_map else len(s)
+            if eff < MIN_DAYS:
+                print(f"  ⏳ {m}: 유효 {eff}거래일 < {MIN_DAYS} — 창이 찰 때까지 표시 대기")
+                continue
             st = stats(s)
             common = s.index.intersection(bench.index)
             st["exc_bp"] = round(float((s.reindex(common) - bench.reindex(common)).mean()) * 10000, 1)
             st["model"] = m
             rows.append(st)
         rows.sort(key=lambda r: -r["cum"])
+        bench_total = round(float(((1 + bench).cumprod().iloc[-1] - 1) * 100), 1)
+        for r in rows:
+            r["exc_cum"] = round(r["cum"] - bench_total, 1)   # 시장평균 대비 누적 %p (직관 표시용)
         panels.append(dict(label=label, start=start, end=end,
                            bench_cum=round(float(((1 + bench).cumprod().iloc[-1] - 1) * 100), 1),
                            kospi_cum=kospi_cum, rows=rows))
