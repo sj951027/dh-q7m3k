@@ -1,7 +1,15 @@
 {
-  "generated_at": "2026-08-14 20:27 KST",
+  "generated_at": "2026-08-17 20:34 KST",
   "runs": {
     "kospi": [
+      {
+        "run_id": "20260817",
+        "market_regime": "조정",
+        "regime_score": 2,
+        "usdkrw": 1412.6,
+        "foreign_5d": 51665.0,
+        "stage1_count": 729
+      },
       {
         "run_id": "20260814",
         "market_regime": "조정",
@@ -233,17 +241,17 @@
         "usdkrw": 1530.92,
         "foreign_5d": -175372.0,
         "stage1_count": 720
-      },
-      {
-        "run_id": "20260701",
-        "market_regime": "강세",
-        "regime_score": -4,
-        "usdkrw": 1557.44,
-        "foreign_5d": -174940.0,
-        "stage1_count": 723
       }
     ],
     "kosdaq": [
+      {
+        "run_id": "20260817",
+        "market_regime": "반등",
+        "regime_score": -2,
+        "usdkrw": 1413.3,
+        "foreign_5d": 39.0,
+        "stage1_count": 1583
+      },
       {
         "run_id": "20260814",
         "market_regime": "반등",
@@ -475,14 +483,6 @@
         "usdkrw": 1531.27,
         "foreign_5d": -1331.0,
         "stage1_count": 1541
-      },
-      {
-        "run_id": "20260701",
-        "market_regime": "약세",
-        "regime_score": -7,
-        "usdkrw": 1557.49,
-        "foreign_5d": -405.0,
-        "stage1_count": 1548
       }
     ]
   },
@@ -554,10 +554,10 @@
         }
       ],
       "meta": {
-        "run_id": "20260814",
+        "run_id": "20260817",
         "market_regime": "조정",
-        "regime_score": 0,
-        "usdkrw": 1411.68,
+        "regime_score": 2,
+        "usdkrw": 1412.6,
         "foreign_5d": 51665.0,
         "stage1_count": 729
       },
@@ -684,10 +684,10 @@
         }
       ],
       "meta": {
-        "run_id": "20260814",
+        "run_id": "20260817",
         "market_regime": "반등",
-        "regime_score": -3,
-        "usdkrw": 1411.67,
+        "regime_score": -2,
+        "usdkrw": 1413.3,
         "foreign_5d": 39.0,
         "stage1_count": 1583
       },
@@ -767,6 +767,16 @@
         "bucket": null
       },
       {
+        "name": "SK디앤디",
+        "ticker": "210980",
+        "appearances": 47,
+        "avg_score": 60.8,
+        "max_score": 94.0,
+        "v3_score": -999.0,
+        "grade": "EXCLUDE",
+        "bucket": "EXCLUDE"
+      },
+      {
         "name": "영풍",
         "ticker": "000670",
         "appearances": 46,
@@ -795,16 +805,6 @@
         "v3_score": null,
         "grade": null,
         "bucket": null
-      },
-      {
-        "name": "SK디앤디",
-        "ticker": "210980",
-        "appearances": 46,
-        "avg_score": 61.1,
-        "max_score": 94.0,
-        "v3_score": -999.0,
-        "grade": "EXCLUDE",
-        "bucket": "EXCLUDE"
       },
       {
         "name": "STX엔진",
@@ -899,6 +899,16 @@
     ],
     "kosdaq": [
       {
+        "name": "알엔투테크놀로지",
+        "ticker": "148250",
+        "appearances": 59,
+        "avg_score": 60.5,
+        "max_score": 94.3,
+        "v3_score": -999.0,
+        "grade": "EXCLUDE",
+        "bucket": "EXCLUDE"
+      },
+      {
         "name": "레이저옵텍",
         "ticker": "199550",
         "appearances": 58,
@@ -909,16 +919,6 @@
         "bucket": null
       },
       {
-        "name": "알엔투테크놀로지",
-        "ticker": "148250",
-        "appearances": 58,
-        "avg_score": 60.1,
-        "max_score": 94.3,
-        "v3_score": -999.0,
-        "grade": "EXCLUDE",
-        "bucket": "EXCLUDE"
-      },
-      {
         "name": "지구홀딩스",
         "ticker": "221800",
         "appearances": 57,
@@ -927,6 +927,16 @@
         "v3_score": null,
         "grade": null,
         "bucket": null
+      },
+      {
+        "name": "플레이디",
+        "ticker": "237820",
+        "appearances": 54,
+        "avg_score": 68.5,
+        "max_score": 105.5,
+        "v3_score": 30.1,
+        "grade": "B",
+        "bucket": "WAIT"
       },
       {
         "name": "에스와이스틸텍",
@@ -997,16 +1007,6 @@
         "v3_score": null,
         "grade": null,
         "bucket": null
-      },
-      {
-        "name": "플레이디",
-        "ticker": "237820",
-        "appearances": 53,
-        "avg_score": 68.7,
-        "max_score": 105.5,
-        "v3_score": 30.1,
-        "grade": "B",
-        "bucket": "WAIT"
       },
       {
         "name": "이노에이엑스",
@@ -1102,11 +1102,6 @@
   },
   "regime_history": {
     "kospi": [
-      {
-        "run_id": "20260701",
-        "regime_score": -4,
-        "market_regime": "강세"
-      },
       {
         "run_id": "20260703",
         "regime_score": -3,
@@ -1251,14 +1246,14 @@
         "run_id": "20260814",
         "regime_score": 0,
         "market_regime": "조정"
+      },
+      {
+        "run_id": "20260817",
+        "regime_score": 2,
+        "market_regime": "조정"
       }
     ],
     "kosdaq": [
-      {
-        "run_id": "20260701",
-        "regime_score": -7,
-        "market_regime": "약세"
-      },
       {
         "run_id": "20260703",
         "regime_score": -8,
@@ -1402,6 +1397,11 @@
       {
         "run_id": "20260814",
         "regime_score": -3,
+        "market_regime": "반등"
+      },
+      {
+        "run_id": "20260817",
+        "regime_score": -2,
         "market_regime": "반등"
       }
     ]
