@@ -1,7 +1,15 @@
 {
-  "generated_at": "2026-08-18 20:26 KST",
+  "generated_at": "2026-08-19 20:33 KST",
   "runs": {
     "kospi": [
+      {
+        "run_id": "20260819",
+        "market_regime": "조정",
+        "regime_score": 0,
+        "usdkrw": 1391.15,
+        "foreign_5d": 34665.0,
+        "stage1_count": 726
+      },
       {
         "run_id": "20260818",
         "market_regime": "조정",
@@ -233,17 +241,17 @@
         "usdkrw": 1516.16,
         "foreign_5d": -111934.0,
         "stage1_count": 722
-      },
-      {
-        "run_id": "20260706",
-        "market_regime": "강세",
-        "regime_score": -3,
-        "usdkrw": 1531.61,
-        "foreign_5d": -110874.0,
-        "stage1_count": 723
       }
     ],
     "kosdaq": [
+      {
+        "run_id": "20260819",
+        "market_regime": "약세",
+        "regime_score": -7,
+        "usdkrw": 1391.29,
+        "foreign_5d": 978.0,
+        "stage1_count": 1578
+      },
       {
         "run_id": "20260818",
         "market_regime": "약세",
@@ -475,14 +483,6 @@
         "usdkrw": 1515.28,
         "foreign_5d": 462.0,
         "stage1_count": 1542
-      },
-      {
-        "run_id": "20260706",
-        "market_regime": "약세",
-        "regime_score": -7,
-        "usdkrw": 1531.71,
-        "foreign_5d": -650.0,
-        "stage1_count": 1544
       }
     ]
   },
@@ -490,125 +490,53 @@
     "kospi": {
       "top": [
         {
-          "ticker": "023530",
-          "name": "롯데쇼핑",
+          "ticker": "002030",
+          "name": "아세아",
           "sector": "미분류",
-          "final_score_v3": 52.9,
+          "final_score_v3": 9.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "383220",
-          "name": "F&F",
-          "sector": "의복",
-          "final_score_v3": 47.0,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "004170",
-          "name": "신세계",
+          "ticker": "017370",
+          "name": "우신시스템",
           "sector": "미분류",
-          "final_score_v3": 41.9,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "069620",
-          "name": "대웅제약",
-          "sector": "미분류",
-          "final_score_v3": 28.6,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "003780",
-          "name": "진양산업",
-          "sector": "미분류",
-          "final_score_v3": 26.0,
+          "final_score_v3": 9.3,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         }
       ],
       "meta": {
-        "run_id": "20260818",
+        "run_id": "20260819",
         "market_regime": "조정",
         "regime_score": 0,
-        "usdkrw": 1409.81,
-        "foreign_5d": 71056.0,
-        "stage1_count": 728
+        "usdkrw": 1391.15,
+        "foreign_5d": 34665.0,
+        "stage1_count": 726
       },
       "ranked_by": "v3"
     },
     "kosdaq": {
       "top": [
         {
-          "ticker": "007530",
-          "name": "와이엠",
+          "ticker": "056700",
+          "name": "신화인터텍",
           "sector": "미분류",
-          "final_score_v3": 54.3,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "178780",
-          "name": "일월지엠엘",
-          "sector": "도매",
-          "final_score_v3": 35.0,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "090850",
-          "name": "현대이지웰",
-          "sector": "미분류",
-          "final_score_v3": 34.3,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "086060",
-          "name": "진바이오텍",
-          "sector": "미분류",
-          "final_score_v3": 31.4,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "237820",
-          "name": "플레이디",
-          "sector": "엔지니어링",
-          "final_score_v3": 25.0,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "342870",
-          "name": "오아",
-          "sector": "소매",
-          "final_score_v3": 17.4,
+          "final_score_v3": 8.2,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         }
       ],
       "meta": {
-        "run_id": "20260818",
+        "run_id": "20260819",
         "market_regime": "약세",
         "regime_score": -7,
-        "usdkrw": 1409.81,
-        "foreign_5d": -341.0,
-        "stage1_count": 1579
+        "usdkrw": 1391.29,
+        "foreign_5d": 978.0,
+        "stage1_count": 1578
       },
       "ranked_by": "v3"
     }
@@ -691,9 +619,9 @@
         "appearances": 48,
         "avg_score": 60.3,
         "max_score": 94.0,
-        "v3_score": -999.0,
-        "grade": "EXCLUDE",
-        "bucket": "EXCLUDE"
+        "v3_score": null,
+        "grade": null,
+        "bucket": null
       },
       {
         "name": "영풍",
@@ -820,8 +748,8 @@
       {
         "name": "알엔투테크놀로지",
         "ticker": "148250",
-        "appearances": 60,
-        "avg_score": 61.0,
+        "appearances": 61,
+        "avg_score": 61.3,
         "max_score": 94.3,
         "v3_score": -999.0,
         "grade": "EXCLUDE",
@@ -850,19 +778,29 @@
       {
         "name": "플레이디",
         "ticker": "237820",
-        "appearances": 55,
-        "avg_score": 67.9,
+        "appearances": 56,
+        "avg_score": 67.4,
         "max_score": 105.5,
-        "v3_score": 25.0,
+        "v3_score": 21.8,
         "grade": "B",
-        "bucket": "WAIT"
+        "bucket": "OBSERVE"
       },
       {
         "name": "마이크로디지탈",
         "ticker": "305090",
-        "appearances": 54,
-        "avg_score": 93.1,
+        "appearances": 55,
+        "avg_score": 92.9,
         "max_score": 121.0,
+        "v3_score": -999.0,
+        "grade": "EXCLUDE",
+        "bucket": "EXCLUDE"
+      },
+      {
+        "name": "페니트리움바이오",
+        "ticker": "187660",
+        "appearances": 54,
+        "avg_score": 84.5,
+        "max_score": 110.0,
         "v3_score": -999.0,
         "grade": "EXCLUDE",
         "bucket": "EXCLUDE"
@@ -898,16 +836,6 @@
         "bucket": null
       },
       {
-        "name": "페니트리움바이오",
-        "ticker": "187660",
-        "appearances": 53,
-        "avg_score": 85.4,
-        "max_score": 110.0,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
-      },
-      {
         "name": "엘앤케이바이오",
         "ticker": "156100",
         "appearances": 53,
@@ -923,6 +851,26 @@
         "appearances": 53,
         "avg_score": 77.0,
         "max_score": 105.7,
+        "v3_score": -999.0,
+        "grade": "EXCLUDE",
+        "bucket": "EXCLUDE"
+      },
+      {
+        "name": "펄어비스",
+        "ticker": "263750",
+        "appearances": 52,
+        "avg_score": 101.7,
+        "max_score": 125.0,
+        "v3_score": 35.8,
+        "grade": "B",
+        "bucket": "OBSERVE"
+      },
+      {
+        "name": "풍원정밀",
+        "ticker": "371950",
+        "appearances": 52,
+        "avg_score": 85.8,
+        "max_score": 109.2,
         "v3_score": -999.0,
         "grade": "EXCLUDE",
         "bucket": "EXCLUDE"
@@ -956,16 +904,6 @@
         "v3_score": null,
         "grade": null,
         "bucket": null
-      },
-      {
-        "name": "펄어비스",
-        "ticker": "263750",
-        "appearances": 51,
-        "avg_score": 102.1,
-        "max_score": 125.0,
-        "v3_score": 38.1,
-        "grade": "B",
-        "bucket": "OBSERVE"
       },
       {
         "name": "탑머티리얼",
@@ -1006,27 +944,12 @@
         "v3_score": null,
         "grade": null,
         "bucket": null
-      },
-      {
-        "name": "와이씨",
-        "ticker": "232140",
-        "appearances": 51,
-        "avg_score": 93.4,
-        "max_score": 110.3,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
       }
     ]
   },
   "regime_history": {
     "kospi": [
       {
-        "run_id": "20260706",
-        "regime_score": -3,
-        "market_regime": "강세"
-      },
-      {
         "run_id": "20260707",
         "regime_score": -5,
         "market_regime": "조정"
@@ -1168,17 +1091,17 @@
       },
       {
         "run_id": "20260818",
+        "regime_score": 0,
+        "market_regime": "조정"
+      },
+      {
+        "run_id": "20260819",
         "regime_score": 0,
         "market_regime": "조정"
       }
     ],
     "kosdaq": [
       {
-        "run_id": "20260706",
-        "regime_score": -7,
-        "market_regime": "약세"
-      },
-      {
         "run_id": "20260707",
         "regime_score": -7,
         "market_regime": "약세"
@@ -1320,6 +1243,11 @@
       },
       {
         "run_id": "20260818",
+        "regime_score": -7,
+        "market_regime": "약세"
+      },
+      {
+        "run_id": "20260819",
         "regime_score": -7,
         "market_regime": "약세"
       }
