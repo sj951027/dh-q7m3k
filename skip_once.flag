@@ -1,2 +1,0 @@
-one-shot skip flag. created 2026-08-17 (market holiday, Liberation Day substitute).
-run_auto_logged.bat will skip exactly one scheduled run and delete this file.
