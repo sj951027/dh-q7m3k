@@ -7,6 +7,25 @@ set PYTHONUTF8=1
 
 cd /d "%~dp0"
 
+rem [2026-08-22] weekday-intraday guard: block Mon-Fri 09:00-15:59 runs.
+rem Intraday prices contaminate observation data (2026-08-21 incident).
+rem Early morning (<09h) and weekend daytime stay allowed. Override: set FORCE_RUN=1
+rem Fail-open design: sentinel defaults keep the run allowed if powershell fails.
+set GUARD_DOW=9
+set GUARD_HH=99
+if not defined FORCE_RUN (
+  for /f %%w in ('powershell -NoProfile -Command "[int](Get-Date).DayOfWeek"') do set GUARD_DOW=%%w
+  for /f %%h in ('powershell -NoProfile -Command "(Get-Date).Hour"') do set GUARD_HH=%%h
+)
+set GUARD_BLOCK=0
+if %GUARD_DOW% GEQ 1 if %GUARD_DOW% LEQ 5 if %GUARD_HH% GEQ 9 if %GUARD_HH% LEQ 15 set GUARD_BLOCK=1
+if %GUARD_BLOCK% EQU 1 (
+  echo [guard] Blocked: weekday intraday run - dow=%GUARD_DOW% hour=%GUARD_HH%.
+  echo [guard] Market-hours prices contaminate observation data - see patch_note/20260821_intraday_run_cleanup.md
+  echo [guard] Run after market close, or:  set FORCE_RUN=1  then re-run.
+  exit /b 0
+)
+
 echo.
 echo ========================================================================
 echo   V2.6 Screener + Sector Diversify (Local Run)
