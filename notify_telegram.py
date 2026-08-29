@@ -252,6 +252,18 @@ def build_message():
     #   (종목 상세는 대시보드·필터 링크에서. _picks_by_bucket/_ic_line 은 보존 — 재활성화 가능.)
     lines += _model_status_lines()
 
+    # [2026-08-29] 알파/베타 한 줄 — "요즘 수익이 실력(α)인지 장 덕(β)인지" (build_alpha_beta.py).
+    #   파일 없음·오래됨·형식 오류 전부 조용히 생략(비치명). t<2 는 참고 수준임을 α 뒤 t로 표기.
+    try:
+        import json as _json
+        _ab = _json.loads((HERE / "docs" / "alpha_beta.json").read_text(encoding="utf-8"))
+        if _ab.get("status") == "ok" and _ab.get("models"):
+            _parts = [f"{m} β{v['beta']:.2f}·α{v['alpha_d_pct']:+.2f}%/일(t{v['alpha_t']})"
+                      for m, v in _ab["models"].items()]
+            lines += ["📐 α/β(40일): " + " · ".join(_parts), ""]
+    except Exception:
+        pass
+
     lines += [
         "※ 매수신호 아님 · 종목 상세는 아래 링크에서",
         # 2026-08-11 사용자 결정: 대시보드 링크 제거(거의 안 봄). DASHBOARD_URL 상수는 보존 — 재활성화 가능.

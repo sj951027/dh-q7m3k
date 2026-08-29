@@ -146,6 +146,8 @@
 
   <!-- [2026-08-14] 공통 잣대 모의계좌 — 트랙 간 비교용 관측 섹션 (판정 무관, build_cross_sim.py) -->
   <div id="crosssim" style="margin-top:18px"></div>
+  <!-- [2026-08-29] 알파/베타 관측 패널 — "요즘 수익이 실력인지 장 덕인지" (build_alpha_beta.py, 판정 무관) -->
+  <div id="alphabeta" style="margin-top:18px"></div>
 
   <div class="foot">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는
     docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.08.6 (이력: patch_note/)</div>
@@ -418,6 +420,39 @@
       h+='<div class="foot">⚠ 짧은 창·단일 국면·거래비용 0 — "이 기간 이 장에서"의 성적일 뿐 일반화 금지. '
         +'통계적 판정은 위 §11 표가 정본.</div>';
       document.getElementById('crosssim').innerHTML=h;
+    }).catch(()=>{});
+
+  // [2026-08-29] 알파/베타 관측 패널 — build_alpha_beta.py 가 매일 생성 (관측 전용, 판정 무관)
+  fetch('alpha_beta.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); })
+    .then(ab=>{
+      if(ab.status!=='ok'||!ab.models) return;
+      const pn=(v,d)=>{ const s=(v>0?'+':'')+v.toFixed(d===undefined?1:d);
+        return '<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+s+'</span>'; };
+      let h='<div style="font-size:15px;font-weight:600;margin-bottom:4px">📐 알파/베타 관측 '
+        +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 최근 '+ab.window
+        +'유효일 · 기준 '+ab.asof.slice(4,6)+'/'+ab.asof.slice(6)+' (<b>관측 전용, §11 판정 무관</b>)</span></div>'
+        +'<details class="explain"><summary>이 표 읽는 법 — 쉬운 설명</summary><div class="explain-body">'
+        +'<p><b>수익을 두 조각으로 나눕니다.</b> 배(시장)가 떠오르면 배 위의 모두가 같이 떠오르죠 — '
+        +'그 몫이 <b>베타(β)</b>입니다(1이면 시장과 똑같이 출렁임). 배와 무관하게 좋은 자리를 골라 '
+        +'더 벌어준 몫이 <b>알파(α)</b>, 즉 종목 선택의 실력분입니다.</p>'
+        +'<p><b>α 옆의 t 는 "우연과 구분되는 정도"</b> — 대략 2를 넘어야 우연이 아니라고 말할 수 '
+        +'있습니다. 그 전까지는 참고만. 누적 분해는 "최근 창의 수익 중 몇 %p가 장 덕이고 몇 %p가 '
+        +'선택 덕인지"의 근사 분해입니다.</p>'
+        +'<p>⚠ 비용 0·짧은 창의 관측이며 매일 갱신됩니다. 판정 정본은 위 §11 표.</p></div></details>'
+        +'<table style="margin-bottom:6px"><thead><tr><th>모델</th><th title="시장을 따라 움직인 정도(1=시장과 동일)">β</th>'
+        +'<th title="장과 무관한 일평균 초과분">α/일</th><th title="α가 우연과 구분되는 정도(≥2 권장)">t</th>'
+        +'<th>창 누적</th><th title="누적 중 시장(베타) 몫 — 근사">장 덕(%p)</th>'
+        +'<th title="누적 중 선택(알파) 몫 — 근사">선택 덕(%p)</th><th>n일</th></tr></thead><tbody>';
+      for(const [m,v] of Object.entries(ab.models)){
+        h+='<tr><td><b>'+m+'</b></td><td class="num">'+v.beta.toFixed(2)+'</td>'
+          +'<td class="num">'+pn(v.alpha_d_pct,2)+'%</td>'
+          +'<td class="num">'+(v.alpha_t==null?'-':v.alpha_t.toFixed(1))+'</td>'
+          +'<td class="num">'+pn(v.cum_pct)+'%</td><td class="num">'+pn(v.beta_cum_pp)+'</td>'
+          +'<td class="num">'+pn(v.alpha_cum_pp)+'</td><td class="num">'+v.n+'</td></tr>';
+      }
+      h+='</tbody></table><div class="foot">벤치마크 = 전종목(거래대금 20일평균 ≥5억) 동일가중 · '
+        +'상위20 EW·비용 0 가정 · t&lt;2 는 "아직 우연과 구분 안 됨" · 데이터: alpha_beta.json (매일 갱신)</div>';
+      document.getElementById('alphabeta').innerHTML=h;
     }).catch(()=>{});
 })();
 </script>

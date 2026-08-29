@@ -67,6 +67,36 @@
 - (연계) PTW v5.18: 라운드트립 분리 + 매수 시점 lowvol 순위 스냅샷(lowvol_meta.json 소비) —
   상세는 PTW repo PATCH_NOTES_v5.18.md.
 
+### 추가 3 (같은 세션): 회귀 테스트 하네스 tests/ 도입
+
+- `tests/test_lowvol_score_rules.py`(합성 — NaN 규칙·순위합·spec_hash 골든 10종) ·
+  `tests/test_leaderboard_frozen.py`(실 DB — 게이트·REG_DATE·동결창 h20 IC 골든 3종·상수) ·
+  `run_tests.py`(일괄, 실패 시 exit 1). 전체 32체크 통과 확인. 규칙: 골든 깨지면 골든이 아니라
+  코드를 의심(tests/README.md). 판정·점수 0-diff(테스트는 읽기 전용).
+
+### 추가 4 (같은 세션): sv_b(공매도+신용잔고) 사전등록 초안 + 배선 준비
+
+- 근거: research/RESEARCH_candidates_scan_20260829.md — sh_credit_rate 단독 강기움(직교·지연
+  무해 실측) + sv_a 결합만 "양+양→추가 개선"(h10/h20 짝diff CI>0).
+- 산출물: PREREGISTER_sv_b.md(초안·**미등록**), research/sv_b_wiring_20260829.patch
+  (git apply --check 통과). 검증: 사본 DB 원본 vs 패치 재적재 — 기존 6모델 6,584행 0-diff,
+  sv_b 1,102행 신규, sv_a↔sv_b 순위상관 +0.659. crb5 는 적재 3일 지연 대응 min_periods=1
+  (min3 이면 전부 중립화되는 결함을 검증 중 발견·교정).
+- **적용·등록은 sv_a §11 판정(~9월 중) 후** — wu 분모 6→7 회피(판정 직전 등록 회피 원칙).
+- MODELS_LEDGER 에 초안 행 추가(프로젝트 지식 동기 업로드).
+
+### 추가 5 (같은 세션): 알파/베타 상시 관측 패널 + 예약 작업
+
+- `build_alpha_beta.py` 신규 — v30·lv_b·wu_a 상위20 EW 일수익을 전종목 EW 벤치에 회귀,
+  최근 40유효일 β·일α·t·누적 분해(장 덕/선택 덕)를 `docs/alpha_beta.json` 으로 매일 산출
+  (근거 research/RESEARCH_forward_levers_20260829.md B — §14-4 '측정 인프라').
+- `run_and_diversify.py` 2.916단계 추가(비치명) · `docs/leaderboard.html` 에 "📐 알파/베타 관측"
+  섹션(쉬운 설명 박스 포함) · `notify_telegram.py` 에 α/β 한 줄(파일 없으면 조용히 생략).
+- 검증: 생성 실행(asof 20260828 — v30 β0.72 α+0.28%/일 t1.04 · lv_b β0.75 α+0.36 t1.84 ·
+  wu_a β0.32), 텔레 메시지 빌드 확인, 렌더 미리보기 확인, py_compile 통과. 표시 전용 0-diff.
+- 예약 작업 등록: "sv_b 점화" — 2026-09-11 08:30 KST 1회 실행(sv_a 40일 도달 예상 익일).
+  내용: wu 계열 §11 판정 → 사용자 확정 → sv_b 패치 적용·REG_DATE 확정·원장 갱신.
+
 ## 4. 영향 범위
 
 - **판정·점수 0-diff.** leaderboard.py·lowvol_score.py·DB 무변경. lv_e 배선은 여전히 **미적용**.

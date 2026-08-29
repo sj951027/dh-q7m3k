@@ -23,6 +23,7 @@
 | wu | **sv_a** | 공매도비중 단독 — 최근 관측 최유력(짝비교 wu_a 대비 CI>0) | 20260715 | ~9월 중 | PREREGISTER_le_sv.md |
 | wu | le_a | 저점탈출+OBV+유동성 | 20260715 | ~9월 중 | PREREGISTER_le_sv.md |
 | wu | qs_a | 조용한 강자(저변동+52주고+저거래대금) | 20260723 | ~9월 말 | PREREGISTER_qs.md |
+| wu | *sv_b* | *(초안·미등록)* sv_a + crb5(신용잔고) — **sv_a §11 판정 후 등록**(분모 6→7 회피, 8/29 결정) | **미정** | 등록 + 40거래일 | PREREGISTER_sv_b.md |
 | wu | **px_a** | 가격4팩터(lv60+to20+lv20+nh252) — 3년 walk-forward+lv_b 짝비교 근거 | 20260810(첫적재) | **~10월 초** | PREREGISTER_px_a.md |
 | large | **ls_t1** | 밸류4팩터 동일가중(ep·bp·rim·dv) 테스트 | 20260806 | h60: 9월~ / h120: 11월~ | PREREGISTER_ls_t1.md |
 

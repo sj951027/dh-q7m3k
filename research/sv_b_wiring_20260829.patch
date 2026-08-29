@@ -1,0 +1,58 @@
+--- wu_score.py	(현행)
++++ wu_score.py	(sv_b 배선 제안 — 미적용)
+@@ -66,6 +66,9 @@
+     "obv63":  (False, "sum(sign(pct_change)*volume,63,min_periods=30)/sum(volume,63,min_periods=30)"),
+     "amt20f": (True,  "mean(close*volume,20,min_periods=10)/1e8"),
+     "svr5":   (True,  "mean(short_flows.short_vol_ratio,5,min_periods=3)"),
++    # [2026-08-29 추가 — PREREGISTER_sv_b.md 초안] 신용잔고비율 5일 평균(높을수록 좋음 가설).
++    #   svr5 와 동일한 배치순서 주의(1일 지연 허용)를 스펙에 포함. 보조 전용(NaN=0.5).
++    "crb5":   (True,  "mean(short_flows.credit_bal_rate,5,min_periods=1)"),
+     # [2026-07-22 추가 — PREREGISTER_qs.md 동결] amt20f 동일 정의의 방향 반전(저거래대금 우대)
+     "amt20l": (False, "mean(close*volume,20,min_periods=10)/1e8"),
+     # [2026-08-07 추가 — PREREGISTER_px_a.md 동결] 가격 4팩터 챌린저 성분
+@@ -78,6 +81,10 @@
+     "wu_b": ["nh252", "mom12"],                   # 순수선택 대조(size 무베팅)
+     "le_a": ["dlow52", "obv63", "amt20f"],        # 저점탈출(핵심)+OBV미매집+유동성 [REG 20260715]
+     "sv_a": ["svr5"],                             # 공매도비중 단독(국면독립 가설) [REG 20260715]
++    # [사전등록 초안 — PREREGISTER_sv_b.md, 적용은 sv_a §11 판정 후] sv_a + 신용잔고비율.
++    #   근거: research/RESEARCH_candidates_scan_20260829.md §4 — sv_a 짝비교 h10/h20 CI>0,
++    #   축 직교(sv_a점수↔신용 -0.06). 변수 1개 원칙. 신규 모델은 소급 적재 없음(다음 run부터).
++    "sv_b": ["svr5", "crb5"],
+     "qs_a": ["lv63", "nh252", "amt20l"],          # 조용한 강자: 저변동(핵심)+고가근접+저거래대금 [PREREGISTER_qs.md]
+     # [2026-08-07 등록 — PREREGISTER_px_a.md] 저변동60(핵심)+저회전20+저변동20+52주고근접.
+     #   근거: 3년 월간 walk-forward(train ~2025-06 선정, test 생존) + lv_b 동결점수 짝비교
+@@ -119,20 +126,24 @@
+     # [2026-07-14] sv_a 용 short_flows (없으면 빈 프레임 — sv_a 만 0행, 나머지 모델 무영향)
+     try:
+         sf = pd.read_sql(
+-            "SELECT ticker,date,short_vol_ratio FROM short_flows WHERE date >= ?",
++            "SELECT ticker,date,short_vol_ratio,credit_bal_rate FROM short_flows WHERE date >= ?",
+             ohlcv_con, params=(cutoff,))
+         sf["short_vol_ratio"] = pd.to_numeric(sf["short_vol_ratio"], errors="coerce")
++        sf["credit_bal_rate"] = pd.to_numeric(sf["credit_bal_rate"], errors="coerce")
+         svr = (sf.pivot_table(index="date", columns="ticker", values="short_vol_ratio", aggfunc="last")
++               .reindex(index=close.index, columns=close.columns))
++        crb = (sf.pivot_table(index="date", columns="ticker", values="credit_bal_rate", aggfunc="last")
+                .reindex(index=close.index, columns=close.columns))
+     except Exception as e:
+         print(f"[경고] short_flows 로딩 실패({e}) — sv_a 는 이번 실행에서 0행")
+         svr = pd.DataFrame(np.nan, index=close.index, columns=close.columns)
++        crb = pd.DataFrame(np.nan, index=close.index, columns=close.columns)
+     return dict(close=close,
+                 vol=piv("volume").reindex(close.index),
+                 shares=piv("shares").reindex(close.index),
+                 susp=piv("is_suspended").reindex(close.index).fillna(0),
+                 mkt=df.groupby("ticker")["market"].last(),
+-                svr=svr)
++                svr=svr, crb=crb)
+ 
+ def compute_frames(W):
+     c = W["close"]; r = c.pct_change(fill_method=None)
+@@ -148,6 +159,7 @@
+     F["obv63"] = (np.sign(r) * W["vol"]).rolling(63, min_periods=30).sum() / vol63.where(vol63 > 0)
+     F["amt20f"] = amt20
+     F["svr5"] = W["svr"].rolling(5, min_periods=3).mean()
++    F["crb5"] = W["crb"].rolling(5, min_periods=1).mean()   # [sv_b 초안] 보조 전용(적재 3일 지연 허용)
+     # [2026-07-22 추가] qs_a — amt20f 동일 프레임, 방향만 FACTORS에서 반전
+     F["amt20l"] = amt20
+     # [2026-08-07 추가] px_a 성분 — 전부 기존 W 데이터만 사용(신규 원천 0)

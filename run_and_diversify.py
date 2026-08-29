@@ -388,6 +388,11 @@ def main():
     if (HERE / "build_cross_sim.py").exists():
         run_script(["build_cross_sim.py"], "2.915단계: 공통 잣대 모의계좌 (관측, 판정 무관)")
 
+    # 2.916) 알파/베타 관측 패널 — "수익이 실력(α)인지 장 덕(β)인지" 상시 분해 (2026-08-29,
+    #        근거 research/RESEARCH_forward_levers_20260829.md B). 표시 전용·비치명.
+    if (HERE / "build_alpha_beta.py").exists():
+        run_script(["build_alpha_beta.py"], "2.916단계: 알파/베타 관측 패널 (관측, 판정 무관)")
+
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).
     gate_issues, gate_details = [], []
