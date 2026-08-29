@@ -1,0 +1,63 @@
+--- lowvol_score.py	(현행)
++++ lowvol_score.py	(lv_e 배선 제안 — 미적용)
+@@ -66,6 +66,12 @@
+     #   ⚠️ 보조 팩터로만 사용(핵심 불가) — short_flows 커버리지가 lv 종목의 일부라
+     #      핵심으로 쓰면 공매도 없는 종목이 전부 제외돼 유니버스가 깨짐.
+     "short":                ("short_vol_ratio",     False),
++    # ---- 저회전율(turnover) 관측 팩터 (2026-08-29 추가, lv_e 용) ----
++    # to20 = 최근 20거래일 평균 (거래량 / 상장주식수). 낮을수록(=조용할수록) 선호 → False.
++    #   출처: ohlcv.db daily_ohlcv(volume, shares) — stage3_final 에 없어 LEFT JOIN(short 와 동일 패턴).
++    #   근거: research/RESEARCH_lv_ablation_20260812.md V6 — lv_b 짝비교 diff h5/h10/h20 모두 CI>0.
++    #   ⚠️ 보조 팩터 전용(핵심 불가): 커버리지 결손 시 NaN=0.5 중립으로 유니버스 보존.
++    "to20":                 ("to20",                False),
+ }
+ 
+ # 모델 = {팩터리스트, 유니버스(os_lo, os_hi, liq)}.
+@@ -127,6 +133,13 @@
+     # ⚠️ 실거래 제약: 중앙값 거래대금 2억 → 소액만 가능(슬리피지·거래불가 위험 = 프리미엄의 정체).
+     #   관찰·소액 전용. post-hoc·하락장 in-sample → forward-only. 등록 20260627, OOS 40거래일(h20 위주).
+     "sm_a": {"factors": ["realized_vol", "roe", "reversal"], "uni": (OVERSOLD_LO, OVERSOLD_HI, 1.0, 5.0)},
++    # ---- 저회전 챌린저 lv_e (등록일=첫 적재일·REG_DATE 원장 정본, 가중치 0 관측) — PREREGISTER_lv_e.md ----
++    # lv_e = lv_b(저변동+ROE) + to20(저회전) 1개만 추가. 변수 1개 원칙 준수.
++    #   근거: RESEARCH_lv_ablation_20260812 V6 — 3지평(h5/h10/h20) 모두 짝비교 CI>0, 주별일관 6/7.
++    #   ⚠️ post-hoc·in-sample(6/05~8/11 폭락+반등 단일 국면, 30검정) 발견 → forward-only.
++    #      등록일(20260829) 이전 백필 행은 판정에서 REG_DATE 게이트로 자동 제외.
++    # 핵심팩터=realized_vol(lv_b 와 동일, 실측필수). 보조=roe·to20(NaN=0.5).
++    "lv_e": {"factors": ["realized_vol", "roe", "to20"], "uni": DEFAULT_UNI},
+ }
+ 
+ def spec_hash(model_id):
+@@ -226,6 +239,33 @@
+     else:
+         df['short_vol_ratio'] = float('nan')   # short_flows 부재 시에도 동작
+ 
++    # 20일 평균 회전율(to20)을 ohlcv.db daily_ohlcv 에서 LEFT JOIN (lv_e 챌린저용 관측 팩터).
++    #   to20 = rolling20 mean(volume / shares), 기준일 포함 직전 20거래일(PIT — 미래 미사용).
++    #   research/lv_ablation_scan.py 의 V6 정의와 동일 규약(전체 날짜 격자 위 최근 20행 평균).
++    #   ohlcv.db 부재 시 NaN → 보조 팩터라 0.5 중립(유니버스·다른 모델 무영향).
++    df['to20'] = float('nan')
++    if os.path.exists(OHLCV_DB):
++        try:
++            ocon = sqlite3.connect(OHLCV_DB)
++            ov = pd.read_sql("SELECT ticker, date, volume, shares FROM daily_ohlcv", ocon)
++            ocon.close()
++            ov['date'] = ov['date'].astype(str)
++            ov['ticker'] = ov['ticker'].astype(str)
++            ov['ratio'] = ov['volume'] / ov['shares'].replace(0, float('nan'))
++            grid = ov.pivot_table(index='date', columns='ticker', values='ratio',
++                                  aggfunc='last').sort_index()
++            to20 = grid.rolling(20, min_periods=1).mean()
++            t20 = to20.stack(future_stack=True).rename('to20_new').reset_index()
++            t20.columns = ['run_id', 'ticker', 'to20_new']
++            t20['run_id'] = t20['run_id'].astype(str)
++            t20['ticker'] = t20['ticker'].astype(str)
++            df['run_id'] = df['run_id'].astype(str)
++            df['ticker'] = df['ticker'].astype(str)
++            df = df.merge(t20, on=['ticker', 'run_id'], how='left')
++            df['to20'] = df.pop('to20_new')
++        except Exception as e:
++            print(f"[to20] 적재 실패(무시, NaN 유지): {e}")
++
+     # 부분적재일 제외(완전성) — [2026-08-11 교정] stage3 행수 기준 → stage1 행수 기준.
+     #   근거: 약세장에서 stage3(추천)가 실제로 축소되면 정상 run 이 부분실행으로 오탐됨
+     #   (실측: 20260723·20260804~0810 6개 run 오탐 제외, stage1 은 2,270~2,300행 정상 —

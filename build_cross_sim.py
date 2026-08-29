@@ -11,6 +11,8 @@ ENTRY_LAG=1 · 공통 벤치마크(전체상장 거래대금≥5억 EW, KOSPI �
 등록일(REG_DATE) 이후 forward 점수만 사용. 패널:
   A = 주력 공통창(v30·lv_a·lv_b·mom_a·wu_a, 20260702~)
   B = 전 모델 공통창(+sv_a·qs_a, 20260724~)
+  C = 신모델 공통창(+px_a, 20260810~ — px_a 등록일 시작. 2026-08-29 추가) ⚠ 창이 짧아 참고 최소한.
+      판정 시즌 후 공통창 전체 개편(창 시작 재설정·편입 모델 정리) 예정 — patch_note 20260829 참조.
 """
 import json
 import sqlite3
@@ -35,9 +37,13 @@ MODELS = [
     ("px_a",  "wu_scores",     "wu_score",       "px_a",  "20260810"),
 ]
 MIN_DAYS = 10   # 표시 기준: 공통창 유효 거래일 10 미만 모델은 자동 대기(가독성 — 창이 차면 저절로 등장)
+# [2026-08-29] 등록일이 창 시작보다 늦은 모델은 그 창에서 제외 — 공백일이 0%로 채워져
+#   누적수익 비교가 왜곡되던 문제(px_a 실측: 창 24일 중 실점수 ~14일, "-8.4%p 뒤짐"의
+#   대부분이 미등록 기간 0% 앉음 탓). 제외 외 타 모델 수치는 0-diff 검증 완료.
 PANELS = [
     ("주력 공통창 (7/02~)", ["v30", "lv_b", "lv_a", "mom_a", "wu_a"], "20260702"),
     ("전 모델 공통창 (7/24~ · 짧음)", ["v30", "lv_b", "lv_a", "mom_a", "wu_a", "sv_a", "qs_a", "px_a"], "20260724"),
+    ("신모델 공통창 (8/10~ · 매우 짧음 — 참고 최소한)", ["v30", "lv_b", "lv_a", "mom_a", "wu_a", "sv_a", "qs_a", "px_a"], "20260810"),
 ]
 
 
@@ -98,6 +104,9 @@ def main():
                 if len(sub) == 0:
                     return None
                 return [c for c in sub.nlargest(TOPN, "s").ticker if c in R.columns]
+            if reg_map.get(m, "00000000") > start:
+                print(f"  ⏳ {m}: 등록일 {reg_map[m]} > 창 시작 {start} — 창 전체 커버 전 표시 대기")
+                continue
             s = daily_series(top, start, end)
             eff = max(0, int((s.index >= reg_map[m]).sum())) if m in reg_map else len(s)
             if eff < MIN_DAYS:

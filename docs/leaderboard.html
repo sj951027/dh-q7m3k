@@ -148,7 +148,7 @@
   <div id="crosssim" style="margin-top:18px"></div>
 
   <div class="foot">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는
-    docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.08.4 (이력: patch_note/)</div>
+    docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.08.6 (이력: patch_note/)</div>
 </div>
 
 <script>
@@ -414,7 +414,7 @@
         }
         h+='</tbody></table>';
       }
-      h+='<div class="foot">표시 기준: 각 트랙 대표 + 직접 비교쌍만(섀도우 변형 제외 — 전체는 위 판정표). 공통창 유효 10거래일 미만 신모델(px_a 등)은 창이 찰 때까지 자동 대기.</div>';
+      h+='<div class="foot">표시 기준: 각 트랙 대표 + 직접 비교쌍만(섀도우 변형 제외 — 전체는 위 판정표). 등록일이 창 시작보다 늦은 신모델(px_a 등)은 창 전체를 커버할 때까지 자동 대기(공백일 0% 채움 왜곡 방지, 2026-08-29).</div>';
       h+='<div class="foot">⚠ 짧은 창·단일 국면·거래비용 0 — "이 기간 이 장에서"의 성적일 뿐 일반화 금지. '
         +'통계적 판정은 위 §11 표가 정본.</div>';
       document.getElementById('crosssim').innerHTML=h;
