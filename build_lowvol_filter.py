@@ -238,7 +238,16 @@ def main():
         print(f"  ✓ {mkt}: {len(g)}종목(유니버스 {n_uni}) → docs/latest_{mkt}_{args.suffix}.csv")
         total += len(g)
     con.close()
-    print(f"💾 lowvol({MODEL}) 관측 CSV 생성 — run {rid}, 합계 {total}종목.")
+    # [2026-08-29] 기준일 메타 — lowvol.html 의 '오래된 목록' 경고 배지용.
+    #   배경: 20260804~10 게이트 오탐으로 적재가 빠졌을 때 화면이 8/03자 목록으로
+    #   일주일 동결됐던 사건(patch_note 20260829). 페이지가 이 run_id 로 신선도를 표시한다.
+    import json as _json
+    from datetime import datetime as _dt
+    (docs / f"{args.suffix}_meta.json").write_text(
+        _json.dumps({"run_id": rid, "model": MODEL,
+                     "generated_at": _dt.now().isoformat(timespec="seconds")},
+                    ensure_ascii=False), encoding="utf-8")
+    print(f"💾 lowvol({MODEL}) 관측 CSV 생성 — run {rid}, 합계 {total}종목. (+{args.suffix}_meta.json)")
     print("   lowvol.html 을 docs/ 에 두고 커밋하면 열람. (v3·large 산출물 불변)")
 
 

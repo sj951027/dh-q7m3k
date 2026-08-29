@@ -50,6 +50,23 @@
 - **판정 시즌 후 공통창 전체 개편 예정**(창 시작 재설정 · wu_b/mom_b/sv_a/le_a 등 편입 정리 —
   "트랙 대표 + 직접 비교쌍" 8/14 기준 재적용). 그 전까지 C 패널은 참고 최소한으로만 읽는다.
 
+### 추가 2 (같은 세션): lowvol 화면 '목록 신선도' 배지
+
+- 배경: 20260804~10 게이트 오탐 사건 때 표시 CSV 가 8/03자 목록으로 일주일 동결돼 있었고,
+  사용자가 그 화면으로 매수했음을 실측 확인(research/RESEARCH_ptw_live_20260829.md §2-c).
+  미적재일에 옛 CSV 가 그대로 남는 구조는 지금도 동일 → 화면에서 알려주도록 함.
+- `build_lowvol_filter.py`: `docs/lowvol_meta.json`(run_id·생성시각) 추가 기록(추가만, py_compile OK).
+  초기 메타는 이번 세션에서 실측 run_id(20260828)로 생성 — 다음 실행부터 빌더가 자동 갱신.
+- `docs/lowvol.html`: 메타의 run_id 로 '목록 기준일' 상시 표시 + **주중 기준 2일 이상 밀리면
+  경고 배지**(공휴일 오탐 가능성 문구 포함). 메타 없으면 조용히 숨김(구버전 호환).
+- 검증: 정상(8/28)·경고(8/03 가정) 두 상태 렌더 확인. 판정·점수 0-diff(표시 전용).
+- (후속, 같은 날) **lva·mom·wu·qs·px 5개 관측 페이지에도 동일 배지 이식**:
+  build_lowvol_filter(메타명 suffix 기반으로 교정 — lva 재사용 시 충돌 방지)·build_mom_filter·
+  build_wu_filter(출력명에서 메타명 유도: wu/qs/px)가 각자 {이름}_meta.json 기록, 초기 메타
+  5개는 세션에서 실측 run_id(전부 20260828)로 생성. py_compile 통과.
+- (연계) PTW v5.18: 라운드트립 분리 + 매수 시점 lowvol 순위 스냅샷(lowvol_meta.json 소비) —
+  상세는 PTW repo PATCH_NOTES_v5.18.md.
+
 ## 4. 영향 범위
 
 - **판정·점수 0-diff.** leaderboard.py·lowvol_score.py·DB 무변경. lv_e 배선은 여전히 **미적용**.

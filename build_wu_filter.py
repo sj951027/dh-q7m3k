@@ -282,6 +282,14 @@ def main():
     docs = Path(args.docs); docs.mkdir(parents=True, exist_ok=True)
     for path in (docs / args.out, HERE / args.out):
         g.to_csv(path, index=False, encoding="utf-8-sig")
+    # [2026-08-29] 기준일 메타 — wu/qs/px 페이지 '오래된 목록' 경고 배지용.
+    import json as _json
+    from datetime import datetime as _dt
+    _meta_name = args.out.replace("latest_", "").replace(".csv", "") + "_meta.json"
+    (docs / _meta_name).write_text(
+        _json.dumps({"run_id": rid, "model": args.model,
+                     "generated_at": _dt.now().isoformat(timespec="seconds")},
+                    ensure_ascii=False), encoding="utf-8")
     n_uni = int(g["n_universe"].iloc[0]) if "n_universe" in g else len(g)
     nm_cov = g["name"].notna().mean() * 100 if "name" in g else 0
     print(f"  ✓ {len(g)}종목(유니버스 {n_uni}, 종목명 커버 {nm_cov:.0f}%) → docs/{args.out}")

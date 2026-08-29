@@ -64,6 +64,31 @@
 <div class="wrap">
   <h1>🧪 가격 4팩터 <span style="color:var(--accent)">px_a</span> · 테스트·관측</h1>
   <div class="sub">저변동60 + 저회전율20 + 저변동20 + 52주고근접 순위합 · 전체 상장(과매도 게이트 없음) · v3·large·lowvol·wu_a 와 별개 관측 모델</div>
+  <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
+  <script>
+  // [2026-08-29] 목록 신선도 배지 — px_meta.json 의 run_id 기준 (lowvol.html 과 동일 패턴).
+  fetch('px_meta.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json();}).then(m=>{
+    const el=document.getElementById('freshness');
+    const rid=String(m.run_id||''); if(rid.length!==8) return;
+    const run=new Date(+rid.slice(0,4), +rid.slice(4,6)-1, +rid.slice(6,8));
+    const today=new Date(); today.setHours(0,0,0,0);
+    let wd=0; for(let d=new Date(run); d<today; d.setDate(d.getDate()+1)){
+      d.setHours(0,0,0,0); const w=new Date(d); w.setDate(w.getDate()+1);
+      if(w.getDay()!==0 && w.getDay()!==6) wd++;
+    }
+    const ds=rid.slice(0,4)+'-'+rid.slice(4,6)+'-'+rid.slice(6,8);
+    el.style.display='block';
+    if(wd>=2){
+      el.style.background='#3a1f1f'; el.style.border='1px solid #b45555'; el.style.color='#f0b0b0';
+      el.innerHTML='⚠️ <b>이 목록은 '+ds+' 기준</b> — 주중 기준 약 '+wd+'일 전 자료입니다. '
+        +'파이프라인 미실행·적재 제외(유니버스 고갈 등)로 갱신이 지연됐을 수 있으니, '
+        +'<b>최신 목록이 아님을 감안</b>하고 매수 근거로 쓰지 마세요. (공휴일이면 정상일 수 있음)';
+    }else{
+      el.style.background='var(--card,#1c1f26)'; el.style.border='1px solid #2c3440'; el.style.color='var(--sub,#8a93a5)';
+      el.textContent='목록 기준일: '+ds+' (정상 범위)';
+    }
+  }).catch(()=>{});
+  </script>
 
   <div class="warn">
     ⚠️ <b>검증 전 섀도우 — 매수신호 아님.</b> 이 점수(px_a, wu_score 컬럼)는 3년 walk-forward
