@@ -125,8 +125,41 @@ def main():
         panels.append(dict(label=label, start=start, end=end,
                            bench_cum=round(float(((1 + bench).cumprod().iloc[-1] - 1) * 100), 1),
                            kospi_cum=kospi_cum, rows=rows))
+    # ---- [2026-08-30] trailing: 모델별 최근 1·5·20 수익일 실수익 (사용자 요청 — 실수치 비교) ----
+    #   각 모델의 등록일 이후 전체 시리즈에서 끝 N일 누적. 창을 다 못 채우는 모델(신생)은 null.
+    #   기존 panels 계산과 완전 분리(값 무접촉).
+    kq = pd.read_sql("SELECT date, close FROM market_daily WHERE series='KOSDAQ'",
+                     oc).set_index("date")["close"].reindex(dts).ffill()
+    def tail_cum(s, k):
+        if s is None or len(s) < k:
+            return None
+        seg = s.iloc[-k:]
+        return round(float(((1 + seg).cumprod().iloc[-1] - 1) * 100), 1)
+    full_bench = daily_series(lambda t: amt20.loc[t][amt20.loc[t] >= 5].index.intersection(R.columns),
+                              "20260601", end)
+    t_rows = []
+    for name, tbl, col, mid, reg in MODELS:
+        def top_t(t, df=scores[name]):
+            sub = df[df.run_id == t]
+            if len(sub) == 0:
+                return None
+            return [c for c in sub.nlargest(TOPN, "s").ticker if c in R.columns]
+        s = daily_series(top_t, reg, end)
+        if len(s) == 0:
+            continue
+        nav = (1 + s).cumprod()
+        t_rows.append(dict(model=name, r1=tail_cum(s, 1), r5=tail_cum(s, 5),
+                           r20=tail_cum(s, 20), n=int(len(s)),
+                           rall=round(float((nav.iloc[-1] - 1) * 100), 1),
+                           mdd=round(float((nav / nav.cummax() - 1).min() * 100), 1),
+                           since=str(s.index.min())))
+    b1, b5, b20 = tail_cum(full_bench, 1), tail_cum(full_bench, 5), tail_cum(full_bench, 20)
+    kr = kq.pct_change().dropna()
+    trailing = dict(asof=end, rows=t_rows,
+                    bench=dict(r1=b1, r5=b5, r20=b20),
+                    kosdaq=dict(r1=tail_cum(kr, 1), r5=tail_cum(kr, 5), r20=tail_cum(kr, 20)))
     out = dict(status="ok", generated=datetime.now().isoformat(timespec="seconds"),
-               topn=TOPN, panels=panels)
+               topn=TOPN, panels=panels, trailing=trailing)
     (HERE / "docs" / "cross_sim.json").write_text(
         json.dumps(out, ensure_ascii=False), encoding="utf-8")
     print(f"💾 docs/cross_sim.json 생성 — 패널 {len(panels)}개, 기준일 {end}")

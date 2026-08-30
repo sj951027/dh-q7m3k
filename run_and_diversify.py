@@ -357,6 +357,11 @@ def main():
         run_script(["build_wu_filter.py", "--model", "qs_a", "--out", "latest_qs.csv"],
                    "2.89b단계: 조용한 강자 qs_a 관측 CSV (섀도우)")
 
+    # 2.89c2) 공매도비중(sv_a) 관측 CSV — sv.html 이 fetch할 docs/latest_sv.csv 갱신 (2026-08-30).
+    if (HERE / "build_wu_filter.py").exists():
+        run_script(["build_wu_filter.py", "--model", "sv_a", "--out", "latest_sv.csv"],
+                   "2.89c2단계: 공매도비중 sv_a 관측 CSV (섀도우)")
+
     # 2.89c) 가격 4팩터(px_a) 관측 CSV — px.html 이 fetch할 docs/latest_px.csv 갱신.
     #        점수 적재는 2.88(wu_score)이 이미 처리(px_a 는 wu_scores 공유, PREREGISTER_px_a.md).
     #        2026-08-11 사용자 결정: 테스트 열람용 표시 배선 — 표시 전용(판정·점수 0-diff), 실패해도 비치명.
@@ -370,6 +375,13 @@ def main():
     #        순수 축적 — 점수·표시 미연결. 실패해도 비치명.
     if (HERE / "accumulate_valuation.py").exists():
         run_script(["accumulate_valuation.py"], "2.895단계: 밸류 스냅샷 적재 (관측 축적)")
+
+    # 2.896) DART 공시 이벤트 증분 적재 — 유상증자·CB/BW·무상·감자·자사주 (2026-08-30,
+    #        근거 research/RESEARCH_feasibility_sector_dart_20260830.md: 희석 이벤트가
+    #        과매도 유니버스 진입 종목에 ex_h20 −9%p대). ohlcv.db dart_events 에만 기록.
+    #        순수 축적 — 점수·판정·표시 미연결. 실패해도 비치명.
+    if (HERE / "dart_events.py").exists():
+        run_script(["dart_events.py"], "2.896단계: DART 공시 이벤트 적재 (관측 축적)")
 
     # 2.9) 판정일 도달 알림 — 모델별 OOS 40거래일 첫 도달 시 텔레그램 1회 알림(§11 시즌
     #      안전장치, 2026-07-11). history.db 직접 계산(leaderboard.json 신선도 무의존).
@@ -392,6 +404,11 @@ def main():
     #        근거 research/RESEARCH_forward_levers_20260829.md B). 표시 전용·비치명.
     if (HERE / "build_alpha_beta.py").exists():
         run_script(["build_alpha_beta.py"], "2.916단계: 알파/베타 관측 패널 (관측, 판정 무관)")
+
+    # 2.917) 요즘 폼 패널 — 최근 10 마감앵커 IC vs 전체 평균 (2026-08-30 사용자 요청:
+    #        누적 IC 는 판정용이라 최근 변화가 늦게 보임). 표시 전용·비치명.
+    if (HERE / "build_recent_ic.py").exists():
+        run_script(["build_recent_ic.py"], "2.917단계: 요즘 폼 패널 (관측, 판정 무관)")
 
     # 완전성 게이트: degraded(행수 비정상↓) 데이터는 공개 배포(push + 평소 텔레)를 보류.
     #   DB 기록은 남기고(감사·재현), 어제 대시보드 유지. degraded면 '보류' 알림만 보냄(침묵 금지).

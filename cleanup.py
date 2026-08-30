@@ -163,11 +163,33 @@ def collect_dart(args):
     return old, tmps
 
 
+def _load_dotenv_backup_keys():
+    """(2026-08-30) .env 의 BACKUP_DIR/BACKUP_OHLCV/OHLCV_DB 를 os.environ 에 반영.
+    cleanup.py 는 .bat 에서 단독 프로세스로 실행돼 .env 가 자동 로드되지 않았음(실측:
+    .env 에 BACKUP_DIR=OneDrive 지정돼 있었지만 백업이 로컬 backup/ 에 쌓임).
+    이미 설정된 실제 환경변수가 있으면 그것이 우선. 실패는 비치명(로컬 backup/ 폴백)."""
+    envf = HERE / ".env"
+    if not envf.exists():
+        return
+    try:
+        for line in envf.read_text(encoding="utf-8-sig").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k = k.strip(); v = v.strip().strip('"').strip("'")
+            if k in ("BACKUP_DIR", "BACKUP_OHLCV", "OHLCV_DB") and k not in os.environ:
+                os.environ[k] = v
+    except Exception:
+        pass
+
+
 def backup_db(keep=4, min_gap_days=7):
     """history.db gzip 백업 + ohlcv 재생성불가 테이블 덤프. 매일 호출해도 안전 —
     최신 백업이 min_gap_days 이내면 건너뜀(주 1회 유지). keep=4 → 약 한 달치 보존.
     (2026-07-11: .bat 매일 호출용 가드 + BACKUP_DIR 환경변수 지원 — .env 에
      BACKUP_DIR=OneDrive 등 동기화 폴더를 지정하면 오프사이트 백업이 자동화됨.)"""
+    _load_dotenv_backup_keys()
     src = HERE / "history.db"
     if not src.exists():
         print("   ⚠️  history.db 없음 — 백업 생략")

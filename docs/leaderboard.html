@@ -144,10 +144,17 @@
     <div class="foot" id="gates"></div>
   </div>
 
-  <!-- [2026-08-14] 공통 잣대 모의계좌 — 트랙 간 비교용 관측 섹션 (판정 무관, build_cross_sim.py) -->
-  <div id="crosssim" style="margin-top:18px"></div>
-  <!-- [2026-08-29] 알파/베타 관측 패널 — "요즘 수익이 실력인지 장 덕인지" (build_alpha_beta.py, 판정 무관) -->
-  <div id="alphabeta" style="margin-top:18px"></div>
+  <!-- [2026-08-30] 최근 성적(실수익) — 어제/1주/1개월, 공통 잣대 방식 (build_cross_sim trailing) -->
+  <div id="trailing" style="margin-top:18px"></div>
+  <!-- [2026-08-30] 요즘 폼 — 접힌 상태 기본(페이지 가독성, 2026-08-30 사용자 피드백) -->
+  <details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;color:var(--sub)">🔥 요즘 폼 — 최근 10앵커 IC vs 전체 (펼쳐 보기)</summary>
+  <div id="recentic"></div></details>
+  <!-- [2026-08-30] 고정 시작일 창 3개는 접힘 기본 — 통합 표는 위 '공통 잣대 — 최근 성적' (사용자 피드백) -->
+  <details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;color:var(--sub)">💼 과거 고정 창 기록 — 7/02·7/24·8/10 시작 모의계좌 (펼쳐 보기)</summary>
+  <div id="crosssim"></div></details>
+  <!-- [2026-08-29] 알파/베타 — 접힌 상태 기본 -->
+  <details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;color:var(--sub)">📐 알파/베타 — 수익이 실력(α)인지 장 덕(β)인지 (펼쳐 보기)</summary>
+  <div id="alphabeta"></div></details>
 
   <div class="foot">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는
     docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.08.6 (이력: patch_note/)</div>
@@ -172,7 +179,7 @@
 
   // 2026-08-11: 모델 셀 → 해당 표시 페이지 링크 (페이지가 실존하는 모델만. 은퇴 모델·페이지 없는 모델은 링크 없음)
   const MODEL_PAGES={ 'v30':'filter.html', 'lv_b':'lowvol.html', 'lv_a':'lva.html', 'wu_a':'wu.html',
-    'mom_a':'mom.html', 'qs_a':'qs.html', 'ls_t1':'_large_test.html', 'px_a':'px.html' };
+    'mom_a':'mom.html', 'qs_a':'qs.html', 'ls_t1':'_large_test.html', 'px_a':'px.html', 'sv_a':'sv.html' };
   const mlink=(model)=>{ const p=MODEL_PAGES[model];
     return p ? '<a href="'+p+'"><b>'+model+'</b></a>' : '<b>'+(model||'')+'</b>'; };
 
@@ -420,6 +427,84 @@
       h+='<div class="foot">⚠ 짧은 창·단일 국면·거래비용 0 — "이 기간 이 장에서"의 성적일 뿐 일반화 금지. '
         +'통계적 판정은 위 §11 표가 정본.</div>';
       document.getElementById('crosssim').innerHTML=h;
+
+      // [2026-08-30] 최근 성적(실수익) — 같은 cross_sim.json 의 trailing 사용
+      const tr=cs.trailing;
+      if(tr&&tr.rows&&tr.rows.length){
+        const pv=(v)=> v==null?'<span class="na">·</span>'
+          :'<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+(v>0?'+':'')+v.toFixed(1)+'%</span>';
+        const b=tr.bench||{};
+        let t='<div style="font-size:15px;font-weight:600;margin-bottom:4px">💼 공통 잣대 — 최근 성적(실수익) '
+          +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 각 모델 상위'+cs.topn
+          +' 따라사기 기준 · ~'+tr.asof.slice(4,6)+'/'+tr.asof.slice(6)
+          +' (<b>관측 전용 · 수수료 0 · §11 판정 무관</b>)</span></div>'
+          +'<details class="explain"><summary>이 표 읽는 법 — 쉬운 설명</summary><div class="explain-body">'
+          +'<p>어제 하루 / 최근 1주(5거래일) / 최근 1개월(20거래일)에 각 모델의 추천 상위'+cs.topn
+          +'을 매일 따라 샀다면의 <b>실제 수익률</b>입니다. 아래 시장평균(전종목 동일비중)·코스닥 '
+          +'줄과 비교해서 읽으세요 — 시장보다 높으면 그 기간 종목 선택이 보탬이 된 것.</p>'
+          +'<p><b>"전체" 칸은 각 모델의 등록일부터의 성적</b>이라 시작일이 달라 모델끼리 직접 '
+          +'비교하면 안 됩니다(그래서 시작일·일수 병기). 공정 비교는 어제/1주/1개월 칸으로. '
+          +'MDD는 그 기간 고점 대비 최악 하락 — 따라가려면 견뎌야 했던 멀미의 크기.</p>'
+          +'<p>⚠ 짧은 기간일수록 운의 비중이 큽니다(어제 1등은 내일 꼴찌가 되기도). '
+          +'추세 참고용이며, 채택·서열 판단은 위 §11 판정표가 정본입니다.</p></div></details>'
+          +'<table style="margin-bottom:6px"><thead><tr><th>모델</th><th>어제</th><th>1주</th><th>1개월</th>'
+          +'<th title="1개월 수익 − 시장평균 1개월 수익">1개월 시장대비</th>'
+          +'<th title="등록일부터 누적 — 시작일이 달라 모델 간 직접 비교 금지">전체(등록 후)</th>'
+          +'<th title="등록 후 고점 대비 최대 하락">MDD</th></tr></thead><tbody>'
+          +'<tr style="color:var(--sub)"><td>시장평균(전종목)</td><td class="num">'+pv(b.r1)+'</td>'
+          +'<td class="num">'+pv(b.r5)+'</td><td class="num">'+pv(b.r20)+'</td><td>—</td><td>—</td><td>—</td></tr>'
+          +'<tr style="color:var(--sub)"><td>KOSDAQ 지수</td><td class="num">'+pv(tr.kosdaq&&tr.kosdaq.r1)+'</td>'
+          +'<td class="num">'+pv(tr.kosdaq&&tr.kosdaq.r5)+'</td><td class="num">'+pv(tr.kosdaq&&tr.kosdaq.r20)+'</td><td>—</td><td>—</td><td>—</td></tr>';
+        const rows=[...tr.rows].sort((x,y)=>((y.r20==null?-1e9:y.r20)-(x.r20==null?-1e9:x.r20)));
+        for(const r of rows){
+          const exc=(r.r20!=null&&b.r20!=null)?r.r20-b.r20:null;
+          t+='<tr><td>'+mlink(r.model)+'</td><td class="num">'+pv(r.r1)+'</td>'
+            +'<td class="num">'+pv(r.r5)+'</td><td class="num">'+pv(r.r20)+'</td>'
+            +'<td class="num">'+(exc==null?'<span class="na">·</span>':pv(exc)+'p')+'</td>'
+            +'<td class="num">'+(r.rall==null?'<span class="na">·</span>':pv(r.rall)
+              +' <span style="font-size:10px;color:var(--sub)">('+(r.since?r.since.slice(4,6)+'/'+r.since.slice(6):'')+'~, '+r.n+'일)</span>')+'</td>'
+            +'<td class="num">'+(r.mdd==null?'<span class="na">·</span>':pv(r.mdd))+'</td></tr>';
+        }
+        t+='</tbody></table><div class="foot">· = 등록 후 기간이 짧아 창을 못 채움 · '
+          +'전날 저녁 선정 → 다음날 매수 가정(공통 잣대와 동일) · 데이터: cross_sim.json</div>';
+        document.getElementById('trailing').innerHTML=t;
+      }
+    }).catch(()=>{});
+
+  // [2026-08-30] 요즘 폼 패널 — build_recent_ic.py 가 매일 생성 (관측 전용, 판정 무관)
+  fetch('recent_ic.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); })
+    .then(ri=>{
+      if(ri.status!=='ok'||!ri.models||!ri.models.length) return;
+      const pn=(v)=>'<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+(v>0?'+':'')+v.toFixed(3)+'</span>';
+      const TRK={v3:'🔵 과매도 v3',lowvol:'🟢 저변동',wu:'🟣 전체종목'};
+      let h='<div style="font-size:15px;font-weight:600;margin-bottom:4px">🔥 요즘 폼 '
+        +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 최근 '+ri.k
+        +'개 마감 앵커(h'+ri.h+')만의 IC vs 전체 평균 (<b>관측 전용, §11 판정 무관</b>)</span></div>'
+        +'<details class="explain"><summary>이 표 읽는 법 — 쉬운 설명</summary><div class="explain-body">'
+        +'<p><b>위 판정표의 IC는 "지금까지 전체 시험의 평균"</b>이라 새 시험 성적이 평균에 천천히만 '
+        +'반영됩니다(장기 실력 판정용으로는 그게 맞습니다). 이 표는 반대로 <b>가장 최근에 채점이 '
+        +'끝난 시험 '+ri.k+'개만의 평균</b> — "요즘 잘 맞히고 있나"를 직접 봅니다.</p>'
+        +'<p>▼는 요즘이 전체 평균보다 식었다는 뜻, ▲는 달아오르는 중. 여러 모델이 한꺼번에 ▼면 '
+        +'모델 문제가 아니라 <b>국면이 바뀌는 중</b>일 가능성이 큽니다.</p>'
+        +'<p>⚠ 최근 '+ri.k+'개는 창이 겹치는 작은 표본이라 노이즈가 큽니다 — 서열·채택 판단 금지, '
+        +'식었나/달아올랐나의 방향 참고까지만. 판정 정본은 위 §11 표.</p></div></details>'
+        +'<table style="margin-bottom:6px"><thead><tr><th>모델</th><th title="최근 '+ri.k+'개 마감 앵커만의 평균 IC">요즘 IC</th>'
+        +'<th title="등록 후 전체 마감 앵커 평균(판정표 값)">전체 IC</th><th>추세</th>'
+        +'<th title="최근 앵커 중 IC>0 비율">양(+)</th><th title="최근 앵커 선정일 구간">구간</th></tr></thead><tbody>';
+      let cur='';
+      for(const m of ri.models){
+        if(m.track!==cur){ cur=m.track;
+          h+='<tr><td colspan="6" style="color:var(--sub);font-size:11px;padding-top:8px">'+(TRK[cur]||cur)+'</td></tr>'; }
+        const d=m.ic_recent-m.ic_all;
+        const ar=d>0.01?'<span class="pos">▲</span>':(d<-0.01?'<span class="neg">▼</span>':'→');
+        h+='<tr><td><b>'+m.model+'</b></td><td class="num">'+pn(m.ic_recent)+'</td>'
+          +'<td class="num">'+pn(m.ic_all)+'</td><td>'+ar+'</td>'
+          +'<td class="num">'+Math.round(m.pos_recent*100)+'%</td>'
+          +'<td style="font-size:10px;color:var(--sub)">'+m.recent_span.slice(4,8)+'~'+m.recent_span.slice(13)+'</td></tr>';
+      }
+      h+='</tbody></table><div class="foot">앵커=선정일(h'+ri.h+' 채점 완료분만) · 프로토콜은 판정표와 동일 '
+        +'· 데이터: recent_ic.json (매일 갱신, build_recent_ic.py)</div>';
+      document.getElementById('recentic').innerHTML=h;
     }).catch(()=>{});
 
   // [2026-08-29] 알파/베타 관측 패널 — build_alpha_beta.py 가 매일 생성 (관측 전용, 판정 무관)
