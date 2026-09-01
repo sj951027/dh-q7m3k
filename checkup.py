@@ -54,6 +54,7 @@ REG_DATE = {
     "le_a": "20260715", "sv_a": "20260715",            # PREREGISTER_le_sv.md
     "qs_a": "20260723",                                # PREREGISTER_qs.md (첫 적재 20260723)
     "px_a": "20260810",                                # PREREGISTER_px_a.md (첫 적재 예정 20260810)
+    "lv_e": "20260901",                                # PREREGISTER_lv_e.md (첫 적재 예정 20260901 — sm_a 판정 후 등록, VERDICT_20260901_sm_a)
 }
 
 def boot_ci(arr, n=2000, seed=42):
