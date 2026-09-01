@@ -22,3 +22,10 @@
 ## 영향범위
 - 다음 파이프라인 실행부터 lv_e 적재 시작(그날이 REG_DATE 실효). lv_e 판정은 40거래일 후(~10월 말).
 - lowvol 이후 판정의 Bonferroni 분모 11. wu 트랙 남은 판정: sv_a(~9/10)·le_a·qs_a(~9월 말)·px_a(~10월 초).
+
+## 추가 (같은 날 저녁) — wu 트랙 spec_hash 골든 테스트
+- tests/test_wu_score_rules.py 신규(10체크): 6모델 spec_hash 골든(라이브==DB 저장값==
+  PREREGISTER 문서값 3중 일치 확인 후 동결), svr5/nh252/mom12 방향 골든(8/29 방향 혼동
+  사건 재발 방지), 등록 모델 보존 체크. run_tests.py 등록 → 전체 42체크.
+- 목적: 9/11 sv_b 배선 패치(wu_score.py 수정)의 안전망 — 기존 6모델 스펙 불변을 기계 증명.
+- 판정·점수 0-diff(테스트 추가만). 전체 테스트 통과 확인.

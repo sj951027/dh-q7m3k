@@ -4,7 +4,7 @@
 import subprocess, sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
-FILES = ["test_lowvol_score_rules.py", "test_leaderboard_frozen.py"]
+FILES = ["test_lowvol_score_rules.py", "test_wu_score_rules.py", "test_leaderboard_frozen.py"]
 fail = 0
 for f in FILES:
     print(f"━━ {f}")
