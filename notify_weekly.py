@@ -3,8 +3,8 @@
 notify_weekly.py — 주간 리캡 텔레그램 (일요일 1회, 표시 전용)
 ================================================================
 [2026-07-25 신설] 지난 7일의 상태를 한 메시지로 요약해 보낸다:
-  ① 판정 카운트다운(§11 OOS 진행) ② 트랙별 선두(h5 보조지표, n·정직 표기)
-  ③ 데이터 적재 현황 ④ 특이사항(미실행 거래일 감지)
+  ① 판정 카운트다운(§11 OOS 진행) ② 이번 주 성적(상위20 따라사기 r5 − 시장평균, 2026-09-04) ③ 이번 주 달라진 것
+  ④ 데이터 적재 현황 ⑤ 특이사항(미실행 거래일 감지)
 
 원칙: 읽기 전용(history.db·ohlcv.db·docs/*.json) · 점수·판정 계산 없음(leaderboard.json 인용)
       · 비치명 · 전송은 notify_telegram.send() 재사용(.env 토큰 없으면 조용히 스킵).
@@ -56,7 +56,13 @@ def build_message():
         lb = json.loads((HERE / "docs" / "leaderboard.json").read_text(encoding="utf-8"))
         min_oos = lb.get("min_oos", 40)
         fams = {}
+        # [2026-09-04] 은퇴 모델 제외 — json retired 플래그(각 스크립트 RETIRED 단일소스) + 구 json 폴백.
+        #   종전엔 v31a(8/09 은퇴)·lv_a3 등이 h5 IC 최대값으로 '트랙 선두'에 뽑히는 버그.
+        _ret_fb = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
+                   "lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "wu_a", "wu_b"}
         for m in lb.get("models", []):
+            if m.get("retired") or m["model"] in _ret_fb:
+                continue
             fam = "mom" if str(m["model"]).startswith("mom") else m["track"]
             fams.setdefault(fam, []).append(m)
         lines.append("🏁 <b>판정 카운트다운</b>")
@@ -64,31 +70,56 @@ def build_message():
             ms = fams.get(fam)
             if not ms:
                 continue
-            mx = max(ms, key=lambda m: m.get("oos_days", 0))
+            # [2026-09-04] 판정 대기(40일 미만) 모델 중 가장 임박한 것을 표시. 대기 모델이 없으면 '전부 판정 완료'.
+            #   종전엔 누적 최대 OOS 로 '판정 가능'이 늘 떠서(이미 판정 끝난 모델) 정보가 없었음.
+            pend = [m for m in ms if (m.get("oos_days") or 0) < min_oos]
+            if not pend:
+                lines.append(f"  {emoji} {label:8s} 전부 판정 완료(정본은 VERDICT 문서)")
+                continue
+            mx = max(pend, key=lambda m: m.get("oos_days", 0))
             o = mx.get("oos_days", 0)
             left = max(0, min_oos - o)
-            eta = "판정 가능" if left == 0 else f"{left}거래일 남음"
-            lines.append(f"  {emoji} {label:8s} {bar(o, min_oos)} {o}/{min_oos}일 · {eta}")
+            more = f" 외 {len(pend)-1}" if len(pend) > 1 else ""
+            lines.append(f"  {emoji} {label:8s} {bar(o, min_oos)} {mx['model']} {o}/{min_oos}일 · {left}거래일 남음{more}")
         lines.append("")
-        lines.append("📈 <b>트랙 선두</b> (h5 보조지표 — 판정 아님)")
-        for fam, emoji, label in FAMILY:
-            ms = fams.get(fam)
-            if not ms:
-                continue
-            best = None
-            for m in ms:
-                ic = (m.get("h5") or {}).get("ic")
-                if ic is None:
-                    continue
-                if best is None or ic > (best.get("h5") or {}).get("ic", -9):
-                    best = m
-            if best is None:
-                lines.append(f"  {emoji} {label}: 측정 전")
-                continue
-            h5, h20 = best["h5"], best.get("h20") or {}
-            extra = f" · h20 {h20['ic']:+.3f}(n{h20['n']})" if h20.get("ic") is not None else ""
-            lines.append(f"  {emoji} {label}: <b>{best['model']}</b> "
-                         f"{h5['ic']:+.3f}(n{h5['n']}){extra}")
+        # [2026-09-04] '트랙 선두(h5 IC 최대)' 제거 → ② 이번 주 성적(cross_sim trailing r5 − 시장평균) + ③ 이번 주 달라진 것.
+        #   사용자 지적: 주간 리캡의 선두는 '이번 주 성적'이어야지 등록 후 누적 IC 최대가 아니다. 1주는 운 비중이 커서
+        #   순서가 아니라 '시장 대비 ±'만 읽도록 문구를 붙인다. 표시 전용·비치명.
+        try:
+            cs = json.loads((HERE / "docs" / "cross_sim.json").read_text(encoding="utf-8"))
+            tr = cs.get("trailing") or {}
+            b5 = (tr.get("bench") or {}).get("r5")
+            act_ids = {m["model"] for ms in fams.values() for m in ms}
+            rows = [(r["model"], r["r5"] - b5) for r in tr.get("rows", [])
+                    if r.get("r5") is not None and b5 is not None and r["model"] in act_ids]
+            rows.sort(key=lambda x: -x[1])
+            if rows:
+                lines.append(f"📈 <b>이번 주 성적</b> (상위20 따라사기 · 시장평균 {b5:+.1f}% 대비 · 비용 0)")
+                lines.append("  " + " · ".join(f"{m} {v:+.1f}%p" for m, v in rows))
+                lines.append("  ※ 1주는 운 비중이 큼 — 순서보다 시장 대비 ±만 보기 · 판정 정본은 §11")
+        except Exception as e:
+            lines.append(f"📈 이번 주 성적 실패(비치명): {str(e)[:60]}")
+        # ③ 이번 주 달라진 것 — leaderboard_history 7일 범위(판정 표본 도달·자동 라벨 변경·은퇴)
+        try:
+            hist = json.loads((HERE / "docs" / "leaderboard_history.json").read_text(encoding="utf-8"))
+            week = [h for h in hist if str(h.get("date", "")) >= d0]
+            ev = []
+            if len(week) >= 2:
+                first = {x["m"]: x for x in week[0].get("models", [])}
+                last = {x["m"]: x for x in week[-1].get("models", [])}
+                for mid, x in last.items():
+                    q = first.get(mid)
+                    if not q or mid not in act_ids:
+                        continue
+                    nd = 60 if x.get("t") == "large" else min_oos
+                    if (q.get("o") or 0) < nd <= (x.get("o") or 0):
+                        ev.append(f"{mid} 판정 표본 {nd}일 도달")
+                    elif q.get("v") != x.get("v"):
+                        ev.append(f"{mid} 자동 라벨 {q.get('v')}→{x.get('v')}(참고)")
+            lines.append("")
+            lines.append("🔔 <b>이번 주 달라진 것</b>: " + (" · ".join(ev) if ev else "없음"))
+        except Exception:
+            pass
     except Exception as e:
         lines.append(f"📊 리더보드 요약 실패(비치명): {str(e)[:60]}")
     lines.append("")

@@ -241,28 +241,132 @@ def _model_status_lines():
         return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
 
 
+# ====================================================================================
+# [2026-09-04] 텔레그램 요약 v2 — 리더보드 2안(쉬운 버전)과 같은 순서 (사용자 결정)
+#   ① 지금 기준(정본 판정) → ② 돈(최근 1개월 시장대비) → ③ 판정 캘린더(D-day) → ④ 어제와 달라진 것
+#   종전 _model_status_lines 는 보존(재활성화 가능). 표시 전용 · 비치명 · 판정/점수 무접촉.
+#   버그 교정: 종전은 은퇴 모델(v31a)·h20 없는 모델(px_a, h5 n12)이 'IC 최대'로 선두에 뽑혔음.
+# ====================================================================================
+# 정본 판정(VERDICT 봉인) — 판정·은퇴 시 갱신(docs/leaderboard.html SEALED 맵과 동일하게 유지)
+SEALED_V2 = {"v30": "유의(8/09 정본)", "lv_b": "기움(8/29 정본)",
+             "lv_a": "노이즈(8/29)", "mom_a": "노이즈(8/29)", "sm_a": "노이즈(9/01)"}
+RETIRED_FALLBACK_V2 = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
+                       "lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "wu_a", "wu_b"}   # 구 json 폴백
+MONEY_MODELS_V2 = ["v30", "lv_b"]      # ② 돈 줄 대표(+ 판정 캘린더 선두 1개 자동 추가)
+
+
+def _uni_latest2(model):
+    """대표 모델의 최신 run·직전 run 유니버스 크기 (표시 전용, 실패 시 None)."""
+    try:
+        import sqlite3
+        con = sqlite3.connect(f"file:{HERE / 'history.db'}?mode=ro", uri=True)
+        for tbl in ("v3_scores", "lowvol_scores", "wu_scores"):
+            rows = con.execute(
+                f"SELECT run_id, COUNT(*) FROM {tbl} WHERE model_id=? GROUP BY run_id "
+                f"ORDER BY run_id DESC LIMIT 2", (model,)).fetchall()
+            if rows:
+                con.close()
+                return rows[0][1], (rows[1][1] if len(rows) > 1 else None)
+        con.close()
+    except Exception:
+        pass
+    return None, None
+
+
+def _model_status_lines_v2():
+    p = HERE / "docs" / "leaderboard.json"
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        if d.get("status") != "ok" or not d.get("models"):
+            return ["📊 모델 현황: 리더보드 갱신 대기중(leaderboard.py)"]
+        min_oos = d.get("min_oos", 40)
+        need = lambda m: 60 if m.get("track") == "large" else min_oos
+        act = [m for m in d["models"]
+               if not m.get("retired") and m["model"] not in RETIRED_FALLBACK_V2]
+        by = {m["model"]: m for m in act}
+        out = []
+
+        # ① 지금 기준 — 정본 판정 + 유니버스 크기(8/12 사건: 고갈 감시)
+        parts = []
+        for mid in ("v30", "lv_b"):
+            u, _ = _uni_latest2(mid)
+            parts.append(f"<b>{mid}</b> {SEALED_V2.get(mid, '')}" + (f" · uni {u}" if u else ""))
+        out.append("🏆 지금 기준: " + " · ".join(parts))
+
+        # ③ 판정 캘린더(먼저 계산 — ②의 자동 추가 모델에 필요)
+        wait = sorted([m for m in act if (m.get("oos_days") or 0) < need(m)],
+                      key=lambda m: need(m) - (m.get("oos_days") or 0))
+        reached = [m for m in act if (m.get("oos_days") or 0) >= need(m)
+                   and m["model"] not in SEALED_V2]
+
+        # ② 돈 — cross_sim trailing 최근 20거래일 vs 시장평균
+        try:
+            cs = json.loads((HERE / "docs" / "cross_sim.json").read_text(encoding="utf-8"))
+            tr = cs.get("trailing") or {}
+            rows = {r["model"]: r for r in tr.get("rows", [])}
+            b20 = (tr.get("bench") or {}).get("r20")
+            money = list(MONEY_MODELS_V2) + [m["model"] for m in wait[:1]]
+            mp = []
+            for mid in money:
+                r = rows.get(mid)
+                if r and r.get("r20") is not None and b20 is not None:
+                    mp.append(f"{mid} {r['r20'] - b20:+.1f}%p")
+            if mp:
+                out.append(f"💰 최근 1개월 시장대비: " + " · ".join(mp)
+                           + f" (시장 {b20:+.1f}% · 상위20 따라사기·비용 0)")
+        except Exception:
+            pass
+
+        cal = [f"<b>{m['model']}</b> D-{need(m) - (m.get('oos_days') or 0)}"
+               + ("(h60)" if m.get("track") == "large" else "") for m in wait]
+        if reached:
+            cal = [f"<b>{m['model']}</b> 도달(판정 대기)" for m in reached] + cal
+        out.append("📅 판정: " + (" · ".join(cal) if cal else "대기 중인 모델 없음"))
+
+        # ④ 어제와 달라진 것 — leaderboard_history 마지막 2건 + 대표 유니버스 급감
+        ev = []
+        try:
+            hist = json.loads((HERE / "docs" / "leaderboard_history.json").read_text(encoding="utf-8"))
+            if isinstance(hist, list) and len(hist) >= 2:
+                prev = {x["m"]: x for x in hist[-2].get("models", [])}
+                for x in hist[-1].get("models", []):
+                    mid = x["m"]
+                    if mid not in by:
+                        continue
+                    q = prev.get(mid)
+                    if not q:
+                        continue
+                    nd = 60 if x.get("t") == "large" else min_oos
+                    if (q.get("o") or 0) < nd <= (x.get("o") or 0):
+                        ev.append(f"{mid} 판정 표본 {nd}일 도달")
+                    if q.get("v") != x.get("v") and mid not in SEALED_V2:
+                        ev.append(f"{mid} 자동 라벨 {q.get('v')}→{x.get('v')}(참고)")
+        except Exception:
+            pass
+        for mid in ("v30", "lv_b"):
+            u, u0 = _uni_latest2(mid)
+            if u and u0 and u < 0.5 * u0:
+                ev.append(f"⚠️ {mid} 유니버스 {u0}→{u} 급감(판정 표본 얇아짐)")
+        out.append("🔔 달라진 것: " + (" · ".join(ev) if ev else "없음"))
+        out.append("※ 계열 간 IC 비교 금지 · 판정 정본은 VERDICT 문서")
+        return out
+    except Exception:
+        return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
+
+
 def build_message():
     today = datetime.now().strftime("%Y-%m-%d")
     # 2026-08-11 사용자 결정: 제목 바로 아래 리더보드 링크 + 빈 줄 → 현황 줄들(헤더 없음).
     lines = [f"✅ <b>스크리너 완료</b> · {today}",
-             f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드 상세</a> (판정·h1~h20 관측)',
+             f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드</a> (돈·판정·캘린더 상세)',
              ""]
 
     # 2026-07-17 사용자 결정: v3 top3 종목 나열은 도움 안 됨 → 모델 관측 현황으로 대체.
     #   (종목 상세는 대시보드·필터 링크에서. _picks_by_bucket/_ic_line 은 보존 — 재활성화 가능.)
-    lines += _model_status_lines()
-
-    # [2026-08-29] 알파/베타 한 줄 — "요즘 수익이 실력(α)인지 장 덕(β)인지" (build_alpha_beta.py).
-    #   파일 없음·오래됨·형식 오류 전부 조용히 생략(비치명). t<2 는 참고 수준임을 α 뒤 t로 표기.
-    try:
-        import json as _json
-        _ab = _json.loads((HERE / "docs" / "alpha_beta.json").read_text(encoding="utf-8"))
-        if _ab.get("status") == "ok" and _ab.get("models"):
-            _parts = [f"{m} β{v['beta']:.2f}·α{v['alpha_d_pct']:+.2f}%/일(t{v['alpha_t']})"
-                      for m, v in _ab["models"].items()]
-            lines += ["📐 α/β(40일): " + " · ".join(_parts), ""]
-    except Exception:
-        pass
+    # [2026-09-04] v2 요약(정본 기준·돈·캘린더·변화)으로 교체 — 종전 _model_status_lines 보존(재활성화 가능).
+    #   α/β 한 줄(2026-08-29)은 본문에서 제거 — t<2 참고 수준이라 리더보드 접힘 패널로 충분. 데이터(alpha_beta.json)는 계속 생성.
+    lines += _model_status_lines_v2()
+    lines.append("")
 
     lines += [
         "※ 매수신호 아님 · 종목 상세는 아래 링크에서",
