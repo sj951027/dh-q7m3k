@@ -1,8 +1,8 @@
 @echo off
 title V2.6 Screener + Diversify
 chcp 65001 > nul
-rem [2026-07-26] UTF-8 강제: 스케줄러(AUTO)로 로그 리다이렉트 시 cp949 인코딩으로
-rem 이모지 출력이 UnicodeEncodeError 로 죽는 것 방지. 수동 실행에도 무해.
+rem [2026-07-26] force UTF-8 so emoji output does not crash with UnicodeEncodeError when AUTO redirects the log (cp949).
+rem [2026-09-04] rem lines kept ASCII: non-ASCII text after chcp made cmd re-read a fragment ('6]' is not recognized...).
 set PYTHONUTF8=1
 
 cd /d "%~dp0"

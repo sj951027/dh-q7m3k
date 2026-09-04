@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """leaderboard 판정 프로토콜 동결창 골든 테스트 (실 DB 읽기 전용)
 
-원리: 2026-07-29 이전에 h20 창이 닫힌 앵커들의 IC 는 **영원히 불변**이다(과거 시세·동결점수).
+원리: 2026-07-29 이전에 h20 창이 닫힌 앵커들의 IC 는 불변이다 — 단 '시세'는 원천(FDR)이 과거를 정정할 수 있어
+(2026-09-04 감자 재조정 재적재·권리락 정정으로 v30 골든이 코드 무관하게 이탈) forward 수익을
+tests/frozen_fwd_h20.csv 스냅샷으로 박아 둔다(생성: tests/make_frozen_snapshot.py). 이후 이 테스트는 코드만 검사한다.
 따라서 게이트·앵커·dedupe·REG_DATE·JUMP_CAP·MIN_GROUP·IC 계산 어디가 바뀌어도
 아래 골든값이 깨진다 — "조용히 틀어지는" 회귀(2026-08-12 게이트 사건 유형)를 잡는 그물.
 ⚠ 골든이 깨지면 골든을 고치지 말 것 — 로직 변경이 의도된 것인지(전/후 비교·사용자 승인)부터 확인.
@@ -23,16 +25,18 @@ def check(n, c, info=""):
     print(f"  ok  {n}" + (f"  [{info}]" if info else ""))
 
 FREEZE = "20260729"   # 이 날짜 이전 앵커의 h20 창은 전부 마감 — 데이터가 늘어도 불변
-GOLDEN = {  # 2026-08-29 동결. (VERDICT_20260829_lowvol.md·docs/leaderboard.json 과 교차확인된 값)
+GOLDEN = {  # 2026-08-29 동결 → 2026-09-04 스냅샷 기준 재동결(v30 +0.0584→+0.0573: 시세 정정, patch_note/20260904_ops_fixes.md)
     # (table, score_col, model_id): (n_anchors, mean_ic)
     ("lowvol_scores", "lowvol_score", "lv_b"): (22, 0.0687),
     ("lowvol_scores", "lowvol_score", "lv_c"): (22, -0.0962),
-    ("v3_scores", "final_score_v3", "v30"):    (35, 0.0584),
+    ("v3_scores", "final_score_v3", "v30"):    (35, 0.0573),
 }
 TOL = 5e-4
 
 close, _ = lb.load_ohlcv()
 dates = list(close.index); N = len(dates)
+_snap = pd.read_csv(ROOT / "tests" / "frozen_fwd_h20.csv", dtype={"run_id": str, "ticker": str})
+SNAP = {rid: g.set_index("ticker")["fwd"] for rid, g in _snap.groupby("run_id")}
 con = sqlite3.connect(f"file:{ROOT/'history.db'}?mode=ro", uri=True)
 partial, dbl, didx = lb.build_gates(con, dates)
 excl = partial | dbl
@@ -59,10 +63,9 @@ for (tb, sc_col, mid), (g_n, g_ic) in GOLDEN.items():
         t = lb.anchor(rid, didx)
         if t is None or t + lb.ENTRY_LAG + H >= N:
             continue
-        fwd = close.iloc[t + lb.ENTRY_LAG + H] / close.iloc[t + lb.ENTRY_LAG] - 1
-        jump = close.pct_change(fill_method=None).abs()\
-            .iloc[t + lb.ENTRY_LAG + 1:t + lb.ENTRY_LAG + H + 1].max()
-        fwd = fwd.where(jump <= lb.JUMP_CAP)
+        fwd = SNAP.get(rid)          # 스냅샷의 forward 수익(JUMP_CAP 적용 후, NaN=컷)
+        if fwd is None:
+            continue
         ics = []
         for mk, gm in g.groupby("market"):
             s = gm.set_index("ticker")["score"].astype(float)

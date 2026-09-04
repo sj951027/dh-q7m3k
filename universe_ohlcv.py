@@ -31,6 +31,9 @@ from datetime import datetime, timedelta
 DB_DIR = os.path.join("..", "dh-q7m3k-data")  # ★ 레포 바깥(git·핸드오프 범위 밖). raw 데이터 격리.
 DB_PATH = os.path.join(DB_DIR, "ohlcv.db")
 INCREMENTAL_WINDOW = 7        # 일상 증분 시 최근 며칠 재확인(공백/정정 흡수)
+ADJ_TOL = 0.05                # [2026-09-04] 재확인 창에서 기존 종가와 새 종가가 이만큼 어긋나면 '수정주가 재조정'(감자·분할)으로
+                              #   보고 그 종목의 전 기간을 다시 받는다. 7일 창만 덮어쓰면 과거는 옛 배수로 남아 가짜 급등이 생김
+                              #   (실측 2026-08-21~25 감자 재상장 15종목: +400~+1,577% 단절 — patch_note/20260904_ops_fixes.md)
 SLEEP = 0.0                   # FDR 은 rate limit 부담 적음. 필요시 0.1~0.3 으로.
 
 SCHEMA = """
@@ -129,8 +132,9 @@ def fetch_ohlcv(code, start, end):
         return ("ERR", str(e)[:120])
 
 
-def upsert_ohlcv(con, code, market, shares, df, fetched_at):
-    """INSERT OR REPLACE. 반환 적재 행수. 빈 df 면 0(에러 미저장)."""
+def upsert_ohlcv(con, code, market, shares, df, fetched_at, shares_by_date=None):
+    """INSERT OR REPLACE. 반환 적재 행수. 빈 df 면 0(에러 미저장).
+    shares_by_date: {YYYYMMDD: shares} — 전 기간 재적재 시 기존 행의 주식수(PIT)를 보존하기 위해 사용."""
     rows = []
     for idx, r in df.iterrows():
         d = idx.strftime("%Y%m%d") if hasattr(idx, "strftime") else str(idx).replace("-", "")[:8]
@@ -142,7 +146,7 @@ def upsert_ohlcv(con, code, market, shares, df, fetched_at):
             _safe_int(r.get("Low")), _safe_int(r.get("Close")),
             vol,
             float(r["Change"]) if "Change" in r and r["Change"] == r["Change"] else None,
-            shares, suspended, market, fetched_at,
+            (shares_by_date.get(d, shares) if shares_by_date else shares), suspended, market, fetched_at,
         ))
     if not rows:
         return 0
@@ -155,6 +159,42 @@ def upsert_ohlcv(con, code, market, shares, df, fetched_at):
     return len(rows)
 
 
+def adjustment_detected(con, code, df, tol=ADJ_TOL):
+    """재확인 창의 겹치는 날짜에서 DB 종가와 새 종가가 tol 이상 어긋나면 True(수정주가 재조정)."""
+    try:
+        dates = [idx.strftime("%Y%m%d") if hasattr(idx, "strftime") else str(idx).replace("-", "")[:8] for idx in df.index]
+        if not dates:
+            return False
+        q = "SELECT date, close FROM daily_ohlcv WHERE ticker=? AND date BETWEEN ? AND ?"
+        old = dict(con.execute(q, (code, min(dates), max(dates))).fetchall())
+        for idx, r in df.iterrows():
+            d = idx.strftime("%Y%m%d") if hasattr(idx, "strftime") else str(idx).replace("-", "")[:8]
+            c_old = old.get(d); c_new = _safe_int(r.get("Close"))
+            if c_old and c_new and abs(c_new / c_old - 1.0) > tol:
+                return True
+    except Exception:
+        return False
+    return False
+
+
+def earliest_date_in_db(con, code):
+    row = con.execute("SELECT MIN(date) FROM daily_ohlcv WHERE ticker=?", (code,)).fetchone()
+    return row[0] if row and row[0] else None
+
+
+def full_start_for(con, code, global_start):
+    """전 기간 재적재 시작일: DB 에 있는 가장 오래된 날짜와 백필 기준일 중 더 이른 쪽(옛 배수 행이 남지 않게)."""
+    first = earliest_date_in_db(con, code)
+    if first:
+        f = f"{first[:4]}-{first[4:6]}-{first[6:]}"
+        return min(f, global_start)
+    return global_start
+
+
+def shares_map(con, code):
+    return dict(con.execute("SELECT date, shares FROM daily_ohlcv WHERE ticker=?", (code,)).fetchall())
+
+
 def record_skip(con, code, reason, at_date, fetched_at):
     con.execute(
         "INSERT INTO ohlcv_skips (ticker,reason,at_date,fetched_at) VALUES (?,?,?,?)",
@@ -162,25 +202,29 @@ def record_skip(con, code, reason, at_date, fetched_at):
     )
 
 
-def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_WINDOW):
+def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_WINDOW, tickers=None):
     fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     today = datetime.now()
     con = _connect()
     ensure_schema(con)
 
     universe = get_universe()
+    if tickers:
+        want = {t.strip() for t in tickers.split(",") if t.strip()}
+        universe = [u for u in universe if u["code"] in want]
+        print(f"  [지정 종목 전 기간 재적재] {len(universe)}종목: {sorted(want)}")
     if limit:
         universe = universe[:limit]
         print(f"  [시험모드] 앞 {limit}종목만")
 
+    global_start = (today - timedelta(days=int(years * 365.25) + 5)).strftime("%Y-%m-%d")
     if backfill:
-        global_start = (today - timedelta(days=int(years * 365.25) + 5)).strftime("%Y-%m-%d")
         print(f"• 백필 모드: {global_start} ~ 오늘, {len(universe)}종목")
     else:
         print(f"• 증분 모드: 종목별 최신일 이후만(최근 {incremental_window}일 재확인), {len(universe)}종목")
 
     end = today.strftime("%Y-%m-%d")
-    n_ok = n_skip = n_rows = 0
+    n_ok = n_skip = n_rows = n_readj = 0
     t0 = time.time()
 
     for i, item in enumerate(universe, 1):
@@ -188,6 +232,8 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
 
         if backfill:
             start = global_start
+        elif tickers:
+            start = full_start_for(con, code, global_start)
         else:
             last = latest_date_in_db(con, code)
             if last:
@@ -207,7 +253,18 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
             record_skip(con, code, "no_data", end, fetched_at)
             n_skip += 1
         else:
-            added = upsert_ohlcv(con, code, mkt, shares, res, fetched_at)
+            smap = None
+            if tickers:
+                smap = shares_map(con, code)                       # 지정 재적재: 기존 주식수(PIT) 보존
+            elif not backfill and adjustment_detected(con, code, res):
+                # 수정주가 재조정 감지 → 전 기간 다시 받아 옛 배수 행을 전부 교체(주식수는 기존 PIT 보존)
+                full = fetch_ohlcv(code, full_start_for(con, code, global_start), end)
+                if isinstance(full, tuple) or full is None:
+                    print(f"  ⚠️  {code} 수정주가 재조정 감지했으나 전 기간 재수집 실패 — 이번엔 창만 적재(다음 실행 재시도)")
+                else:
+                    res = full; smap = shares_map(con, code); n_readj += 1
+                    print(f"  ♻️  {code} 수정주가 재조정 감지(재확인 창 종가 불일치 >{ADJ_TOL:.0%}) → 전 기간 {len(res)}행 재적재")
+            added = upsert_ohlcv(con, code, mkt, shares, res, fetched_at, shares_by_date=smap)
             n_rows += added
             n_ok += 1
 
@@ -224,7 +281,7 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
 
     con.commit()
     con.close()
-    print(f"\n[완료] 성공 {n_ok}종목 / 스킵 {n_skip} / 총 {n_rows:,}행 적재")
+    print(f"\n[완료] 성공 {n_ok}종목 / 스킵 {n_skip} / 총 {n_rows:,}행 적재 / 수정주가 재조정 재적재 {n_readj}종목")
     print(f"       소요 {time.time()-t0:.0f}초. DB: {DB_PATH}")
 
 
@@ -256,13 +313,15 @@ def main():
     ap.add_argument("--window", type=int, default=INCREMENTAL_WINDOW,
                     help="증분 재확인 윈도(일)")
     ap.add_argument("--status", action="store_true", help="현황만 출력")
+    ap.add_argument("--tickers", type=str, default=None,
+                    help="지정 종목만 전 기간 재적재(쉼표 구분). 감자·분할 후 옛 배수 행 교정용")
     args = ap.parse_args()
 
     if args.status:
         status()
         return
     collect(backfill=args.backfill, years=args.years,
-            limit=args.limit, incremental_window=args.window)
+            limit=args.limit, incremental_window=args.window, tickers=args.tickers)
 
 
 if __name__ == "__main__":

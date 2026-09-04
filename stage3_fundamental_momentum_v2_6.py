@@ -773,6 +773,36 @@ def main():
                           f"→ {pattern} / Q:{basis} / OCF:{ocf_pat}({str(ocf_grp)[:3]}) "
                           f"({elapsed:.0f}s, 남은 ~{eta:.0f}s)")
 
+    # [2026-09-04] DART 연결오류(REQUEST_ERROR: Remote end closed connection) 2차 시도.
+    #  배치 중엔 매일 60~90종목(KOSDAQ 13%)이 연결 끊김으로 실패해 not_found(펀더멘털 결측)로 처리됐는데,
+    #  같은 종목을 단독 호출하면 정상(research/dart_probe_20260904.py 실측) → 배치 끝에 순차·느린 간격으로 한 번 더.
+    #  성공분은 재무 캐시에 들어가 다음날부터 적중. 오류 없는 종목의 결과는 건드리지 않음(0-diff).
+    def _is_conn_err(res):
+        return any('REQUEST_ERROR' in str(res.get(k) or '')
+                   for k in ('dart_annual_message', 'dart_q_message', 'dart_ocf_message'))
+    retry_idx = [i for i, r in enumerate(results) if _is_conn_err(r)]
+    if retry_idx:
+        by_ticker = {r['ticker']: r for r in rows_list}
+        print(f"\n   🔁 DART 연결오류 {len(retry_idx)}종목 2차 시도(순차, 간격 0.3s)...")
+        fixed = 0
+        t_retry = time.time()
+        for i in retry_idx:
+            row = by_ticker.get(results[i]['ticker'])
+            if row is None:
+                continue
+            try:
+                time.sleep(0.3)
+                _, res2 = analyze_one(row)
+            except Exception:
+                continue
+            if not _is_conn_err(res2):
+                results[i] = res2
+                fixed += 1
+        print(f"   🔁 2차 시도 결과: 복구 {fixed}/{len(retry_idx)} ({time.time()-t_retry:.0f}s)")
+        annual_op_count = sum(1 for r in results if r.get('annual_yoy_%') is not None)
+        quarterly_op_count = sum(1 for r in results if r.get('quarterly_yoy_%') is not None)
+        ocf_found_count = sum(1 for r in results if r.get('ocf_latest_억') is not None)
+
     df_fund = pd.DataFrame(results)
     df_final = df.merge(df_fund, on='ticker', how='left')
 
