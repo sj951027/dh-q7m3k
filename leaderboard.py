@@ -38,6 +38,19 @@ REG_DATE.setdefault("wu_b", "20260702")
 # ls_t1: 대형 트랙 테스트 모델(PREREGISTER_ls_t1.md) — 등록 20260806, forward-only.
 REG_DATE.setdefault("ls_t1", "20260806")
 
+# [2026-09-04] 은퇴(적재 중지) 모델 플래그 — 표시 전용. 각 트랙 스크립트의 RETIRED 가 단일소스
+#   (v3_rescore 6개 · lowvol_score 5개 · wu_score 2개). IC·판정·Bonferroni 분모(테이블 실측)엔 무접촉 —
+#   행 보존 원칙상 은퇴 모델 행은 그대로라 분모도 그대로. 읽기 실패 시 빈 집합(비치명).
+def _retired_models():
+    out = set()
+    for modname in ("v3_rescore", "lowvol_score", "wu_score"):
+        try:
+            out |= set(getattr(__import__(modname), "RETIRED", ()))
+        except Exception as e:
+            print(f"   ⚠️ {modname}.RETIRED 읽기 실패(비치명): {e}")
+    return out
+RETIRED = _retired_models()
+
 ENTRY_LAG = 1                 # validate_scores 와 동일(추천 +1거래일 종가 매수)
 H_PRIMARY = 20                # §11 주지표
 HORIZONS = [1, 3, 5, 10, 20] # h1·h3·h10 은 관측 전용(2026-07-25 추가) — 판정은 H_PRIMARY(h20)만
@@ -282,7 +295,8 @@ def main():
                                     h5=stat[5], h20=stat[20],
                                     h1=stat[1], h3=stat[3], h10=stat[10],   # 관측 전용 — 판정·정렬 미사용
                                     exc5=stat.get("exc5"), exc20=stat.get("exc20"),  # 시장초과 %p (관측 전용)
-                                    verdict=vd, why=why, denom=denom[trk]))
+                                    verdict=vd, why=why, denom=denom[trk],
+                                    retired=(mid in RETIRED)))   # 표시 전용 플래그(2026-09-04)
         # ---- large 트랙 테스트 모델 ls_t1 (관측 전용 — PREREGISTER_ls_t1.md) ----
         #   점수: run 내 ep(1/PER)·bp(1/PBR)·rim_spread·div_yield 백분위 랭크 '동일가중' 평균
         #   (결측 제외, 최소 2개). 가중 탐색 없음(매직넘버 금지). large_final 은 run별 동결

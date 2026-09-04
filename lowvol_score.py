@@ -142,6 +142,15 @@ MODELS = {
     "lv_e": {"factors": ["realized_vol", "roe", "to20"], "uni": DEFAULT_UNI},
 }
 
+# [2026-09-04] 은퇴(적재 중지) 모델 — 사용자 결정(판정 완료·장기 역작동/노이즈·표시 미사용).
+#   v3_rescore.RETIRED 와 같은 관례: spec(MODELS)·spec_hash·기존 lowvol_scores 행은 전부 보존(행 보존
+#   원칙 → Bonferroni 분모 불변), 신규 run 적재만 중지. --full/--run 재적재 시에도 은퇴 행은 지우지
+#   않는다. 부활은 새 model_id + 사전등록으로만.
+#   lv_c·lv_d(낙폭 대조, 8/29 판정 노이즈·역작동) · lv_a3(lv_a 유니버스 변형, 역작동) ·
+#   lv_short(공매도 보조, 노이즈) · hv_a(고변동 대척, 역작동). 근거: VERDICT_20260829_lowvol.md,
+#   patch_note/20260904_retire7.md.
+RETIRED = {"lv_c", "lv_d", "lv_a3", "lv_short", "hv_a"}
+
 def spec_hash(model_id):
     """모델별 spec_hash. 원본 모델은 변형 추가와 무관하게 항상 동일 해시.
     payload에 그 모델의 팩터·유니버스·방식만 포함(전역 MODELS 미포함)."""
@@ -296,7 +305,8 @@ def run(mode_full=False, only_run=None):
         #   (전체 증분 실행에는 영향 없음 — only_run 이 있을 때만.)
         if only_run:
             deleted = con.execute(
-                "DELETE FROM lowvol_scores WHERE run_id=?", (only_run,)).rowcount
+                "DELETE FROM lowvol_scores WHERE run_id=? AND model_id NOT IN (%s)"
+                % ",".join("?" * len(RETIRED)), (only_run, *sorted(RETIRED))).rowcount
             con.commit()
             if deleted:
                 print(f"[idempotent] --run {only_run}: 기존 {deleted}행 삭제 후 재적재")
@@ -305,9 +315,10 @@ def run(mode_full=False, only_run=None):
     else:
         done_set = set()
         if only_run is None:
-            con.execute("DELETE FROM lowvol_scores")
+            con.execute("DELETE FROM lowvol_scores WHERE model_id NOT IN (%s)"
+                        % ",".join("?" * len(RETIRED)), sorted(RETIRED))
             con.commit()
-            print("[--full] lowvol_scores 전체 재적재")
+            print("[--full] lowvol_scores 전체 재적재(은퇴 모델 행은 보존)")
 
     universe_col = 'oversold_score'
     liq_col = 'amt_avg_1m_억'
@@ -318,6 +329,7 @@ def run(mode_full=False, only_run=None):
             sub = df[(df.run_id==rid)&(df.market==mkt)].copy()
             if len(sub)==0: continue
             for mid, mdef in MODELS.items():
+                if mid in RETIRED: continue          # 은퇴: 신규 적재 중지(기존 행 보존)
                 if (rid, mid) in done_set: continue
                 u = mdef["uni"]
                 os_lo, os_hi, liq = u[0], u[1], u[2]

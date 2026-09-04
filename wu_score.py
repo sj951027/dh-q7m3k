@@ -84,6 +84,10 @@ MODELS = {
     #   h10/h20 CI>0 (research/NEW_MODEL_SEARCH_20260807.md). 첫 적재부터 forward-only.
     "px_a": ["lv60", "to20", "lv20", "nh252"],
 }
+# [2026-09-04] 은퇴(적재 중지): wu_a·wu_b — 2026-09-01 §11 1차 판정 기각(역작동 유의,
+#   VERDICT_20260901_wu.md). MODELS spec·spec_hash·기존 wu_scores 행은 보존(분모 불변), 신규 적재만
+#   중지(v3_rescore.RETIRED 관례). 부활은 새 model_id + 사전등록으로만.
+RETIRED = {"wu_a", "wu_b"}
 GUARD_SPEC = {"rv21_floor": VOL_FLOOR, "flat63_max": MAX_FLAT, "jump21_max": MAX_JUMP,
               "amt20_floor_억": LIQ_FLOOR, "suspended": 0, "lookback_min": LOOKBACK_MIN}
 
@@ -220,6 +224,7 @@ def main():
         if n_uni < 300:
             print(f"[스킵] {d}: 유니버스 {n_uni} < 300 (데이터 이상 의심)"); continue
         for mid, facs in MODELS.items():
+            if mid in RETIRED: continue          # 은퇴: 신규 적재 중지(기존 행 보존)
             sh = spec_hash(mid)
             s = score_model(F, d, facs, uni)
             rk = s.rank(ascending=False, method="min").astype(int)
@@ -229,7 +234,8 @@ def main():
             total += len(recs)
         hcon.commit()
         print(f"[적재] {d}: 유니버스 {n_uni} | " +
-              " | ".join(f"{m} {len(score_model(F, d, fs, uni))}행" for m, fs in MODELS.items()))
+              " | ".join(f"{m} {len(score_model(F, d, fs, uni))}행"
+                         for m, fs in MODELS.items() if m not in RETIRED))
     summ = pd.read_sql("SELECT model_id, COUNT(*) n, COUNT(DISTINCT run_id) runs, "
                        "MIN(run_id) first, MAX(run_id) last FROM wu_scores GROUP BY model_id", hcon)
     print(f"[완료] 신규 {total}행\n" + summ.to_string(index=False))

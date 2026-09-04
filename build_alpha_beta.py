@@ -11,7 +11,7 @@ build_alpha_beta.py — 알파/베타 상시 관측 패널 → docs/alpha_beta.j
   · α = 장과 무관하게 종목 선택이 벌어준 일평균 몫 (t<2 면 아직 우연과 구분 안 됨)
 
 ⚠ 관측 전용 — §11 판정 무관·비용 0·짧은 창. leaderboard.py·점수 테이블 일절 무접촉(mode=ro).
-실패해도 파이프라인 비치명. 대상: 트랙 대표 v30·lv_b·wu_a (cross_sim 주력창과 동일 관례).
+실패해도 파이프라인 비치명. 대상: 트랙 대표 v30·lv_b·sv_a (wu_a 는 2026-09-04 은퇴).
 """
 import json
 import sqlite3
@@ -27,7 +27,7 @@ TOPN, WINDOW, HIST_KEEP = 20, 40, 60
 MODELS = [
     ("v30",  "v3_scores",     "final_score_v3", "20260606"),
     ("lv_b", "lowvol_scores", "lowvol_score",   "20260625"),
-    ("wu_a", "wu_scores",     "wu_score",       "20260702"),
+    ("sv_a", "wu_scores",     "wu_score",       "20260715"),   # [2026-09-04] wu_a 은퇴 → wu 트랙 대표 sv_a
 ]
 
 

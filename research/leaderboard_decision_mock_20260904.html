@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>모델 결정 보드 · 시안 v2 (2026-09-04)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--line:#e3e6ea;--txt:#1f2328;--mut:#6b7280;--use:#137a3b;--with:#b7791f;--watch:#2563eb;--no:#9ca3af;--bad:#c0392b;--good:#137a3b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 -apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:26px 0 8px}
+.sub{color:var(--mut);font-size:12.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.answer{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.answer .a{border-left:5px solid;padding:10px 12px;border-radius:8px;background:var(--card);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.a .k{font-size:12px;color:var(--mut)}.a .m{font-size:20px;font-weight:700;margin:2px 0}.a .m small{font-size:13px;font-weight:500;color:var(--mut)}
+.a .why{font-size:12.5px}
+.lanes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.lane{background:#eef0f3;border-radius:10px;padding:10px}
+.lane h3{margin:0 0 6px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.lane h3 .n{font-size:12px;color:var(--mut);font-weight:500}
+.lane .desc{font-size:11.5px;color:var(--mut);margin-bottom:8px;min-height:32px}
+.mc{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;border-left:4px solid var(--no)}
+.mc.use{border-left-color:var(--use)}.mc.with{border-left-color:var(--with)}.mc.watch{border-left-color:var(--watch)}.mc.no{border-left-color:var(--no)}
+.mc .t{display:flex;justify-content:space-between;align-items:baseline}.mc .t b{font-size:15px}.mc .t a{color:inherit;text-decoration:none}.mc .t a:hover{text-decoration:underline}
+.mc .nm{font-size:12px;color:var(--mut)}
+.mc .row{display:flex;gap:10px;font-size:12px;margin-top:6px;flex-wrap:wrap}
+.mc .row span b{font-size:13px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:10px;background:#eef0f3;color:var(--mut)}
+.tag.good{background:#e3f4e9;color:var(--good)}.tag.bad{background:#fbe6e3;color:var(--bad)}.tag.wait{background:#e6eefc;color:var(--watch)}
+.bar{height:6px;background:#e3e6ea;border-radius:3px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--watch)}
+.pos{color:var(--good)}.neg{color:var(--bad)}.mut{color:var(--mut)}
+svg text{font-family:inherit}
+table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f0f2f5;font-weight:600;white-space:nowrap}
+details{margin-top:10px}summary{cursor:pointer;font-weight:600}
+.note{font-size:12px;color:var(--mut);margin-top:6px}
+.legend{display:flex;gap:14px;font-size:12px;margin:6px 0 4px;flex-wrap:wrap}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.easy{background:#fffbe6;border:1px solid #f1e3a0;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-top:10px}
+@media(max-width:900px){.answer,.lanes{grid-template-columns:1fr 1fr}}@media(max-width:600px){.answer,.lanes{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<h1>모델 결정 보드 <span class="sub">시안 v2 · 기준일 2026-09-04 · 데이터: leaderboard.json(9/4 배치)·cross_sim trailing·leaderboard_history</span></h1>
+<div class="sub">이 화면이 답하는 질문은 하나: <b>"지금 어떤 모델을 보고 종목을 고르면 되나."</b> 숫자는 전부 관측값이고, 상태(쓸 것/같이 볼 것/…)는 §11 판정 정본(VERDICT 문서)이 먼저, 판정 전 모델은 지금 흐름으로 정합니다.</div>
+
+<div id="answer" class="answer"></div>
+
+<h2>1. 네 칸 중 어디에 있나 <span class="sub">— 칸이 곧 결정. 카드 안 숫자는 '20일 뒤 시장보다 얼마나 벌었나(상위 20종목 평균)'</span></h2>
+<div id="lanes" class="lanes"></div>
+<div class="note">칸 정하는 규칙(자동): ① 은퇴 → 접힘 ② 판정 정본이 '유의' → 쓸 것 ③ '기움' → 같이 볼 것 ④ '노이즈·역작동' → 쓰지 말 것(적재만 유지) ⑤ 아직 판정 전(40거래일 미만) → 지켜볼 것. 지켜볼 것 안의 꼬리표는 지금 흐름: <span class="tag good">관측 좋음</span>=방향 맞춘 날 60%↑이고 IC 95% 구간이 0 위 · <span class="tag bad">관측 나쁨</span>=IC −0.03 아래 · <span class="tag wait">아직 모름</span>=그 사이. 꼬리표는 판정이 아니라 미리보기입니다.</div>
+
+<h2>2. 돈으로 보면 <span class="sub">— 가로선이 95% 구간. 선이 0을 안 건드리면 우연으로 보기 어렵다는 뜻. 표본(n) 15개 미만은 흐리게</span></h2>
+<div class="card"><div class="legend"><span><i style="background:var(--use)"></i>쓸 것</span><span><i style="background:var(--with)"></i>같이 볼 것</span><span><i style="background:var(--watch)"></i>지켜볼 것</span><span><i style="background:var(--no)"></i>쓰지 말 것</span><span class="mut">오른쪽 작은 글씨 = 최근 1개월 모의계좌(공통 잣대, 매일 갈아타기·비용 0)가 시장평균보다 얼마나 앞섰나</span></div>
+<div id="forest" style="overflow-x:auto"></div>
+<div class="note">두 숫자는 재는 법이 다릅니다. 가로선 = 판정 잣대(추천일 +1일 매수 → 20일 보유, 앵커별 평균). 오른쪽 작은 글씨 = 매일 상위 20종목으로 갈아타는 모의계좌의 최근 20거래일 누적 − 시장평균. 트랙(v3·lowvol·wu·large)은 유니버스가 달라서 IC 절대값은 비교 금지지만, '시장보다 벌었나(%p)'는 같은 잣대라 나란히 놓았습니다. 환산 참고: IC 0.01 ≈ 20일 초과 +0.3%p(9/3 실측, 22모델 상관 0.81).</div></div>
+
+<h2>3. 판정(확정)과 지금 흐름이 다를 때 <span class="sub">— 리더보드가 헷갈리는 가장 큰 이유</span></h2>
+<div class="card"><table><thead><tr><th>모델</th><th>판정 정본</th><th>확정일</th><th>지금 누적 IC(n)</th><th>7/26 이후 누적 IC 흐름</th><th>어떻게 읽나</th></tr></thead><tbody id="sealed"></tbody></table>
+<div class="note">판정은 정해진 창(등록 후 40거래일)에서 한 번 봉인합니다. 그 뒤로도 리더보드는 표본을 계속 쌓아 '누적 IC'를 다시 계산하므로 라벨이 흔들려 보입니다(예: lv_b 판정 '기움' ↔ 지금 라벨 '노이즈'). 결정은 봉인된 판정으로 하고, 지금 흐름은 "다음 판정 때 뒤집힐 수 있나"를 보는 용도입니다. 누적 IC는 앞쪽 앵커(6~7월 급락→반등)가 높아서 표본이 늘수록 내려오는 게 정상입니다.</div></div>
+
+<h2>4. 다음 판정 달력</h2>
+<div class="card" id="cal"></div>
+
+<details><summary>쉬운 설명 — 용어</summary><div class="easy">
+<b>IC</b> = 점수 순서와 실제 수익 순서가 얼마나 맞았나(−1~+1). 0.05면 "조금 맞춘다", 0.1이면 "꽤 맞춘다". 대부분의 검증된 모델도 0.02~0.06 사이입니다.<br>
+<b>95% 구간(CI)</b> = 같은 실험을 여러 번 하면 값이 이 안에 들어올 범위. 0을 걸치면 "우연일 수도 있다".<br>
+<b>방향 맞춘 날</b> = 앵커일 중 IC가 +였던 날의 비율. 60%↑면 꾸준하다는 뜻.<br>
+<b>20일 초과(%p)</b> = 추천일 다음 날 사서 20거래일 뒤 판 상위 20종목 평균수익 − 같은 기간 시장평균.<br>
+<b>판정(§11)</b> = 등록 후 40거래일이 차면 한 번 봉인: 유의(쓸 것) / 기움(참고) / 노이즈(못 씀) / 역작동(거꾸로). 동시에 여러 모델을 검정하므로 기준을 더 엄하게 봅니다(Bonferroni).<br>
+<b>은퇴</b> = 새 점수 적재를 멈춤. 과거 행은 남겨서 검정 분모는 그대로.</div></details>
+
+<details><summary>상세 표 (원본 열 — h5·h20 IC·CI·방향·초과·판정 라벨·사유)</summary><div class="card" style="overflow-x:auto"><table><thead><tr><th>트랙</th><th>모델</th><th>등록</th><th>OOS</th><th>h5 IC(n)</th><th>h20 IC(n)</th><th>h20 95%</th><th>방향</th><th>20일 초과 %p</th><th>라벨(지금)</th><th>사유</th></tr></thead><tbody id="full"></tbody></table></div></details>
+
+<details><summary>은퇴 13개 (적재 중지·행 보존) — 역사 기록</summary><div class="card"><table><thead><tr><th>모델</th><th>트랙</th><th>은퇴</th><th>마지막 누적 IC(n)</th><th>20일 초과</th><th>사유</th></tr></thead><tbody id="ret"></tbody></table></div></details>
+
+<script>
+const D = {"asof":"20260904","min_oos":40,"models":[{"track":"v3","model":"v31a","reg_date":"20260606","oos_days":42,"h5":{"ic":0.0468,"n":42,"ci":[0.0144,0.0773],"pos":0.714},"h20":{"ic":0.0429,"n":40,"ci":[0.0025,0.0814],"pos":0.5},"exc20":{"mean":1.75,"n":40,"ci":[0.79,2.67]},"verdict":"기움","why":"IC +0.043 CI[+0.003,+0.081] — 양(+)이나 CI가 0에 걸침"},{"track":"v3","model":"v31c","reg_date":"20260606","oos_days":42,"h5":{"ic":0.0468,"n":42,"ci":[0.0144,0.0773],"pos":0.714},"h20":{"ic":0.0429,"n":40,"ci":[0.0025,0.0814],"pos":0.5},"exc20":{"mean":1.75,"n":40,"ci":[0.79,2.67]},"verdict":"기움","why":"IC +0.043 CI[+0.003,+0.081] — 양(+)이나 CI가 0에 걸침"},{"track":"v3","model":"v30","reg_date":"20260606","oos_days":59,"h5":{"ic":0.0332,"n":53,"ci":[0.0008,0.065],"pos":0.66},"h20":{"ic":0.0429,"n":40,"ci":[0.0025,0.0814],"pos":0.5},"exc20":{"mean":1.75,"n":40,"ci":[0.79,2.67]},"verdict":"기움","why":"IC +0.043 CI[+0.003,+0.081] — 양(+)이나 CI가 0에 걸침"},{"track":"v3","model":"v31d","reg_date":"20260606","oos_days":42,"h5":{"ic":0.0373,"n":42,"ci":[0.0108,0.062],"pos":0.738},"h20":{"ic":0.0399,"n":40,"ci":[0.0059,0.0728],"pos":0.5},"exc20":{"mean":2.21,"n":40,"ci":[1.32,3.15]},"verdict":"기움","why":"IC +0.040 CI[+0.006,+0.073] — 양(+)이나 CI가 0에 걸침"},{"track":"wu","model":"sv_a","reg_date":"20260715","oos_days":36,"h5":{"ic":0.0443,"n":30,"ci":[0.0191,0.0694],"pos":0.767},"h20":{"ic":0.039,"n":15,"ci":[0.0179,0.058],"pos":0.8},"exc20":{"mean":0.1,"n":15,"ci":[-0.43,0.63]},"verdict":"노이즈","why":"OOS 36/40거래일 — 표본 부족(기본값)"},{"track":"v3","model":"v31b","reg_date":"20260606","oos_days":42,"h5":{"ic":0.0444,"n":42,"ci":[0.0102,0.0758],"pos":0.714},"h20":{"ic":0.0337,"n":40,"ci":[-0.005,0.0694],"pos":0.5},"exc20":{"mean":1.47,"n":40,"ci":[0.6,2.36]},"verdict":"기움","why":"IC +0.034 CI[-0.005,+0.069] — 양(+)이나 CI가 0에 걸침"},{"track":"lowvol","model":"lv_b","reg_date":"20260625","oos_days":46,"h5":{"ic":0.0544,"n":39,"ci":[-0.0236,0.1316],"pos":0.564},"h20":{"ic":0.0314,"n":27,"ci":[-0.0409,0.1037],"pos":0.556},"exc20":{"mean":1.47,"n":27,"ci":[-0.09,3.04]},"verdict":"노이즈","why":"IC +0.031 CI[-0.041,+0.104] — 0 근처"},{"track":"v3","model":"v31f","reg_date":"20260622","oos_days":32,"h5":{"ic":0.0458,"n":32,"ci":[0.0141,0.075],"pos":0.656},"h20":{"ic":0.0153,"n":30,"ci":[-0.015,0.0466],"pos":0.533},"exc20":{"mean":2.19,"n":30,"ci":[1.5,2.9]},"verdict":"노이즈","why":"OOS 32/40거래일 — 표본 부족(기본값)"},{"track":"lowvol","model":"sm_a","reg_date":"20260627","oos_days":44,"h5":{"ic":0.0565,"n":36,"ci":[-0.0187,0.1292],"pos":0.667},"h20":{"ic":0.0137,"n":26,"ci":[-0.0592,0.0899],"pos":0.577},"exc20":{"mean":1.0,"n":26,"ci":[0.13,1.95]},"verdict":"노이즈","why":"IC +0.014 CI[-0.059,+0.090] — 0 근처"},{"track":"lowvol","model":"lv_a3","reg_date":"20260625","oos_days":46,"h5":{"ic":0.0629,"n":38,"ci":[-0.0104,0.1359],"pos":0.605},"h20":{"ic":0.0133,"n":27,"ci":[-0.041,0.0692],"pos":0.519},"exc20":{"mean":1.03,"n":27,"ci":[0.13,2.0]},"verdict":"노이즈","why":"IC +0.013 CI[-0.041,+0.069] — 0 근처"},{"track":"lowvol","model":"lv_a","reg_date":"20260625","oos_days":46,"h5":{"ic":0.0564,"n":39,"ci":[-0.0076,0.1157],"pos":0.615},"h20":{"ic":-0.0045,"n":27,"ci":[-0.0525,0.0443],"pos":0.407},"exc20":{"mean":0.72,"n":27,"ci":[-0.31,1.9]},"verdict":"노이즈","why":"IC -0.004 CI[-0.052,+0.044] — 0 근처"},{"track":"lowvol","model":"mom_a","reg_date":"20260627","oos_days":45,"h5":{"ic":0.027,"n":38,"ci":[-0.0451,0.1004],"pos":0.553},"h20":{"ic":-0.0139,"n":26,"ci":[-0.0839,0.0567],"pos":0.423},"exc20":{"mean":0.51,"n":26,"ci":[-0.99,2.02]},"verdict":"노이즈","why":"IC -0.014 CI[-0.084,+0.057] — 0 근처"},{"track":"v3","model":"v31g","reg_date":"20260622","oos_days":32,"h5":{"ic":0.0407,"n":32,"ci":[0.0021,0.077],"pos":0.688},"h20":{"ic":-0.0151,"n":30,"ci":[-0.0509,0.023],"pos":0.3},"exc20":{"mean":0.85,"n":30,"ci":[-0.18,1.85]},"verdict":"노이즈","why":"OOS 32/40거래일 — 표본 부족(기본값)"},{"track":"wu","model":"le_a","reg_date":"20260715","oos_days":36,"h5":{"ic":-0.0433,"n":30,"ci":[-0.1032,0.0114],"pos":0.5},"h20":{"ic":-0.0154,"n":15,"ci":[-0.0514,0.0215],"pos":0.4},"exc20":{"mean":4.22,"n":15,"ci":[1.79,6.95]},"verdict":"노이즈","why":"OOS 36/40거래일 — 표본 부족(기본값)"},{"track":"lowvol","model":"lv_short","reg_date":"20260627","oos_days":45,"h5":{"ic":0.0419,"n":38,"ci":[-0.025,0.105],"pos":0.605},"h20":{"ic":-0.0227,"n":26,"ci":[-0.0636,0.0199],"pos":0.346},"exc20":{"mean":0.19,"n":26,"ci":[-0.73,1.05]},"verdict":"노이즈","why":"IC -0.023 CI[-0.064,+0.020] — 0 근처"},{"track":"lowvol","model":"hv_a","reg_date":"20260627","oos_days":45,"h5":{"ic":-0.0135,"n":38,"ci":[-0.0854,0.0655],"pos":0.474},"h20":{"ic":-0.0565,"n":26,"ci":[-0.1288,0.0148],"pos":0.385},"exc20":{"mean":-0.39,"n":26,"ci":[-2.91,2.05]},"verdict":"역작동","why":"IC -0.057 — 점수가 거꾸로"},{"track":"lowvol","model":"mom_b","reg_date":"20260717","oos_days":32,"h5":{"ic":-0.029,"n":25,"ci":[-0.1272,0.0774],"pos":0.32},"h20":{"ic":-0.0833,"n":13,"ci":[-0.1565,-0.0197],"pos":0.462},"exc20":{"mean":-0.86,"n":13,"ci":[-2.7,1.16]},"verdict":"노이즈","why":"OOS 32/40거래일 — 표본 부족(기본값)"},{"track":"lowvol","model":"lv_d","reg_date":"20260625","oos_days":46,"h5":{"ic":-0.0198,"n":39,"ci":[-0.0719,0.0308],"pos":0.513},"h20":{"ic":-0.085,"n":27,"ci":[-0.1298,-0.0373],"pos":0.222},"exc20":{"mean":-0.54,"n":27,"ci":[-1.63,0.53]},"verdict":"역작동","why":"IC -0.085 — 점수가 거꾸로"},{"track":"lowvol","model":"lv_c","reg_date":"20260625","oos_days":46,"h5":{"ic":-0.007,"n":39,"ci":[-0.0585,0.0381],"pos":0.538},"h20":{"ic":-0.0965,"n":27,"ci":[-0.124,-0.0676],"pos":0.074},"exc20":{"mean":-1.94,"n":27,"ci":[-3.29,-0.6]},"verdict":"역작동","why":"IC -0.097 — 점수가 거꾸로"},{"track":"wu","model":"wu_a","reg_date":"20260702","oos_days":44,"h5":{"ic":-0.0155,"n":38,"ci":[-0.0543,0.0239],"pos":0.5},"h20":{"ic":-0.107,"n":23,"ci":[-0.1336,-0.0817],"pos":0.043},"exc20":{"mean":-3.58,"n":23,"ci":[-5.05,-1.96]},"verdict":"역작동","why":"IC -0.107 — 점수가 거꾸로"},{"track":"wu","model":"wu_b","reg_date":"20260702","oos_days":44,"h5":{"ic":-0.0503,"n":38,"ci":[-0.0794,-0.0191],"pos":0.263},"h20":{"ic":-0.1207,"n":23,"ci":[-0.1457,-0.096],"pos":0.0},"exc20":{"mean":-7.46,"n":23,"ci":[-9.57,-5.17]},"verdict":"역작동","why":"IC -0.121 — 점수가 거꾸로"},{"track":"wu","model":"qs_a","reg_date":"20260723","oos_days":31,"h5":{"ic":-0.0365,"n":25,"ci":[-0.1445,0.074],"pos":0.48},"h20":{"ic":-0.1444,"n":10,"ci":[-0.2526,-0.0427],"pos":0.1},"exc20":{"mean":-3.68,"n":10,"ci":[-6.52,-0.93]},"verdict":"노이즈","why":"OOS 31/40거래일 — 표본 부족(기본값)"},{"track":"wu","model":"px_a","reg_date":"20260810","oos_days":19,"h5":{"ic":0.1344,"n":13,"ci":[0.0585,0.2104],"pos":0.846},"h20":{"ic":null,"n":0,"ci":[null,null],"pos":null},"exc20":{"mean":null,"n":0,"ci":[null,null]},"verdict":"노이즈","why":"OOS 19/40거래일 — 표본 부족(기본값)"},{"track":"large","model":"ls_t1","reg_date":"20260806","oos_days":18,"h5":{"ic":0.0895,"n":13,"ci":[-0.0089,0.1862],"pos":0.615},"h20":{"ic":null,"n":0,"ci":[null,null],"pos":null},"exc20":{"mean":null,"n":0,"ci":[null,null]},"verdict":"노이즈","why":"OOS 18/40거래일 — 표본 부족(기본값) · ⚠대형 설계 판정 h=60~120d — h20 라벨은 참고"},{"track":"lowvol","model":"lv_e","reg_date":"20260901","oos_days":4,"h5":{"ic":null,"n":0,"ci":[null,null],"pos":null},"h20":{"ic":null,"n":0,"ci":[null,null],"pos":null},"exc20":{"mean":null,"n":0,"ci":[null,null]},"verdict":"노이즈","why":"OOS 4/40거래일 — 표본 부족(기본값)"}],
+"trailing":{"asof":"20260903","rows":[{"model":"v30","r1":0.5,"r5":-1.2,"r20":17.0,"n":62,"rall":-3.4,"mdd":-32.6},{"model":"lv_b","r1":1.1,"r5":-2.1,"r20":17.3,"n":49,"rall":6.4,"mdd":-18.3},{"model":"lv_a","r1":1.9,"r5":0.9,"r20":19.9,"n":49,"rall":5.1,"mdd":-24.1},{"model":"mom_a","r1":4.0,"r5":-1.0,"r20":5.4,"n":47,"rall":-9.4,"mdd":-27.6},{"model":"wu_a","r1":-2.0,"r5":-0.9,"r20":3.8,"n":44,"rall":4.8,"mdd":-9.3},{"model":"sv_a","r1":2.8,"r5":-0.7,"r20":8.2,"n":35,"rall":14.8,"mdd":-10.5},{"model":"qs_a","r1":0.8,"r5":0.6,"r20":1.1,"n":30,"rall":5.3,"mdd":-3.2},{"model":"px_a","r1":-0.6,"r5":-1.6,"r20":null,"n":18,"rall":-0.6,"mdd":-2.0}],"bench":{"r1":1.8,"r5":-1.4,"r20":2.7}},
+"hist":{"v30":[["0726",0.1873],["0727",0.1808],["0728",0.1746],["0729",0.1679],["0730",0.169],["0731",0.17],["0803",0.17],["0804",0.17],["0805",0.1644],["0806",0.1563],["0807",0.1484],["0810",0.1408],["0811",0.132],["0812",0.1239],["0814",0.1102],["0817",0.1102],["0818",0.1021],["0819",0.095],["0821",0.0836],["0824",0.0772],["0825",0.0721],["0826",0.0695],["0827",0.0646],["0828",0.0584],["0831",0.0551],["0901",0.0522],["0902",0.0507],["0903",0.0462],["0904",0.0429]],
+"lv_b":[["0727",0.405],["0728",0.4019],["0729",0.392],["0730",0.3982],["0731",0.3692],["0805",0.3307],["0806",0.2879],["0807",0.2658],["0810",0.2484],["0811",0.2249],["0812",0.2082],["0814",0.1763],["0818",0.1568],["0819",0.1539],["0821",0.1454],["0824",0.1332],["0825",0.1198],["0826",0.1068],["0827",0.0872],["0828",0.0687],["0831",0.0585],["0901",0.051],["0902",0.0466],["0903",0.0394],["0904",0.0314]],
+"lv_a":[["0727",0.2578],["0728",0.1981],["0729",0.1468],["0730",0.1854],["0731",0.1735],["0805",0.15],["0806",0.1241],["0807",0.105],["0810",0.1003],["0811",0.0874],["0812",0.0894],["0814",0.0802],["0818",0.0658],["0819",0.0699],["0821",0.0657],["0824",0.0583],["0825",0.0481],["0826",0.0348],["0827",0.0246],["0828",0.0172],["0831",0.0128],["0901",0.0114],["0902",0.0099],["0903",0.0062],["0904",-0.0045]],
+"mom_a":[["0728",0.3999],["0729",0.3688],["0730",0.3706],["0731",0.3087],["0805",0.2478],["0806",0.1985],["0807",0.1851],["0810",0.1665],["0811",0.1473],["0812",0.1209],["0814",0.0816],["0818",0.0646],["0819",0.061],["0821",0.0605],["0824",0.0554],["0825",0.0502],["0826",0.0415],["0827",0.0226],["0828",0.0056],["0831",0.0003],["0901",-0.0024],["0902",-0.0029],["0903",-0.0016],["0904",-0.0139]],
+"sm_a":[["0728",0.0671],["0729",0.1423],["0730",0.2786],["0731",0.2737],["0805",0.2286],["0806",0.1923],["0807",0.1839],["0810",0.1835],["0811",0.1597],["0812",0.1553],["0814",0.1294],["0818",0.0911],["0819",0.074],["0821",0.0644],["0824",0.0474],["0825",0.0395],["0826",0.0303],["0827",0.0192],["0828",0.0111],["0831",0.0127],["0901",0.013],["0902",0.0164],["0903",0.0195],["0904",0.0137]],
+"sv_a":[["0814",0.1005],["0818",0.0824],["0819",0.0868],["0821",0.073],["0824",0.071],["0825",0.0633],["0826",0.0618],["0827",0.0598],["0828",0.0609],["0831",0.0601],["0901",0.0545],["0902",0.0468],["0903",0.0433],["0904",0.039]],
+"le_a":[["0814",-0.017],["0818",-0.0073],["0819",-0.0204],["0821",-0.0527],["0824",-0.0558],["0825",-0.0537],["0826",-0.0338],["0827",-0.0182],["0828",-0.0067],["0831",-0.005],["0901",-0.0013],["0902",-0.0045],["0903",-0.0124],["0904",-0.0154]],
+"mom_b":[["0819",0.0225],["0821",0.0149],["0824",0.0167],["0825",0.0012],["0826",-0.0323],["0827",-0.0679],["0828",-0.0858],["0831",-0.0833],["0901",-0.0748],["0902",-0.067],["0903",-0.0607],["0904",-0.0833]],
+"qs_a":[["0824",-0.0013],["0825",-0.0316],["0826",-0.105],["0827",-0.1782],["0828",-0.2245],["0831",-0.2254],["0901",-0.2185],["0902",-0.1942],["0903",-0.1586],["0904",-0.1444]]}};
+
+// ---- 정본(봉인 판정)·은퇴·쉬운 이름·페이지 — 실제 이식 시 leaderboard.json 의 retired 플래그 + VERDICT 원장으로 대체 ----
+const SEALED={v30:['유의','20260809','VERDICT_20260809'],lv_b:['기움','20260829','VERDICT_20260829_lowvol'],lv_a:['노이즈','20260829','VERDICT_20260829_lowvol'],
+  mom_a:['노이즈','20260829','VERDICT_20260829_lowvol'],sm_a:['노이즈','20260901','VERDICT_20260901_sm_a'],
+  lv_a3:['노이즈','20260829'],lv_short:['노이즈','20260829'],lv_c:['역작동','20260829'],lv_d:['역작동','20260829'],hv_a:['역작동','20260829'],
+  wu_a:['역작동 기각','20260901','VERDICT_20260901_wu'],wu_b:['역작동 기각','20260901','VERDICT_20260901_wu'],
+  v31a:['기각','20260809'],v31b:['기각','20260809'],v31c:['기각','20260809'],v31d:['기각','20260809'],v31f:['기각','20260809'],v31g:['기각','20260809']};
+const RETIRED=new Set(['v31a','v31b','v31c','v31d','v31f','v31g','lv_c','lv_d','lv_a3','lv_short','hv_a','wu_a','wu_b']);
+const RET_WHY={v31a:'BUY 게이트 역효과',v31b:'유의 악화',v31c:'좋은 저유동 종목 제외',v31d:'유의 악화',v31f:'h20 채택 미달(h10 기움)',v31g:'h20 채택 미달',
+  lv_c:'역작동(보정 CI까지 음수)',lv_d:'역작동',hv_a:'역작동',lv_a3:'노이즈·lv_a 변형',lv_short:'노이즈·lv_a 변형',wu_a:'역작동(유의) 기각',wu_b:'역작동(유의) 기각'};
+const NAME={v30:'과매도 반등 (챔피언)',lv_b:'조용한 우량주 (저변동+ROE)',lv_a:'조용한 우량주+반전',lv_e:'조용한 우량주+저회전',mom_a:'20일선 회복 모멘텀',mom_b:'모멘텀+눌림목',
+  sm_a:'초소형 저변동',sv_a:'공매도 밀집',le_a:'저점 탈출+OBV',qs_a:'조용한 강자 (52주고 근접)',px_a:'가격 4팩터 (조용함)',ls_t1:'대형 가치 4팩터',
+  lv_c:'낙폭+ROE+반전',lv_d:'낙폭+ROE',hv_a:'고변동+ROE+반전',lv_a3:'lv_a 유니버스 좁힘',lv_short:'lv_a+공매도',wu_a:'52주고+모멘텀+시총',wu_b:'52주고+모멘텀',
+  v31a:'v3 반전확인 게이트',v31b:'v3 수급 가중↑',v31c:'v3 유동성 하한',v31d:'v3 변형 d',v31f:'v3 MACD 가산',v31g:'v3 거래량팽창 가산'};
+const PAGE={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',sv_a:'sv.html',qs_a:'qs.html',px_a:'px.html',ls_t1:'_large_test.html',wu_a:'wu.html'};
+const MIN=D.min_oos, BENCH20=D.trailing.bench.r20;
+const TR={}; D.trailing.rows.forEach(r=>TR[r.model]=r);
+const f3=v=>v==null?'–':(v>0?'+':'')+v.toFixed(3), f1=v=>v==null?'–':(v>0?'+':'')+v.toFixed(1), pct=v=>v==null?'–':Math.round(v*100)+'%';
+const link=m=>PAGE[m]?'<a href="'+PAGE[m]+'"><b>'+m+'</b></a>':'<b>'+m+'</b>';
+
+function lane(m){
+  if(RETIRED.has(m.model)) return 'ret';
+  const s=SEALED[m.model];
+  if(s){ if(s[0]==='유의') return 'use'; if(s[0]==='기움') return 'with'; return 'no'; }
+  return 'watch';
+}
+function preview(m){ // 판정 전 모델의 지금 흐름 꼬리표
+  const h=m.h20||{}; if(!(h.n>=8)) { if(m.h5&&m.h5.n>=8&&m.h5.ci[0]>0) return ['wait','표본 부족 · 5일 잣대는 좋음']; return ['wait','표본 부족']; }
+  if(h.ci[0]>0&&h.pos>=0.6) return ['good','관측 좋음']; if(h.ic<-0.03) return ['bad','관측 나쁨']; return ['wait','아직 모름'];
+}
+function excTxt(m){ const e=m.exc20||{}; if(!(e.n>0)) return '<span class="mut">아직 없음</span>';
+  const c=e.mean>0?'pos':(e.mean<0?'neg':''); return '<span class="'+c+'"><b>'+f1(e.mean)+'%p</b></span> <span class="mut">['+f1(e.ci[0])+', '+f1(e.ci[1])+'] n'+e.n+'</span>'; }
+function card(m){
+  const L=lane(m), s=SEALED[m.model], pv=L==='watch'?preview(m):null, left=Math.max(0,MIN-(m.oos_days||0));
+  const prog=Math.min(100,Math.round((m.oos_days||0)/MIN*100));
+  let status='';
+  if(s) status='<span class="tag">판정 '+s[0]+' · '+s[1].slice(4,6)+'/'+s[1].slice(6)+' 확정</span>';
+  else status='<span class="tag '+pv[0]+'">'+pv[1]+'</span> <span class="tag">D-'+left+'</span>';
+  if(m.track==='large') status+=' <span class="tag">대형: 60~120일 잣대</span>';
+  const tr=TR[m.model]; const trTxt=tr&&tr.r20!=null?'<span class="mut">최근 1개월 모의 '+f1(tr.r20-BENCH20)+'%p</span>':'';
+  return '<div class="mc '+L+'"><div class="t">'+link(m.model)+'<span class="mut" style="font-size:11px">'+m.track+'</span></div><div class="nm">'+(NAME[m.model]||'')+'</div>'
+    +'<div class="row"><span>20일 초과 '+excTxt(m)+'</span></div>'
+    +'<div class="row"><span>방향 맞춘 날 <b>'+pct(m.h20&&m.h20.pos)+'</b></span><span>IC <b>'+f3(m.h20&&m.h20.ic)+'</b></span>'+trTxt+'</div>'
+    +'<div class="row">'+status+'</div>'+(s?'':'<div class="bar" title="판정까지 '+(m.oos_days||0)+'/'+MIN+'거래일"><i style="width:'+prog+'%"></i></div>')+'</div>';
+}
+const act=D.models.filter(m=>!RETIRED.has(m.model));
+const order=m=>{const e=m.exc20&&m.exc20.n>0?m.exc20.mean:-99; return -e;};
+const LANES=[['use','✅ 쓸 것','판정 정본 \'유의\'. 실제 추천(필터 페이지)의 기준.'],['with','🟡 같이 볼 것','판정 \'기움\' — 방향은 맞는 쪽이나 우연을 못 버림. 보조로만.'],
+  ['watch','🔭 지켜볼 것','판정 전(40거래일 미만). 꼬리표는 미리보기지 판정이 아님.'],['no','⛔ 쓰지 말 것','판정 \'노이즈·역작동\'. 적재는 유지(대조·분모), 표시엔 안 씀.']];
+document.getElementById('lanes').innerHTML=LANES.map(([k,t,d])=>{const ms=act.filter(m=>lane(m)===k).sort((a,b)=>order(a)-order(b));
+  return '<div class="lane"><h3>'+t+'<span class="n">'+ms.length+'개</span></h3><div class="desc">'+d+'</div>'+(ms.map(card).join('')||'<div class="mut" style="font-size:12px">없음</div>')+'</div>';}).join('');
+
+// ---- 한 줄 답 ----
+const use=act.filter(m=>lane(m)==='use'), withm=act.filter(m=>lane(m)==='with');
+const nxt=act.filter(m=>lane(m)==='watch'&&m.track!=='large').sort((a,b)=>b.oos_days-a.oos_days)[0];
+const ans=[];
+if(use.length){const m=use[0];ans.push(['var(--use)','실전 기준',m.model,NAME[m.model],'§11 판정 유의('+SEALED[m.model][1]+' 확정). 20일 초과 '+excTxt(m)+'. 이 모델이 필터 페이지의 추천 기준.']);}
+if(withm.length){const m=withm[0];ans.push(['var(--with)','같이 볼 것',m.model,NAME[m.model],'판정 기움('+SEALED[m.model][1]+'). 20일 초과 '+excTxt(m)+' — 구간이 0을 걸쳐 보조로만. 최근 1개월 모의 '+f1(TR[m.model].r20-BENCH20)+'%p.']);}
+if(nxt){const pv=preview(nxt);ans.push(['var(--watch)','다음 판정 D-'+(MIN-nxt.oos_days),nxt.model,NAME[nxt.model],'<span class="tag '+pv[0]+'">'+pv[1]+'</span> 방향 맞춘 날 '+pct(nxt.h20.pos)+' · IC '+f3(nxt.h20.ic)+' ['+f3(nxt.h20.ci[0])+', '+f3(nxt.h20.ci[1])+'] n'+nxt.h20.n+' · 20일 초과 '+excTxt(nxt)+'. 판정 전엔 결정에 안 씀.']);}
+document.getElementById('answer').innerHTML=ans.map(a=>'<div class="a" style="border-left-color:'+a[0]+'"><div class="k">'+a[1]+'</div><div class="m">'+link(a[2])+' <small>'+a[3]+'</small></div><div class="why">'+a[4]+'</div></div>').join('');
+
+// ---- forest plot ----
+(function(){
+  const rows=act.filter(m=>m.exc20&&m.exc20.n>0).sort((a,b)=>b.exc20.mean-a.exc20.mean);
+  const lo=Math.min(-1,...rows.map(m=>m.exc20.ci[0])), hi=Math.max(1,...rows.map(m=>m.exc20.ci[1]));
+  const W=980,LW=250,RW=150,PW=W-LW-RW,RH=26,H=rows.length*RH+40;
+  const x=v=>LW+(v-lo)/(hi-lo)*PW; const col={use:'var(--use)',with:'var(--with)',watch:'var(--watch)',no:'var(--no)'};
+  let s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  for(let v=Math.ceil(lo);v<=Math.floor(hi);v++){ s+='<line x1="'+x(v)+'" y1="20" x2="'+x(v)+'" y2="'+(H-18)+'" stroke="'+(v===0?'#333':'#eee')+'" stroke-width="'+(v===0?1.5:1)+'"/>'
+    +'<text x="'+x(v)+'" y="'+(H-4)+'" font-size="10" text-anchor="middle" fill="#888">'+(v>0?'+':'')+v+'</text>'; }
+  s+='<text x="'+x(0)+'" y="14" font-size="11" text-anchor="middle" fill="#555">시장과 같음(0) → 오른쪽이 더 벌었다 (%p, 20일)</text>';
+  rows.forEach((m,i)=>{ const y=30+i*RH+RH/2, e=m.exc20, L=lane(m), dim=e.n<15?0.45:1, c=col[L];
+    s+='<text x="'+(LW-8)+'" y="'+(y+4)+'" font-size="12" text-anchor="end"><tspan font-weight="700">'+m.model+'</tspan><tspan fill="#777"> '+(NAME[m.model]||'')+'</tspan></text>';
+    s+='<g opacity="'+dim+'"><line x1="'+x(e.ci[0])+'" y1="'+y+'" x2="'+x(e.ci[1])+'" y2="'+y+'" stroke="'+c+'" stroke-width="3" stroke-linecap="round"/>'
+      +'<circle cx="'+x(e.mean)+'" cy="'+y+'" r="5" fill="'+c+'" stroke="#fff" stroke-width="1.5"/></g>';
+    const tr=TR[m.model]; const t2=tr&&tr.r20!=null?'  ·  모의 '+f1(tr.r20-BENCH20):'';
+    s+='<text x="'+(LW+PW+8)+'" y="'+(y+4)+'" font-size="11.5" fill="'+(e.mean>0?'var(--good)':'var(--bad)')+'"><tspan font-weight="700">'+f1(e.mean)+'</tspan><tspan fill="#888"> n'+e.n+t2+'</tspan></text>';
+  });
+  s+='</svg>'; document.getElementById('forest').innerHTML=s;
+})();
+
+// ---- sealed vs now ----
+const spark=(h)=>{ if(!h||h.length<2) return '<span class="mut">–</span>'; const v=h.map(a=>a[1]); const w=140,hh=28,lo=Math.min(0,...v),hi=Math.max(0,...v),r=(hi-lo)||1;
+  const X=i=>2+i/(v.length-1)*(w-4), Y=x=>hh-3-(x-lo)/r*(hh-6);
+  return '<svg width="'+w+'" height="'+hh+'" style="vertical-align:middle"><line x1="0" x2="'+w+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="#ddd"/><polyline fill="none" stroke="'+(v[v.length-1]>=0?'var(--good)':'var(--bad)')+'" stroke-width="1.5" points="'+v.map((x,i)=>X(i)+','+Y(x)).join(' ')+'"/></svg>'; };
+const READ={v30:'봉인 창(6/06~8/09) 유의. 이후 누적은 내려오는 중 — 앞쪽 앵커가 급락→반등 국면이라 정상. 다음 국면 표본에서 재론.',
+  lv_b:'봉인 창 기움(+0.069, 0 걸침). 지금 누적 +0.031·라벨 노이즈. 결정은 "기움"으로, 흐름은 "확신이 커지진 않음"으로 읽기.',
+  lv_a:'노이즈. 지금도 0 근처 — 판정과 일치.', mom_a:'노이즈. 지금 약한 음(−) — 판정과 일치.', sm_a:'노이즈. 지금도 0 근처 — 판정과 일치.'};
+document.getElementById('sealed').innerHTML=['v30','lv_b','lv_a','mom_a','sm_a'].map(k=>{const m=D.models.find(x=>x.model===k), s=SEALED[k];
+  return '<tr><td>'+link(k)+'<br><span class="mut">'+NAME[k]+'</span></td><td><b>'+s[0]+'</b></td><td>'+s[1]+'<br><span class="mut">'+(s[2]||'')+'</span></td><td>'+f3(m.h20.ic)+' <span class="mut">(n'+m.h20.n+')</span><br><span class="mut">지금 라벨: '+m.verdict+'</span></td><td>'+spark(D.hist[k])+'</td><td>'+READ[k]+'</td></tr>';}).join('');
+
+// ---- calendar ----
+const cal=act.filter(m=>lane(m)==='watch').map(m=>({m,left:(m.track==='large'?60:MIN)-m.oos_days})).sort((a,b)=>a.left-b.left);
+document.getElementById('cal').innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap">'+cal.map(({m,left})=>{const pv=preview(m);
+  return '<div class="mc watch" style="min-width:170px"><div class="t"><b>'+m.model+'</b><span class="mut">'+(m.track==='large'?'h60':'h20')+' D-'+left+'</span></div><div class="nm">'+NAME[m.model]+'</div><div class="row"><span class="tag '+pv[0]+'">'+pv[1]+'</span></div></div>';}).join('')+'</div>'
+  +'<div class="note">D-day = 40거래일(대형은 60일)까지 남은 거래일. 판정 직전엔 새 모델을 등록하지 않는 규칙(분모 증가 회피).</div>';
+
+// ---- full + retired ----
+document.getElementById('full').innerHTML=D.models.slice().sort((a,b)=>((b.h20.ic??-9)-(a.h20.ic??-9))).map(m=>'<tr'+(RETIRED.has(m.model)?' style="opacity:.55"':'')+'><td>'+m.track+'</td><td>'+link(m.model)+(RETIRED.has(m.model)?' 🪦':'')+'</td><td>'+m.reg_date+'</td><td>'+m.oos_days+'</td><td>'+f3(m.h5.ic)+' ('+m.h5.n+')</td><td>'+f3(m.h20.ic)+' ('+m.h20.n+')</td><td>'+(m.h20.n?'['+f3(m.h20.ci[0])+', '+f3(m.h20.ci[1])+']':'–')+'</td><td>'+pct(m.h20.pos)+'</td><td>'+excTxt(m)+'</td><td>'+m.verdict+'</td><td class="mut">'+m.why+'</td></tr>').join('');
+document.getElementById('ret').innerHTML=D.models.filter(m=>RETIRED.has(m.model)).map(m=>'<tr><td><b>'+m.model+'</b><br><span class="mut">'+NAME[m.model]+'</span></td><td>'+m.track+'</td><td>'+SEALED[m.model][1]+'</td><td>'+f3(m.h20.ic)+' (n'+m.h20.n+')</td><td>'+excTxt(m)+'</td><td>'+RET_WHY[m.model]+'</td></tr>').join('');
+</script>
+</div></body></html>

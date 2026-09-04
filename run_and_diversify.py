@@ -347,8 +347,9 @@ def main():
     #        ohlcv.db(가격)만 읽어 신규 API 0. 실패해도 챔피언 배포 안 막음(비치명).
     if (HERE / "wu_score.py").exists():
         run_script(["wu_score.py"], "2.88단계: 전체종목 트랙 점수 적재 (관측, 점수 불변)")
-    if (HERE / "build_wu_filter.py").exists():
-        run_script(["build_wu_filter.py"], "2.89단계: 전체종목 트랙 wu_a 관측 CSV (섀도우)")
+    # [2026-09-04] 2.89(wu_a CSV) 중단 — wu_a·wu_b 은퇴(적재 중지, wu_score.RETIRED). docs/latest_wu.csv 는
+    #   마지막 적재일 스냅샷으로 남기고 wu.html 은 은퇴 배너로 안내(옛 데이터가 '최신'처럼 보이는 것 방지).
+    #   수동 재생성은 `python build_wu_filter.py` 로 가능.
 
     # 2.89b) 조용한 강자(qs_a) 관측 CSV — qs.html 이 fetch할 docs/latest_qs.csv 갱신.
     #        점수 적재는 2.88(wu_score)이 이미 처리(qs_a 는 wu_scores 공유, PREREGISTER_qs.md).
