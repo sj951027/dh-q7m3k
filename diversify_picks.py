@@ -342,6 +342,14 @@ def main():
     print("📥 스크리너 결과 로드...")
     raw = load_latest_picks(args.source, args.market)
     raw["ticker"] = raw["ticker"].astype(str).str.zfill(6)
+    # [2026-09-05] 희석 공시 60거래일 배지(표시 전용 — filter.html 이 읽는 enriched CSV 에 컬럼 추가. 점수·분산 로직 무반영)
+    try:
+        import dilution_flag as _dil
+        _asof = str(raw["run_id"].max()) if "run_id" in raw.columns else None
+        raw, _nd = _dil.attach(raw, asof=_asof)
+        if _nd: print(f"   ⚠️ 희석 공시 60거래일 내 {_nd}종목(배지, dilution_60d)")
+    except Exception as _e:
+        print(f"   ⚠️ 희석 배지 생략(비치명): {_e}")
     # v3 점수가 있으면 그걸로 정렬/표시. 단 final_score(옛 점수)는 '보존'한다
     # (docs/enriched 를 filter.html 이 읽으므로 옛 점수를 덮어쓰면 '옛최종'이 오염됨).
     raw["final_score"] = pd.to_numeric(raw["final_score"], errors="coerce")

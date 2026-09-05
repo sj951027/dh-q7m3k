@@ -278,6 +278,13 @@ def main():
     con.close()
     if g is None:
         print(f"❌ run {rid} {args.model} 데이터 없음"); sys.exit(1)
+    # [2026-09-05] 희석 공시 60거래일 배지(표시 전용, 점수·순위 무반영) — dilution_flag.py
+    try:
+        import dilution_flag as _dil
+        g, _nd = _dil.attach(g, asof=rid)
+        if _nd: print(f"  ⚠️ {args.model}: 희석 공시 60거래일 내 {_nd}종목(배지)")
+    except Exception as _e:
+        print(f"  ⚠️ 희석 배지 생략(비치명): {_e}")
 
     docs = Path(args.docs); docs.mkdir(parents=True, exist_ok=True)
     for path in (docs / args.out, HERE / args.out):

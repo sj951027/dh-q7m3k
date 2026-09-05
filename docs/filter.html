@@ -571,6 +571,7 @@ let sortDesc = true;
 // ===== 컬럼 정의 (보여줄 컬럼과 순서) =====
 const COLUMN_DEFS = [
   { key: 'name', label: '종목명', type: 'name' },
+  { key: 'dilution_60d', label: '⚠️희석공시', type: 'dilution' },   // 2026-09-05 표시 전용(60거래일 내 유상증자·CB·BW·EB)
   { key: 'ticker', label: '코드', type: 'string' },
   { key: 'grade', label: '등급', type: 'string' },                    // V3
   { key: 'final_score_v3', label: 'V3점수', type: 'score' },          // V3
@@ -644,7 +645,7 @@ const COLUMN_DEFS = [
 
 // ===== 컬럼 그룹 (토글 UI용) =====
 const COLUMN_GROUPS = [
-  { name: '기본',         keys: ['name', 'ticker', 'price'] },
+  { name: '기본',         keys: ['name', 'dilution_60d', 'ticker', 'price'] },
   { name: '점수',         keys: ['final_score', 'stock_score', 'stock_score_stage1', 'oversold_score', 'acc_score', 'trend_score', 'supply_score', 'regime_score', 'fundamental_score', 'momentum_score', 'ocf_score'] },
   { name: '분류',         keys: ['earnings_pattern', 'ocf_pattern', 'risk_level'] },
   { name: '기술적',       keys: ['RSI', 'drawdown_52w_high_%'] },
@@ -659,7 +660,7 @@ const COLUMN_GROUPS = [
 
 // ===== 사전 설정 뷰 (null이면 전체 표시) =====
 const VIEW_PRESETS = {
-  '🌟 V3 추천': ['name', 'ticker', 'grade', 'bucket', 'final_score_v3', 'value_score', 'quality_score', 'turnaround_score', 'reversal_score', 'supply_score_v2', 'oversold_component', 'risk_level', 'sector', 'return_1m_%', 'return_1w_%'],
+  '🌟 V3 추천': ['name', 'dilution_60d', 'ticker', 'grade', 'bucket', 'final_score_v3', 'value_score', 'quality_score', 'turnaround_score', 'reversal_score', 'supply_score_v2', 'oversold_component', 'risk_level', 'sector', 'return_1m_%', 'return_1w_%'],
   '⭐ 핵심': ['name', 'ticker', 'grade', 'final_score_v3', 'bucket', 'final_score', 'earnings_pattern', 'ocf_pattern', 'risk_level', 'price', 'drawdown_52w_high_%', 'return_1m_%', 'market_regime'],
   '💎 수급': ['name', 'ticker', 'final_score', 'supply_score', 'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억', 'return_1m_%', 'drawdown_52w_high_%', 'earnings_pattern', 'market_regime'],
   '🏆 점수 비교': ['name', 'ticker', 'final_score', 'stock_score', 'oversold_score', 'acc_score', 'trend_score', 'supply_score', 'regime_score', 'fundamental_score', 'momentum_score', 'ocf_score', 'earnings_pattern', 'ocf_pattern', 'risk_level'],
@@ -671,7 +672,7 @@ const VIEW_PRESETS = {
 
 // ===== 처음 열 때 기본으로 보이는 핵심 컬럼 =====
 const DEFAULT_COLUMNS = [
-  'name', 'ticker', 'grade', 'final_score_v3', 'bucket', 'RSI',
+  'name', 'dilution_60d', 'ticker', 'grade', 'final_score_v3', 'bucket', 'RSI',
   'earnings_pattern', 'ocf_pattern', 'risk_level', 'return_1m_%',
   'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억',
   'amt_avg_1w_억', 'amt_avg_1m_억', 'vol_1w_vs_1m_ratio',
@@ -1230,7 +1231,10 @@ function formatCell(row, col) {
     case 'name':
       const isFK = row.falling_knife === 'True' || row.falling_knife === 'true';
       const fkBadge = isFK ? '<span title="떨어지는 칼날 (5일 신저가+양봉0개+5일선<20일선)" style="margin-left:4px;color:#e53e3e;font-size:11px;">⚠️</span>' : '';
-      return `<td><a href="https://finance.naver.com/item/main.naver?code=${row.ticker}" target="_blank" style="color:#2b6cb0;text-decoration:none;">${val}</a>${fkBadge}</td>`;
+      const dil = row.dilution_60d && row.dilution_60d !== 'nan' ? '<span title="희석 공시 60거래일 내: '+row.dilution_60d+' (3년 실측 −1.4~−6.6%p/60일)" style="margin-left:4px;color:#e53e3e;font-size:11px;">💧</span>' : '';
+      return `<td><a href="https://finance.naver.com/item/main.naver?code=${row.ticker}" target="_blank" style="color:#2b6cb0;text-decoration:none;">${val}</a>${fkBadge}${dil}</td>`;
+    case 'dilution':
+      return `<td style="color:#e53e3e;font-weight:600;white-space:nowrap" title="직전 60거래일 내 유상증자·CB·BW·EB 결정 공시(정정 제외). 점수·순위 미반영 — 사람이 판단">⚠️ ${val}</td>`;
     case 'string':
       return `<td>${val}</td>`;
     case 'score':

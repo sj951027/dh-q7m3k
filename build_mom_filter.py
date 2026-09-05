@@ -245,6 +245,13 @@ def main():
         if g is None:
             print(f"  ⚠️ {mkt}: run {rid} mom_a 데이터 없음 — 건너뜀")
             continue
+        # [2026-09-05] 희석 공시 60거래일 배지(표시 전용, 점수·순위 무반영) — dilution_flag.py
+        try:
+            import dilution_flag as _dil
+            g, _nd = _dil.attach(g, asof=rid)
+            if _nd: print(f"  ⚠️ {mkt}: 희석 공시 60거래일 내 {_nd}종목(배지)")
+        except Exception as _e:
+            print(f"  ⚠️ 희석 배지 생략(비치명): {_e}")
         for path in (docs / f"latest_{mkt}_mom.csv", HERE / f"latest_{mkt}_mom.csv"):
             g.to_csv(path, index=False, encoding="utf-8-sig")
         n_uni = int(g["n_universe"].iloc[0]) if "n_universe" in g else len(g)
