@@ -189,7 +189,7 @@
 
   // ---- 정본 판정(VERDICT 문서에서 봉인) — 판정·은퇴 시 갱신. 표시 전용(json 무변경) ----
   //   자동 라벨(json.verdict)은 표본이 계속 쌓여 흔들리므로, 결정은 정본으로 읽는다(2026-09-04 사용자 피드백).
-  const SEALED={
+  let SEALED={
     v30:{v:'유의',t:'유의 — 챔피언 유지(8/09 정본, 급락→반등 창)',cls:'b-sig',doc:'VERDICT_20260809.md'},
     lv_b:{v:'기움',t:'기움 — 표시 기준 유지(8/29 정본)',cls:'b-lean',doc:'VERDICT_20260829_lowvol.md'},
     lv_a:{v:'노이즈',t:'노이즈(8/29 정본)',cls:'b-noise'}, mom_a:{v:'노이즈',t:'노이즈(8/29 정본)',cls:'b-noise'},
@@ -200,10 +200,10 @@
     v31a:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31b:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31c:{v:'기각',t:'기각(8/09)',cls:'b-noise'},
     v31d:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31f:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31g:{v:'기각',t:'기각(8/09)',cls:'b-noise'}};
   // 은퇴: 정본은 json의 retired 플래그(각 스크립트 RETIRED 단일소스). 아래는 구 json 폴백.
-  const RETIRED_FALLBACK=new Set(['v31a','v31b','v31c','v31d','v31f','v31g','lv_c','lv_d','lv_a3','lv_short','hv_a','wu_a','wu_b']);
-  const RET_WHY={v31a:'BUY 게이트 역효과',v31b:'유의 악화',v31c:'좋은 저유동 종목 제외',v31d:'유의 악화',v31f:'h20 채택 미달(h10 기움)',v31g:'h20 채택 미달',
+  let RETIRED_FALLBACK=new Set(['v31a','v31b','v31c','v31d','v31f','v31g','lv_c','lv_d','lv_a3','lv_short','hv_a','wu_a','wu_b']);
+  let RET_WHY={v31a:'BUY 게이트 역효과',v31b:'유의 악화',v31c:'좋은 저유동 종목 제외',v31d:'유의 악화',v31f:'h20 채택 미달(h10 기움)',v31g:'h20 채택 미달',
     lv_c:'역작동(보정 CI까지 음수)',lv_d:'역작동',hv_a:'역작동',lv_a3:'노이즈·lv_a 변형',lv_short:'노이즈·lv_a 변형',wu_a:'역작동(유의) 기각',wu_b:'역작동(유의) 기각'};
-  const RET_DATE={v31a:'8/09',v31b:'8/09',v31c:'8/09',v31d:'8/09',v31f:'8/09',v31g:'8/09',lv_c:'9/04',lv_d:'9/04',hv_a:'9/04',lv_a3:'9/04',lv_short:'9/04',wu_a:'9/04',wu_b:'9/04'};
+  let RET_DATE={v31a:'8/09',v31b:'8/09',v31c:'8/09',v31d:'8/09',v31f:'8/09',v31g:'8/09',lv_c:'9/04',lv_d:'9/04',hv_a:'9/04',lv_a3:'9/04',lv_short:'9/04',wu_a:'9/04',wu_b:'9/04'};
 
   const need=(m)=>m.track==='large'?60:40;
   function conf(m){ const h=m.h20||{}; const ci=h.ci||[null,null];
@@ -232,10 +232,21 @@
     const line=pts.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' '); const col=pts[n-1]>0?'var(--good)':'var(--bad)';
     return '<svg width="'+w+'" height="'+hh+'" style="vertical-align:middle"><line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+w+'" y2="'+y(0).toFixed(1)+'" stroke="var(--line)" stroke-width="1"/><polyline fill="none" stroke="'+col+'" stroke-width="1.5" points="'+line+'"/></svg>'; };
 
+  // [2026-09-06] 정본 판정·은퇴 단일 소스 = models_registry.json (notify_telegram/weekly 와 공유).
+  //   없거나 깨지면 위 인라인 값 그대로(폴백). 적용 시 위 4개 표를 덮어쓴다.
+  function applyRegistry(reg){
+    try{
+      if(!reg||typeof reg!=='object') return;
+      if(reg.sealed&&Object.keys(reg.sealed).length){ const o={}; for(const k in reg.sealed){ const v=reg.sealed[k]; o[k]={v:v.v,t:v.t||v.short||v.v,cls:v.cls||'b-noise',doc:v.doc}; } SEALED=o; }
+      if(reg.retired&&Object.keys(reg.retired).length){ RETIRED_FALLBACK=new Set(Object.keys(reg.retired)); const w={},dt={}; for(const k in reg.retired){ w[k]=reg.retired[k].why||''; dt[k]=reg.retired[k].date||''; } RET_WHY=w; RET_DATE=dt; }
+    }catch(_e){}
+  }
   Promise.all([
     fetch('leaderboard.json?t='+Date.now()).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
-    fetch('leaderboard_history.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
-  ]).then(([d,hist])=>{
+    fetch('leaderboard_history.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch('models_registry.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
+  ]).then(([d,hist,reg])=>{
+    applyRegistry(reg);
     const all=(d.models||[]).slice(); const MINOOS=d.min_oos||40;
     const isRet=(m)=>!!m.retired||RETIRED_FALLBACK.has(m.model);
     const isDone=(m)=>!isRet(m)&&SEALED[m.model]&&!['유의','기움'].includes(SEALED[m.model].v);

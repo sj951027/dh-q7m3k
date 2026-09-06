@@ -22,6 +22,7 @@
 | wu | le_a | 저점탈출+OBV+유동성 | 20260715 | ~9월 중 | PREREGISTER_le_sv.md |
 | wu | qs_a | 조용한 강자(저변동+52주고+저거래대금) | 20260723 | ~9월 말 | PREREGISTER_qs.md |
 | wu | *sv_b* | *(초안·미등록)* sv_a + crb5(신용잔고) — **sv_a §11 판정 후 등록**(분모 6→7 회피, 8/29 결정) | **미정** | 등록 + 40거래일 | PREREGISTER_sv_b.md |
+| v3 | **v30 (2차 창 W2b)** | 8/09 유의가 첫 13앵커(급락→반등)에 의존 → 판정 후 OOS로 재판정. 스펙·분모 불변 | 20260810(창 시작) | **~10/07** | PREREGISTER_v30_w2.md |
 | wu | **px_a** | 가격4팩터(lv60+to20+lv20+nh252) — 3년 walk-forward+lv_b 짝비교 근거 | 20260810(첫적재) | **~10월 초** | PREREGISTER_px_a.md |
 | large | **ls_t1** | 밸류4팩터 동일가중(ep·bp·rim·dv) 테스트 | 20260806 | h60: 9월~ / h120: 11월~ | PREREGISTER_ls_t1.md |
 
@@ -44,6 +45,10 @@
   patch_note/20260904_retire7.md). 8/29 '적재 유지' 결정을 뒤집은 것 — 분모는 행 보존으로 그대로(lowvol 11·wu 6).
   wu_a 은퇴로 공통잣대(cross_sim) 주력창·α/β 대표가 wu_a→(제외)/sv_a 로 바뀜(관측 전용).
 - 수동 재계산: v3 `shadow_run --models`, lowvol/wu 는 RETIRED 에서 임시 제외 후 실행(원칙상 금지, 연구용만).
+- [2026-09-06] 운영 권고 문서 `OPS_GUIDE.md`(강제 없음 — 막는 것은 그 문서 §2만). v30 W2b 재판정 사전등록(위 표).
+- [2026-09-06] 정본 판정·은퇴 **표시 단일 소스 = `docs/models_registry.json`**(sealed·retired·money).
+  leaderboard.html(SEALED/RET_WHY/RET_DATE)·notify_telegram(SEALED_V2/RETIRED_FALLBACK_V2/MONEY)·notify_weekly(은퇴 제외)가
+  읽고, 없으면 각자 인라인 폴백. **판정/은퇴 시 갱신 위치 = 이 원장 + registry 1곳**(종전 4곳 수동). 점수·판정(leaderboard.json) 무관.
 
 ## 2차 판정 (lowvol 트랙, 2026-08-29 — VERDICT_20260829_lowvol.md **정본 확정**)
 | 모델 | h20 IC | 95% CI | 판정 |

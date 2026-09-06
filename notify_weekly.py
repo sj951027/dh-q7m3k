@@ -60,6 +60,13 @@ def build_message():
         #   종전엔 v31a(8/09 은퇴)·lv_a3 등이 h5 IC 최대값으로 '트랙 선두'에 뽑히는 버그.
         _ret_fb = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
                    "lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "wu_a", "wu_b"}
+        # [2026-09-06] docs/models_registry.json(단일 소스)이 있으면 그 은퇴 목록으로 대체(비치명).
+        try:
+            _reg = json.loads((HERE / "docs" / "models_registry.json").read_text(encoding="utf-8"))
+            if _reg.get("retired"):
+                _ret_fb = set(_reg["retired"].keys())
+        except Exception:
+            pass
         for m in lb.get("models", []):
             if m.get("retired") or m["model"] in _ret_fb:
                 continue

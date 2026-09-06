@@ -255,6 +255,25 @@ RETIRED_FALLBACK_V2 = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
 MONEY_MODELS_V2 = ["v30", "lv_b"]      # ② 돈 줄 대표(+ 판정 캘린더 선두 1개 자동 추가)
 
 
+def _apply_registry():
+    """[2026-09-06] docs/models_registry.json(정본 판정·은퇴 단일 소스)이 있으면 위 인라인 상수를 덮어쓴다.
+    없거나 깨졌으면 인라인 폴백 그대로(비치명). 표시 전용."""
+    global SEALED_V2, RETIRED_FALLBACK_V2, MONEY_MODELS_V2
+    try:
+        reg = json.loads((HERE / "docs" / "models_registry.json").read_text(encoding="utf-8"))
+        ret = set((reg.get("retired") or {}).keys())
+        sealed = {k: v.get("short") for k, v in (reg.get("sealed") or {}).items()
+                  if v.get("short") and k not in ret}
+        if sealed: SEALED_V2 = sealed
+        if ret: RETIRED_FALLBACK_V2 = ret
+        if reg.get("money"): MONEY_MODELS_V2 = list(reg["money"])
+    except Exception:
+        pass
+
+
+_apply_registry()
+
+
 def _uni_latest2(model):
     """대표 모델의 최신 run·직전 run 유니버스 크기 (표시 전용, 실패 시 None)."""
     try:

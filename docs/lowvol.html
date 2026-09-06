@@ -291,6 +291,19 @@ function load(mkt){
         `<div class="chip">유니버스 <b>${nuni}</b></div>`+
         `<div class="chip">구성 <b>저변동+ROE (반전 제외)</b></div>`+
         `<div class="chip">유니버스컷 <b>과매도30~70·유동≥5억</b></div>`;
+      // [2026-09-06] 유니버스 고갈 경고(표시 전용) — 시장별 8종목 미만이면 그날 IC 앵커가 안 쌓이고,
+      //   10종목 미만이면 '시장별 상위 10' 권고(OPS_GUIDE)를 채울 수 없다. 점수·순위 무영향.
+      try{
+        const nrow=rows.length;
+        if(nrow<10){
+          const sev=nrow<8;
+          document.getElementById('meta').insertAdjacentHTML('beforeend',
+            `<div class="chip" style="background:${sev?'#3a1f1f':'#3a3218'};border:1px solid ${sev?'#b45555':'#a08a3a'};color:${sev?'#f0b0b0':'#f0dca0'}">`
+            +`⚠️ 유니버스 고갈 — 이 시장 ${nrow}종목`
+            +(sev?' (8 미만: 오늘 IC 앵커 없음)':' (10 미만: 상위10 권고 못 채움)')
+            +`. 장세 함수라 정상 — 억지로 채우지 말 것</div>`);
+        }
+      }catch(_e){}
     })
     .catch(()=>{
       document.querySelector('#tbl tbody').innerHTML=
