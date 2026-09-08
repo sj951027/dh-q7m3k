@@ -77,7 +77,8 @@
     "20260603",
     "20260606",
     "20260608",
-    "20260817"
+    "20260817",
+    "20260908"
   ],
   "horizons_tradingdays": [
     1,
@@ -120,31 +121,31 @@
     {
       "horizon": 1,
       "n_groups": 134,
-      "mean_IC": 0.0301,
+      "mean_IC": 0.0298,
       "median_IC": 0.0276,
       "IC>0_ratio": 0.612,
-      "top-bot_spread%": 0.093,
+      "top-bot_spread%": 0.099,
       "top_hit_rate": 0.518,
       "avg_n": 480
     },
     {
       "horizon": 2,
       "n_groups": 133,
-      "mean_IC": 0.0301,
+      "mean_IC": 0.0298,
       "median_IC": 0.0173,
-      "IC>0_ratio": 0.564,
-      "top-bot_spread%": 0.137,
-      "top_hit_rate": 0.507,
+      "IC>0_ratio": 0.556,
+      "top-bot_spread%": 0.145,
+      "top_hit_rate": 0.506,
       "avg_n": 477
     },
     {
       "horizon": 3,
       "n_groups": 131,
-      "mean_IC": 0.0283,
+      "mean_IC": 0.0275,
       "median_IC": 0.0245,
       "IC>0_ratio": 0.634,
       "top-bot_spread%": 0.061,
-      "top_hit_rate": 0.5,
+      "top_hit_rate": 0.499,
       "avg_n": 478
     }
   ],
@@ -152,30 +153,30 @@
     {
       "horizon": 1,
       "n_groups": 131,
-      "mean_IC": -0.0084,
+      "mean_IC": -0.0093,
       "median_IC": -0.0216,
       "IC>0_ratio": 0.42,
-      "top-bot_spread%": -0.005,
+      "top-bot_spread%": -0.007,
       "top_hit_rate": 0.526,
       "avg_n": 238
     },
     {
       "horizon": 2,
       "n_groups": 130,
-      "mean_IC": -0.0258,
+      "mean_IC": -0.0271,
       "median_IC": -0.0303,
       "IC>0_ratio": 0.369,
-      "top-bot_spread%": -0.184,
+      "top-bot_spread%": -0.187,
       "top_hit_rate": 0.514,
       "avg_n": 237
     },
     {
       "horizon": 3,
       "n_groups": 128,
-      "mean_IC": -0.0309,
-      "median_IC": -0.0348,
-      "IC>0_ratio": 0.359,
-      "top-bot_spread%": -0.503,
+      "mean_IC": -0.0326,
+      "median_IC": -0.0376,
+      "IC>0_ratio": 0.352,
+      "top-bot_spread%": -0.509,
       "top_hit_rate": 0.506,
       "avg_n": 238
     }
