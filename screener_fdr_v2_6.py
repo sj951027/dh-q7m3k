@@ -324,6 +324,17 @@ def get_universe(cfg):
                             sector_map[code] = str(sector_val).strip()
                 print(f"   ✓ 로드: {len(tickers)}개")
                 print(f"   🚫 금융주/리츠{'/스팩' if cfg['exclude_spac'] else ''} 제외: {excluded}개")
+                # [2026-09-08] 성공한 목록을 예비 캐시에 저장(비치명) — 필터 전 원본(금융 포함)을 저장해야
+                #   실패일에도 같은 필터를 다시 적용할 수 있다.
+                try:
+                    import listing_cache
+                    listing_cache.save(listing, [
+                        {"code": str(row[code_col]).zfill(6), "name": row[name_col], "market": listing,
+                         "shares": row.get('Stocks'), "marcap": row.get('Marcap'),
+                         "sector": (row.get(sector_col) if sector_col else None)}
+                        for _, row in df.iterrows()])
+                except Exception as _e:
+                    print(f"   ⚠️ listing_cache 저장 생략: {_e}")
                 if sector_col:
                     print(f"   🏷️  산업 분류({sector_col}): {len(sector_map)}/{len(tickers)}개 매칭")
                 else:
@@ -332,7 +343,30 @@ def get_universe(cfg):
     except Exception as e:
         print(f"   ⚠️  StockListing 실패: {str(e)[:80]}")
 
-    print("   • 내장 리스트 사용")
+    # [2026-09-08] 예비 1순위: listing_cache(전날 성공분 또는 DB 시드). 같은 필터(코드 끝 '0'·금융/리츠/스팩)를 적용.
+    #   2026-09-08 FDR 404 로 내장 리스트(수십 종목)만 돌아 stage1 75/20행 → 하루 측정 전체 유실된 사건의 재발 방지.
+    try:
+        import listing_cache
+        rows, at = listing_cache.load(listing)
+    except Exception as _e:
+        rows, at = None, None
+    if rows and len(rows) > 100:
+        tickers, name_map, sector_map, excluded = [], {}, {}, 0
+        for r in rows:
+            code, name = r["code"], r["name"]
+            if not code.endswith('0'):
+                continue
+            if is_financial_or_reit(code, name, cfg['exclude_spac']):
+                excluded += 1
+                continue
+            tickers.append(code)
+            name_map[code] = name
+            if r.get("sector"):
+                sector_map[code] = r["sector"]
+        print(f"   • [예비] listing_cache({at}) 사용: {len(tickers)}개 (금융/리츠 제외 {excluded}, 업종 {len(sector_map)})")
+        return tickers, name_map, sector_map
+
+    print("   • 내장 리스트 사용 (예비 캐시 없음 — degraded)")
     seen = set()
     unique = [(c, n) for c, n in cfg['major_fallback']
               if c not in seen and not seen.add(c)

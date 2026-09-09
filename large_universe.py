@@ -71,9 +71,27 @@ def fetch_listing():
     frames = []
     for market in ('KOSPI', 'KOSDAQ'):
         print(f"   • fdr.StockListing('{market}') 시도...")
-        df = fdr.StockListing(market)
-        if df is None or len(df) < 100:
-            raise RuntimeError(f"{market} StockListing 결과가 비정상(행수 {0 if df is None else len(df)})")
+        try:
+            df = fdr.StockListing(market)
+            if df is None or len(df) < 100:
+                raise RuntimeError(f"{market} StockListing 결과가 비정상(행수 {0 if df is None else len(df)})")
+        except Exception as e:
+            # [2026-09-08] FDR 404 대응 — 예비 캐시(전날 성공분/시드). 시총·주식수는 캐시값(전날 종가 기준)이라
+            #   그날 시총 순위가 하루 어긋날 수 있음 → 'source' 로 표시. 캐시도 없으면 종전대로 실패.
+            import listing_cache
+            rows, at = listing_cache.load(market)
+            if not rows:
+                raise
+            print(f"   ⚠️ StockListing 실패({str(e)[:60]}) → [예비] listing_cache({at}) {len(rows)}개")
+            out = pd.DataFrame({
+                'ticker': [r['code'] for r in rows], 'name': [r['name'] for r in rows],
+                'close': [float('nan')] * len(rows),
+                'marcap': pd.to_numeric(pd.Series([r['marcap'] for r in rows]), errors='coerce'),
+                'stocks': pd.to_numeric(pd.Series([r['shares'] for r in rows]), errors='coerce'),
+                'market': market.lower(),
+            })
+            frames.append(out)
+            continue
 
         code_col = next((c for c in ['Code', 'Symbol'] if c in df.columns), None)
         name_col = 'Name' if 'Name' in df.columns else None
@@ -96,6 +114,12 @@ def fetch_listing():
         })
         print(f"   ✓ {market}: {len(out)}개 (시총 컬럼={marcap_col})")
         frames.append(out)
+        try:                                   # 성공분 저장(비치명)
+            import listing_cache
+            listing_cache.save(market, [{"code": t, "name": n, "market": market, "shares": s, "marcap": m}
+                                        for t, n, s, m in zip(out['ticker'], out['name'], out['stocks'], out['marcap'])])
+        except Exception as _e:
+            print(f"   ⚠️ listing_cache 저장 생략: {_e}")
     return pd.concat(frames, ignore_index=True)
 
 

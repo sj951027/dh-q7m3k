@@ -113,7 +113,14 @@ def trading_run_id_from_ts(run_ts):
 
 
 def load_csv_with_meta(csv_path, run_id, run_ts, market):
-    df = pd.read_csv(csv_path, encoding="utf-8-sig")
+    # [2026-09-08] ticker 는 반드시 문자열 6자리. 종전엔 dtype 미지정이라 CSV 의 ticker 가 전부 숫자면
+    #   pandas 가 int 로 읽어 앞자리 0 이 사라졌다('006370'→6370). FDR 목록엔 영문 섞인 코드가 있어
+    #   문자열로 읽히던 게 우연히 가려 줬고, 예비 캐시(숫자 코드만) 첫 실행일에 드러남(9/08 사건 2차).
+    df = pd.read_csv(csv_path, encoding="utf-8-sig",
+                     dtype={"ticker": str, "stock_code": str, "corp_code": str})
+    for _c in ("ticker", "stock_code"):
+        if _c in df.columns:
+            df[_c] = df[_c].astype(str).str.strip().str.replace(r"\.0$", "", regex=True).str.zfill(6)
     df.insert(0, "market", market)
     df.insert(1, "run_id", run_id)
     df.insert(2, "run_timestamp", run_ts)

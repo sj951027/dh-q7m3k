@@ -81,7 +81,26 @@ def get_universe():
     반환: list of dict(code, name, market, shares, marcap)."""
     import FinanceDataReader as fdr
     print("• 종목 유니버스 로드 (FDR StockListing 'KRX')")
-    krx = fdr.StockListing("KRX")
+    # [2026-09-08] FDR 404 사건 대응 — 실패하면 listing_cache(전날 성공분/시드)로 진행, 성공하면 캐시 갱신.
+    try:
+        krx = fdr.StockListing("KRX")
+        if krx is None or len(krx) < 100:
+            raise RuntimeError(f"StockListing 행수 비정상({0 if krx is None else len(krx)})")
+    except Exception as e:
+        print(f"  ⚠️ StockListing 실패: {str(e)[:100]}")
+        try:
+            import listing_cache
+            rows, at = listing_cache.load("KRX")
+        except Exception as e2:
+            rows, at = None, None
+            print(f"  ⚠️ listing_cache 로드 실패: {e2}")
+        if not rows:
+            raise
+        out = [{"code": r["code"], "name": r["name"], "market": r["market"],
+                "shares": r["shares"], "marcap": r["marcap"]}
+               for r in rows if r["market"] in ("KOSPI", "KOSDAQ")]
+        print(f"  → [예비] listing_cache({at}) {len(out)}종목 (KOSPI/KOSDAQ) — 신규 상장은 다음 성공 시 반영")
+        return out
     # 컬럼: Code, Name, Market, Stocks, Marcap, ... (실측 확인됨)
     out = []
     for _, r in krx.iterrows():
@@ -100,6 +119,11 @@ def get_universe():
             "marcap": _safe_int(r.get("Marcap")),
         })
     print(f"  → {len(out)}종목 (KOSPI/KOSDAQ)")
+    try:                                   # 성공분 저장(비치명) — 다음 실패일의 예비
+        import listing_cache
+        listing_cache.save("KRX", out)
+    except Exception as e:
+        print(f"  ⚠️ listing_cache 저장 생략: {e}")
     return out
 
 

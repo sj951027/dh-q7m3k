@@ -96,6 +96,7 @@ def _load_v3_scores():
     if not frames:
         return None
     v = pd.concat(frames, ignore_index=True)
+    v["ticker"] = v["ticker"].astype(str).str.zfill(6)   # [2026-09-08] 앞자리 0 보존
     v["run_id"] = v["run_id"].astype(str)
     v["market"] = v["market"].astype(str)
     v["ticker"] = v["ticker"].astype(str).str.zfill(6)

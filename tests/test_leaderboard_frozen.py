@@ -42,8 +42,13 @@ partial, dbl, didx = lb.build_gates(con, dates)
 excl = partial | dbl
 
 print("[1] 게이트 동결값")
-check("부분실행 게이트 == {20260608}", partial == {"20260608"}, str(sorted(partial)))
-check("이중실행 게이트 == {20260703}", dbl == {"20260703"}, str(sorted(dbl)))
+# [2026-09-08] 게이트 집합은 동결창(≤FREEZE) 안에서만 비교한다 — 동결 이후 새로 생긴 부분실행일(예: 20260908 FDR 404)은
+#   정당한 게이트 대상이지 골든 위반이 아니다. 동결창 밖 게이트는 정보로만 출력.
+_p_in = {r for r in partial if r <= FREEZE}; _d_in = {r for r in dbl if r <= FREEZE}
+check("부분실행 게이트(동결창) == {20260608}", _p_in == {"20260608"}, str(sorted(partial)))
+check("이중실행 게이트(동결창) == {20260703}", _d_in == {"20260703"}, str(sorted(dbl)))
+_after = sorted((partial | dbl) - _p_in - _d_in)
+if _after: print(f"  info 동결창 이후 게이트 제외일(정상 동작): {_after}")
 
 print("\n[2] REG_DATE 원장 핵심값")
 for m, d in (("v30", "20260606"), ("lv_b", "20260625"), ("mom_b", "20260717")):
