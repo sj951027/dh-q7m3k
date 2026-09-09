@@ -274,6 +274,37 @@ def _apply_registry():
 _apply_registry()
 
 
+def _freshness_warnings():
+    """[2026-09-09] 지수(market_daily KOSPI/KOSDAQ)·상장목록 캐시(listing_cache)가 시세(daily_ohlcv) 마지막 날짜보다
+    뒤처지면 경고 문자열 목록. 실패 시 빈 목록(비치명). 판정·점수 무관, 텔레그램 표시 전용."""
+    import sqlite3, json
+    out = []
+    try:
+        odb = HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"
+        con = sqlite3.connect(f"file:{odb}?mode=ro", uri=True)
+        px_last = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
+        idx = dict(con.execute("SELECT series, MAX(date) FROM market_daily GROUP BY series").fetchall())
+        con.close()
+        stale = [f"{k} {v[4:6]}/{v[6:]}" for k, v in idx.items() if k in ("KOSPI", "KOSDAQ") and v and px_last and v < px_last]
+        if stale:
+            out.append(f"⚠️ 지수 시계열 정지: {' · '.join(stale)} (시세 {px_last[4:6]}/{px_last[6:]}) — 돈 표 코스피선 참고만")
+    except Exception:
+        pass
+    try:
+        lc = HERE / ".." / "dh-q7m3k-data" / "listing_cache.json"
+        if lc.exists():
+            d = json.loads(lc.read_text(encoding="utf-8"))
+            src = str(d.get("source", ""))
+            at = str(d.get("saved_at", ""))[:10].replace("-", "")
+            if src.startswith("seed:") and len(src) >= 13:
+                at = src[5:13]                      # 시드는 저장 시각이 아니라 시드 기준일(ohlcv 최신일)
+            if src.startswith("seed") or (px_last and at and at < px_last):
+                out.append(f"⚠️ 상장목록 예비 캐시 사용 중(기준 {at[4:6]}/{at[6:]}{', DB 시드' if src.startswith('seed') else ''}) — FDR 목록 서버 복구 대기")
+    except Exception:
+        pass
+    return out
+
+
 def _uni_latest2(model):
     """대표 모델의 최신 run·직전 run 유니버스 크기 (표시 전용, 실패 시 None)."""
     try:
@@ -366,6 +397,12 @@ def _model_status_lines_v2():
             u, u0 = _uni_latest2(mid)
             if u and u0 and u < 0.5 * u0:
                 ev.append(f"⚠️ {mid} 유니버스 {u0}→{u} 급감(판정 표본 얇아짐)")
+        # [2026-09-09] 데이터 신선도 — 지수·상장목록이 시세보다 뒤처지면 알린다(조용히 낡는 것 방지, 표시 전용).
+        try:
+            for w in _freshness_warnings():
+                ev.append(w)
+        except Exception:
+            pass
         out.append("🔔 달라진 것: " + (" · ".join(ev) if ev else "없음"))
         out.append("※ 계열 간 IC 비교 금지 · 판정 정본은 VERDICT 문서")
         return out

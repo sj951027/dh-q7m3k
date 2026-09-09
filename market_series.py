@@ -73,6 +73,33 @@ def main():
         con.commit()
         total += cur.rowcount
         print(f"  ✓ {name}: 신규 {cur.rowcount}행 (마지막 {rows[-1][1] if rows else '-'})")
+    # [2026-09-09] 예비 소스 — FDR 지수(KS11/KQ11)가 시세(daily_ohlcv)보다 뒤처지면 pykrx(KRX 지수 1001/2001)로 보충.
+    #   9/08~09 실측: FDR 상장목록 404 와 함께 지수도 9/07에서 멈춤(시세·환율은 정상). 판정엔 안 쓰이지만
+    #   리더보드 '돈' 표의 코스피 참고선이 ffill 로 조용히 낡는 것을 막는다. 둘 다 실패하면 경고만.
+    try:
+        px_last = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
+    except Exception:
+        px_last = None
+    KRX_INDEX = {"KOSPI": "1001", "KOSDAQ": "2001"}
+    for name, kcode in KRX_INDEX.items():
+        last = con.execute("SELECT MAX(date) FROM market_daily WHERE series=?", (name,)).fetchone()[0]
+        if not px_last or not last or last >= px_last:
+            continue
+        try:
+            from pykrx import stock as _krx
+            from datetime import datetime as _dt, timedelta as _td
+            s = (_dt.strptime(last, "%Y%m%d") + _td(days=1)).strftime("%Y%m%d")
+            kdf = _krx.get_index_ohlcv_by_date(s, px_last, kcode)
+            if kdf is None or kdf.empty:
+                print(f"  ⚠️ {name} 예비(pykrx {kcode}): 데이터 없음 — 지수 {last}에서 정지 중(시세 {px_last})")
+                continue
+            ccol = "종가" if "종가" in kdf.columns else kdf.columns[3]
+            rows = [(name, idx.strftime("%Y%m%d"), float(v)) for idx, v in kdf[ccol].dropna().items()]
+            cur = con.executemany("INSERT OR IGNORE INTO market_daily VALUES (?,?,?)", rows)
+            con.commit(); total += cur.rowcount
+            print(f"  ✓ {name}: [예비 pykrx] 신규 {cur.rowcount}행 (마지막 {rows[-1][1] if rows else '-'})")
+        except Exception as e:
+            print(f"  ⚠️ {name} 예비(pykrx) 실패: {str(e)[:80]} — 지수 {last}에서 정지 중(시세 {px_last})")
     n = con.execute("SELECT series, COUNT(*), MAX(date) FROM market_daily GROUP BY series").fetchall()
     con.close()
     print(f"완료: 신규 {total}행. 누적: " + " · ".join(f"{s} {c}행(~{d})" for s, c, d in n))

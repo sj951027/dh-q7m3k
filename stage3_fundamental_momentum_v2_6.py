@@ -783,22 +783,38 @@ def main():
     retry_idx = [i for i, r in enumerate(results) if _is_conn_err(r)]
     if retry_idx:
         by_ticker = {r['ticker']: r for r in rows_list}
-        print(f"\n   🔁 DART 연결오류 {len(retry_idx)}종목 2차 시도(순차, 간격 0.3s)...")
+        # [2026-09-09] 상한: 총 5분 또는 연속 8종목 실패면 중단 — 9/09 실측 43종목 2차 시도가 34분 걸리고 0건 복구
+        #   (DART 서버 자체가 죽은 날엔 재시도가 시간만 먹는다). 복구된 종목이 있으면 연속 카운터 리셋.
+        RETRY_BUDGET_SEC, RETRY_MAX_CONSEC_FAIL = 300, 8
+        print(f"\n   🔁 DART 연결오류 {len(retry_idx)}종목 2차 시도(순차, 간격 0.3s, 상한 {RETRY_BUDGET_SEC}s/연속실패 {RETRY_MAX_CONSEC_FAIL})...")
         fixed = 0
         t_retry = time.time()
+        consec_fail = 0
+        tried = 0
         for i in retry_idx:
+            if time.time() - t_retry > RETRY_BUDGET_SEC:
+                print(f"   ⏹  2차 시도 시간 상한({RETRY_BUDGET_SEC}s) — 나머지 {len(retry_idx)-tried}종목은 다음날")
+                break
+            if consec_fail >= RETRY_MAX_CONSEC_FAIL:
+                print(f"   ⏹  연속 {consec_fail}종목 실패 — DART 측 장애로 보고 중단(나머지 {len(retry_idx)-tried}종목은 다음날)")
+                break
             row = by_ticker.get(results[i]['ticker'])
             if row is None:
                 continue
+            tried += 1
             try:
                 time.sleep(0.3)
                 _, res2 = analyze_one(row)
             except Exception:
+                consec_fail += 1
                 continue
             if not _is_conn_err(res2):
                 results[i] = res2
                 fixed += 1
-        print(f"   🔁 2차 시도 결과: 복구 {fixed}/{len(retry_idx)} ({time.time()-t_retry:.0f}s)")
+                consec_fail = 0
+            else:
+                consec_fail += 1
+        print(f"   🔁 2차 시도 결과: 복구 {fixed}/{len(retry_idx)} (시도 {tried}, {time.time()-t_retry:.0f}s)")
         annual_op_count = sum(1 for r in results if r.get('annual_yoy_%') is not None)
         quarterly_op_count = sum(1 for r in results if r.get('quarterly_yoy_%') is not None)
         ocf_found_count = sum(1 for r in results if r.get('ocf_latest_억') is not None)

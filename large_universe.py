@@ -82,12 +82,26 @@ def fetch_listing():
             rows, at = listing_cache.load(market)
             if not rows:
                 raise
-            print(f"   ⚠️ StockListing 실패({str(e)[:60]}) → [예비] listing_cache({at}) {len(rows)}개")
+            # [2026-09-09] 캐시의 시총은 캐시 저장일 기준이라 낡는다(9/08·9/09 실측: 9/07 종가 기준 그대로 적재).
+            #   → ohlcv.db 최신 종가 × 캐시 주식수로 '그날' 시총을 다시 계산(PIT 원칙). 종가 없으면 캐시값 유지.
+            px = {}
+            try:
+                _oc = sqlite3.connect(f"file:{Path(__file__).resolve().parent / '..' / 'dh-q7m3k-data' / 'ohlcv.db'}?mode=ro", uri=True)
+                _last = _oc.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
+                px = {t: c for t, c in _oc.execute("SELECT ticker, close FROM daily_ohlcv WHERE date=?", (_last,))}
+                _oc.close()
+                print(f"   ⚠️ StockListing 실패({str(e)[:60]}) → [예비] listing_cache({at}) {len(rows)}개 · 시총은 {_last} 종가×주식수로 재계산")
+            except Exception as _e2:
+                print(f"   ⚠️ StockListing 실패({str(e)[:60]}) → [예비] listing_cache({at}) {len(rows)}개 · 종가 조회 실패({_e2}) — 캐시 시총 사용")
+            _close = [px.get(r['code'], float('nan')) for r in rows]
+            _stocks = pd.to_numeric(pd.Series([r['shares'] for r in rows]), errors='coerce')
+            _mc_cache = pd.to_numeric(pd.Series([r['marcap'] for r in rows]), errors='coerce')
+            _mc = (_stocks * pd.Series(_close, dtype=float)).where(lambda s: s.notna(), _mc_cache)
             out = pd.DataFrame({
                 'ticker': [r['code'] for r in rows], 'name': [r['name'] for r in rows],
-                'close': [float('nan')] * len(rows),
-                'marcap': pd.to_numeric(pd.Series([r['marcap'] for r in rows]), errors='coerce'),
-                'stocks': pd.to_numeric(pd.Series([r['shares'] for r in rows]), errors='coerce'),
+                'close': pd.Series(_close, dtype=float),
+                'marcap': _mc,
+                'stocks': _stocks,
                 'market': market.lower(),
             })
             frames.append(out)
