@@ -46,6 +46,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 from io import StringIO
 import time
 import warnings
@@ -864,7 +865,87 @@ def _flatten_columns(cols):
     return [str(c) for c in cols]
 
 
+# ─── [2026-09-11] 수급 소스: 네이버 크롤링 → KIS daily_flows(ohlcv.db) ───────────────
+# 네이버 종목 페이지(finance.naver.com/item/frgn.naver)가 stock.naver.com 앱 페이지로 302 되며
+# HTML 표가 사라져 크롤링이 전멸했다(09-11 실측 0/979). 소스를 kis_flows.py 가 매일 적재하는
+# ohlcv.db daily_flows 로 바꾼다. 정의는 네이버와 동일하게 유지: 최근 5/20거래일의
+# (순매매량 × 종가) 합, 억 단위 0.1 반올림. 실측: 09-08·09-09 stage3 전 종목 supply_score_v2 100% 동일.
+# 전제: 배치에서 `kis_flows.py --universe all --no-short` 가 스크리너보다 먼저 돈다(run_all_and_diversify.bat).
+# 안전망: SUPPLY_SOURCE=naver (env) 로 구 크롤러 경로 보존. SUPPLY_ASOF=YYYYMMDD 는 오프라인 재현용(그날까지만 사용).
+SUPPLY_SOURCE = _os.environ.get("SUPPLY_SOURCE", "kis").strip().lower()
+SUPPLY_ASOF = _os.environ.get("SUPPLY_ASOF", "").strip() or None
+SUPPLY_FRESH_MIN = 0.90      # 최신 수급일 행을 가진 종목 비율이 이 미만이면 경고(표시 전용, 점수 무관)
+_KIS_FLOWS = None            # {ticker: dict(EMPTY_SUPPLY 키)} — 프로세스당 1회 로드
+_KIS_FLOWS_LOCK = threading.Lock()
+
+
+def _load_kis_flows():
+    """daily_flows(ohlcv.db, 읽기 전용)에서 종목별 5/20거래일 수급 합을 한 번에 계산해 캐시한다.
+    실패·DB 없음 → 빈 표(전 종목 supply_fetched=False → supply 0, 네이버 실패 때와 동일)."""
+    global _KIS_FLOWS
+    with _KIS_FLOWS_LOCK:
+        if _KIS_FLOWS is not None:
+            return _KIS_FLOWS
+        table = {}
+        try:
+            import sqlite3
+            con = sqlite3.connect(f"file:{OHLCV_DB_PATH}?mode=ro", uri=True)
+            px_last = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
+            cap = SUPPLY_ASOF or px_last or "99999999"
+            dates = [r[0] for r in con.execute(
+                "SELECT DISTINCT date FROM daily_flows WHERE date<=? ORDER BY date DESC LIMIT 20", (cap,))]
+            if dates:
+                q = pd.read_sql(
+                    "SELECT ticker, date, close, foreign_net_qty, inst_net_qty FROM daily_flows "
+                    "WHERE date BETWEEN ? AND ?", con, params=(dates[-1], dates[0]))
+            else:
+                q = pd.DataFrame(columns=["ticker", "date", "close", "foreign_net_qty", "inst_net_qty"])
+            con.close()
+            q = q.dropna(subset=["close", "foreign_net_qty", "inst_net_qty"])
+            q["ticker"] = q["ticker"].astype(str).str.zfill(6)
+            q = q.sort_values(["ticker", "date"], ascending=[True, False])
+            q["_rk"] = q.groupby("ticker").cumcount()
+            q["_f"] = q["foreign_net_qty"] * q["close"]
+            q["_i"] = q["inst_net_qty"] * q["close"]
+            g5 = q[q["_rk"] < 5].groupby("ticker")[["_f", "_i"]].sum()
+            g20 = q[q["_rk"] < 20].groupby("ticker")[["_f", "_i"]].sum()
+            for tk, r in g20.iterrows():
+                r5 = g5.loc[tk] if tk in g5.index else None
+                table[tk] = {
+                    'foreign_5d_억': round(float(r5["_f"]) / 1e8, 1) if r5 is not None else None,
+                    'inst_5d_억': round(float(r5["_i"]) / 1e8, 1) if r5 is not None else None,
+                    'foreign_20d_억': round(float(r["_f"]) / 1e8, 1),
+                    'inst_20d_억': round(float(r["_i"]) / 1e8, 1),
+                    'supply_fetched': True,
+                }
+            latest = q.groupby("ticker")["date"].max() if len(q) else pd.Series(dtype=str)
+            fresh = float((latest == dates[0]).mean()) if len(latest) else 0.0
+            print(f"   • 수급 소스: KIS daily_flows {len(table)}종목 · 최신 {dates[0] if dates else '없음'} "
+                  f"(시세 최신 {px_last}) · 최신일 보유 {fresh:.0%}")
+            if not dates or (px_last and dates[0] < px_last):
+                print("   ⚠️  수급 최신일이 시세보다 뒤처짐 — 이번 run 수급은 그날치 빠진 창(kis_flows 선행 실행 확인)")
+            elif fresh < SUPPLY_FRESH_MIN:
+                print(f"   ⚠️  최신 수급일 보유 종목 {fresh:.0%} < {SUPPLY_FRESH_MIN:.0%} — KIS 적재 결손 의심")
+        except Exception as e:
+            print(f"   ⚠️  KIS daily_flows 로드 실패: {str(e)[:80]} → 수급 0 처리")
+            table = {}
+        _KIS_FLOWS = table
+        return table
+
+
+def _fetch_supply_kis(ticker):
+    row = _load_kis_flows().get(str(ticker).zfill(6))
+    return dict(row) if row else dict(EMPTY_SUPPLY)
+
+
 def fetch_supply_data_naver(ticker):
+    """종목 수급 5/20일 값. 함수명은 호출부 호환용으로 유지 — 기본(kis)은 daily_flows, naver 는 구 크롤러."""
+    if SUPPLY_SOURCE == "kis":
+        return _fetch_supply_kis(ticker)
+    return _fetch_supply_naver_html(ticker)
+
+
+def _fetch_supply_naver_html(ticker):
     url = f"https://finance.naver.com/item/frgn.naver?code={ticker}"
     try:
         resp = requests.get(url, headers=NAVER_HEADERS, timeout=10)
@@ -931,7 +1012,8 @@ def fetch_supply_data_naver(ticker):
 
 
 def fetch_supply_for_ticker(ticker):
-    time.sleep(SUPPLY_REQUEST_DELAY)
+    if SUPPLY_SOURCE != "kis":          # KIS 경로는 DB 캐시라 대기 불필요
+        time.sleep(SUPPLY_REQUEST_DELAY)
     result = fetch_supply_data_naver(ticker)
     result['_ticker'] = ticker
     return result
@@ -1117,8 +1199,8 @@ def run_screener(market='kospi'):
     target_mask = df['oversold_score'] >= SUPPLY_MIN_OVERSOLD
     targets = df[target_mask]['ticker'].tolist()
 
-    expected_time = (len(targets) * SUPPLY_REQUEST_DELAY) / SUPPLY_MAX_WORKERS
-    print(f"\n3️⃣  외국인/기관 수급 분석 - 네이버 금융 크롤링")
+    expected_time = 0 if SUPPLY_SOURCE == "kis" else (len(targets) * SUPPLY_REQUEST_DELAY) / SUPPLY_MAX_WORKERS
+    print(f"\n3️⃣  외국인/기관 수급 분석 - {'KIS daily_flows(ohlcv.db)' if SUPPLY_SOURCE == 'kis' else '네이버 금융 크롤링'}")
     print(f"   대상: {len(targets)}개 종목 (oversold ≥ {SUPPLY_MIN_OVERSOLD}점)")
     print(f"   병렬: {SUPPLY_MAX_WORKERS}스레드, 예상 시간: {expected_time:.0f}초\n")
 

@@ -591,6 +591,9 @@ def main():
     ap.add_argument("--verify", type=int, default=0, metavar="N",
                     help="검증 모드: 상위 N종목만 받아 기존 daily_flows 의 외인/기관 값과 "
                          "대조만 하고 DB 기록 안 함. 첫 실전 전 0-diff 확인용")
+    ap.add_argument("--no-daily", action="store_true",
+                    help="일별 수급(daily_flows) 단계 건너뛰기(공매도 단계만). 배치에서 수급을 "
+                         "스크리너 앞 단계(--no-short)에서 이미 적재한 경우 [2026-09-11]")
     ap.add_argument("--no-short", action="store_true",
                     help="공매도 적재 건너뛰기(연기금 수급만). 기본은 공매도까지 적재")
     ap.add_argument("--with-credit", action="store_true",
@@ -667,8 +670,10 @@ def main():
     # [2026-07-25] 시간가드: KIS가 당일 기준 일별수급 조회를 00:00~15:40 차단(주말 포함, 실측
     #   "TIME LIMIT 00:00 ~ 15:40" rt_cd=2 전량 실패). 헛호출로 수십 분 낭비 방지 — 스킵하고
     #   공매도 단계(시간 무관)는 계속. 15:40 이후 재실행이 자동 백필(윈도 ~30거래일).
-    skip_daily = False
-    if (not args.force_daily
+    skip_daily = bool(args.no_daily)   # [2026-09-11] 배치 2회 호출: 앞(수급만)·뒤(공매도만)
+    if skip_daily:
+        print("⏭  일별 수급(daily_flows) 스킵 — --no-daily (스크리너 앞 단계에서 이미 적재).")
+    if (not skip_daily and not args.force_daily
             and date == datetime.now().strftime("%Y%m%d")
             and datetime.now().strftime("%H%M") < "1540"):
         skip_daily = True

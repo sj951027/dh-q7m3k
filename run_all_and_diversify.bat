@@ -53,6 +53,11 @@ echo ========================================================================
 python market_series.py
 python universe_events.py
 
+rem [2026-09-11] KIS investor flows BEFORE screener: supply source moved from Naver to KIS daily_flows
+rem   (Naver item pages now redirect to stock.naver.com app page - no HTML table). Non-fatal: screener
+rem   falls back to supply=0 if daily_flows is missing. Short/credit/loan stay in the Large section.
+python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --no-short
+
 python run_and_diversify.py
 
 set EXIT_CODE=%ERRORLEVEL%
@@ -76,7 +81,7 @@ echo ========================================================================
 python large_universe.py
 python catalyst_large.py
 python large_score.py
-python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --with-credit --with-loan
+python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --no-daily --with-credit --with-loan
 python fetch_consensus.py
 
 echo.

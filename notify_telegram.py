@@ -279,6 +279,7 @@ def _freshness_warnings():
     뒤처지면 경고 문자열 목록. 실패 시 빈 목록(비치명). 판정·점수 무관, 텔레그램 표시 전용."""
     import sqlite3, json
     out = []
+    px_last = None
     try:
         odb = HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"
         con = sqlite3.connect(f"file:{odb}?mode=ro", uri=True)
@@ -288,6 +289,15 @@ def _freshness_warnings():
         stale = [f"{k} {v[4:6]}/{v[6:]}" for k, v in idx.items() if k in ("KOSPI", "KOSDAQ") and v and px_last and v < px_last]
         if stale:
             out.append(f"⚠️ 지수 시계열 정지: {' · '.join(stale)} (시세 {px_last[4:6]}/{px_last[6:]}) — 돈 표 코스피선 참고만")
+    except Exception:
+        pass
+    try:
+        # [2026-09-11] 수급 소스가 KIS daily_flows 로 바뀜 — 시세보다 뒤처지면 그날 수급 점수는 그날치 빠진 창
+        con = sqlite3.connect(f"file:{HERE / '..' / 'dh-q7m3k-data' / 'ohlcv.db'}?mode=ro", uri=True)
+        fl_last = con.execute("SELECT MAX(date) FROM daily_flows").fetchone()[0]
+        con.close()
+        if px_last and fl_last and fl_last < px_last:
+            out.append(f"⚠️ KIS 수급 정지: {fl_last[4:6]}/{fl_last[6:]} (시세 {px_last[4:6]}/{px_last[6:]}) — 수급 점수는 그날치 빠진 창")
     except Exception:
         pass
     try:

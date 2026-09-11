@@ -141,7 +141,7 @@ Pages 대시보드 + 텔레그램으로 보는 개인 파이프라인. 점수는
 ## 2. 파이프라인 (단계 순서 = run_and_diversify.py)
 
 1. **1단계** `run_all_v2_6.py` — 스크리너 3스테이지(코스피+코스닥) → 누적(accumulate_history) → 1차 대시보드.
-   - stage1 `screener_fdr_v2_6`: 과매도+레짐+환율+외인+수급(네이버) → `stage1_oversold`
+   - stage1 `screener_fdr_v2_6`: 과매도+레짐+환율+외인+수급(KIS daily_flows — 2026-09-11 네이버 크롤링 소멸로 교체, 정의 동일) → `stage1_oversold`
    - stage2 `stage2_risk_filter_v2_6`: DART 공시 위험필터(가짜악재 방어) → `stage2_filtered` + `v2_{mkt}_filtered_safe_*.csv`
    - stage3 `stage3_fundamental_momentum_v2_6`: 분기 YoY + OCF + v2.6 `final_score` → `stage3_final` (**stage2 SAFE 생존분만**)
 2. **2.6단계** `v3_daily.py` → `fetch_valuation.py` → `v3_rescore.py`(final_score_v3/grade/bucket) → `v3_merge.py`
