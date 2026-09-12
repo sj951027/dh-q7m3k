@@ -254,6 +254,37 @@ RETIRED_FALLBACK_V2 = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
                        "lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "wu_a", "wu_b"}   # 구 json 폴백
 MONEY_MODELS_V2 = ["v30", "lv_b"]      # ② 돈 줄 대표(+ 판정 캘린더 선두 1개 자동 추가)
 
+# [2026-09-12] 표시 순서 = 실제 운용 순서. 사용자는 lv_b 로 운용한다(OPS_GUIDE §0 · PTW #저변동).
+#   v30 은 챔피언(유의)이지만 실거래는 lv_b 라, 알림은 lv_b 를 먼저 놓고 v30 을 참고로 뒤에 둔다.
+#   판정 라벨(기움/유의)은 그대로 병기한다 — 운용 여부와 §11 판정은 별개다.
+LIVE_MODEL_V3 = "lv_b"                  # 실제 운용 중(표시 순서 1번)
+REF_MODEL_V3 = "v30"                    # 참고(챔피언)
+MODEL_ICON_V3 = {"lv_b": "🧪", "v30": "🏆"}
+
+
+def _run_id_v3():
+    """표시용 데이터 날짜 = stage3_final 최신 run_id. 실패 시 오늘 날짜(종전 동작)."""
+    try:
+        import sqlite3
+        con = sqlite3.connect(f"file:{HERE / 'history.db'}?mode=ro", uri=True)
+        rid = con.execute("SELECT MAX(run_id) FROM stage3_final").fetchone()[0]
+        con.close()
+        if rid and len(str(rid)) == 8:
+            return str(rid)
+    except Exception:
+        pass
+    return datetime.now().strftime("%Y%m%d")
+
+
+def _date_head_v3():
+    """'9/11(금)' — 발송 시각이 아니라 데이터 날짜. 자정 넘김·주말 재실행에서 어긋나던 것 교정."""
+    rid = _run_id_v3()
+    try:
+        d = datetime.strptime(rid, "%Y%m%d")
+        return f"{d.month}/{d.day}({'월화수목금토일'[d.weekday()]})"
+    except Exception:
+        return rid
+
 
 def _apply_registry():
     """[2026-09-06] docs/models_registry.json(정본 판정·은퇴 단일 소스)이 있으면 위 인라인 상수를 덮어쓴다.
@@ -267,6 +298,11 @@ def _apply_registry():
         if sealed: SEALED_V2 = sealed
         if ret: RETIRED_FALLBACK_V2 = ret
         if reg.get("money"): MONEY_MODELS_V2 = list(reg["money"])
+        # [2026-09-12] 운용 모델도 원장(registry)에서 읽는다 — 나중에 lv_b 가 아닌 모델로 옮기면
+        #   models_registry.json 의 "live" 한 줄만 고치면 알림 순서가 따라온다(코드 수정 불필요).
+        global LIVE_MODEL_V3, REF_MODEL_V3
+        if reg.get("live"): LIVE_MODEL_V3 = str(reg["live"])
+        if reg.get("reference"): REF_MODEL_V3 = str(reg["reference"])
     except Exception:
         pass
 
@@ -420,32 +456,127 @@ def _model_status_lines_v2():
         return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
 
 
+def _status_lines_v3():
+    """[2026-09-12] 섹션형 본문. lv_b(운용) → v30(참고) → 돈 → 판정 일정 → (있을 때만) 달라진 것.
+    한 줄에 정보를 몰아넣지 않는다 — 폰에서 줄바꿈으로 접히던 것을 없애려는 것. 표시 전용."""
+    p = HERE / "docs" / "leaderboard.json"
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        if d.get("status") != "ok" or not d.get("models"):
+            return ["📊 모델 현황: 리더보드 갱신 대기중(leaderboard.py)"]
+        min_oos = d.get("min_oos", 40)
+        need = lambda m: 60 if m.get("track") == "large" else min_oos
+        act = [m for m in d["models"]
+               if not m.get("retired") and m["model"] not in RETIRED_FALLBACK_V2]
+        out = []
+
+        # ① 운용 중 → 참고 순서. 유니버스 크기는 8/12 고갈 사건 이후 매일 보는 값.
+        for mid in (LIVE_MODEL_V3, REF_MODEL_V3):
+            u, _ = _uni_latest2(mid)
+            line = f"{MODEL_ICON_V3.get(mid, '·')} <b>{mid}</b>"
+            if u:
+                line += f" {u}종목"
+            if SEALED_V2.get(mid):
+                line += f" · {SEALED_V2[mid]}"
+            out.append(line)
+
+        # ③ 판정 캘린더(먼저 계산 — ②의 '판정 임박' 모델에 필요)
+        wait = sorted([m for m in act if (m.get("oos_days") or 0) < need(m)],
+                      key=lambda m: need(m) - (m.get("oos_days") or 0))
+        reached = [m for m in act if (m.get("oos_days") or 0) >= need(m)
+                   and m["model"] not in SEALED_V2]
+        soon = wait[0]["model"] if wait else None
+
+        # ② 돈 — 공통 잣대(cross_sim) 최근 20거래일 vs 시장. 운용 2개 + 판정 임박 1개만.
+        #    전부 싣지 않는 이유: 한 달 수익으로 줄 세우기가 되면 트랙 간 비교 금지 원칙과 어긋난다.
+        try:
+            cs = json.loads((HERE / "docs" / "cross_sim.json").read_text(encoding="utf-8"))
+            tr = cs.get("trailing") or {}
+            rows = {r["model"]: r for r in tr.get("rows", [])}
+            b20 = (tr.get("bench") or {}).get("r20")
+            picks = [(LIVE_MODEL_V3, "← 운용 중"), (REF_MODEL_V3, "")]
+            if soon and soon not in (LIVE_MODEL_V3, REF_MODEL_V3):
+                picks.append((soon, "← 판정 임박"))
+            body = []
+            for mid, tag in picks:
+                r = rows.get(mid)
+                if r and r.get("r20") is not None and b20 is not None:
+                    body.append(f"{mid:<5} {r['r20'] - b20:+5.1f}%p" + (f"   {tag}" if tag else ""))
+            if body:
+                out.append("")
+                out.append(f"💰 <b>최근 1개월</b> (시장 {b20:+.1f}%, 상위20 동일가중)")
+                out.append("<pre>" + "\n".join(body) + "</pre>")
+        except Exception:
+            pass
+
+        # ③ 표시 — 남은 일수가 같은 모델끼리 묶고 최대 3줄. 전체는 리더보드에.
+        cal = []
+        if reached:
+            cal.append("· " + " · ".join(m["model"] for m in reached) + " → <b>판정 가능</b>")
+        grp = {}
+        for m in wait:
+            grp.setdefault(need(m) - (m.get("oos_days") or 0), []).append(m["model"])
+        for dd in sorted(grp)[:(2 if reached else 3)]:   # 판정 가능 줄이 있으면 합쳐 3줄
+            cal.append(f"· {' · '.join(grp[dd])} → {dd}거래일 뒤")
+        if cal:
+            out.append("")
+            out.append("📅 <b>판정 일정</b>")
+            out += cal
+
+        # ④ 달라진 것 — 있을 때만. '없음'을 매일 찍지 않는다.
+        ev = _change_events_v3(act, min_oos, need)
+        if ev:
+            out.append("")
+            out.append("🔔 " + " · ".join(ev))
+        return out
+    except Exception:
+        return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
+
+
+def _change_events_v3(act, min_oos, need):
+    """어제와 달라진 것 + 데이터 신선도 경고. v2 의 ④ 블록과 같은 규칙(표시 전용)."""
+    by = {m["model"]: m for m in act}
+    ev = []
+    try:
+        hist = json.loads((HERE / "docs" / "leaderboard_history.json").read_text(encoding="utf-8"))
+        if isinstance(hist, list) and len(hist) >= 2:
+            prev = {x["m"]: x for x in hist[-2].get("models", [])}
+            for x in hist[-1].get("models", []):
+                mid = x["m"]
+                if mid not in by or not prev.get(mid):
+                    continue
+                q = prev[mid]
+                nd = 60 if x.get("t") == "large" else min_oos
+                if (q.get("o") or 0) < nd <= (x.get("o") or 0):
+                    ev.append(f"{mid} 판정 표본 {nd}일 도달")
+                if q.get("v") != x.get("v") and mid not in SEALED_V2:
+                    ev.append(f"{mid} 자동 라벨 {q.get('v')}→{x.get('v')}(참고)")
+    except Exception:
+        pass
+    for mid in (LIVE_MODEL_V3, REF_MODEL_V3):
+        u, u0 = _uni_latest2(mid)
+        if u and u0 and u < 0.5 * u0:
+            ev.append(f"⚠️ {mid} 유니버스 {u0}→{u} 급감(판정 표본 얇아짐)")
+    try:
+        ev += _freshness_warnings()
+    except Exception:
+        pass
+    return ev
+
+
 def build_message():
-    today = datetime.now().strftime("%Y-%m-%d")
-    # 2026-08-11 사용자 결정: 제목 바로 아래 리더보드 링크 + 빈 줄 → 현황 줄들(헤더 없음).
-    lines = [f"✅ <b>스크리너 완료</b> · {today}",
-             f'📊 <a href="{LEADERBOARD_URL}">모델 리더보드</a> (돈·판정·캘린더 상세)',
-             ""]
-
-    # 2026-07-17 사용자 결정: v3 top3 종목 나열은 도움 안 됨 → 모델 관측 현황으로 대체.
-    #   (종목 상세는 대시보드·필터 링크에서. _picks_by_bucket/_ic_line 은 보존 — 재활성화 가능.)
-    # [2026-09-04] v2 요약(정본 기준·돈·캘린더·변화)으로 교체 — 종전 _model_status_lines 보존(재활성화 가능).
-    #   α/β 한 줄(2026-08-29)은 본문에서 제거 — t<2 참고 수준이라 리더보드 접힘 패널로 충분. 데이터(alpha_beta.json)는 계속 생성.
-    lines += _model_status_lines_v2()
-    lines.append("")
-
+    # [2026-09-12] v3 레이아웃. 종전 v2(제목+리더보드 링크+한 줄 요약 4개+링크 3줄)는
+    #   _model_status_lines_v2() 로 보존 — 되돌리려면 아래 lines 구성만 v2 로 바꾸면 된다.
+    #   바뀐 점: ① 날짜를 데이터 기준(run_id)으로 ② lv_b(운용)를 먼저, v30(참고)을 뒤로
+    #   ③ 한 줄에 몰아넣지 않고 섹션 분리 ④ 링크 4개→2개(저변동 종목·리더보드)
+    #   ⑤ '달라진 것: 없음' 줄 삭제(있을 때만 표시).
+    lines = [f"✅ <b>스크리너 {_date_head_v3()}</b> · 이상 없음", ""]
+    lines += _status_lines_v3()
     lines += [
-        "※ 매수신호 아님 · 종목 상세는 아래 링크에서",
-        # 2026-08-11 사용자 결정: 대시보드 링크 제거(거의 안 봄). DASHBOARD_URL 상수는 보존 — 재활성화 가능.
-        # f'🔗 <a href="{DASHBOARD_URL}">대시보드 열기</a>',
-        f'🔍 <a href="{FILTER_URL}">필터·정렬 페이지</a> (챔피언 v30 기준)',
-        f'🏛️ <a href="{LARGE_OBS_URL}">대형 가치 트랙</a> (준비중 · 관측데이터, 검증 전)',
-        f'🧪 <a href="{LOWVOL_URL}">저변동 트랙 lv_b</a> (테스트 · 관측데이터, 검증 전)',
-        # 2026-08-11 사용자 결정: ls_t1·wu_a·mom_a·qs_a 링크 제거(링크만 — 관측·적재·페이지는 유지, 리더보드에서 확인 가능).
-        # f'🧪 <a href="{LARGE_TEST_URL}">대형 테스트 ls_t1</a> (테스트 · 관측데이터, 검증 전)',
-        # f'🧪 <a href="{WU_URL}">전체종목 트랙 wu_a</a> (테스트 · 관측데이터, 검증 전)',
-        # f'🧪 <a href="{MOM_URL}">모멘텀 mom_a</a> (테스트 · 관측데이터, 검증 전)',
-        # f'🧪 <a href="{QS_URL}">조용한 강자 qs_a</a> (테스트 · 관측데이터, 검증 전)',
+        "",
+        f'🔎 <a href="{LOWVOL_URL}">저변동 종목 보기</a> · '
+        f'<a href="{LEADERBOARD_URL}">리더보드</a>(v30·다른 모델)',
+        "<i>매수신호 아님 · 판정 정본은 VERDICT 문서</i>",
     ]
     return "\n".join(lines)
 
