@@ -287,7 +287,7 @@ def load_combined_tickers(db_path=DB_PATH, top=None):
     return f"large{lrid}+lv{srid}", merged
 
 
-def load_all_tickers(ohlcv_path=OHLCV_DB):
+def load_all_tickers(ohlcv_path=OHLCV_DB, include_extras=True):
     """ohlcv.db(전체 종목 raw)에서 활발 거래 전체 종목을 유니버스로.
     수급/공매도를 전체 KOSPI/KOSDAQ 으로 확장(§21-8 — KIS는 과거 못 받으니 일찍 넓게).
     저장은 history.db 그대로(점수 코드 호환). 최신일 거래정지 종목(죽은 종목)은 제외.
@@ -303,6 +303,25 @@ def load_all_tickers(ohlcv_path=OHLCV_DB):
                ORDER BY close*COALESCE(shares,0) DESC""",
             (latest,)).fetchall()
     tickers = [(r[0], r[0]) for r in rows]   # (ticker, name=ticker)
+    # [2026-09-11] ohlcv 유니버스는 FDR Market 이 정확히 KOSPI/KOSDAQ 인 숫자 6자리만 담는다
+    #   → 코스닥 글로벌(Market='KOSDAQ GLOBAL', 50종목)·영문 섞인 신규코드(81종목)가 통째로 빠져 있었다.
+    #   수급은 스크리너 점수 입력이므로 이 종목들도 받아야 한다(상장목록 캐시로 보충, 네트워크 0).
+    #   ohlcv(시세) 유니버스 자체는 건드리지 않는다 — lowvol/wu 모델 유니버스가 바뀌므로 별건.
+    try:
+        if not include_extras:
+            raise StopIteration      # 공매도 전용 호출(--no-daily)에선 보충 생략
+        import listing_cache
+        have = {t for t, _ in tickers}
+        extra = [(r["code"], r.get("name") or r["code"])
+                 for r in (listing_cache.load("KRX")[0] or [])
+                 if r.get("code") and r["code"] not in have]
+        if extra:
+            tickers += extra
+            print(f"   + 상장목록 보충 {len(extra)}종목(코스닥 글로벌·신규코드 등) — ohlcv 유니버스 밖")
+    except StopIteration:
+        pass
+    except Exception as e:
+        print(f"   ⚠️  상장목록 보충 실패(비치명): {str(e)[:60]}")
     return f"all_ohlcv_{latest}", tickers
 
 
@@ -613,7 +632,8 @@ def main():
         raise SystemExit("❌ .env 의 KIS_APP_KEY / KIS_APP_SECRET 확인")
 
     if args.universe == "all":
-        rid, tickers = load_all_tickers()
+        # 보충 종목(코스닥 글로벌·신규코드)은 수급 단계에만 — 공매도 단계 유니버스는 종전 그대로(sv_a 입력 불변)
+        rid, tickers = load_all_tickers(include_extras=not args.no_daily)
     elif args.universe == "combined":
         rid, tickers = load_combined_tickers(Path(args.db), args.top)
     else:

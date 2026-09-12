@@ -14,7 +14,8 @@ echo  (This window stays quiet until it finishes. Do not close
 echo   unless you must - but even then, the log is safe on disk.)
 echo ============================================================
 set AUTO=1
-call run_all_and_diversify.bat >> "%LOGF%" 2>&1
+rem [2026-09-11] full path: some terminals set NoDefaultCurrentDirectoryInExePath=1 and cmd then refuses bare-name lookup in cwd
+call "%~dp0run_all_and_diversify.bat" >> "%LOGF%" 2>&1
 echo Done. Exit code %ERRORLEVEL%. Opening log...
 start notepad "%LOGF%"
 pause

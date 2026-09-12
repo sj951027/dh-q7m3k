@@ -220,6 +220,9 @@ def main():
     ap.add_argument("--skip-screener", action="store_true")
     ap.add_argument("--max-per-sector", type=int, default=3)
     ap.add_argument("--top", type=int, default=20)
+    ap.add_argument("--defer-telegram", action="store_true",
+                    help="[2026-09-12] 정상 텔레그램 알림을 배치 끝(대형 push 뒤)으로 미룬다. "
+                         "배포 보류 알림은 즉시 발송(지연 없음).")
     ap.add_argument("--no-push", action="store_true",
                     help="결과를 GitHub에 자동 업로드하지 않음")
     args = ap.parse_args()
@@ -441,7 +444,12 @@ def main():
         try:
             import notify_telegram
             print(f"\n{'━'*64}\n▶  4단계: 텔레그램 알림\n{'━'*64}")
-            if deploy_ok:
+            # [2026-09-12] --defer-telegram: 정상 알림은 배치 끝(대형 push 뒤)에서 notify_telegram.py 가 보낸다.
+            #   본문 링크(_large_obs.html·_large_test.html)가 여기선 아직 push 전(18분 뒤)이고 ls_t1 수치도 전일값이라서.
+            #   배포 보류(degraded) 알림은 미루지 않는다 — 뒤 단계가 안 돌 수도 있으니 즉시 알린다.
+            if deploy_ok and getattr(args, 'defer_telegram', False):
+                print("   ⏭  정상 알림은 배치 끝(대형 push 뒤)으로 미룸 — notify_telegram.py 가 보냄")
+            elif deploy_ok:
                 notify_telegram.send()
             else:
                 _reasons = ([f"• 단계 실패: {cf}" for cf in critical_fail]

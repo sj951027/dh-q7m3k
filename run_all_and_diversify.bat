@@ -58,7 +58,10 @@ rem   (Naver item pages now redirect to stock.naver.com app page - no HTML table
 rem   falls back to supply=0 if daily_flows is missing. Short/credit/loan stay in the Large section.
 python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --no-short
 
-python run_and_diversify.py
+rem [2026-09-12] telegram moved to the end of this batch (after the Large push) so the pages linked
+rem   in the message (_large_obs.html / _large_test.html) and the ls_t1 counts are already deployed.
+rem   A gate-hold / degraded alert is still sent immediately inside run_and_diversify.py.
+python run_and_diversify.py --defer-telegram
 
 set EXIT_CODE=%ERRORLEVEL%
 
@@ -96,6 +99,12 @@ echo ========================================================================
 echo   [Large] Push docs/_large_obs.html to GitHub (Pages auto-deploy)
 echo ========================================================================
 python -c "import run_and_diversify as r; r.git_push()"
+
+echo.
+echo ========================================================================
+echo   [Notify] Telegram - last step so every page in the message is live
+echo ========================================================================
+python notify_telegram.py
 
 echo.
 echo ========================================================================
