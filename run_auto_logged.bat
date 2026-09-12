@@ -22,5 +22,7 @@ if exist skip_once.flag (
   del skip_once.flag
   exit /b 0
 )
-call run_all_and_diversify.bat >> "logs\auto_run_%TS%.log" 2>&1
+rem [2026-09-12] full path: some shells set NoDefaultCurrentDirectoryInExePath=1 and cmd then
+rem   refuses a bare-name lookup in the current directory (hit in the manual wrapper).
+call "%~dp0run_all_and_diversify.bat" >> "logs\auto_run_%TS%.log" 2>&1
 exit /b %ERRORLEVEL%

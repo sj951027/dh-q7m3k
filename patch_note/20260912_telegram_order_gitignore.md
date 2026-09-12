@@ -72,6 +72,12 @@
 - 09-12 수동 실행으로 이미 94종목 캐시 확보 → **09-14(월) 배치부터 '데이터없음'이 한 자릿수로 줄어야 정상**.
   안 줄면 차단 창이 더 길다는 뜻이므로 백필 위치를 새벽 별도 작업으로 옮기는 것이 다음 수.
 
+### 래퍼 경로 보강
+`run_manual_logged.bat` 이 `call run_all_and_diversify.bat` 로 실행되지 않던 사건(09-11 23:xx): 일부 셸이
+`NoDefaultCurrentDirectoryInExePath=1` 을 물려주면 cmd 가 현재 폴더 이름만으로는 배치를 찾지 않는다.
+→ 두 래퍼 모두 `call "%~dp0run_all_and_diversify.bat"` 로 바꿨다(`run_manual_logged.bat` 09-11 · `run_auto_logged.bat` 09-12).
+작업 스케줄러 경로에선 지금까지 문제가 없었지만 같은 잠재 위험이라 함께 막았다. 드라이 실행으로 호출 줄 도달 확인.
+
 ### 저장소·디스크 정리
 - `research/clean_partial_run.py`: 백업 자동 회전 추가(최근 2개만 유지). 압축 없는 300MB+ 백업이 4개 1.25GB 쌓여 있었다.
 - 그 중 오래된 3개 수동 삭제(09-08 ×2, 09-11 ×1) → `backup/` 1.7GB → 753MB. 직전 상태 1개는 남겨 둠.
