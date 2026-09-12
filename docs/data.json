@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-09-12 01:07 KST",
+  "generated_at": "2026-09-12 11:51 KST",
   "runs": {
     "kospi": [
       {
         "run_id": "20260911",
         "market_regime": "강세",
-        "regime_score": -3,
-        "usdkrw": 1340.31,
+        "regime_score": -1,
+        "usdkrw": 1341.05,
         "foreign_5d": -23685.0,
         "stage1_count": 738
       },
@@ -247,9 +247,9 @@
       {
         "run_id": "20260911",
         "market_regime": "반등",
-        "regime_score": -3,
-        "usdkrw": 1340.33,
-        "foreign_5d": NaN,
+        "regime_score": -4,
+        "usdkrw": 1341.05,
+        "foreign_5d": -3555.0,
         "stage1_count": 1619
       },
       {
@@ -682,8 +682,8 @@
       "meta": {
         "run_id": "20260911",
         "market_regime": "강세",
-        "regime_score": -3,
-        "usdkrw": 1340.31,
+        "regime_score": -1,
+        "usdkrw": 1341.05,
         "foreign_5d": -23685.0,
         "stage1_count": 738
       },
@@ -920,9 +920,9 @@
       "meta": {
         "run_id": "20260911",
         "market_regime": "반등",
-        "regime_score": -3,
-        "usdkrw": 1340.33,
-        "foreign_5d": null,
+        "regime_score": -4,
+        "usdkrw": 1341.05,
+        "foreign_5d": -3555.0,
         "stage1_count": 1619
       },
       "ranked_by": "v3"
@@ -1034,7 +1034,7 @@
         "name": "SNT다이내믹스",
         "ticker": "003570",
         "appearances": 51,
-        "avg_score": 78.5,
+        "avg_score": 78.6,
         "max_score": 103.8,
         "v3_score": 10.5,
         "grade": "WATCH",
@@ -1044,7 +1044,7 @@
         "name": "알루코",
         "ticker": "001780",
         "appearances": 51,
-        "avg_score": 68.8,
+        "avg_score": 68.9,
         "max_score": 96.8,
         "v3_score": 16.7,
         "grade": "B",
@@ -1074,7 +1074,7 @@
         "name": "한국카본",
         "ticker": "017960",
         "appearances": 50,
-        "avg_score": 91.5,
+        "avg_score": 91.6,
         "max_score": 109.2,
         "v3_score": 28.1,
         "grade": "WATCH",
@@ -1306,7 +1306,7 @@
         "name": "아이엠비디엑스",
         "ticker": "461030",
         "appearances": 61,
-        "avg_score": 74.6,
+        "avg_score": 74.5,
         "max_score": 94.2,
         "v3_score": 19.0,
         "grade": "C",
@@ -1483,7 +1483,7 @@
       },
       {
         "run_id": "20260911",
-        "regime_score": -3,
+        "regime_score": -1,
         "market_regime": "강세"
       }
     ],
@@ -1635,7 +1635,7 @@
       },
       {
         "run_id": "20260911",
-        "regime_score": -3,
+        "regime_score": -4,
         "market_regime": "반등"
       }
     ]
