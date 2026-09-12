@@ -447,7 +447,13 @@ def main():
             # [2026-09-12] --defer-telegram: 정상 알림은 배치 끝(대형 push 뒤)에서 notify_telegram.py 가 보낸다.
             #   본문 링크(_large_obs.html·_large_test.html)가 여기선 아직 push 전(18분 뒤)이고 ls_t1 수치도 전일값이라서.
             #   배포 보류(degraded) 알림은 미루지 않는다 — 뒤 단계가 안 돌 수도 있으니 즉시 알린다.
+            # 미룸 표시는 파일로 남긴다 — 배치 끝 단계가 이 플래그가 있을 때만 보낸다.
+            #   게이트 보류(deploy_ok=False)일 때는 종료코드가 0이라 배치가 계속 진행되므로,
+            #   플래그가 없으면 끝 단계는 아무것도 보내지 않는다('보류' 알림 뒤에 '완료' 알림이 겹치는 것 방지).
+            _tg_flag = HERE / "telegram_pending.flag"
+            _tg_flag.unlink(missing_ok=True)          # 지난 실행 잔재 제거
             if deploy_ok and getattr(args, 'defer_telegram', False):
+                _tg_flag.write_text("pending", encoding="utf-8")
                 print("   ⏭  정상 알림은 배치 끝(대형 push 뒤)으로 미룸 — notify_telegram.py 가 보냄")
             elif deploy_ok:
                 notify_telegram.send()

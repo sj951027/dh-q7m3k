@@ -87,6 +87,8 @@ large_report.html
 /latest_wu.csv
 # 판정일 알림 로컬 상태(중복 알림 방지용) — 머신 로컬, 추적 제외
 /verdict_notified.json
+# 텔레그램 미룸 표시(2026-09-12) — 배치 내부 상태 파일, 머신 로컬
+/telegram_pending.flag
 # 실행 로그(auto/manual 래퍼 산출물, 2026-08-11) — 머신 로컬, 추적 제외
 /logs/
 

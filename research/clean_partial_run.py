@@ -59,6 +59,15 @@ def main():
     bdir = REPO / "backup"; bdir.mkdir(exist_ok=True)
     bk = bdir / f"history_before_clean_{rid}_{datetime.now():%Y%m%d_%H%M%S}.db"
     con.close(); shutil.copy2(DB, bk); print(f"   💾 백업: {bk.name}")
+    # [2026-09-12] 백업 회전 — 이 백업은 압축 없는 300MB+ 이고 cleanup.py 는 backup/ 을 보호만 한다.
+    #   실측: 4개 1.25GB 누적. 최근 2개만 남긴다(되돌리기에 필요한 건 사실상 직전 1개).
+    try:
+        olds = sorted(bdir.glob("history_before_clean_*.db"), key=lambda f: f.stat().st_mtime, reverse=True)
+        for f in olds[2:]:
+            size = f.stat().st_size / 1048576
+            f.unlink(); print(f"   🧹 오래된 백업 삭제: {f.name} ({size:.0f}MB)")
+    except Exception as e:
+        print(f"   ⚠️  백업 회전 건너뜀(비치명): {str(e)[:60]}")
     con = sqlite3.connect(str(DB))
     for t, n in plan:
         if n:

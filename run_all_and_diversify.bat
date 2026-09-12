@@ -104,7 +104,23 @@ echo.
 echo ========================================================================
 echo   [Notify] Telegram - last step so every page in the message is live
 echo ========================================================================
-python notify_telegram.py
+rem telegram_pending.flag is written by run_and_diversify.py only when the run is deployable.
+rem   On a gate hold it is absent (the hold alert was already sent) - send nothing here.
+if exist telegram_pending.flag (
+  python notify_telegram.py
+  del telegram_pending.flag
+) else (
+  echo [Notify] skipped - no pending flag ^(gate hold alert already sent, or not deferred^)
+)
+
+echo.
+echo ========================================================================
+echo   [Heal] DART fundamentals backfill - cache warming only, no DB writes
+echo ========================================================================
+rem [2026-09-12] DART drops connections during stage3 and stays closed for the in-batch retry,
+rem   but answers normally an hour later. This refills only the missing tickers into dart_cache
+rem   so the NEXT run reads them. Frozen scores/rows are never rewritten.
+python dart_backfill.py
 
 echo.
 echo ========================================================================
