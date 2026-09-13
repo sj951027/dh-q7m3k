@@ -25,7 +25,7 @@
 - `.bat` 수정은 ASCII만·최소 삽입(CRLF 유지). 연구 산출물은 `research/`에(루트 금지).
 
 ## 실행 주의 (Claude Code는 네트워크가 된다 — 그래서 더 조심)
-- **20:10~22:30(KST)엔 파일·DB를 건드리지 않는다** — 작업 스케줄러 배치(`run_auto_logged.bat`) 실행 중. 로그는 `logs/auto_run_YYYYMMDD_2010.log`.
+- **평일(월~금) 20:10~22:30(KST)엔 파일·DB를 건드리지 않는다** — 작업 스케줄러 배치(`run_auto_logged.bat`, 월~금만 등록)가 도는 시간. 로그는 `logs/auto_run_YYYYMMDD_2010.log`. 토·일엔 배치가 없으니 이 제한도 없다(일요일 20:00 주간 리캡 `notify_weekly.py`만 1~2분). 평일 공휴일에도 배치는 돈다. 애매하면 그날 로그 파일이 있는지로 판단.
 - 전체 배치·DART/KRX/KIS 수집기(`run_manual_logged.bat`, `dart_events.py`, `kis_flows.py` 등)는 **사용자가 명시적으로 시킬 때만** 실행. 재실행은 09:00 이전이면 run_id가 전 거래일로 자동 잡힘(09:00~19:59 재실행 금지 — 장중 가격 오염).
 - 부분실행 run 정리: `python research/clean_partial_run.py YYYYMMDD [--yes] [--force]`(백업 자동). 같은 날 재실행 전 필수(이중실행 게이트).
 - 읽기는 자유: `history.db`·`../dh-q7m3k-data/ohlcv.db`는 `mode=ro`로 열기.

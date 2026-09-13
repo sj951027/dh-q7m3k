@@ -3,7 +3,7 @@
 이 저장소의 규칙 정본은 `CLAUDE.md`다. **먼저 `CLAUDE.md`를 읽고 그대로 따른다.** 아래는 그중 에이전트가 특히 어기기 쉬운 것만 다시 적은 것.
 
 ## 절대 규칙
-- **20:10~22:30(KST)에는 파일·DB를 건드리지 않는다.** 작업 스케줄러 배치가 도는 시간이다.
+- **평일(월~금) 20:10~22:30(KST)에는 파일·DB를 건드리지 않는다.** 작업 스케줄러 배치가 도는 시간이다(월~금만 등록). 토·일은 배치가 없으므로 이 제한이 없다. 애매하면 `logs/auto_run_YYYYMMDD_2010.log`가 그날 생겼는지로 판단한다.
 - `history.db`·`../dh-q7m3k-data/ohlcv.db`는 **읽기 전용**으로만 연다: `sqlite3.connect("file:...?mode=ro", uri=True)`. 쓰기·스키마 변경 금지.
 - `.env`·`kis_token.json`·토큰·키는 읽지도 출력하지도 않는다.
 - 배치·수집기(`run_*.bat`, `dart_events.py`, `kis_flows.py`, `universe_ohlcv.py` 등)는 사용자가 명시적으로 시킬 때만 실행한다.
