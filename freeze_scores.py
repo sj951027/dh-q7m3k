@@ -223,6 +223,10 @@ def main():
             tot_i += i; tot_s += s; tot_d += d
         print(f"💾 완료 — 신규 {tot_i}행 동결 · {tot_s}행 기존 보존(append-only)"
               + (f" · ⚠️ {tot_d}행 spec 드리프트 의심" if tot_d else ""))
+        if tot_i == 0 and tot_s > 0:
+            # [2026-09-13] 같은 날 재실행 시 append-only 라 새 계산이 반영되지 않는다 — 그 사실을 로그에 분명히.
+            print("   ⚠️ 이 run 은 이미 동결돼 있어 이번 실행 결과가 반영되지 않았습니다(append-only 보존).")
+            print("      다시 계산한 값으로 바꾸려면: python research/clean_partial_run.py <run_id> --yes --force  →  배치 재실행")
         if tot_d:
             print("   ⚠️ spec_hash 불일치 = 동결됐던 모델 스펙이 바뀌었을 수 있음. 새 model_id 권장(불변규칙 2).")
     finally:

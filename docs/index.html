@@ -515,7 +515,7 @@ function renderICCard() {
         <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
           <span style="font-size:1.6rem;font-weight:700;color:${icColor(h.ic)};">${big}</span>
           <span style="font-size:0.8rem;">${h.score === 'final_score_v3' ? 'v3 점수' : '최종점수'} 적중도 (+${h.horizon}일, N=${h.n})</span>
-          <span style="font-size:0.78rem;opacity:0.8;">${h.verdict || ''}</span>
+          <span style="font-size:0.78rem;opacity:0.8;">${h.verdict || ''} <em style="opacity:.7;font-weight:normal">(추천종목 · 5일 관측치 — 판정 정본은 리더보드의 h20·전체 유니버스 IC)</em></span>
         </div>
         ${h.spread !== null && h.spread !== undefined
           ? `<div style="font-size:0.76rem;opacity:0.7;margin-bottom:8px;">

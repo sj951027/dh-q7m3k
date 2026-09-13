@@ -434,8 +434,14 @@ def main():
         print("   (DB 기록은 남김 · 어제 대시보드 유지 · 원인 확인 후 재실행 권장)")
 
     # 3) GitHub 자동 업로드 (push) — 완전하고 --no-push 아닐 때만
+    # [2026-09-13] 게이트 결과를 파일(deploy_ok.flag)로 남긴다 — 배치 뒷부분(대형 push)이 이 파일이
+    #   있을 때만 push 하도록. 종전엔 여기서 보류해도 .bat 끝의 push 가 조건 없이 돌아 보류가
+    #   무력화됐다(09-08 로그 실측: 'push 건너뜀' 뒤 '업로드 완료').
+    _ok_flag = HERE / "deploy_ok.flag"
+    _ok_flag.unlink(missing_ok=True)
     if deploy_ok and not args.no_push:
         git_push()
+        _ok_flag.write_text("ok", encoding="utf-8")
     elif not deploy_ok:
         print("\n   ⏸  push 건너뜀(완전성 게이트).")
 

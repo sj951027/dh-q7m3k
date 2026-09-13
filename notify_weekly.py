@@ -176,10 +176,10 @@ def build_message():
     # ※ 포지션 트래커 요약은 여기 넣지 않는다(2026-07-26 사용자 결정) — 이 메시지는
     #   '공유 채팅방'으로 가므로 개인 자산 정보 금지. 트래커 소식은 트래커 봇(개인 챗) 몫.
     lines.append("")
-    lines.append('🔗 <a href="https://sj951027.github.io/dh-q7m3k/leaderboard.html">리더보드 상세</a>')
-    # [2026-07-29] qs_a 노출 개정(PREREGISTER_qs.md §6) — 주간에도 관측 페이지 링크 1줄
-    lines.append('🧪 <a href="https://sj951027.github.io/dh-q7m3k/qs.html">조용한 강자 qs_a</a> '
-                 '(테스트 · 관측데이터, 검증 전)')
+    # [2026-09-13] 링크를 일간 알림과 동일하게(운용 기준 저변동 + 리더보드). 종전 qs_a 단독 링크는
+    #   판정 전 모델을 권하는 모양새라 제거 — 관측·적재·qs.html 은 유지, 리더보드에서 모델명 클릭으로 접근.
+    lines.append('🔎 <a href="https://sj951027.github.io/dh-q7m3k/lowvol.html">저변동 종목 보기</a> · '
+                 '<a href="https://sj951027.github.io/dh-q7m3k/leaderboard.html">리더보드</a>(v30·다른 모델)')
     return "\n".join(lines)
 
 

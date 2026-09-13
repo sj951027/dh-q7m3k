@@ -25,11 +25,12 @@ def check(n, c, info=""):
     print(f"  ok  {n}" + (f"  [{info}]" if info else ""))
 
 FREEZE = "20260729"   # 이 날짜 이전 앵커의 h20 창은 전부 마감 — 데이터가 늘어도 불변
-GOLDEN = {  # 2026-08-29 동결 → 2026-09-04 스냅샷 기준 재동결(v30 +0.0584→+0.0573: 시세 정정, patch_note/20260904_ops_fixes.md)
+GOLDEN = {  # 2026-08-29 동결 → 2026-09-04 재동결(시세 정정) → 2026-09-13 재동결(종목코드 앞자리 0 교정:
+            #   v30 +0.0573→+0.0513 · lv_c −0.0962→−0.0929 · lv_b 불변. patch_note/20260913_gate_push_wording.md)
     # (table, score_col, model_id): (n_anchors, mean_ic)
     ("lowvol_scores", "lowvol_score", "lv_b"): (22, 0.0687),
-    ("lowvol_scores", "lowvol_score", "lv_c"): (22, -0.0962),
-    ("v3_scores", "final_score_v3", "v30"):    (35, 0.0573),
+    ("lowvol_scores", "lowvol_score", "lv_c"): (22, -0.0929),
+    ("v3_scores", "final_score_v3", "v30"):    (35, 0.0513),
 }
 TOL = 5e-4
 

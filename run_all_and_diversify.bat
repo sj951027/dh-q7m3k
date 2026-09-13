@@ -4,6 +4,10 @@ chcp 65001 > nul
 rem [2026-07-26] force UTF-8 so emoji output does not crash with UnicodeEncodeError when AUTO redirects the log (cp949).
 rem [2026-09-04] rem lines kept ASCII: non-ASCII text after chcp made cmd re-read a fragment ('6]' is not recognized...).
 set PYTHONUTF8=1
+rem [2026-09-13] collect non-zero exits per python step (summary at the end + telegram warning line)
+set "FAILED="
+if exist batch_failed.flag del batch_failed.flag
+if exist deploy_ok.flag del deploy_ok.flag
 
 cd /d "%~dp0"
 
@@ -45,23 +49,28 @@ echo   [B track] daily_ohlcv FIRST (Phase2: screener reuses ohlcv prices)
 echo   universe_ohlcv before screener - ensures ohlcv latest date == today
 echo ========================================================================
 python universe_ohlcv.py
+if errorlevel 1 set "FAILED=%FAILED% universe_ohlcv"
 
 echo.
 echo ========================================================================
 echo   [B track] market series + universe events (P2/P3 data layers, non-fatal)
 echo ========================================================================
 python market_series.py
+if errorlevel 1 set "FAILED=%FAILED% market_series"
 python universe_events.py
+if errorlevel 1 set "FAILED=%FAILED% universe_events"
 
 rem [2026-09-11] KIS investor flows BEFORE screener: supply source moved from Naver to KIS daily_flows
 rem   (Naver item pages now redirect to stock.naver.com app page - no HTML table). Non-fatal: screener
 rem   falls back to supply=0 if daily_flows is missing. Short/credit/loan stay in the Large section.
 python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --no-short
+if errorlevel 1 set "FAILED=%FAILED% kis_flows_daily"
 
 rem [2026-09-12] telegram moved to the end of this batch (after the Large push) so the pages linked
 rem   in the message (_large_obs.html / _large_test.html) and the ls_t1 counts are already deployed.
 rem   A gate-hold / degraded alert is still sent immediately inside run_and_diversify.py.
 python run_and_diversify.py --defer-telegram
+if errorlevel 1 set "FAILED=%FAILED% run_and_diversify"
 
 set EXIT_CODE=%ERRORLEVEL%
 
@@ -82,28 +91,47 @@ echo ========================================================================
 echo   [Large] universe + buyback + observe + flows + report (approx 8 min)
 echo ========================================================================
 python large_universe.py
+if errorlevel 1 set "FAILED=%FAILED% large_universe"
 python catalyst_large.py
+if errorlevel 1 set "FAILED=%FAILED% catalyst_large"
 python large_score.py
+if errorlevel 1 set "FAILED=%FAILED% large_score"
 python kis_flows.py --universe all --sleep 0.1 --flows-db ..\dh-q7m3k-data\ohlcv.db --no-daily --with-credit --with-loan
+if errorlevel 1 set "FAILED=%FAILED% kis_flows_short"
 python fetch_consensus.py
+if errorlevel 1 set "FAILED=%FAILED% fetch_consensus"
 
 echo.
 echo ========================================================================
 echo   [Large] build report (daily_ohlcv already updated above)
 echo ========================================================================
 python build_large_report.py
+if errorlevel 1 set "FAILED=%FAILED% build_large_report"
 python build_large_test.py
+if errorlevel 1 set "FAILED=%FAILED% build_large_test"
 
 echo.
 echo ========================================================================
 echo   [Large] Push docs/_large_obs.html to GitHub (Pages auto-deploy)
 echo ========================================================================
-python -c "import run_and_diversify as r; r.git_push()"
+rem [2026-09-13] push only when the completeness gate passed (deploy_ok.flag written by run_and_diversify.py).
+rem   Before this, a gate hold was bypassed by this unconditional push (seen 2026-09-08).
+if exist deploy_ok.flag (
+  python -c "import run_and_diversify as r; r.git_push()"
+) else (
+  echo [Large] push skipped - deploy gate held ^(deploy_ok.flag absent^)
+)
 
 echo.
 echo ========================================================================
 echo   [Notify] Telegram - last step so every page in the message is live
 echo ========================================================================
+rem failed step names -> batch_failed.flag (notify_telegram.py turns it into a warning line)
+if defined FAILED (
+  >batch_failed.flag echo %FAILED%
+) else (
+  if exist batch_failed.flag del batch_failed.flag
+)
 rem telegram_pending.flag is written by run_and_diversify.py only when the run is deployable.
 rem   On a gate hold it is absent (the hold alert was already sent) - send nothing here.
 if exist telegram_pending.flag (
@@ -127,6 +155,16 @@ echo ========================================================================
 echo   [Cleanup] rotate old outputs + weekly DB backup (7d guard inside)
 echo ========================================================================
 python cleanup.py --yes --backup-db
+if exist deploy_ok.flag del deploy_ok.flag
+
+echo.
+echo ========================================================================
+if defined FAILED (
+  echo   [WARN] python steps with non-zero exit:%FAILED%
+) else (
+  echo   [OK] all python steps exited 0
+)
+echo ========================================================================
 
 echo.
 echo ========================================================================

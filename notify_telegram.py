@@ -561,6 +561,15 @@ def _change_events_v3(act, min_oos, need):
         ev += _freshness_warnings()
     except Exception:
         pass
+    # [2026-09-13] 배치 단계 실패(run_all_and_diversify.bat 이 종료코드를 모아 batch_failed.flag 에 씀)
+    try:
+        bf = HERE / "batch_failed.flag"
+        if bf.exists():
+            names = bf.read_text(encoding="utf-8", errors="ignore").strip()
+            if names:
+                ev.append(f"⚠️ 배치 단계 실패: {names} — 로그 확인")
+    except Exception:
+        pass
     return ev
 
 
@@ -570,8 +579,12 @@ def build_message():
     #   바뀐 점: ① 날짜를 데이터 기준(run_id)으로 ② lv_b(운용)를 먼저, v30(참고)을 뒤로
     #   ③ 한 줄에 몰아넣지 않고 섹션 분리 ④ 링크 4개→2개(저변동 종목·리더보드)
     #   ⑤ '달라진 것: 없음' 줄 삭제(있을 때만 표시).
-    lines = [f"✅ <b>스크리너 {_date_head_v3()}</b> · 이상 없음", ""]
-    lines += _status_lines_v3()
+    # [2026-09-13] 첫 줄은 본문 경고(⚠️) 유무에 따른다 — 경고가 있는 날 '이상 없음'으로 나가던 것 교정.
+    body = _status_lines_v3()
+    warn = any("⚠️" in x for x in body)
+    head = (f"⚠️ <b>스크리너 {_date_head_v3()}</b> · 확인 필요" if warn
+            else f"✅ <b>스크리너 {_date_head_v3()}</b> · 이상 없음")
+    lines = [head, ""] + body
     lines += [
         "",
         f'🔎 <a href="{LOWVOL_URL}">저변동 종목 보기</a> · '

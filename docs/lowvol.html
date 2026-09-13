@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>저변동 트랙 (lv_b) · 테스트·관측</title>
+<title>저변동 트랙 (lv_b) · 운용 기준</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -66,7 +66,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🧪 저변동 트랙 <span style="color:var(--accent)">lv_b</span> · 테스트·관측</h1>
+  <h1>저변동 트랙 <span style="color:var(--accent)">lv_b</span> · 운용 기준 <small style="font-size:.55em;opacity:.75">(§11 판정: 기움 · 8/29 정본)</small></h1>
   <div class="sub">저변동 + ROE 순위합 (반전 제외) · v3 과매도 스크리너와 별개 트랙</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -97,9 +97,7 @@
   </script>
 
   <div class="warn">
-    ⚠️ <b>검증 전 섀도우 — 매수신호 아님.</b> 이 점수(lowvol_score)는 in-sample에서
-    발견한 신호(저변동·ROE)로 만든 <b>가설</b>입니다. 사후(post-hoc) 발견이라 forward-only로만 판정하며,
-    등록일 이후 <b>OOS 40거래일</b> 누적 전엔 노이즈로 간주합니다. 실제 추천 기준은 여전히 v3입니다.
+    ⚠️ <b>매수신호 아님 — 운용 기준 모델(lv_b).</b> §11 판정(2026-08-29 정본): <b>기움</b>(채택 아님 — IC +0.069, 95% CI 가 0을 걸침). 실거래 사용은 사용자 판단이며 운영 권고(OPS_GUIDE)는 <b>시장별 상위 10 · 다음 거래일 매수 · 40거래일 보유 · 손절 없음</b>. 판정 정본은 VERDICT_20260829_lowvol.md, 현재 수치는 리더보드.
     점수가 높을수록 "선호"지 "사라" 가 아닙니다.
   </div>
 
@@ -115,7 +113,7 @@
       백테스트·관측에서 <b>반전 항이 오히려 신호를 깎는 패턴</b>이 일관되게 나와(lv_b &gt; lv_a)
       2026-07-25부터 <b>표시 기준을 lv_b 로 전환</b>했습니다. lv_a·lv_short(공매도 추가) 등 나머지 모델은
       계속 적재·측정 중이며, 모델 간 비교는 <a href="leaderboard.html" style="color:var(--accent)">리더보드</a>에서
-      봅니다. ⚠️ lv_b 도 검증 전(OOS 40거래일 미달) — 판정은 리더보드 몫입니다.</p>
+      봅니다. lv_b 는 OOS 40거래일 도달 후 §11 판정 완료(2026-08-29 정본: <b>기움</b>, 채택 아님) — 현황은 리더보드에서.</p>
 
       <p class="warnp">❓ <b>점수 높으면 오르나? — 시장 방향대로 작동합니다.</b> (구 lv_a 기준) 18일 분석 기준,
       lv점수는 한쪽이 아니라 <b>양방향</b>으로 움직입니다(점수 높을수록 더 뚜렷):<br>
@@ -320,8 +318,8 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
   applyFilters();
 });
 document.getElementById('foot').innerHTML =
-  '※ <b>테스트·관측</b> 페이지 · lowvol_score 높을수록 선호(매수 아님) · v3·large 와 별개 트랙<br>'+
-  '실현변동성 낮을수록 / 지난주 더 빠졌을수록 / ROE 높을수록 점수↑ · 컬럼 클릭 시 정렬 · 18일 in-sample 가설';
+  '※ <b>운용 기준</b> 페이지(§11 판정: 기움) · lowvol_score 높을수록 선호(매수 아님) · v3·large 와 별개 트랙<br>'+
+  '실현변동성 낮을수록 / ROE 높을수록 점수↑ (반전 항 없음 = lv_b) · 컬럼 클릭 시 정렬 · 운영 권고: 시장별 상위 10 · 40거래일 보유';
 load('kospi');
 </script>
 </body>

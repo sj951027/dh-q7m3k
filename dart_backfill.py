@@ -60,6 +60,8 @@ def main():
     ap.add_argument("--sleep", type=float, default=0.4, help="호출 간격 초(기본 0.4)")
     ap.add_argument("--limit", type=int, default=None, help="상위 N종목만")
     ap.add_argument("--dry-run", action="store_true", help="대상만 세고 호출은 안 함")
+    ap.add_argument("--max-sec", type=int, default=600, help="총 시간 상한 초(기본 600) — 배치 끝에서 오래 붙잡지 않게")
+    ap.add_argument("--max-streak", type=int, default=8, help="연속 연결실패 N종목이면 중단(기본 8)")
     args = ap.parse_args()
 
     rid, gaps = load_gaps(args.run_id, args.limit)
@@ -90,7 +92,15 @@ def main():
 
     ok = miss = fail = 0
     t0 = time.time()
+    streak = 0            # 연속 연결실패 — DART 가 아직 막혀 있으면 더 두드리지 않는다
+    stopped = None
     for i, (tk, nm, cc) in enumerate(gaps, 1):
+        # [2026-09-13] 상한 두 개 — 이게 없으면 DART 차단 시 종목당 재시도·타임아웃이 쌓여
+        #   배치 끝에서 몇십 분~몇 시간을 잡아먹을 수 있다(stage3 2차 시도와 같은 규칙: 300s / 연속 8).
+        if time.time() - t0 > args.max_sec:
+            stopped = f"시간 상한 {args.max_sec}s 도달 ({i - 1}/{len(gaps)} 처리)"; break
+        if streak >= args.max_streak:
+            stopped = f"연속 {streak}종목 연결실패 — DART 차단으로 보고 중단 ({i - 1}/{len(gaps)} 처리)"; break
         time.sleep(args.sleep)
         try:
             annual = S3.get_annual_metrics(cc, key)
@@ -98,19 +108,21 @@ def main():
             S3.get_quarterly_yoy(cc, key)
             st = str((annual or {}).get("dart_annual_status", "") or "")
             if (annual or {}).get("ocf_latest_억") is not None:
-                ok += 1            # 재무 확보 — 다음 실행이 캐시로 읽는다
+                ok += 1; streak = 0            # 재무 확보 — 다음 실행이 캐시로 읽는다
             elif "REQUEST_ERROR" in st:
-                fail += 1          # 아직 DART 가 막혀 있음
+                fail += 1; streak += 1         # 아직 DART 가 막혀 있음
             else:
-                miss += 1          # 응답은 정상이나 해당 보고서 없음(신규상장·결산월 등) — 정상 케이스
+                miss += 1; streak = 0          # 응답은 정상이나 해당 보고서 없음(신규상장·결산월 등) — 정상 케이스
         except Exception as e:
-            fail += 1
+            fail += 1; streak += 1
             if fail <= 5:
                 print(f"   ⚠️  {nm}({tk}) 실패: {str(e)[:70]}")
         if i % 20 == 0 or i == len(gaps):
             print(f"   [{i}/{len(gaps)}] 복구 {ok} · 자료없음(정상) {miss} · 연결실패 {fail} "
                   f"· {time.time() - t0:.0f}s")
 
+    if stopped:
+        print(f"   ⏹  {stopped} — 나머지는 다음 실행에서 이어서 시도")
     print(f"\n💾 완료 — 복구 {ok} / 자료없음 {miss} / 연결실패 {fail} (총 {len(gaps)}종목, "
           f"{time.time() - t0:.0f}s)")
     print("   다음 배치의 stage3 가 이 캐시를 읽는다(정상응답 TTL 14일). 오늘 동결분은 그대로 둔다.")
