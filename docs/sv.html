@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>공매도비중 (sv_a) · 테스트·관측</title>
+<title>공매도비중 (sv_a) · 기움(9/13 정본) · 관측</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -62,7 +62,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🧪 공매도비중 <span style="color:var(--accent)">sv_a</span> · 테스트·관측</h1>
+  <h1>공매도비중 <span style="color:var(--accent)">sv_a</span> · 관측 <small style="font-size:.55em;opacity:.75">(§11 판정: 기움 · 9/13 정본)</small></h1>
   <div class="sub">공매도비중 5일평균(svr5) 단독 · <b>높을수록 상위</b>(공매도 밀집 가설) · 전체 상장(과매도 게이트 없음) · v3·large·lowvol·wu_a 와 별개 관측 모델</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -91,7 +91,7 @@
   </script>
 
   <div class="warn">
-    ⚠️ <b>검증 전 섀도우 — 매수신호 아님.</b> 이 점수(sv_a, wu_score 컬럼)는 폭락장 표본
+    ⚠️ <b>§11 판정 완료(2026-09-13 정본): 기움 — 채택 아님 · 매수신호 아님.</b> 형식 기준(CI>0·주별 80%·Bonferroni)은 충족했으나 주블록 CI 하단 +0.002(경계)·상승장 앵커에서 IC≈0. 실거래 가중 0, 관측 표시만. 이 점수(sv_a, wu_score 컬럼)는 폭락장 표본
     (5/22~7/14)에서 발견한 <b>사후 탐색(post-hoc) 가설</b>입니다(PREREGISTER_le_sv.md, 등록
     2026-07-15). "<b>공매도비중이 높은 종목이 이후에 더 오른다</b>(숏커버·포지셔닝 밀집)"는
     통념과 반대 방향의 가설이라, 등록일 이후 <b>OOS 40거래일</b>(판정 예상 2026-09 중) 전엔
@@ -279,7 +279,7 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
   applyFilters();
 });
 document.getElementById('foot').innerHTML =
-  '※ <b>테스트·관측</b> 페이지 · sv점수 높을수록 공매도비중 상위(매수 아님) · v3·large·lowvol·wu_a 와 별개 관측 모델<br>'+
+  '※ <b>관측</b> 페이지(§11 판정: 기움 · 9/13) · sv점수 높을수록 공매도비중 상위(매수 아님) · v3·large·lowvol·wu_a 와 별개 관측 모델<br>'+
   '발견은 walk-forward 스캔(post-hoc) — 판정은 첫 적재(2026-08-10) 후 OOS 40거래일(§11, h10 재현 포함) · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
 load();
 </script>

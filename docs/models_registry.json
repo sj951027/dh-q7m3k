@@ -1,6 +1,6 @@
 {
   "_doc": "모델 판정 정본·은퇴 레지스트리(단일 소스). leaderboard.html·notify_telegram.py·notify_weekly.py 가 읽는다. 판정/은퇴 시 이 파일 + MODELS_LEDGER.md 만 갱신. 표시 전용 — 점수·판정(leaderboard.json) 무관. (리더보드 ★ 표시 기준 STAR 는 html 인라인 — 비동기 경합 회피)",
-  "updated": "2026-09-06",
+  "updated": "2026-09-13",
   "money": [
     "v30",
     "lv_b"
@@ -107,6 +107,20 @@
       "v": "기각",
       "t": "기각(8/09)",
       "cls": "b-noise"
+    },
+    "sv_a": {
+      "v": "기움",
+      "short": "기움(9/13 정본)",
+      "t": "기움 — wu 표시 기준(9/13 정본, 채택 아님)",
+      "cls": "b-lean",
+      "doc": "VERDICT_20260913_wu_sv_le.md"
+    },
+    "le_a": {
+      "v": "노이즈",
+      "short": "노이즈(9/13)",
+      "t": "노이즈(9/13 정본)",
+      "cls": "b-noise",
+      "doc": "VERDICT_20260913_wu_sv_le.md"
     }
   },
   "retired": {

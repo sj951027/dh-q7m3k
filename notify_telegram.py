@@ -533,6 +533,33 @@ def _status_lines_v3():
         return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
 
 
+def _input_coverage_warnings():
+    """[2026-09-13] 핵심 입력이 통째로 사라진 날을 알린다 — 완전성 게이트는 행 수만 봐서(09-11 수급 0/979 통과)
+    이 경우를 못 잡는다. **보류가 아니라 경고**: 보류는 화면 전체를 막는데 lv_b 는 수급을 안 쓴다.
+    기준(전일 대비): 수급 확보율 < 전일의 절반 · 재무 결손률 ≥10% 이면서 전일의 2배 이상. 표시 전용, 판정·점수 무관."""
+    import sqlite3
+    out = []
+    try:
+        con = sqlite3.connect(f"file:{HERE / 'history.db'}?mode=ro", uri=True)
+        rows = con.execute(
+            "SELECT run_id, COUNT(*), "
+            "SUM(CASE WHEN supply_fetched IN (1,'1','True','true') THEN 1 ELSE 0 END), "
+            "SUM(CASE WHEN ocf_pattern='데이터없음' THEN 1 ELSE 0 END) "
+            "FROM stage3_final GROUP BY run_id ORDER BY run_id DESC LIMIT 2").fetchall()
+        con.close()
+        if len(rows) == 2 and rows[0][1] and rows[1][1]:
+            (r1, n1, s1, g1), (r0, n0, s0, g0) = rows
+            sup1, sup0 = s1 / n1, s0 / n0
+            gap1, gap0 = g1 / n1, g0 / n0
+            if sup0 > 0 and sup1 < 0.5 * sup0:
+                out.append(f"⚠️ 수급 확보 급감 {sup1:.0%} (전일 {sup0:.0%}) — v30 수급 성분 영향, lv_b 무관 · 로그의 'KIS daily_flows' 줄 확인")
+            if gap1 >= 0.10 and gap1 >= 2 * max(gap0, 0.005):
+                out.append(f"⚠️ 재무 결손 {gap1:.0%} (전일 {gap0:.0%}) — DART 연결 실패분, 품질점수 −2 처리 · 백필이 다음날 채움")
+    except Exception:
+        pass
+    return out
+
+
 def _change_events_v3(act, min_oos, need):
     """어제와 달라진 것 + 데이터 신선도 경고. v2 의 ④ 블록과 같은 규칙(표시 전용)."""
     by = {m["model"]: m for m in act}
@@ -559,6 +586,10 @@ def _change_events_v3(act, min_oos, need):
             ev.append(f"⚠️ {mid} 유니버스 {u0}→{u} 급감(판정 표본 얇아짐)")
     try:
         ev += _freshness_warnings()
+    except Exception:
+        pass
+    try:
+        ev += _input_coverage_warnings()     # [2026-09-13] 수급·재무 커버리지 급감(경고만)
     except Exception:
         pass
     # [2026-09-13] 배치 단계 실패(run_all_and_diversify.bat 이 종료코드를 모아 batch_failed.flag 에 씀)
