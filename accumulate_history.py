@@ -247,13 +247,16 @@ def accumulate_market(market, date_str, conn, archive=False):
 
     # 아카이빙 — CSV를 archive/YYYYMMDD/market/로 이동
     if archive:
-        archive_csvs(market, run_id, csvs, final_csv_path)
+        archive_csvs(market, run_id, csvs, final_csv_path, run_ts=run_ts)
 
     return True
 
 
-def archive_csvs(market, run_id, csvs, final_csv_path):
-    """raw CSV들을 archive/로 이동 + latest_<market>_final.csv는 루트에 유지."""
+def archive_csvs(market, run_id, csvs, final_csv_path, run_ts=None):
+    """raw CSV들을 archive/로 이동 + latest_<market>_final.csv는 루트에 유지.
+    [2026-09-13] run_id 보정(자정 넘김·주말 재실행)으로 파일명 날짜(실행일)와 run_id 가 다르면
+    파일을 못 찾아 0개 이동 + latest 미갱신이 됐다(09-12 재실행: latest 가 수급 0인 첫 실행본으로 남음).
+    → 파일명에 run_id 또는 실행일(run_ts 의 날짜부)이 들어간 것도 같이 옮긴다."""
     target_dir = ARCHIVE_DIR / run_id / market
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -267,10 +270,11 @@ def archive_csvs(market, run_id, csvs, final_csv_path):
         f"v2_{market}_final_*.csv",
     ]
     today_id = run_id
+    ts_date = run_ts.split("_")[0] if run_ts else None   # 실행일(파일명에 찍히는 날짜)
     for pattern in extra_patterns:
         for csv in Path(".").glob(pattern):
-            # 다른 날짜 CSV는 건드리지 않음
-            if today_id not in csv.name:
+            # 다른 날짜 CSV는 건드리지 않음 (run_id 또는 이번 실행일이 붙은 것만)
+            if today_id not in csv.name and not (ts_date and ts_date in csv.name):
                 continue
             target = target_dir / csv.name
             if target.exists():

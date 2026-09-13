@@ -23,6 +23,11 @@
     color: #1a202c;
   }
   
+  .howto-box { background:#fffbea; border:1px solid #f4d56b; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:#5f4a12; line-height:1.6; }
+  .howto-box ul { margin:6px 0 4px 18px; padding:0; }
+  .howto-box li { margin:2px 0; }
+  .howto-foot { font-size:12px; color:#8a6d1f; margin-top:4px; }
+  .reco { display:inline-block; font-size:10.5px; font-weight:700; color:#fff; background:#d69e2e; border-radius:4px; padding:0 5px; margin-left:4px; vertical-align:1px; }
   .subtitle {
     color: #718096;
     margin-bottom: 24px;
@@ -412,6 +417,18 @@
 <div class="container">
   <h1>📊 KOSPI 스크리너 결과 필터 <span style="font-size:14px; color:#4299e1; font-weight:500;">챔피언 v30 (V3.0 엔진)</span></h1>
   <p class="subtitle">최신 스크리너 결과를 필터/정렬/검색할 수 있어요. 시장을 고르면 자동으로 최신 데이터를 불러옵니다. 표시 점수·등급·버킷은 챔피언 모델 <b>v30</b> 기준입니다.</p>
+  <!-- [2026-09-13] 운영 권고 상자 — OPS_GUIDE.md §0·§1 요약. 표시 전용, 강제 아님. -->
+  <div class="howto-box">
+    <b>📌 어떻게 사나 (운영 권고 — 강제 아님)</b>
+    <ul>
+      <li>저녁에 뽑힌 종목은 <b>다음 거래일</b>에 산다(시가·종가 차이 없음).</li>
+      <li><b>시장별 상위 10</b>(코스피 10·코스닥 10)이 데이터상 유리했다. 아래 표의 <span class="reco">권고10</span> 표시가 그 종목이다(V3점수 순, 위험·주의·이중적자·밸류트랩 제외 — 텔레그램 추천과 같은 기준).</li>
+      <li>⚠️ 희석공시 배지 종목은 피하는 게 유리했다.</li>
+      <li>한 번에 다 사지 말고 <b>4번에 나눠</b>(주 1회 1/4), 종목마다 같은 금액.</li>
+      <li>산 뒤 <b>40거래일</b>은 둔화·익절·RSI 급락 신호가 떠도 들고 간다. 손절 없음. 40일째에 그날 상위 10으로 교체.</li>
+    </ul>
+    <div class="howto-foot">근거·수치는 저장소 OPS_GUIDE.md. 안 따라도 된다 — 화면은 권고만 표시한다. 판정 정본은 <a href="leaderboard.html">리더보드</a>.</div>
+  </div>
 
   <!-- 시장 토글 (자동 로드) -->
   <div id="marketBar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
@@ -723,10 +740,25 @@ fileInput.addEventListener('change', (e) => {
 });
 
 // ===== 파일 로드 =====
+// [2026-09-13] 권고 상위 10 — notify_telegram 폴백과 같은 안전필터(이중적자·밸류트랩의심·주의·위험 제외) 후 V3점수 상위 10. 표시 전용.
+let RECO10 = new Set();
+function computeReco10() {
+  RECO10 = new Set();
+  if (!headers.includes('final_score_v3')) return;
+  const ok = allData.filter(r => {
+    const v = parseFloat(r.final_score_v3); if (isNaN(v)) return false;
+    if (['이중적자', '밸류트랩의심'].includes(r.ocf_pattern || '')) return false;
+    if (['주의', '위험'].includes(r.risk_level || '')) return false;
+    return true;
+  }).sort((a, b) => parseFloat(b.final_score_v3) - parseFloat(a.final_score_v3)).slice(0, 10);
+  ok.forEach(r => RECO10.add(String(r.ticker)));
+}
+
 function applyCSVText(text) {
   const result = parseCSV(text);
   headers = result.headers;
   allData = result.data;
+  computeReco10();
   initializeUI();
   document.getElementById('mainContent').classList.add('active');
   document.getElementById('dropzone').style.display = 'none';
@@ -1217,7 +1249,8 @@ function renderTable(data) {
   
   tbody.innerHTML = data.map((row, i) => {
     const cells = usableCols.map(c => formatCell(row, c)).join('');
-    return `<tr><td class="num">${i + 1}</td>${cells}</tr>`;
+    const reco = RECO10.has(String(row.ticker)) ? '<span class="reco" title="운영 권고: 시장별 상위 10">권고10</span>' : '';
+    return `<tr><td class="num">${i + 1}${reco}</td>${cells}</tr>`;
   }).join('');
 }
 
