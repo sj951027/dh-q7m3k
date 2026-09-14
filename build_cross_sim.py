@@ -34,6 +34,11 @@ MODELS = [
     ("sv_a",  "wu_scores",     "wu_score",       "sv_a",  "20260715"),
     ("qs_a",  "wu_scores",     "wu_score",       "qs_a",  "20260723"),
     ("px_a",  "wu_scores",     "wu_score",       "px_a",  "20260810"),
+    # [2026-09-15] 리더보드 ① 돈 표에 빠져 있던 현역 모델 추가(관측 전용). ls_t1 은 점수 테이블이 없어 아래에서 large_final 로 합성.
+    ("mom_b", "lowvol_scores", "lowvol_score",   "mom_b", "20260717"),
+    ("lv_e",  "lowvol_scores", "lowvol_score",   "lv_e",  "20260901"),
+    ("sv_b",  "wu_scores",     "wu_score",       "sv_b",  "20260914"),
+    ("ls_t1", "large_final",   None,             "ls_t1", "20260806"),
 ]
 MIN_DAYS = 10   # 표시 기준: 공통창 유효 거래일 10 미만 모델은 자동 대기(가독성 — 창이 차면 저절로 등장)
 # [2026-08-29] 등록일이 창 시작보다 늦은 모델은 그 창에서 제외 — 공백일이 0%로 채워져
@@ -42,8 +47,8 @@ MIN_DAYS = 10   # 표시 기준: 공통창 유효 거래일 10 미만 모델은 
 PANELS = [
     # [2026-09-04] wu_a 제거 — 은퇴(적재 중지). 적재가 멈춘 모델은 공백일이 0%로 채워져 창을 왜곡한다.
     ("주력 공통창 (7/02~)", ["v30", "lv_b", "lv_a", "mom_a"], "20260702"),
-    ("전 모델 공통창 (7/24~ · 짧음)", ["v30", "lv_b", "lv_a", "mom_a", "sv_a", "qs_a", "px_a"], "20260724"),
-    ("신모델 공통창 (8/10~ · 매우 짧음 — 참고 최소한)", ["v30", "lv_b", "lv_a", "mom_a", "sv_a", "qs_a", "px_a"], "20260810"),
+    ("전 모델 공통창 (7/24~ · 짧음)", ["v30", "lv_b", "lv_a", "mom_a", "mom_b", "sv_a", "qs_a", "px_a"], "20260724"),
+    ("신모델 공통창 (8/10~ · 매우 짧음 — 참고 최소한)", ["v30", "lv_b", "lv_a", "mom_a", "mom_b", "sv_a", "qs_a", "px_a", "ls_t1"], "20260810"),
 ]
 
 
@@ -53,6 +58,15 @@ def main():
     scores = {}
     reg_map = {name: reg for name, tbl, col, mid, reg in MODELS}
     for name, tbl, col, mid, reg in MODELS:
+        if col is None:   # ls_t1: leaderboard.py 와 같은 정의 — run 내 ep·bp·rim·dv 백분위 랭크 동일가중 평균(결측 제외, 최소 2개)
+            lg = pd.read_sql("SELECT run_id, ticker, per, pbr, rim_spread, div_yield FROM large_final WHERE run_id>=?", hc, params=(reg,))
+            fz = pd.DataFrame({"ep": 1.0 / lg["per"].where(lg["per"] > 0), "bp": 1.0 / lg["pbr"].where(lg["pbr"] > 0),
+                               "rim": lg["rim_spread"], "dv": lg["div_yield"]})
+            rk = fz.groupby(lg["run_id"]).rank(pct=True)
+            lg["s"] = rk.mean(axis=1, skipna=True).where(rk.notna().sum(axis=1) >= 2)
+            lg["ticker"] = lg["ticker"].astype(str).str.zfill(6)
+            scores[name] = lg.loc[lg["s"].notna(), ["run_id", "ticker", "s"]]
+            continue
         scores[name] = pd.read_sql(
             f"SELECT run_id, ticker, {col} AS s FROM {tbl} WHERE model_id=? AND run_id>=?",
             hc, params=(mid, reg))
