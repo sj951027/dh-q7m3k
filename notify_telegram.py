@@ -652,7 +652,29 @@ def send(message=None):
         return False
 
 
+def _load_dotenv():
+    """단독 실행 대응: .env 를 os.environ 에 로드(이미 있으면 안 덮음).
+    [2026-09-14] 09-12 부터 .bat 이 이 스크립트를 배치 맨 끝에서 단독 실행하는데(--defer-telegram),
+    run_and_diversify 가 실어 주던 .env 가 없어 09-14 배치에서 '토큰 없음'으로 알림이 건너뛰어졌다.
+    notify_weekly._load_dotenv 와 같은 동작."""
+    p = HERE / ".env"
+    if not p.exists():
+        return
+    try:
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+    except Exception:
+        pass
+
+
 def main():
+    _load_dotenv()
     print(f"\n{'━'*64}\n▶  텔레그램 알림\n{'━'*64}")
     print("   메시지 미리보기:\n")
     preview = re.sub(r"<[^>]+>", "", build_message())   # 콘솔엔 태그 빼고
