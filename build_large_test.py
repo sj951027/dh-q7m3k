@@ -154,6 +154,7 @@ def render(g, rid, ts, ic):
  td.nm{{text-align:left}} .tk{{color:#5c6478;font-size:11px}} td.sec{{text-align:left;color:#8b93a7}}
  td.sc{{color:#7db3ff}} .ok{{color:#69c98a}} .ng{{color:#8b93a7}}
  .pos{{color:#69c98a}} .neg{{color:#e06c75}}
+ .memo{{background:#151a24;border:1px solid #2a3550;border-radius:8px;padding:10px 14px;margin-bottom:12px;line-height:1.6}} .memo ul{{margin:6px 0 6px 18px;padding:0}} .memo li{{margin:2px 0}}
  .fbar{{background:#171b25;border:1px solid #232837;border-radius:8px;padding:10px 14px;margin-bottom:12px;line-height:2}} .fbar label{{margin-right:10px}} .fbar select,.fbar input{{background:#0f1218;color:#cfd6e4;border:1px solid #2a3040;border-radius:4px;padding:2px 6px}} .note{{color:#8b93a7;font-size:12px}}
  .flag{{background:#232837;border-radius:4px;padding:1px 5px;margin-left:3px;font-size:11px;color:#a8b0c2}}
 </style>
@@ -161,6 +162,7 @@ def render(g, rid, ts, ic):
 동일가중 랭크 스펙 동결(PREREGISTER_ls_t1.md) · 이 파일은 로컬 전용(docs/ 공개 금지)</div>
 <div class=meta>run {rid} ({ts}) · in-sample 참고 IC(백필 포함 — <b>증거 아님</b>): {ic_txt}
 · OOS 판정 정본: leaderboard(large 트랙, 등록 20260806)</div>
+<div class=memo><b>📝 어떤 걸 고르는 게 좋았나 — 관측 메모 (2026-09-14 실측, 판정 아님)</b><div class=note>기간 6/10~9/11(약 3개월, 대형 가치주 강세 국면 하나). 앵커가 매일 겹쳐 신뢰구간은 실제보다 좁음. 등록(8/06) 전 자료 포함. 다른 국면에서도 그런지는 3년 자료를 받아야 알 수 있음.</div><ul><li><b>집중이 낫다</b>: 상위 5 &gt; 상위 10 &gt; 상위 20·30 (20일 기준 상위5 가 상위10 보다 +0.8%p, 40일 +1.3%p).</li><li><b>품질게이트는 걸지 않는 게 나았다</b>: 통과 종목만 고르면 −1.6%p(20일)·−4.7%p(40일). 싸고 실적이 도는 종목이 질 좋은 종목보다 올랐던 시기.</li><li><b>초대형은 별로</b>: 시총 상위 100 안만 고르면 −2.0%p. 101~500위가 +0.7~1.0%p.</li><li><b>RIM 사분면 1 이 일관되게 좋았다</b>: +1.5%p(20일)·+1.9%p(40일)·등록 후 +2.3%p.</li><li><b>업종 분산은 손해</b>: 업종당 최대 2로 나누면 −0.7~−1.4%p.</li><li><b>단독 팩터가 합성보다 나았다</b>: RIM 단독 상위10 +2.5/+4.5%p, 1/PER 단독 +2.2/+3.9%p. 반대로 1/PBR·배당 단독은 합성보다 나쁨.</li><li><b>가장 나았던 조합</b>: <u>RIM(또는 1/PER) 단독 정렬 · 시총 101~500 · RIM 사분면 1 · 상위 10</u> → 합성 상위10 대비 20일 +4.6%p, 40일 +9.2%p, 등록 후 +6.3%p. 전반·후반 모두 양수. 위 필터로 재현 가능.</li><li><b>상위 50 안에서는</b> 저PBR·고배당·전년 대비 이익 증가·외인 20일 순매수 양수가 더 갔고, 현금흐름·ROE 좋은 종목은 뒤처짐.</li></ul><div class=note>스펙(4팩터 동일가중)은 동결이라 ls_t1 자체는 바꾸지 않음. 바꾸려면 새 model_id(ls_t2)로 사전등록. 근거: research/RESEARCH_ls_t1_selection_rules_20260914.md · RESEARCH_ls_t1_top_decile_20260914.md · RESEARCH_ls_t1_filter_combo_20260914.md</div></div>
 <div class=fbar><b>관측용 필터</b> <span class=note>— 매수신호 아님 · 근거 research/RESEARCH_ls_t1_selection_rules_20260914.md (참고 기간, 판정 아님)</span><br>정렬 <select id=fsort><option value=ls>합성 ls_t1</option><option value=ep>1/PER 단독</option><option value=rim>RIM 단독</option></select> <label><input type=checkbox id=fgate> 품질게이트 통과만</label> <label><input type=checkbox id=fmr> 시총 101~500위만</label> <label><input type=checkbox id=frq> RIM 사분면 1만</label> <label><input type=checkbox id=ffin> 금융·지주 제외</label> 상위 <input type=number id=ftop value=50 min=1 max=500 style="width:56px"> 개 <span id=fcount class=note></span></div>
 <table><tr><th>#</th><th>종목</th><th>시장</th><th>시총</th><th>ls_t1</th>
 <th>1/PER%</th><th>1/PBR%</th><th>RIM%</th><th>배당%</th>
