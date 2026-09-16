@@ -8,6 +8,15 @@ ENTRY_LAG=1 · 공통 벤치마크(전체상장 거래대금≥5억 EW, KOSPI �
 
 ⚠ 관측 전용 — §11 판정과 무관(판정 도구 leaderboard.py 는 일절 안 건드림).
   거래비용 0 · 매일 전량 리밸런스 가정. 실패해도 파이프라인 비치명.
+
+[2026-09-16 정정] 종전 daily_series 는 신호일 t 의 바구니에 t+1 일간수익을 적용해 '매수 전 하루'를
+  수익으로 세고, 점수 없는 날엔 수익률을 ffill 했다(외부 검토로 발견, research/RESEARCH_cross_sim_entry_lag_20260916.md).
+  지금은 **보유 상태 기준**으로 계산한다(simulate):
+    · 신호일 t(배치, 그날 종가 데이터) → t+1 종가에 교체(ENTRY_LAG=1) → 새 바구니 수익은 t+2 부터.
+    · t→t+1 수익은 기존 보유분에 귀속. 신호 없는 날은 보유 유지(수익 복사 없음).
+    · 교체 시 종가 없는 종목 몫은 현금. 보유 중 가격 결측(거래정지)은 직전가로 평가(재개 시 재평가).
+    · 마지막 날 신호는 진입만 예약, 미실현 구간은 계산하지 않는다. 수정주가(ohlcv close) 전제.
+  고정 사례 테스트: tests/test_cross_sim_hold.py
 등록일(REG_DATE) 이후 forward 점수만 사용. 패널:
   A = 주력 공통창(v30·lv_a·lv_b·mom_a, 20260702~ — wu_a 는 2026-09-04 은퇴로 제외)
   B = 전 모델 공통창(+sv_a·qs_a, 20260724~)
@@ -52,6 +61,86 @@ PANELS = [
 ]
 
 
+ENTRY_LAG = 1   # 신호일 t → t+ENTRY_LAG 종가 교체 (리더보드와 같은 뜻)
+
+
+def simulate(picks_by_day, close, dts, start, end, cost=0.0):
+    """보유 상태 기준 모의계좌. picks_by_day: {거래일 t: [ticker,...] 또는 None}. close: DataFrame(index=date, columns=ticker).
+    start~end 사이 신호만 쓴다. 반환: 일별 수익 Series(index=수익이 실현된 날, 첫 값은 첫 진입 다음 날).
+    cost: 교체 시 왕복 비용 비율(전량 교체 가정 · 기본 0)."""
+    days = [d for d in dts if start <= d <= end]
+    if not days:
+        return pd.Series(dtype=float)
+    idx = {d: i for i, d in enumerate(dts)}
+    cols = {c: j for j, c in enumerate(close.columns)}
+    P = close.to_numpy(float)
+    holdings = {}          # ticker -> 수량
+    last_px = {}           # ticker -> 마지막 유효가(거래정지 시 평가용)
+    cash = 0.0
+    value = 1.0
+    entered = False
+    pending = None         # (교체 예정일, 종목 리스트)
+    out = {}
+    for d in dts:
+        if d < days[0]:
+            continue
+        i = idx[d]
+        # ① 당일 종가로 평가 (기존 보유 귀속). 오늘 교체가 있으면 교체 비용을 오늘 수익에 반영.
+        rebalance_today = pending is not None and pending[0] == d and pending[1] is not None
+        if entered:
+            v = cash
+            for tk, q in holdings.items():
+                px = P[i, cols[tk]] if tk in cols else np.nan
+                if np.isfinite(px) and px > 0:
+                    last_px[tk] = px
+                v += q * last_px.get(tk, 0.0)
+            if rebalance_today and cost > 0:
+                v *= (1.0 - cost)
+            out[d] = (v / value - 1.0) if value > 0 else 0.0
+            value = v
+        # ② 예약된 교체가 오늘이면 종가에 실행
+        if pending is not None and pending[0] == d:
+            sel = pending[1]; pending = None
+            if sel is not None:
+                holdings, cash = {}, 0.0
+                per = value / max(len(sel), 1)
+                for tk in sel:
+                    px = P[i, cols[tk]] if tk in cols else np.nan
+                    if np.isfinite(px) and px > 0:
+                        holdings[tk] = per / px; last_px[tk] = px
+                    else:
+                        cash += per          # 못 사는 종목 몫은 현금
+                entered = True
+        # ③ 오늘 신호가 있으면 t+ENTRY_LAG 종가 교체 예약 (기간 안 신호만)
+        sel_today = picks_by_day.get(d) if days[0] <= d <= days[-1] else None
+        if sel_today:            # 빈 목록(살 수 있는 종목 0)은 신호 없음으로 취급 → 보유 유지
+            j = i + ENTRY_LAG
+            if j < len(dts):
+                pending = (dts[j], picks_by_day[d])
+        if d >= days[-1]:        # end 이후 구간은 계산하지 않는다(미실현·범위 밖)
+            break
+    return pd.Series(out).sort_index()
+
+
+def picks_by_day_from_scores(df, dts, topn, universe):
+    """run_id → 거래일 매핑(비거래일 run 은 직전 거래일; 같은 날 여럿이면 거래일과 같은 run 우선, 없으면 최소)."""
+    import bisect
+    runs = sorted(df.run_id.astype(str).unique())
+    cand = {}
+    for run in runs:
+        k = bisect.bisect_right(dts, run) - 1
+        if k >= 0:
+            cand.setdefault(dts[k], []).append(run)
+    out = {}
+    for day, rs in cand.items():
+        run = day if day in rs else min(rs)
+        sub = df[df.run_id.astype(str) == run]
+        if len(sub) == 0:
+            continue
+        out[day] = [c for c in sub.nlargest(topn, "s").ticker if c in universe]
+    return out
+
+
 def main():
     hc = sqlite3.connect(f"file:{HERE/'history.db'}?mode=ro", uri=True)
     oc = sqlite3.connect(f"file:{OHLCV}?mode=ro", uri=True)
@@ -80,20 +169,15 @@ def main():
     K = pd.read_sql("SELECT date, close FROM market_daily WHERE series='KOSPI'",
                     oc).set_index("date")["close"].reindex(dts).ffill()
 
-    def daily_series(fn_top, start, end):
-        out = []
-        for t in [d for d in dts if start <= d <= end]:
-            i = dts.index(t)
-            if i + 1 >= len(dts):
-                continue
-            nxt = dts[i + 1]
-            sel = fn_top(t)
-            if sel is None:
-                out.append((nxt, np.nan))
-            else:
-                out.append((nxt, float(R.loc[nxt, sel].astype(float).mean(skipna=True))))
-        s = pd.Series(dict(out)).sort_index()
-        return s.ffill(limit=2).fillna(0)
+    universe = set(C.columns)
+
+    def daily_series(picks, start, end):
+        """picks: {거래일: [ticker]} (모델) 또는 callable(t)->[ticker] (벤치마크: 매일 신호)."""
+        if callable(picks):
+            pmap = {t: list(picks(t)) for t in dts if start <= t <= end}
+        else:
+            pmap = picks
+        return simulate(pmap, C, dts, start, end)
 
     def stats(s):
         nav = (1 + s).cumprod()
@@ -103,7 +187,7 @@ def main():
                     n=int(len(s)))
 
     panels = []
-    end = dts[-2]
+    end = dts[-1]   # [2026-09-16] simulate 는 마지막 종가까지 실현된 수익만 계산
     for label, group, start in PANELS:
         bench = daily_series(lambda t: amt20.loc[t][amt20.loc[t] >= 5].index.intersection(R.columns),
                              start, end)
@@ -111,13 +195,7 @@ def main():
         kospi_cum = round(float(K.iloc[-1] / K.loc[k_days[0]] - 1) * 100, 1)
         rows = []
         for m in group:
-            df = scores[m]
-
-            def top(t, df=df):
-                sub = df[df.run_id == t]
-                if len(sub) == 0:
-                    return None
-                return [c for c in sub.nlargest(TOPN, "s").ticker if c in R.columns]
+            top = picks_by_day_from_scores(scores[m], dts, TOPN, universe)
             if reg_map.get(m, "00000000") > start:
                 print(f"  ⏳ {m}: 등록일 {reg_map[m]} > 창 시작 {start} — 창 전체 커버 전 표시 대기")
                 continue
@@ -153,12 +231,7 @@ def main():
                               "20260601", end)
     t_rows = []
     for name, tbl, col, mid, reg in MODELS:
-        def top_t(t, df=scores[name]):
-            sub = df[df.run_id == t]
-            if len(sub) == 0:
-                return None
-            return [c for c in sub.nlargest(TOPN, "s").ticker if c in R.columns]
-        s = daily_series(top_t, reg, end)
+        s = daily_series(picks_by_day_from_scores(scores[name], dts, TOPN, universe), reg, end)
         if len(s) == 0:
             continue
         nav = (1 + s).cumprod()

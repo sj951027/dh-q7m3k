@@ -80,12 +80,15 @@ def run_portfolio(picks_by_run, close, dates, start_date, topn):
             if d in picks_by_run:
                 pending = picks_by_run[d]
             continue
-        if pending is not None:
-            cur = pending; pending = None   # 전일 run 의 top 으로 오늘 종가 진입
+        # [2026-09-16] 정정: 오늘 수익(전일 종가→오늘 종가)은 '기존 보유' 몫. 교체는 오늘 종가에(수익 계산 뒤) 한다.
+        #   종전엔 교체 후 새 바구니에 오늘 수익을 붙여 매수 전 하루를 수익으로 셌다(build_cross_sim 과 같은 오류).
+        #   ⚠ 이 스크립트는 여전히 '비중 매일 재조정' 근사(수량 고정 아님) — 정본 계산은 build_cross_sim.simulate.
         if cur:
             r = rets[d].reindex(cur).dropna()
             if len(r):
                 daily[d] = r.mean()
+        if pending is not None:
+            cur = pending; pending = None   # 전일 run 의 top 으로 오늘 종가 교체 → 수익은 내일부터
         if d in picks_by_run:
             pending = picks_by_run[d]
     return pd.Series(daily)

@@ -186,7 +186,7 @@ def build_message():
 
 
 # [2026-09-16] cross_sim 모의계좌 계산 오류(진입 하루 빠름) 정정 전까지 성적 줄 보류 — notify_telegram.MONEY_HOLD 와 동일
-MONEY_HOLD = True
+MONEY_HOLD = False   # 2026-09-16 밤 정정 완료(build_cross_sim.simulate) → 해제
 
 
 def _load_dotenv():

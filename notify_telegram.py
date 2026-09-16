@@ -688,7 +688,7 @@ def _load_dotenv():
 
 # [2026-09-16] 모의계좌(cross_sim) 계산 오류 확인 — 신호 다음 날(매수 전) 하루 수익을 포함해 과대(연구 문서
 #   research/RESEARCH_cross_sim_entry_lag_20260916.md). build_cross_sim 정정·검증 전까지 💰 줄은 숫자 대신 보류 안내만 보낸다.
-MONEY_HOLD = True
+MONEY_HOLD = False   # 2026-09-16 밤 정정 완료(build_cross_sim.simulate) → 해제
 MONEY_HOLD_LINE = "💰 최근 1개월 따라사기: 계산 오류 확인(매수 전 하루 수익 포함) — 정정 전까지 표시 보류"
 
 def main():
