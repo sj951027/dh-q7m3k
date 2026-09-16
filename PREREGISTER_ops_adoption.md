@@ -1,6 +1,6 @@
-# PREREGISTER — 운용 채택 기준 (돈 기준) **[초안 v5 — 2026-09-16 · 등록 준비 완료 · 사용자 승인 대기]**
+# PREREGISTER — 운용 채택 기준 (돈 기준) **[v5 등록 — 2026-09-16 · 관찰 진입 2026-09-17 ~ 2027-03-31 · 판정 2027-06 초 1회]**
 
-> 상태: **초안 v5**. v4 에 2026-09-16 외부 검토(진입·보유 규약 명시, 소급 금지, 구현 독립 검증)와 §1 배선 결과 반영. 사용자 승인 전에는 아무 판정에도 쓰지 않는다.
+> 상태: **등록(2026-09-16, 사용자 승인)**. 점프 컷 미적용·비용 정본 0.35% 확정. 관찰 시작 = 진입일 2026-09-17(승인·동결 커밋 다음 거래일). 이후 §1·§2 는 바꾸지 않는다(바꾸면 v6 재등록 + 새 관찰기간).
 > 성격: §11(팩터 유효성)을 대체하지 않는다. **다른 질문에 답하는 두 번째 잣대**를 따로 못 박는 것.
 > 근거 도구: `research/shadow_ops_portfolio.py`(기계적 권고 이행 — 등록 전에 §1 규칙으로 배선·검증 완료해야 함)
 > · `research/ptw_live_review.py`(실거래 원장, 판정 입력 아님) · `research/hold_horizon_lvb.py` · `research/regime_persistence.py`
@@ -86,6 +86,6 @@ lv_b 가 §11 에서 '기움'(채택 아님)인데 실거래·그림자 포트�
 
 1. ✅ 2026-09-16 `research/shadow_ops_portfolio.py` v2 에 §1 규칙 배선(동일가중 잣대·마지막가 청산·미매수 현금·40일 블록 CI 97.5%·코호트·국면 라벨·§2 논리식·점프컷 미적용). 단위 테스트 `tests/test_shadow_ops_rules.py`. 참고창 값은 §4 에 기록.
 2. 사용자 승인 → 상태 **[등록]**, 관찰 시작일 = 승인·동결 커밋일의 다음 거래일(진입일 기준), `MODELS_LEDGER.md` 한 줄, 아래에 commit hash 기록.
-   - 동결 대상 파일: `research/shadow_ops_portfolio.py` · `dilution_flag.py` · `leaderboard.py`(anchor/dedupe/gates 헬퍼) · 이 문서. hash: (등록 시 기입)
+   - 동결 대상 파일과 commit hash(등록 시점): `research/shadow_ops_portfolio.py` **4c2e33e** · `dilution_flag.py` **196aa3f** · `leaderboard.py` **e23ed95** · 이 문서 v5 초안 **4c2e33e**(등록 커밋은 그 다음 커밋). 정식 계산 명령: `python research/shadow_ops_portfolio.py --start 20260917`
    - 독립 재현: 등록 후 첫 코호트가 닫히면(약 2026-11) 외부 구현으로 §1 계산 재현 요청(REQUEST_00x).
 3. 판정: 2027-06 초 1회. 결과는 `VERDICT_2027xxxx_ops.md`.
