@@ -71,11 +71,38 @@ def parse_main_page(html):
     return score, label, target
 
 
+API_HEADERS = {"User-Agent": "Mozilla/5.0", "Referer": "https://m.stock.naver.com/"}
+
+
+def label_from_score(score):
+    """구 페이지 라벨 대응(9/07 스냅샷 실측: 매수 3.5~4.2 · 중립 3.0~3.4 · 매도 2.0). 표시용."""
+    if score is None:
+        return None
+    return "적극매수" if score >= 4.5 else "매수" if score >= 3.5 else "중립" if score >= 2.5 else "비중축소" if score >= 1.5 else "매도"
+
+
 def fetch_one(ticker, session):
-    url = f"https://finance.naver.com/item/main.naver?code={ticker}"
-    r = session.get(url, headers=HEADERS, timeout=10)
-    r.encoding = r.apparent_encoding or "euc-kr"
-    return parse_main_page(r.text)
+    """[2026-09-16] finance.naver.com/item/main.naver 가 stock.naver.com 앱 페이지로 302 되어 표가 사라짐(9/12·9/16 실측).
+    새 페이지가 쓰는 JSON API 의 consensusInfo 를 읽는다: recommMean(의견 평균, 1~5 — 구 점수와 같은 척도, 005930 실측 4.00/4.05)
+    · priceTargetMean(목표주가 평균, 구 값과 동일 487,045) · createDate. 커버리지 없는 종목은 consensusInfo = null(HTTP 200) →
+    '수집 실패'(예외·비JSON)와 '실제 무커버리지'(null)가 구분된다."""
+    url = f"https://m.stock.naver.com/api/stock/{ticker}/integration"
+    r = session.get(url, headers=API_HEADERS, timeout=10)
+    r.raise_for_status()
+    d = r.json()                      # JSON 이 아니면 예외 → 실패로 집계(저장 안 함)
+    ci = d.get("consensusInfo") if isinstance(d, dict) else None
+    if not ci:
+        return None, None, None
+    score = target = None
+    try:
+        score = float(str(ci.get("recommMean")).replace(",", "")) if ci.get("recommMean") not in (None, "") else None
+    except ValueError:
+        score = None
+    try:
+        target = float(str(ci.get("priceTargetMean")).replace(",", "")) if ci.get("priceTargetMean") not in (None, "") else None
+    except ValueError:
+        target = None
+    return score, label_from_score(score), target
 
 
 def load_universe(con):

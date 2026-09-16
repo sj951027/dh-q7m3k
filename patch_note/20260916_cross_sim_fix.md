@@ -39,3 +39,8 @@
 ## 남은 것
 - 40일 보유·집중·순위가중 연구(research/fullscan_20260903/step21_construction.py)의 '매일 비중 재조정' 문제는 별건 — 운영 권고 재검산 항목.
 - 비용 반영본(왕복 0.5%)은 simulate(cost=) 로 계산 가능하나 표시는 아직 비용 0 유지.
+
+## 같은 날 추가 (22:4x) — 컨센서스 수집기 소스 교체
+- 원인 실측: `finance.naver.com/item/main.naver` → `stock.naver.com/domestic/stock/{code}/price` 302, 새 페이지에 '투자의견' 표 없음(수급 크롤링 9/11 사건과 동일).
+- `fetch_consensus.py fetch_one`: 새 페이지의 JSON API `m.stock.naver.com/api/stock/{code}/integration` 의 `consensusInfo`(recommMean·priceTargetMean·createDate)로 교체. 척도·값이 구 페이지와 동일(005930 목표가 487,045 일치, 점수 4.00 vs 9/07 4.05). 라벨은 점수 구간으로 복원(9/07 실측 매수 3.5~4.08 · 중립 3.0~3.33). consensusInfo=null(HTTP 200) = 실제 무커버리지, 예외·비JSON = 실패 → 저장 안 함.
+- 실행은 하지 않음(주간 가드 통과 상태라 09-17 배치가 자동 수집·저장). 커버리지 <20% 실패 감지는 그대로.
