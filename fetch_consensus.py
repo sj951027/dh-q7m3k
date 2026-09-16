@@ -138,6 +138,16 @@ def main():
         if i % 200 == 0:
             print(f"   [{i}/{len(tickers)}] {int(time.time()-t0)}s · 수집 {len(rows)} · 실패 {fail}")
         time.sleep(args.sleep)
+    # [2026-09-16] 수집 실패 감지 — 2026-09-12 스냅샷이 네이버 페이지 구조 변경으로 2,520종목 전부 None 이었는데
+    #   coverage=0 으로 저장돼 "실제 무커버리지"와 구분이 안 됐다. 평소 커버리지는 ~86%(목표주가 기준).
+    #   커버리지가 20% 미만이면 저장하지 않고 실패로 끝낸다(종료 코드 1 → 배치 [WARN]).
+    ncov_pre = sum(r[5] for r in rows)
+    if rows and ncov_pre / len(rows) < 0.20:
+        print(f"⛔ 컨센서스 수집 실패로 판단 — 커버리지 {ncov_pre}/{len(rows)} ({ncov_pre/len(rows):.0%}) < 20%. "
+              f"페이지 구조 변경·차단 의심. 저장하지 않음(다음 주 재시도).")
+        con.close(); raise SystemExit(1)
+    if not rows:
+        print("⛔ 컨센서스 수집 결과 0행 — 저장하지 않음"); con.close(); raise SystemExit(1)
     con.execute("DELETE FROM consensus_daily WHERE date=?", (today,))   # 재실행 안전
     con.executemany("INSERT OR REPLACE INTO consensus_daily VALUES(?,?,?,?,?,?,?)", rows)
     con.commit()

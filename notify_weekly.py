@@ -97,9 +97,11 @@ def build_message():
             tr = cs.get("trailing") or {}
             b5 = (tr.get("bench") or {}).get("r5")
             act_ids = {m["model"] for ms in fams.values() for m in ms}
-            rows = [(r["model"], r["r5"] - b5) for r in tr.get("rows", [])
+            rows = [] if MONEY_HOLD else [(r["model"], r["r5"] - b5) for r in tr.get("rows", [])
                     if r.get("r5") is not None and b5 is not None and r["model"] in act_ids]
             rows.sort(key=lambda x: -x[1])
+            if MONEY_HOLD:
+                lines.append("📈 이번 주 성적(따라사기): 계산 오류 확인(매수 전 하루 수익 포함) — 정정 전까지 표시 보류")
             if rows:
                 lines.append(f"📈 <b>이번 주 성적</b> (상위20 따라사기 · 시장평균 {b5:+.1f}% 대비 · 비용 0)")
                 lines.append("  " + " · ".join(f"{m} {v:+.1f}%p" for m, v in rows))
@@ -181,6 +183,10 @@ def build_message():
     lines.append('🔎 <a href="https://sj951027.github.io/dh-q7m3k/lowvol.html">저변동 종목 보기</a> · '
                  '<a href="https://sj951027.github.io/dh-q7m3k/leaderboard.html">리더보드</a>(v30·다른 모델)')
     return "\n".join(lines)
+
+
+# [2026-09-16] cross_sim 모의계좌 계산 오류(진입 하루 빠름) 정정 전까지 성적 줄 보류 — notify_telegram.MONEY_HOLD 와 동일
+MONEY_HOLD = True
 
 
 def _load_dotenv():

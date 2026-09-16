@@ -14,3 +14,9 @@
 
 ## 검증
 - `build_message()` 미발송 프리뷰: 💰 숫자 없음, 보류 줄 표시. py_compile OK. 점수·판정·DB 무변경.
+
+## 같은 날 추가 (19:3x, 배치 전)
+- `notify_weekly.py`: 주간 리캡 "이번 주 성적" 줄도 같은 보류(`MONEY_HOLD`). `--dry-run` 확인.
+- `fetch_consensus.py`: 수집 실패 감지 — 커버리지 20% 미만 또는 0행이면 저장하지 않고 종료 코드 1(배치 [WARN]). 평소 커버리지 ~86%.
+- `ohlcv.db consensus_daily` 20260912 스냅샷(2,520행 전부 None) 삭제 — 백업 `research/consensus_20260912_failed_snapshot.csv`. 실패 스냅샷이 '무커버리지'로 분석되는 것 방지.
+- `PREREGISTER_ops_adoption.md`(미등록 초안): 관찰 시작일 "20260915" → "등록·동결 완료일 다음 거래일"(소급 금지).
