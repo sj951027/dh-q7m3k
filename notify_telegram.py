@@ -396,10 +396,13 @@ def _model_status_lines_v2():
                    and m["model"] not in SEALED_V2]
 
         # ② 돈 — cross_sim trailing 최근 20거래일 vs 시장평균
+        if MONEY_HOLD:
+            out.append(MONEY_HOLD_LINE)
+        rows_hold = MONEY_HOLD
         try:
             cs = json.loads((HERE / "docs" / "cross_sim.json").read_text(encoding="utf-8"))
             tr = cs.get("trailing") or {}
-            rows = {r["model"]: r for r in tr.get("rows", [])}
+            rows = {} if MONEY_HOLD else {r["model"]: r for r in tr.get("rows", [])}
             b20 = (tr.get("bench") or {}).get("r20")
             money = list(MONEY_MODELS_V2) + [m["model"] for m in wait[:1]]
             mp = []
@@ -488,11 +491,13 @@ def _status_lines_v3():
         soon = wait[0]["model"] if wait else None
 
         # ② 돈 — 공통 잣대(cross_sim) 최근 20거래일 vs 시장. 운용 2개 + 판정 임박 1개만.
+        if MONEY_HOLD:
+            out.append(""); out.append(MONEY_HOLD_LINE)
         #    전부 싣지 않는 이유: 한 달 수익으로 줄 세우기가 되면 트랙 간 비교 금지 원칙과 어긋난다.
         try:
             cs = json.loads((HERE / "docs" / "cross_sim.json").read_text(encoding="utf-8"))
             tr = cs.get("trailing") or {}
-            rows = {r["model"]: r for r in tr.get("rows", [])}
+            rows = {} if MONEY_HOLD else {r["model"]: r for r in tr.get("rows", [])}
             b20 = (tr.get("bench") or {}).get("r20")
             picks = [(LIVE_MODEL_V3, "← 운용 중"), (REF_MODEL_V3, "")]
             if soon and soon not in (LIVE_MODEL_V3, REF_MODEL_V3):
@@ -672,6 +677,11 @@ def _load_dotenv():
     except Exception:
         pass
 
+
+# [2026-09-16] 모의계좌(cross_sim) 계산 오류 확인 — 신호 다음 날(매수 전) 하루 수익을 포함해 과대(연구 문서
+#   research/RESEARCH_cross_sim_entry_lag_20260916.md). build_cross_sim 정정·검증 전까지 💰 줄은 숫자 대신 보류 안내만 보낸다.
+MONEY_HOLD = True
+MONEY_HOLD_LINE = "💰 최근 1개월 따라사기: 계산 오류 확인(매수 전 하루 수익 포함) — 정정 전까지 표시 보류"
 
 def main():
     _load_dotenv()
