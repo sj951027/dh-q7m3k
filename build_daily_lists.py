@@ -20,7 +20,19 @@ MODELS = {
     "v30":  ("v3_scores", "final_score_v3", "grade, bucket", "20260606"),
     "sv_a": ("wu_scores", "wu_score", None, "20260715"),
     "px_a": ("wu_scores", "wu_score", None, "20260810"),
+    # [2026-09-17] 추가 — mom_b 는 9/17 은퇴(적재 중지)라 기록용(마지막 적재일까지). ls_t1 은 점수 테이블이 없어 large_final 에서 합성.
+    "mom_b": ("lowvol_scores", "lowvol_score", None, "20260717"),
+    "ls_t1": ("large_final", None, None, "20260806"),
 }
+
+
+def load_ls_t1(con):
+    """leaderboard.py 와 같은 정의: run 내 1/PER·1/PBR·rim_spread·div_yield 백분위 랭크 평균(결측 제외, 최소 2개). 이름은 large_final.name."""
+    lg = pd.read_sql("SELECT run_id, market, ticker, name, per, pbr, rim_spread, div_yield FROM large_final", con)
+    fz = pd.DataFrame({"ep": 1.0 / lg["per"].where(lg["per"] > 0), "bp": 1.0 / lg["pbr"].where(lg["pbr"] > 0), "rim": lg["rim_spread"], "dv": lg["div_yield"]})
+    rk = fz.groupby(lg["run_id"]).rank(pct=True)
+    lg["score"] = (rk.mean(axis=1, skipna=True).where(rk.notna().sum(axis=1) >= 2) * 100).round(1)
+    return lg.loc[lg.score.notna(), ["run_id", "market", "ticker", "name", "score"]]
 
 
 def main():
@@ -41,8 +53,11 @@ def main():
     except Exception:
         pass
     for model, (tbl, col, extra, reg) in MODELS.items():
-        cols = f"run_id, market, ticker, {col} AS score" + (f", {extra}" if extra else "")
-        S = pd.read_sql(f"SELECT {cols} FROM {tbl} WHERE model_id=?", con, params=(model,))
+        if col is None:
+            S = load_ls_t1(con)
+        else:
+            cols = f"run_id, market, ticker, {col} AS score" + (f", {extra}" if extra else "")
+            S = pd.read_sql(f"SELECT {cols} FROM {tbl} WHERE model_id=?", con, params=(model,))
         if S.empty:
             print(f"  ⏭ {model}: 점수 없음"); continue
         S["ticker"] = S.ticker.astype(str).str.zfill(6); S["run_id"] = S.run_id.astype(str); S["market"] = S.market.str.lower()
@@ -63,7 +78,7 @@ def main():
                     p0 = float(p0) if (p0 is not None and p0 == p0) else None
                     p1 = float(p1) if (p1 is not None and p1 == p1) else None
                     chg = round((p1 / p0 - 1) * 100, 1) if (p0 and p1 and p0 > 0) else None
-                    rows.append({"rank": rank, "ticker": tk, "name": nm.get(tk) or names_cache.get(tk, ""), "market": mk,
+                    rows.append({"rank": rank, "ticker": tk, "name": (getattr(r, "name", None) or nm.get(tk) or names_cache.get(tk, "")), "market": mk,
                                  "score": round(float(r.score), 2) if r.score == r.score else None,
                                  "grade": getattr(r, "grade", None), "bucket": getattr(r, "bucket", None),
                                  "px_then": p0, "px_now": p1, "chg_pct": chg})

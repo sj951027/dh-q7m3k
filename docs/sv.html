@@ -55,6 +55,10 @@
   tr:hover td{background:#1b1f28}
   .score{color:var(--accent);font-weight:700}
   .pos{color:var(--good)} .neg{color:var(--bad)}
+  .dtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center}
+  .dtab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px;color:var(--sub)}
+  .dtab.active{border-color:var(--accent);color:var(--accent)}.dtab.more{color:var(--sub);opacity:.8}
+  .dnote{font-size:12px;color:var(--sub);margin:0 0 8px}
   .v3{color:var(--sub);font-size:11px}
   .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7}
   .loading{padding:40px;text-align:center;color:var(--sub)}
@@ -127,7 +131,10 @@
     <span class="tab" data-mkt="KOSDAQ">KOSDAQ</span>
   </div>
 
-  <div class="filters">
+  <!-- [2026-09-17] 지난 날짜 리스트 탭 (hist/sv_a.json, 표시 전용) -->
+  <div class="dtabs" id="dtabs"></div>
+  <div class="dnote" id="dnote" hidden></div>
+  <div class="filters" id="filters">
     <span class="flabel">필터:</span>
     <span class="fbtn" data-f="top50">top50</span>
     <span class="fbtn" data-f="nearhigh">고점 −10% 이내</span>
@@ -245,6 +252,7 @@ function render(rows){
 }
 
 function load(){
+  curDate=null; document.getElementById('filters').style.display=''; const _n=document.getElementById('dnote'); if(_n) _n.hidden=true;
   fetch('latest_sv.csv?ts='+Date.now())
     .then(r=>{if(!r.ok)throw 0;return r.text()})
     .then(txt=>{
@@ -269,6 +277,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   curMkt = t.dataset.mkt;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x===t));
   sortKey='rank'; sortAsc=true;
+  if(curDate!==null){ renderHist(); return; }
   applyFilters();
 });
 document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
@@ -281,6 +290,35 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
 document.getElementById('foot').innerHTML =
   '※ <b>관측</b> 페이지(§11 판정: 기움 · 9/13) · sv점수 높을수록 공매도비중 상위(매수 아님) · v3·large·lowvol·wu_a 와 별개 관측 모델<br>'+
   '발견은 walk-forward 스캔(post-hoc) — 판정은 첫 적재(2026-08-10) 후 OOS 40거래일(§11, h10 재현 포함) · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
+// ---- [2026-09-17] 지난 날짜 리스트 탭 (당시 동결 점수 · 표시 전용) ----
+let histData=null, curDate=null, showMore=false;
+const HIST_COLS=[['rank','그날 순위'],['market','시장'],['name','종목'],['ticker','코드'],['score','sv점수'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+function fmtD(d){return d? (+d.slice(4,6))+'/'+(+d.slice(6)) : '';}
+function renderDtabs(){
+  const box=document.getElementById('dtabs'); if(!histData){box.innerHTML='';return;}
+  const days=histData.days; const vis=showMore? days : days.slice(0,3);
+  box.innerHTML = vis.map((d,i)=>`<div class="dtab${(curDate===null&&i===0)||curDate===d.date?' active':''}" data-date="${i===0?'':d.date}">${i===0?'오늘('+fmtD(d.date)+')':fmtD(d.date)}</div>`).join('')
+    + (days.length>3? `<div class="dtab more" id="dmore">${showMore?'접기 ▴':'더 보기 ▾ ('+(days.length-3)+'일)'}</div>`:'');
+  box.querySelectorAll('.dtab[data-date]').forEach(t=>t.onclick=()=>{ curDate=t.dataset.date||null; if(curDate===null){load();} else {renderHist();} renderDtabs(); });
+  const m=document.getElementById('dmore'); if(m) m.onclick=()=>{showMore=!showMore; renderDtabs();};
+}
+function renderHist(){
+  const day=histData.days.find(d=>d.date===curDate); if(!day) return;
+  document.getElementById('filters').style.display='none';
+  const note=document.getElementById('dnote'); note.hidden=false;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(sv_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · 관측 모델, 매수신호 아님`;
+  const rows=day.rows.filter(r=>curMkt==='all' || (r.market||'').toUpperCase()===curMkt);
+  const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
+  thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
+  tbody.innerHTML=rows.map(r=>'<tr'+(r.rank<=10?' class="top50row"':'')+'>'+HIST_COLS.map(c=>{
+    const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';
+    if(c[0]==='market') return `<td>${String(v).toUpperCase()}</td>`;
+    if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
+    if(c[0]==='px_then'||c[0]==='px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
+    return `<td>${v}</td>`; }).join('')+'</tr>').join('') || '<tr><td colspan="9" class="loading">이 시장 자료 없음</td></tr>';
+  const fc=document.getElementById('fcount'); if(fc) fc.textContent='';
+}
+fetch('hist/sv_a.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});
 load();
 </script>
 </body>

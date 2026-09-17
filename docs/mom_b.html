@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mom_b — 모멘텀+눌림 (은퇴 · 기록용)</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--txt:#e6e8ec;--sub:#9aa3b2;--accent:#5aa9ff;--good:#2dd4a7;--bad:#f0997b;--warn:#f0b429;--warnbg:#2a230f}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 6px} h1 small{color:var(--sub);font-weight:400;font-size:12px;margin-left:8px}
+  .banner{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin:10px 0 14px;line-height:1.6;font-size:13px}
+  .banner b{color:var(--warn)} .banner a{color:var(--accent)}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer;color:var(--sub)}
+  .tab.active{border-color:var(--accent);color:var(--accent)}
+  .dtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center}
+  .dtab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px;color:var(--sub)}
+  .dtab.active{border-color:var(--accent);color:var(--accent)}.dtab.more{opacity:.8}
+  .dnote{font-size:12px;color:var(--sub);margin:0 0 8px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--sub);position:sticky;top:0;background:var(--bg)} td.nm{text-align:left}
+  .pos{color:var(--good)} .neg{color:var(--bad)} .loading{color:var(--sub);text-align:center;padding:20px}
+  .foot{color:var(--sub);font-size:12px;margin-top:14px;line-height:1.6}
+  @media(max-width:600px){.wrap{padding:10px} th,td{padding:5px 6px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>mom_b — 모멘텀+눌림 <small>저변동 트랙 파생 · 등록 2026-07-17</small></h1>
+  <div class="banner">⛔ <b>판정 완료: 역작동(유의) → 은퇴 (2026-09-17 정본)</b><br>
+    40거래일 OOS에서 점수가 높을수록 이후 20일 수익이 <b>낮았다</b>(순위 실력 IC −0.092, 신뢰구간 전체가 0 아래, 5주 중 양(+)인 주 0, 점수 상위10% −5.2%p). 9/17 배치를 끝으로 새 점수 적재를 멈췄고 기존 행은 보존한다.
+    이 페이지는 <b>그날 화면이 어땠는지 남기는 기록용</b>이다 — 매수신호 아님. 근거: <a href="../VERDICT_20260917_mom_b_qs_a.md">VERDICT_20260917_mom_b_qs_a.md</a> · <a href="leaderboard.html">리더보드</a></div>
+  <div class="tabs"><span class="tab active" data-mkt="kospi">KOSPI</span><span class="tab" data-mkt="kosdaq">KOSDAQ</span></div>
+  <div class="dtabs" id="dtabs"></div>
+  <div class="dnote" id="dnote"></div>
+  <table id="tbl"><thead></thead><tbody><tr><td class="loading" colspan="8">불러오는 중…</td></tr></tbody></table>
+  <div class="foot">※ 당시 동결 점수(history.db lowvol_scores · model_id=mom_b) 기준 시장별 상위 50 · 등락은 그날 종가→최신 종가(ohlcv.db) · 마지막 적재일 이후 새 날짜는 추가되지 않는다 · lowvol.html(lv_b)·mom.html(mom_a)과 별개</div>
+</div>
+<script>
+let hist=null, curMkt='kospi', curDate=null, showMore=false;
+const COLS=[['rank','그날 순위'],['name','종목'],['ticker','코드'],['score','점수'],['px_then','그날 종가'],['px_now','최신 종가'],['chg_pct','이후 등락'],['rank_today','마지막날 순위']];
+const fmtD=d=>d? (+d.slice(4,6))+'/'+(+d.slice(6)) : '';
+function tabs(){
+  const box=document.getElementById('dtabs'); if(!hist){box.innerHTML='';return;}
+  const days=hist.days, vis=showMore?days:days.slice(0,3);
+  box.innerHTML=vis.map((d,i)=>`<div class="dtab${curDate===d.date?' active':''}" data-date="${d.date}">${i===0?'마지막 적재('+fmtD(d.date)+')':fmtD(d.date)}</div>`).join('')
+    +(days.length>3?`<div class="dtab more" id="dmore">${showMore?'접기 ▴':'더 보기 ▾ ('+(days.length-3)+'일)'}</div>`:'');
+  box.querySelectorAll('.dtab[data-date]').forEach(t=>t.onclick=()=>{curDate=t.dataset.date; render(); tabs();});
+  const m=document.getElementById('dmore'); if(m) m.onclick=()=>{showMore=!showMore; tabs();};
+}
+function render(){
+  const day=hist.days.find(d=>d.date===curDate); if(!day) return;
+  document.getElementById('dnote').innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→최신(${fmtD(hist.asof)}) 종가 · '마지막날 순위'는 마지막 적재일(${fmtD(hist.days[0].date)}) 기준 · 기록용`;
+  const rows=day.rows.filter(r=>r.market===curMkt);
+  document.querySelector('#tbl thead').innerHTML='<tr>'+COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
+  document.querySelector('#tbl tbody').innerHTML=rows.map(r=>'<tr>'+COLS.map(c=>{const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';
+    if(c[0]==='name') return `<td class="nm">${v}</td>`;
+    if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
+    if(c[0]==='px_then'||c[0]==='px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
+    return `<td>${v}</td>`;}).join('')+'</tr>').join('') || '<tr><td colspan="8" class="loading">이 시장 자료 없음</td></tr>';
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{curMkt=t.dataset.mkt; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t)); render();});
+fetch('hist/mom_b.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(h=>{hist=h; curDate=h.days.length?h.days[0].date:null; tabs(); render();})
+  .catch(()=>{document.querySelector('#tbl tbody').innerHTML='<tr><td colspan="8" class="loading">데이터 없음 (hist/mom_b.json)</td></tr>';});
+</script>
+</body>
+</html>
