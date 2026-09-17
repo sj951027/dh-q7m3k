@@ -16,11 +16,11 @@
 | lowvol | **lv_b** | 저변동 트랙 선두·표시 기준(lv_a에서 전환 §27-3). **판정 완료 → '기움'** | 20260625 | **판정 2026-08-29** | VERDICT_20260829_lowvol.md |
 | lowvol | lv_a | 저변동+ROE+반전(lv_b 대조·lva.html 표시) — **판정 완료 → '노이즈'**, 적재 유지 | 20260625 | 판정 2026-08-29 | VERDICT_20260829_lowvol.md |
 | lowvol | sm_a | 초소형 유동성 프리미엄 — **판정 완료 → '노이즈'**(적재 유지·가중 0) | 20260627 | **판정 2026-09-01** | VERDICT_20260901_sm_a.md |
-| lowvol | mom_a / mom_b | 모멘텀 대조(표시 별도) / mom_a+눌림목. mom_a 판정 완료 → '노이즈' | 20260627 / 0717 | 판정 완료 / 9월 중 | PREREGISTER_mom_b.md |
+| lowvol | mom_a / mom_b | 모멘텀 대조(표시 별도) / mom_a+눌림목. mom_a 판정 완료 → '노이즈' · **mom_b 판정 완료 9/17 → 역작동(유의)·은퇴** | 20260627 / 0717 | 판정 완료 / 판정 완료 | PREREGISTER_mom_b.md · VERDICT_20260917_mom_b_qs_a.md |
 | lowvol | **lv_e** | lv_b + to20(저회전) — **등록 완료**(spec_hash 1774127f89ef, 분모 10→11) | **20260901** | 40거래일 ≈ 10월 말 | PREREGISTER_lv_e.md |
 | wu | **sv_a** | 공매도비중 단독 — **§11 판정 완료 9/13: 기움**(채택 아님, wu 표시 기준). 재판정: 상승장 앵커 ≥15 또는 OOS 80 | 20260715 | 판정 완료(9/13) | VERDICT_20260913_wu_sv_le.md |
 | wu | le_a | 저점탈출+OBV+유동성 — **§11 판정 완료 9/13: 노이즈**(적재 유지·가중 0·표시 없음) | 20260715 | 판정 완료(9/13) | VERDICT_20260913_wu_sv_le.md |
-| wu | qs_a | 조용한 강자(저변동+52주고+저거래대금) | 20260723 | ~9월 말 | PREREGISTER_qs.md |
+| wu | qs_a | 조용한 강자(저변동+52주고+저거래대금) — **판정 완료 9/17 → 노이즈**(적재 유지·가중 0; 상승 국면 +0.043 관측만) | 20260723 | 판정 완료 | PREREGISTER_qs.md · VERDICT_20260917_mom_b_qs_a.md |
 | wu | **sv_b** | sv_a + crb5(신용잔고비율) — **등록 완료 2026-09-13**(분모 6→7). 짝비교 sv_a 대비 필수(사전등록 §2) | **20260914** | 등록 + 40거래일 | PREREGISTER_sv_b.md |
 | v3 | **v30 (2차 창 W2b)** | 8/09 유의가 첫 13앵커(급락→반등)에 의존 → 판정 후 OOS로 재판정. 스펙·분모 불변 | 20260810(창 시작) | **~10/07** | PREREGISTER_v30_w2.md |
 | wu | **px_a** | 가격4팩터(lv60+to20+lv20+nh252) — 3년 walk-forward+lv_b 짝비교 근거 | 20260810(첫적재) | **~10월 초** | PREREGISTER_px_a.md |
@@ -38,6 +38,7 @@
 | lowvol | lv_d·hv_a | 2026-09-04 | 역작동 | VERDICT_20260829_lowvol.md |
 | lowvol | lv_a3·lv_short | 2026-09-04 | 노이즈 — lv_a 변형(유니버스 상한 60 / 공매도 보조)으로 대조 역할 종료, 표시 미사용 | VERDICT_20260829_lowvol.md |
 | wu | wu_a·wu_b | 2026-09-04 | 역작동(유의) 기각 | VERDICT_20260901_wu.md |
+| lowvol | mom_b | 2026-09-17 | 역작동(Bonferroni CI까지 음수, 주별 양 0%, 전 국면 음수) | VERDICT_20260917_mom_b_qs_a.md |
 
 - 메커니즘: v3 = v3_rescore.RETIRED(섀도우·동결 중지) · lowvol = lowvol_score.RETIRED · wu = wu_score.RETIRED
   (신규 run 적재만 중지, `--full`/`--run` 재적재도 은퇴 행은 안 지움). 리더보드는 leaderboard.json의

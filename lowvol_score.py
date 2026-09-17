@@ -149,7 +149,8 @@ MODELS = {
 #   lv_c·lv_d(낙폭 대조, 8/29 판정 노이즈·역작동) · lv_a3(lv_a 유니버스 변형, 역작동) ·
 #   lv_short(공매도 보조, 노이즈) · hv_a(고변동 대척, 역작동). 근거: VERDICT_20260829_lowvol.md,
 #   patch_note/20260904_retire7.md.
-RETIRED = {"lv_c", "lv_d", "lv_a3", "lv_short", "hv_a"}
+#   [2026-09-17] mom_b 역작동(유의)·은퇴 — VERDICT_20260917_mom_b_qs_a.md (기존 행 보존, 분모 11 불변).
+RETIRED = {"lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "mom_b"}
 
 def spec_hash(model_id):
     """모델별 spec_hash. 원본 모델은 변형 추가와 무관하게 항상 동일 해시.
