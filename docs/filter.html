@@ -845,7 +845,7 @@ function renderHistV3(){
   document.getElementById('mainContent').style.display = 'none';
   const panel = document.getElementById('histPanel'); panel.hidden = false;
   const rows = day.rows.filter(r => r.market === window.curMktV3);
-  document.getElementById('dnote').innerHTML = `📅 <b>${fmtDV3(day.date)}</b> ${window.curMktV3.toUpperCase()} 리스트 — 당시 동결 점수(V3점수) 기준 상위 ${rows.length} · 등락은 그날 종가→오늘(${fmtDV3(histV3.asof)}) 종가 · 표시 전용, 매수신호 아님 · 상위 10 행은 옅은 배경`;
+  document.getElementById('dnote').innerHTML = `📅 <b>${fmtDV3(day.date)}</b> ${window.curMktV3.toUpperCase()} 리스트 — 당시 동결 점수(V3점수) 기준 상위 ${rows.length} · 등락은 그날 종가→오늘(${fmtDV3(histV3.asof)}) 종가 · 표시 전용, 매수신호 아님 · 상위 10 행은 옅은 배경 · '—' = 가격 자료 없음`;
   document.getElementById('histHead').innerHTML = '<tr>' + HIST_COLS_V3.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
   document.getElementById('histBody').innerHTML = rows.map(r => '<tr' + (r.rank <= 10 ? ' class="r10"' : '') + '>' + HIST_COLS_V3.map(c => {
     const v = r[c[0]]; if (v === null || v === undefined || v === '') return '<td>—</td>';

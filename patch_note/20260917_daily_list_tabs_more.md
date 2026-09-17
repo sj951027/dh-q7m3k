@@ -26,3 +26,25 @@
 ## 영향 범위 / 남은 것
 - 표시 전용. 배치는 이미 `build_daily_lists.py` 를 돌리므로 9/18부터 6개 JSON 자동 갱신(mom_b 는 새 행 없음 → 같은 10일 유지).
 - px.html 탭은 아직(요청 시). 리더보드 개편·운용 채택 관찰 표시는 별건 대기.
+
+## 전체 점검 (같은 밤 2차 · 사용자 요청 "문제 없는지 꼼꼼하게")
+점검 항목과 결과(실측):
+| 항목 | 결과 |
+|---|---|
+| 콘솔 오류 | sv·ls_t1·mom_b 세 페이지 모두 0 (로컬 http.server) |
+| 더 보기 | sv 에서 10일 전부 펼침·접기 동작(9/17~9/4) |
+| 휴대폰 폭 | mom_b 375px 에뮬: 가로 스크롤 없음, 탭 2줄로 줄바꿈 |
+| JSON 6개 | 모두 10일 · 시장별 50행 · 종목명 누락 0 · 시장값 kospi/kosdaq 소문자 통일 |
+| large_final | run 당 (run_id, ticker) 중복 0 · 시장 kospi 326/kosdaq 174 |
+| 배치 배선 | `.bat` 113~114행에 build_daily_lists 호출·FAILED 수집 있음. push 는 `run_and_diversify.git_push()` 가 `docs/` 통째로 add → hist/*.json·mom_b.html 자동 포함 |
+| 생성 HTML | `_large_test.html` 미치환 `{{` 0 |
+
+고친 것(2차):
+- `docs/mom_b.html` 의 `../VERDICT_…md` 링크 제거 → 파일명만 표기. GitHub Pages 루트가 `docs/` 라 저장소 루트 문서는 404 가 났을 것(다른 페이지도 전부 파일명만 적는 관례).
+- `docs/sv.html` 과거 탭에서 상위 10 강조(top50row) 제거 — 과거 탭 50행은 전부 top50 바스켓이라 강조가 의미 없고, 유도 금지 원칙(색 강조 없음)에도 어긋남.
+- 과거 탭 안내문 5곳(lowvol·filter·sv·ls_t1·mom_b)에 **'—' = 가격 자료 없음** 범례 추가. ls_t1 은 "품질게이트·플래그 필터 미적용"도 명시(오늘 표는 필터 적용, 과거 표는 원 랭크).
+
+발견했지만 **안 고친 것**(사용자 결정 필요 · 수집기/유니버스 변경이라 이 세션 범위 밖):
+- 과거 탭에서 그날 종가·등락이 '—' 인 행이 있다: lv_b 9/17 100행 중 10, mom_b 8, **ls_t1 24**, v30 1~2, sv_a·px_a 0. 원인은 `universe_ohlcv.py get_universe()` 가 FDR Market 이 정확히 KOSPI/KOSDAQ 인 **숫자 6자리 코드만** 담아서, 코스닥 글로벌(Market='KOSDAQ GLOBAL' — 에코프로·에코프로비엠·JYP Ent.·SOOP·클래시스·HK이노엔·솔브레인홀딩스·하림지주·피엔티 등 약 50종목)과 영문 섞인 신규 코드(0088M0 메쥬 등 약 81종목)가 ohlcv.db `daily_ohlcv` 에 **한 행도 없다**. 이미 9/11 `kis_flows.py` 주석에 같은 사실이 적혀 있고, 그때 "시세 유니버스는 별건(lowvol/wu 모델 유니버스가 바뀜)"으로 미룬 상태.
+- 규모(9/17 실측): stage3_final 713 중 21종목(3%), large_final 500 중 51종목(10%) 이 ohlcv 에 없음. **lv_b KOSDAQ 오늘 상위 10 중 3종목(JYP Ent.·SOOP·클래시스)** 이 여기 해당 → 리더보드 IC·따라사기·운용 채택 관찰(shadow_ops)에서도 이 종목들은 가격이 없어 조용히 빠진다(표시 문제가 아니라 데이터 커버리지 문제).
+- 선택지: (a) `universe_ohlcv.py` 에 KOSDAQ GLOBAL·영문코드 포함 + 백필(수집기 실행은 사용자) — 단 lowvol/wu 유니버스가 넓어지므로 판정 중 모델에 미치는 영향을 먼저 재고 0-diff 여부 확인 필요. (b) 리더보드·shadow_ops 는 그대로 두고 표시만 stage3_final.price 로 보충(등락은 여전히 계산 불가). 결정 전까지는 '—' 범례로 둔다.

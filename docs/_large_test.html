@@ -55,7 +55,7 @@
   function today(){ $("fbar").style.display=''; $("mainWrap").hidden=false; $("histPanel").hidden=true; $("dnote").hidden=true; }
   function past(){ const day=hist.days.find(d=>d.date===curDate); if(!day) return;
     $("fbar").style.display='none'; $("mainWrap").hidden=true; $("histPanel").hidden=false; const n=$("dnote"); n.hidden=false;
-    n.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 large_final 로 계산한 ls_t1 랭크(리더보드와 같은 정의) 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(hist.asof)}) 종가 · 테스트 모델, 매수신호 아님`;
+    n.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 large_final 로 계산한 ls_t1 랭크(리더보드와 같은 정의) 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(hist.asof)}) 종가 · 품질게이트·플래그 필터 미적용 · '—' = 가격 자료 없음 · 테스트 모델, 매수신호 아님`;
     $("histHead").innerHTML='<tr>'+COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
     $("histBody").innerHTML=day.rows.map(r=>'<tr>'+COLS.map(c=>{ const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';
       if(c[0]==='market') return `<td>${String(v).toUpperCase()}</td>`; if(c[0]==='name') return `<td class=nm>${v}</td>`;

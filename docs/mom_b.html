@@ -31,7 +31,7 @@
   <h1>mom_b — 모멘텀+눌림 <small>저변동 트랙 파생 · 등록 2026-07-17</small></h1>
   <div class="banner">⛔ <b>판정 완료: 역작동(유의) → 은퇴 (2026-09-17 정본)</b><br>
     40거래일 OOS에서 점수가 높을수록 이후 20일 수익이 <b>낮았다</b>(순위 실력 IC −0.092, 신뢰구간 전체가 0 아래, 5주 중 양(+)인 주 0, 점수 상위10% −5.2%p). 9/17 배치를 끝으로 새 점수 적재를 멈췄고 기존 행은 보존한다.
-    이 페이지는 <b>그날 화면이 어땠는지 남기는 기록용</b>이다 — 매수신호 아님. 근거: <a href="../VERDICT_20260917_mom_b_qs_a.md">VERDICT_20260917_mom_b_qs_a.md</a> · <a href="leaderboard.html">리더보드</a></div>
+    이 페이지는 <b>그날 화면이 어땠는지 남기는 기록용</b>이다 — 매수신호 아님. 근거 문서: VERDICT_20260917_mom_b_qs_a.md(저장소) · <a href="leaderboard.html">리더보드</a></div>
   <div class="tabs"><span class="tab active" data-mkt="kospi">KOSPI</span><span class="tab" data-mkt="kosdaq">KOSDAQ</span></div>
   <div class="dtabs" id="dtabs"></div>
   <div class="dnote" id="dnote"></div>
@@ -52,7 +52,7 @@ function tabs(){
 }
 function render(){
   const day=hist.days.find(d=>d.date===curDate); if(!day) return;
-  document.getElementById('dnote').innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→최신(${fmtD(hist.asof)}) 종가 · '마지막날 순위'는 마지막 적재일(${fmtD(hist.days[0].date)}) 기준 · 기록용`;
+  document.getElementById('dnote').innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→최신(${fmtD(hist.asof)}) 종가 · '마지막날 순위'는 마지막 적재일(${fmtD(hist.days[0].date)}) 기준 · '—' = 가격 자료 없음 · 기록용`;
   const rows=day.rows.filter(r=>r.market===curMkt);
   document.querySelector('#tbl thead').innerHTML='<tr>'+COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
   document.querySelector('#tbl tbody').innerHTML=rows.map(r=>'<tr>'+COLS.map(c=>{const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';

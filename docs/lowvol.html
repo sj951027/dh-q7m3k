@@ -332,7 +332,7 @@ function renderHist(){
   const day=histData.days.find(d=>d.date===curDate); if(!day) return;
   document.getElementById('filters').style.display='none';
   const note=document.getElementById('dnote'); note.hidden=false;
-  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · 표시 전용, 매수신호 아님`;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 표시 전용, 매수신호 아님`;
   const rows=day.rows.filter(r=>r.market===curMkt);
   const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
   thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';

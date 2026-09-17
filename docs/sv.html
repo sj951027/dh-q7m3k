@@ -306,11 +306,11 @@ function renderHist(){
   const day=histData.days.find(d=>d.date===curDate); if(!day) return;
   document.getElementById('filters').style.display='none';
   const note=document.getElementById('dnote'); note.hidden=false;
-  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(sv_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · 관측 모델, 매수신호 아님`;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(sv_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 관측 모델, 매수신호 아님`;
   const rows=day.rows.filter(r=>curMkt==='all' || (r.market||'').toUpperCase()===curMkt);
   const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
   thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
-  tbody.innerHTML=rows.map(r=>'<tr'+(r.rank<=10?' class="top50row"':'')+'>'+HIST_COLS.map(c=>{
+  tbody.innerHTML=rows.map(r=>'<tr>'+HIST_COLS.map(c=>{
     const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';
     if(c[0]==='market') return `<td>${String(v).toUpperCase()}</td>`;
     if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
