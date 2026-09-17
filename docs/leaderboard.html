@@ -1,464 +1,123 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>모델 리더보드 · 판정 현황</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모델 리더보드 — 40일 보유 기준 성적표</title>
 <style>
-  :root{
-    --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
-    --accent:#2dd4a7; --warn:#f0b429; --warnbg:#2a230f; --good:#2dd4a7; --bad:#f0997b; --acc2:#7aa2ff;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
-    font-size:14px;line-height:1.5}
-  .wrap{max-width:1180px;margin:0 auto;padding:16px}
-  h1{font-size:18px;margin:0 0 4px}
-  h2{font-size:15px;margin:22px 0 6px}
-  .sub{color:var(--sub);font-size:12px;margin-bottom:12px}
-  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12.5px}
-  .warn b{color:var(--warn)}
-  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-bottom:14px;font-size:12.5px}
-  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;list-style:none;user-select:none}
-  .explain summary::-webkit-details-marker{display:none}
-  .explain-body{padding:0 0 12px}
-  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
-  .explain-body b{color:var(--txt)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;overflow-x:auto}
-  .howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-  .howto div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#c9cfda}
-  .howto b{display:block;color:var(--acc2);margin-bottom:3px}
-  table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
-  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
-  th{color:var(--sub);font-weight:600;position:sticky;top:0;background:var(--card)}
-  th:nth-child(1),td:nth-child(1),th:nth-child(2),td:nth-child(2){text-align:left}
-  table.easy th,table.easy td{text-align:left}
-  table.easy .num{text-align:right;font-variant-numeric:tabular-nums}
-  tr:hover td{background:#1c2029}
-  .pos{color:var(--good)} .neg{color:var(--bad)} .na{color:var(--sub)}
-  .badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11.5px;font-weight:600}
-  .b-noise{background:#242a35;color:#9aa3b2} .b-lean{background:#2a230f;color:var(--warn)}
-  .b-sig{background:#0f2a22;color:var(--good)} .b-nm{background:#242a35;color:#6b7484} .b-rev{background:#2a1712;color:var(--bad)}
-  .why{color:var(--sub);font-size:11px} .track{color:var(--sub);font-size:11.5px} .ci{color:#b8c0cd;font-size:11.5px}
-  .foot{color:var(--sub);font-size:11.5px;margin-top:4px}
-  .err{color:var(--bad);padding:20px;text-align:center}
-  .tr{color:var(--sub);font-size:11.5px;white-space:normal}
-  #active td:last-child,#done td:last-child{min-width:300px}
-  .bar{height:8px;background:#2a3040;border-radius:4px;overflow:hidden;width:100px;display:inline-block;vertical-align:middle;margin-right:6px}
-  .bar i{display:block;height:100%;background:var(--acc2)} .bar.done i{background:var(--good)}
-  .dots{letter-spacing:2px;font-size:12px} .dots.c3{color:var(--good)} .dots.c2{color:var(--warn)} .dots.c1{color:var(--sub)}
-  .star{color:var(--warn);font-size:12px;margin-left:3px}
-  a{color:inherit} a:hover{color:var(--accent)}
-  details.sec{margin-top:12px} details.sec>summary{cursor:pointer;font-size:12.5px;color:var(--sub);padding:4px 0}
-  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub)}
-  @media(max-width:800px){.howto{grid-template-columns:1fr}.bar{width:60px}}
+  :root{--bg:#f6f7fb;--card:#fff;--line:#e3e6ee;--txt:#1d2333;--sub:#6b7386;--blue:#2f5fd8;--soft:#eef3ff;--good:#1a8f5a;--bad:#c9403a;--warn:#8a6d1a;--warnbg:#fff7dc}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 40px}
+  .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;color:var(--sub);font-size:12px}
+  .top a{color:var(--blue);text-decoration:none}
+  .tag{background:var(--soft);color:var(--blue);border-radius:6px;padding:2px 8px;font-size:12px}
+  h1{font-size:22px;margin:10px 0 2px} .sub{color:var(--sub);margin:0 0 14px}
+  .lead{background:var(--card);border-left:4px solid var(--blue);border-radius:8px;padding:12px 16px;margin:0 0 14px;font-size:16px}
+  .lead small{display:block;color:var(--sub);font-size:12.5px;margin-top:4px}
+  .cond{font-size:12.5px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;overflow-x:auto}
+  .card h2{font-size:15px;margin:0 0 2px} .card .h{color:var(--sub);font-size:12px;margin-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  table{border-collapse:collapse;width:100%;min-width:640px} th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:top}
+  th{color:var(--sub);font-weight:500;font-size:12px} td.l,th.l{text-align:left}
+  td.wrap{white-space:normal;min-width:150px;max-width:260px} tr.det td{white-space:normal;text-align:left;background:#fafbfe;color:var(--sub);font-size:12px;padding:6px 10px 10px}
+  tr.main{cursor:pointer} .more{color:var(--blue);font-size:11px;margin-left:4px}
+  td.l a{color:var(--blue);text-decoration:none;border-bottom:1px dotted var(--blue)}
+  .mid{font-weight:700;font-size:15px} .pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--sub)} .small{font-size:11.5px;color:var(--sub)}
+  .role{display:inline-block;font-size:11px;border:1px solid #ccc;border-radius:5px;padding:0 5px;margin-left:4px;color:#999}
+  .lab{font-size:12.5px} .lab b{font-weight:600}
+  .wait{color:var(--warn);background:var(--warnbg);border-radius:5px;padding:1px 6px;font-size:12px}
+  details{margin:8px 0} summary{cursor:pointer;color:var(--blue);font-size:13px}
+  .foot{color:var(--sub);font-size:12px;margin-top:10px;line-height:1.6} .foot a{color:var(--blue)}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0} .links a{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--txt);text-decoration:none;font-size:13px}
+  .loading{color:var(--sub);text-align:center;padding:20px}
+  @media(max-width:700px){.wrap{padding:12px 10px} th,td{padding:7px 5px;font-size:12px} .mid{font-size:14px} h1{font-size:19px}}
 </style>
 </head>
-<body>
-<div class="wrap">
-  <h1>📊 모델 리더보드</h1>
-  <!-- [2026-09-18] 새 첫 화면(모델 성적표) 안내 -->
-  <div style="background:var(--card);border:1px solid var(--accent,#5aa9ff);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13.5px">📋 <a href="scoreboard.html" style="color:var(--accent,#5aa9ff);font-weight:600">모델 성적표(새 첫 화면)</a> — 매일 상위 10을 사서 40거래일 들고 있었다면, 시장 평균보다 얼마나 더 벌었나. 이 페이지는 순위 실력(IC)·따라사기·검증 자료 전체.</div>
-  <div class="sub" id="meta">leaderboard.json 로딩 중…</div>
-  <!-- [2026-09-04] 2안(쉬운 버전) 이식 — 표시 전용. 점수·판정 계산은 leaderboard.py(json) 그대로. -->
-  <div id="summary" style="display:none;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:12px;line-height:1.9"></div>
+<body><div class="wrap">
+  <div class="top"><span>SCREENER / 모델 성적표 · <a href="leaderboard_full.html">검증 자료 전체(리더보드) →</a></span><span class="tag" id="asof">불러오는 중…</span></div>
+  <h1>매일 상위 10을 사서 40거래일 들고 있었다면</h1>
+  <p class="sub">모델이 등록된 날부터 매 거래일, 그날 리스트의 시장별 상위 10 종목을 같은 금액씩 다음날 종가에 사서 40거래일 뒤 종가에 판 결과. 비교는 <b>같은 시장 아무 종목이나 같은 방식으로 산 평균</b>. 모델 이름을 누르면 그 모델의 오늘 리스트(지난 날짜 탭 포함)로 갑니다.</p>
+  <div class="lead" id="lead"><span class="loading">불러오는 중…</span></div>
+  <div class="cond" id="cond"></div>
 
-  <div class="howto">
-    <div><b>① 돈 — 최근 성적</b>모델 상위 20개를 그대로 따라 샀을 때 얼마였나. 수수료 0, 관측 전용. "얼마나 벌었나"는 여기.</div>
-    <div><b>② 확신 — 판정</b>20일 뒤 시장보다 얼마나 앞섰는지(%p)와, 그게 우연이 아닌지. "믿어도 되나"는 여기. 40거래일이 차야 판정.</div>
-    <div><b>순위 정확도(IC)</b>유니버스 전체 순위를 얼마나 맞혔나. 숫자가 작아 보여도 정상 — <b>IC 0.01 ≈ 20일 시장초과 +0.3%p</b>(2026-09-03 실측, 22모델 상관 0.81).</div>
+  <div class="card">
+    <h2>트랙 A · 과매도 / 저변동 / 전체종목</h2>
+    <div class="h"><span>수익은 평균(%) · 더 번 수익은 %p · 이긴 날은 매수일 중 비율 · 매수한 날 괄호는 40일 묶음 수 · 행을 누르면 검증 창과 지금 흐름</span><span>정렬: 시장보다 더 번 수익</span></div>
+    <table id="tblA"><thead><tr>
+      <th class="l">모델</th><th>40일 수익</th><th>시장 평균</th><th>시장보다<br>더 번 수익</th><th>중앙값</th><th>시장을<br>이긴 날</th><th>매수한<br>날</th><th class="l">검증 결론</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <h2>트랙 B · 대형 가치 (별도 유니버스 — 트랙 A 와 숫자 비교 금지)</h2>
+    <div class="h"><span>비교 = 그날 대형 후보군(large_final 전체) 평균</span></div>
+    <table id="tblB"><thead><tr>
+      <th class="l">모델</th><th>40일 수익</th><th>후보군 평균</th><th>후보군보다<br>더 번 수익</th><th>중앙값</th><th>이긴 날</th><th>매수한<br>날</th><th class="l">검증 결론</th>
+    </tr></thead><tbody></tbody></table>
   </div>
 
-  <h2>① 돈 — 최근 성적 <span class="track">(상위20 따라사기 · 전날 저녁 선정 → 다음 날 종가 매수 → 그 다음 날부터 수익 · 수수료 0 · ~<span id="asof2"></span>)</span></h2>
-  <div class="foot" style="margin-top:0"><b>정정(2026-09-16)</b> — 이 표의 계산을 고쳤습니다: 전날 저녁 신호 → <b>다음 날 종가 매수 → 그 다음 날부터 수익</b>, 신호 없는 날은 보유 유지, 못 사는 종목 몫은 현금, 수량 고정. 종전 계산은 매수 전 하루 수익을 포함해 과대였습니다(9/15 이전 알림·페이지 수치는 무효). 근거: patch_note/20260916_cross_sim_fix.md</div>
-  <div class="card"><table class="easy" id="money"><thead><tr><th>모델</th><th class="num">어제</th><th class="num">1주</th><th class="num">1개월</th><th class="num">1개월 시장대비</th><th class="num">등록 후 전체</th><th class="num">최대낙폭</th><th>한 줄</th></tr></thead><tbody><tr><td colspan="8" class="err">로딩 중…</td></tr></tbody></table>
-  <div class="foot">시작일이 달라 '등록 후 전체'는 모델끼리 직접 비교 금지. 어제/1주/1개월 열은 같은 기간이라 비교 가능. 짧은 기간일수록 운의 비중이 큼 — 서열·채택 판단은 ② 판정이 정본. 대형밸류 ls_t1 은 유니버스(시총 상위 500)가 달라 '시장대비'는 참고만(전종목 평균은 소형주 비중이 큼). 등록 20일 미만 모델은 '창을 못 채움'. 데이터: cross_sim.json</div></div>
-
-  <h2>② 확신 — 판정 진행 <span class="track">(현역만 · h=20d 주지표 · 데이터: leaderboard.json)</span></h2>
-  <div class="warn" id="rulebox"><b>§11 판정 규칙</b> — OOS 40거래일 미만은 숫자가 좋아 보여도 무조건 <b>노이즈</b>(표본 부족 기본값). 트랙 간 IC 절대값 비교 금지(유니버스가 다름). 판정 정본은 VERDICT 문서 — 이 표의 라벨은 자동 계산 참고값이고, '상태' 칸의 정본 판정이 우선.</div>
-  <div class="card"><table class="easy" id="active"><thead><tr><th>모델</th><th>트랙</th><th>판정까지</th><th class="num">20일 뒤 시장보다</th><th class="num">이긴 비율</th><th class="num">순위 정확도 IC</th><th>확신</th><th>상태</th><th>한 줄 번역</th></tr></thead><tbody><tr><td colspan="9" class="err">로딩 중…</td></tr></tbody></table>
-  <div class="foot">확신: ●●● = 95% 구간이 0 위(우연 아님) · ●● = 평균은 양(+)인데 구간이 0을 걸침(기움) · ● = 아직 40일 미만(노이즈가 기본값). ★ = 화면 표시 기준 모델. 상태의 '정본'은 VERDICT 문서에서 봉인한 판정 — 이후 표본이 더 쌓여 지금 IC·라벨이 달라져도 결정은 정본으로.</div>
-  <details class="sec"><summary>판정 끝난 모델 (노이즈·역작동 — 적재는 유지, 가중 0) 펼치기</summary><table class="easy" id="done"><thead><tr><th>모델</th><th>트랙</th><th class="num">20일 뒤 시장보다</th><th class="num">IC</th><th>정본 판정</th><th>한 줄</th></tr></thead><tbody></tbody></table></details>
-  <details class="sec"><summary id="retsum">은퇴 모델 (적재 중지·행 보존) 펼치기</summary><table class="easy" id="retired"><thead><tr><th>모델</th><th>트랙</th><th class="num">20일 뒤 시장보다</th><th class="num">IC</th><th>비고</th></tr></thead><tbody></tbody></table></details>
-  <div class="foot" id="gates"></div></div>
-
-  <details class="sec"><summary>🔎 자세히 보기 — 원본 전체 컬럼 (h1·h3·h5·h10·h20 IC · 95%CI · 초과 · h5 추이 · 사유)</summary>
-  <div class="card"><table id="tbl"><thead><tr><th>트랙</th><th>모델</th><th>등록일</th><th>OOS</th><th>h1 IC</th><th>h3 IC</th><th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th><th>h5 추이</th><th>h10 IC</th><th>h20 IC</th><th>n</th><th>h20 95%CI</th><th>h20 초과%p</th><th>판정(자동)</th><th>사유</th></tr></thead>
-  <tbody id="tbody"><tr><td colspan="18" class="err">로딩 중…</td></tr></tbody></table></div></details>
-
-  <details class="sec">
-  <summary>📖 이 표 읽는 법 — 쉬운 설명 (처음이면 꼭 한 번 읽기)</summary><div class="explain" style="padding:0 14px">
-    
-    <div class="explain-body">
-      <p><b>이 표는 뭐냐</b> — 우리 스크리너 모델들이 "어떤 종목이 더 오를지"를 얼마나 잘
-        맞히고 있는지 매일 채점한 성적표다. 모델마다 매일 종목에 점수를 매기고, 며칠 뒤
-        실제 수익률과 비교해서 채점한다.</p>
-
-      <p><b>IC = 순서 맞히기 점수</b> — 시험 전에 반 학생들의 등수를 예측하고, 시험 후 실제
-        등수와 비교한다고 생각하면 된다. 완벽히 맞히면 +1, 아무렇게나 찍은 것과 같으면 0,
-        완전히 거꾸로면 -1. 주식은 원래 예측이 거의 안 되는 동네라 기준이 낮다:
-        <b>+0.05면 프로가 돈 버는 수준, +0.1이면 강함, +0.2는 "계속되면 세계 최고"급</b>
-        (= 보통은 운이거나 표본이 적어서 그런 것).
-        ⚠️ IC는 "돈을 벌었나"가 아니라 "순서를 맞혔나"다 — 시장이 다 빠져도 덜 빠질 종목을
-        잘 골랐으면 IC는 높게 나온다.</p>
-
-      <p><b>h1 · h3 · h5 · h10 · h20 = 며칠 뒤에 채점했나</b> — h5는 점수 매기고 5거래일(1주) 뒤,
-        h20은 20거래일(약 한 달) 뒤 수익으로 채점한 것. <b>공식 판정은 h20 하나로만 한다.</b>
-        h1·h3·h10은 참고용이다: 짧을수록 채점이 빨리 되니까 새 모델도 숫자가 일찍 보이지만,
-        그만큼 우연에 많이 흔들린다.</p>
-
-      <p><b>n = 채점이 끝난 날 수</b> — h20의 n이 13이면 "20일 뒤 결과까지 나와서 채점 완료된
-        날이 13일"이라는 뜻. 최근 한 달 치는 아직 '20일 뒤'가 안 와서 채점 대기 중이라 n에
-        안 들어간다. n이 작을수록 숫자를 믿으면 안 된다.</p>
-
-      <p><b>OOS = 진짜 시험 본 날 수</b> — 모델 규칙을 확정(등록)한 날 이후부터 센 거래일 수.
-        등록 전 과거 데이터로 채점하면 "답안지를 보고 문제를 만든" 셈이라 전부 제외한다.
-        <b>40일을 채워야 판정 자격</b>이 생긴다. 지금 대부분 모델이 40일 미만이라 판정이
-        전부 '노이즈'인 것.</p>
-
-      <p><b>95%CI = 진짜 실력이 있을 법한 범위</b> — 지금 IC가 +0.19여도 그건 "이번 시험들
-        평균"일 뿐이다. 운을 감안하면 진짜 실력은 이 범위 안 어딘가라는 뜻.
-        [+0.17, +0.21]처럼 <b>범위 전체가 0보다 위에 있어야</b> "우연이 아니다"라고 말할
-        최소 요건이 된다. 범위가 0을 걸치면 아직 운인지 실력인지 모른다는 것.</p>
-
-      <p><b>초과%p = 시장보다 얼마나 좋았나</b> — "그 모델이 1등~20등으로 꼽은 종목을
-        샀으면, 같은 유니버스의 중간 종목 대비 몇 %p 더 벌었나(덜 잃었나)".
-        예: h20 초과 +3.8이면 상위 20종목이 한 달간 시장 중간보다 3.8%p 앞섰다는 뜻.
-        마우스를 올리면 CI와 n이 보인다.
-        ⚠️ 시장 전체가 -10% 빠진 달이면 초과 +3.8%p여도 계좌는 약 -6%다 —
-        이 숫자는 "종목 고르기 실력"이지 "수익 보장"이 아니다.</p>
-
-      <p><b>판정 = 최종 결론 라벨</b> —
-        <span class="badge b-noise">노이즈</span> 아직 표본 부족이거나 실력 증거 없음(기본값) ·
-        <span class="badge b-lean">기움</span> 좋아 보이지만 확신엔 부족 ·
-        <span class="badge b-sig">유의</span> 40일 채우고 통계 관문 전부 통과(진짜 실력 인정) ·
-        <span class="badge b-rev">역작동</span> 점수가 거꾸로 작동(높은 점수가 더 떨어짐).
-        숫자가 아무리 좋아도 OOS 40일 전엔 무조건 '노이즈'다 — 시험 몇 번 잘 봤다고
-        천재라고 하지 않는 것과 같다.</p>
-
-      <p><b>트랙 = 모델이 뛰는 리그</b> — v3(과매도 중소형주) · lowvol(저변동) ·
-        wu(전체 종목)는 고르는 종목 풀 자체가 다르다. 반이 다르면 등수 비교가 무의미하듯,
-        <b>트랙이 다른 모델끼리 IC 크기를 직접 비교하면 안 된다.</b> 같은 트랙 안에서만 비교.
-        트랙을 건너 비교하고 싶으면 아래 <b>💼 공통 잣대 모의계좌</b>(같은 기간·같은 규칙·
-        같은 벤치마크)를 볼 것.</p>
-
-      <p><b>❓ IC는 낮은데 모의계좌 수익이 더 높은 모델이 있다?</b> (예: lv_a vs lv_b) —
-        모순이 아니라 <b>재는 게 다르기 때문</b>이다. IC는 유니버스 <b>전체</b> 순위를 얼마나
-        잘 맞추나(줄 세우기 실력), 모의계좌는 <b>상위 20개만</b>의 평균 수익(꼭대기의 성적).
-        예컨대 lv_a의 반전 항은 전체 순위를 흐트러뜨려 IC를 깎지만, 반등장에선 상위 20에
-        "지난주 급락한 저변동주"를 끼워 넣어 한 방 수익을 만든다 — 대신 변동성·MDD가 커진다
-        (공짜 아님). 통계적으로 안정적인 건 IC(표본 전체 사용)이고, 바스켓 수익은 소수 급등
-        종목·짧은 창에 좌우되는 노이즈가 크다. 그래서 <b>판정(§11)은 IC가 정본</b>이고
-        모의계좌는 "실전 감각" 참고용이다.</p>
-    </div>
-  </div>
+  <details><summary>"오늘까지 계속 들고 있었다면"으로 보면? (참고 — 산 지 하루 된 것과 두 달 된 것이 섞여 기준으로 쓰지 않음)</summary>
+    <div class="card"><table id="tblNow"><thead><tr><th class="l">모델</th><th>매수한 날</th><th>수익 평균</th><th>중앙값</th><th>시장 평균</th><th>시장보다 더 번 수익</th><th>시장을 이긴 날(%)</th></tr></thead><tbody></tbody></table></div>
+    <div class="foot">어제 산 것과 두 달 전 산 것이 한 평균에 섞인다. 시장이 오르면 모두 좋아 보이므로 시장 평균 없이는 읽지 말 것.</div>
+  </details>
+  <details><summary>참고 구간 · 가장 나빴던/좋았던 날 · 계산 조건</summary>
+    <div class="card"><table id="tblCI"><thead><tr><th class="l">모델</th><th>시장보다 더 번 수익(평균)</th><th>참고 95% 구간</th><th>가장 나빴던 날</th><th>가장 좋았던 날</th><th>매수 기간</th></tr></thead><tbody></tbody></table></div>
+    <div class="foot" id="cond2"></div>
   </details>
 
-  <details class="sec"><summary>🔥 요즘 폼 — 최근 10앵커 IC vs 전체 (펼쳐 보기)</summary><div id="recentic"></div></details>
-  <details class="sec"><summary>💼 과거 고정 창 기록 — 7/02·7/24·8/10 시작 모의계좌 (펼쳐 보기)</summary><div id="crosssim"></div></details>
-  <details class="sec"><summary>📐 알파/베타 — 수익이 실력(α)인지 장 덕(β)인지 (펼쳐 보기)</summary><div id="alphabeta"></div></details>
-
-  <div class="foot" style="margin-top:14px">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는 docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.09.4 (2안 이식 — 이력: patch_note/20260904_leaderboard_v2.md)</div>
+  <div class="links">
+    <a href="leaderboard_full.html">📊 리더보드 — 순위 실력(IC)·따라사기·검증 자료 전체</a>
+    <a href="filter.html">과매도 v3 리스트</a><a href="lowvol.html">저변동 lv_b 리스트</a><a href="index.html">오늘의 스크리너</a>
+  </div>
+  <div class="foot">검증 결론 = 미리 정해 둔 40거래일 창에서 20일 보유 기준으로 한 번 내린 결론(날짜·창 병기, 채택 여부는 여기서만 정함). 지금 흐름 = 오늘까지 쌓인 "20일 뒤 순서를 얼마나 맞췄나"(100점 만점 환산)로 매일 바뀌는 참고치. 결론을 다시 내리려면 새 창을 미리 정해 두고 다시 봄. 이 표는 매수 추천이 아니며, 성적이 좋다고 바로 채택되지 않는다.</div>
 </div>
-
 <script>
-(function(){
-  const f=(v,d)=> (v==null||isNaN(v)) ? null : v.toFixed(d===undefined?3:d);
-  const sic=(v)=>{ const s=f(v); if(s==null) return '<span class="na">n/a</span>';
-    const cls=v>0?'pos':(v<0?'neg':''); return '<span class="'+cls+'">'+(v>0?'+':'')+s+'</span>'; };
-  const sci=(ci)=>{ if(!ci||ci[0]==null) return '<span class="na">-</span>';
-    const a=(ci[0]>0?'+':'')+ci[0].toFixed(2), b=(ci[1]>0?'+':'')+ci[1].toFixed(2);
-    return '<span class="ci">['+a+','+b+']</span>'; };
-  const badge=(v)=>{ const m={'유의':'b-sig','기움':'b-lean','노이즈':'b-noise','역작동':'b-rev'};
-    return '<span class="badge '+(m[v]||'b-nm')+'">'+(v||'측정불가')+'</span>'; };
-  const icn=(o)=> (o&&o.n>0) ? sic(o.ic)+' <span class="ci">('+o.n+')</span>' : '<span class="na">n/a</span>';
-  const exc=(o)=>{ if(!o||o.mean==null) return '<span class="na">n/a</span>';
-    const cls=o.mean>0?'pos':(o.mean<0?'neg':'');
-    return '<span class="'+cls+'" title="95%CI ['+(o.ci&&o.ci[0])+', '+(o.ci&&o.ci[1])+'] · n='+o.n+'">'+(o.mean>0?'+':'')+o.mean.toFixed(1)+'</span>'; };
-  const f1=(v,s)=>v==null?'<span class="na">n/a</span>':'<span class="'+(v>0?'pos':v<0?'neg':'')+'">'+(v>0?'+':'')+v.toFixed(1)+(s||'')+'</span>';
-  const pct=(v)=>v==null?'—':Math.round(v*100)+'%';
-
-  // 모델 셀 → 표시 페이지 링크 (페이지가 실존하는 모델만)
-  const MODEL_PAGES={ 'v30':'filter.html', 'lv_b':'lowvol.html', 'lv_a':'lva.html', 'wu_a':'wu.html',
-    'mom_a':'mom.html', 'qs_a':'qs.html', 'ls_t1':'_large_test.html', 'px_a':'px.html', 'sv_a':'sv.html', 'mom_b':'mom_b.html' };
-  const mlink=(model)=>{ const p=MODEL_PAGES[model]; return p ? '<a href="'+p+'"><b>'+model+'</b></a>' : '<b>'+(model||'')+'</b>'; };
-  // 쉬운 이름(표시 전용)
-  const NAME={v30:'과매도 v3',lv_b:'저변동 lv_b',lv_a:'저변동+반전 lv_a',lv_e:'저변동+저회전 lv_e',mom_a:'모멘텀 mom_a',mom_b:'모멘텀+눌림 mom_b',
-    sm_a:'초소형 sm_a',sv_a:'공매도비중 sv_a',le_a:'저점탈출 le_a',qs_a:'조용한강자 qs_a',px_a:'가격4팩터 px_a',ls_t1:'대형밸류 ls_t1'};
-  const nm=(m)=>NAME[m]?NAME[m].replace(m,'').trim()+' '+mlink(m):mlink(m);
-  const TRACK={v3:'과매도',lowvol:'저변동',wu:'전체종목',large:'대형가치'};
-  const STAR=new Set(['v30','lv_b']);   // 화면 표시 기준 모델(§27-3)
-
-  // ---- 정본 판정(VERDICT 문서에서 봉인) — 판정·은퇴 시 갱신. 표시 전용(json 무변경) ----
-  //   자동 라벨(json.verdict)은 표본이 계속 쌓여 흔들리므로, 결정은 정본으로 읽는다(2026-09-04 사용자 피드백).
-  let SEALED={
-    v30:{v:'유의',t:'유의 — 챔피언 유지(8/09 정본, 급락→반등 창)',cls:'b-sig',doc:'VERDICT_20260809.md'},
-    lv_b:{v:'기움',t:'기움 — 표시 기준 유지(8/29 정본)',cls:'b-lean',doc:'VERDICT_20260829_lowvol.md'},
-    lv_a:{v:'노이즈',t:'노이즈(8/29 정본)',cls:'b-noise'}, mom_a:{v:'노이즈',t:'노이즈(8/29 정본)',cls:'b-noise'},
-    sm_a:{v:'노이즈',t:'노이즈(9/01 정본)',cls:'b-noise'},
-    lv_a3:{v:'노이즈',t:'노이즈(8/29)',cls:'b-noise'}, lv_short:{v:'노이즈',t:'노이즈(8/29)',cls:'b-noise'},
-    lv_c:{v:'역작동',t:'역작동(8/29)',cls:'b-rev'}, lv_d:{v:'역작동',t:'역작동(8/29)',cls:'b-rev'}, hv_a:{v:'역작동',t:'역작동(8/29)',cls:'b-rev'},
-    wu_a:{v:'역작동',t:'역작동·기각(9/01)',cls:'b-rev'}, wu_b:{v:'역작동',t:'역작동·기각(9/01)',cls:'b-rev'},
-    mom_b:{v:'역작동',t:'역작동(유의)·은퇴(9/17 정본)',cls:'b-rev',doc:'VERDICT_20260917_mom_b_qs_a.md'}, qs_a:{v:'노이즈',t:'노이즈(9/17 정본)',cls:'b-noise',doc:'VERDICT_20260917_mom_b_qs_a.md'},
-    v31a:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31b:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31c:{v:'기각',t:'기각(8/09)',cls:'b-noise'},
-    v31d:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31f:{v:'기각',t:'기각(8/09)',cls:'b-noise'},v31g:{v:'기각',t:'기각(8/09)',cls:'b-noise'}};
-  // 은퇴: 정본은 json의 retired 플래그(각 스크립트 RETIRED 단일소스). 아래는 구 json 폴백.
-  let RETIRED_FALLBACK=new Set(['v31a','v31b','v31c','v31d','v31f','v31g','lv_c','lv_d','lv_a3','lv_short','hv_a','wu_a','wu_b','mom_b']);
-  let RET_WHY={v31a:'BUY 게이트 역효과',v31b:'유의 악화',v31c:'좋은 저유동 종목 제외',v31d:'유의 악화',v31f:'h20 채택 미달(h10 기움)',v31g:'h20 채택 미달',
-    lv_c:'역작동(보정 CI까지 음수)',lv_d:'역작동',hv_a:'역작동',lv_a3:'노이즈·lv_a 변형',lv_short:'노이즈·lv_a 변형',wu_a:'역작동(유의) 기각',wu_b:'역작동(유의) 기각',mom_b:'역작동(보정 CI까지 음수)'};
-  let RET_DATE={v31a:'8/09',v31b:'8/09',v31c:'8/09',v31d:'8/09',v31f:'8/09',v31g:'8/09',lv_c:'9/04',lv_d:'9/04',hv_a:'9/04',lv_a3:'9/04',lv_short:'9/04',wu_a:'9/04',wu_b:'9/04',mom_b:'9/17'};
-
-  const need=(m)=>m.track==='large'?60:40;
-  function conf(m){ const h=m.h20||{}; const ci=h.ci||[null,null];
-    if(m.oos_days<need(m)) return {c:1,t:'●',w:'아직 ('+m.oos_days+'/'+need(m)+'일)'};
-    if(ci[0]!=null&&ci[0]>0) return {c:3,t:'●●●',w:'우연 아님'};
-    if(ci[1]!=null&&ci[1]<0) return {c:3,t:'●●●',w:'거꾸로 작동(우연 아님)'};
-    if((h.ic||0)>0) return {c:2,t:'●●',w:'기움'}; return {c:1,t:'●',w:'구분 안 됨'}; }
-  function translate(m){ const h=m.h20||{}, e=m.exc20||{}; const left=need(m)-m.oos_days;
-    if(h.ic==null||e.mean==null) return '아직 20일 뒤 결과가 안 쌓임 — 판정까지 D-'+Math.max(left,0)+(m.h5&&m.h5.n>=8&&m.h5.ci[0]>0?' (5일 잣대는 좋음)':'');
-    const wins=Math.round((h.pos||0)*(h.n||0));
-    let s='20일 뒤 시장보다 '+(e.mean>0?'+':'')+e.mean.toFixed(1)+'%p, '+h.n+'번 중 '+wins+'번 이김';
-    const c=conf(m); if(c.c===3&&e.mean>0) s+=' — 우연이 아님'; else if(c.c===3) s+=' — 점수가 거꾸로';
-    else if(c.c===2) s+=' — 방향은 좋은데 아직 확신 부족'; else if(left>0) s+=' — 판정까지 D-'+left; else s+=' — 신호 없음';
-    return s; }
-  function state(m){ const s=SEALED[m.model]; if(s) return '<span class="badge '+s.cls+'" title="'+(s.doc||'')+'">'+s.t+'</span>';
-    const left=need(m)-m.oos_days; if(left>0) return '<span class="badge b-noise">판정 대기 D-'+left+'</span>';
-    return badge(m.verdict)+' <span class="ci">자동</span>'; }
-  function bar(m){ const p=Math.min(100,Math.round(100*m.oos_days/need(m))); const done=m.oos_days>=need(m);
-    return '<span class="bar '+(done?'done':'')+'"><i style="width:'+p+'%"></i></span><span class="na">'+(done?'도달':'D-'+(need(m)-m.oos_days))+' '+m.oos_days+'/'+need(m)+'</span>'; }
-  const spark=(hist,model)=>{
-    if(!hist) return '<span class="na">축적중</span>';
-    const pts=[]; hist.forEach(e=>{ const m=(e.models||[]).find(x=>x.m===model); if(m && m.i5!=null) pts.push(m.i5); });
-    if(pts.length<2) return '<span class="na">축적중('+pts.length+')</span>';
-    const w=110,hh=26,n=pts.length, lo=Math.min(0,...pts), hi=Math.max(0,...pts), rng=(hi-lo)||1;
-    const y=v=>hh-3-(v-lo)/rng*(hh-6), x=i=>i/(n-1)*(w-4)+2;
-    const line=pts.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' '); const col=pts[n-1]>0?'var(--good)':'var(--bad)';
-    return '<svg width="'+w+'" height="'+hh+'" style="vertical-align:middle"><line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+w+'" y2="'+y(0).toFixed(1)+'" stroke="var(--line)" stroke-width="1"/><polyline fill="none" stroke="'+col+'" stroke-width="1.5" points="'+line+'"/></svg>'; };
-
-  // [2026-09-06] 정본 판정·은퇴 단일 소스 = models_registry.json (notify_telegram/weekly 와 공유).
-  //   없거나 깨지면 위 인라인 값 그대로(폴백). 적용 시 위 4개 표를 덮어쓴다.
-  function applyRegistry(reg){
-    try{
-      if(!reg||typeof reg!=='object') return;
-      if(reg.sealed&&Object.keys(reg.sealed).length){ const o={}; for(const k in reg.sealed){ const v=reg.sealed[k]; o[k]={v:v.v,t:v.t||v.short||v.v,cls:v.cls||'b-noise',doc:v.doc}; } SEALED=o; }
-      if(reg.retired&&Object.keys(reg.retired).length){ RETIRED_FALLBACK=new Set(Object.keys(reg.retired)); const w={},dt={}; for(const k in reg.retired){ w[k]=reg.retired[k].why||''; dt[k]=reg.retired[k].date||''; } RET_WHY=w; RET_DATE=dt; }
-    }catch(_e){}
-  }
-  Promise.all([
-    fetch('leaderboard.json?t='+Date.now()).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
-    fetch('leaderboard_history.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch('models_registry.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
-  ]).then(([d,hist,reg])=>{
-    applyRegistry(reg);
-    const all=(d.models||[]).slice(); const MINOOS=d.min_oos||40;
-    const isRet=(m)=>!!m.retired||RETIRED_FALLBACK.has(m.model);
-    const isDone=(m)=>!isRet(m)&&SEALED[m.model]&&!['유의','기움'].includes(SEALED[m.model].v);
-    const act=all.filter(m=>!isRet(m)&&!isDone(m)), done=all.filter(isDone), ret=all.filter(isRet);
-    const byExc=(a,b)=>(((b.exc20||{}).mean??-99)-((a.exc20||{}).mean??-99));
-    // ② 현역
-    act.sort(byExc);
-    document.querySelector('#active tbody').innerHTML=act.map(m=>{ const h=m.h20||{}, e=m.exc20||{}, c=conf(m);
-      return '<tr><td>'+nm(m.model)+(STAR.has(m.model)?'<span class="star">★</span>':'')+'</td><td class="na">'+(TRACK[m.track]||m.track)+'</td><td>'+bar(m)+'</td>'
-        +'<td class="num">'+f1(e.mean,'%p')+'<div class="tr">'+((e.ci&&e.ci[0]!=null)?'['+e.ci[0].toFixed(1)+', '+e.ci[1].toFixed(1)+']':'')+'</div></td>'
-        +'<td class="num">'+pct(h.pos)+(h.n?'<div class="tr">'+h.n+'번 중</div>':'')+'</td><td class="num na">'+sic(h.ic)+'</td>'
-        +'<td><span class="dots c'+c.c+'">'+c.t+'</span><div class="tr">'+c.w+'</div></td><td>'+state(m)+'</td><td class="tr">'+translate(m)+'</td></tr>'; }).join('')
-      ||'<tr><td colspan="9" class="err">모델 없음</td></tr>';
-    done.sort(byExc);
-    document.querySelector('#done tbody').innerHTML=done.map(m=>{ const h=m.h20||{}, e=m.exc20||{}, s=SEALED[m.model];
-      return '<tr><td>'+nm(m.model)+'</td><td class="na">'+(TRACK[m.track]||m.track)+'</td><td class="num">'+f1(e.mean,'%p')+'</td><td class="num na">'+sic(h.ic)+'</td><td><span class="badge '+s.cls+'">'+s.t+'</span></td><td class="tr">'+translate(m)+'</td></tr>'; }).join('');
-    document.getElementById('retsum').textContent='🪦 은퇴 모델 '+ret.length+'개 (적재 중지·행 보존 — v3 8/09 · lowvol·wu 9/04) 펼치기';
-    document.querySelector('#retired tbody').innerHTML=ret.map(m=>{ const h=m.h20||{}, e=m.exc20||{};
-      return '<tr><td class="na">'+mlink(m.model)+' 🪦</td><td class="na">'+(TRACK[m.track]||m.track)+'</td><td class="num">'+f1(e.mean,'%p')+'</td><td class="num na">'+sic(h.ic)+'</td><td class="tr">'+(RET_DATE[m.model]||'')+' 은퇴 · '+(RET_WHY[m.model]||'§11 기각')+' — 기록용(신규 적재 없음)</td></tr>'; }).join('');
-    // 자세히(원본 전체 컬럼) — 은퇴 포함, h20 IC 순
-    const byH20=(a,b)=>{ const ah=(a.h20&&a.h20.n>0)?a.h20.ic:null, bh=(b.h20&&b.h20.n>0)?b.h20.ic:null;
-      if(ah!=null&&bh!=null) return bh-ah; if(ah!=null) return -1; if(bh!=null) return 1; return (b.oos_days||0)-(a.oos_days||0); };
-    document.getElementById('tbody').innerHTML=all.slice().sort(byH20).map(m=>{ const h20=m.h20||{}, h5=m.h5||{};
-      return '<tr'+(isRet(m)?' style="opacity:.55"':'')+'><td class="track">'+(m.track||'')+'</td><td>'+mlink(m.model)+(isRet(m)?' 🪦':'')+'</td><td class="track">'+(m.reg_date||'')+'</td><td>'+(m.oos_days!=null?m.oos_days:'-')+'</td>'
-        +'<td>'+icn(m.h1)+'</td><td>'+icn(m.h3)+'</td><td>'+(h5.n>0?sic(h5.ic):'<span class="na">n/a</span>')+'</td><td>'+(h5.n||0)+'</td><td>'+(h5.n>0?sci(h5.ci):'<span class="na">-</span>')+'</td><td>'+exc(m.exc5)+'</td><td>'+spark(hist,m.model)+'</td>'
-        +'<td>'+icn(m.h10)+'</td><td>'+(h20.n>0?sic(h20.ic):'<span class="na">n/a</span>')+'</td><td>'+(h20.n||0)+'</td><td>'+(h20.n>0?sci(h20.ci):'<span class="na">-</span>')+'</td><td>'+exc(m.exc20)+'</td>'
-        +'<td>'+badge(m.verdict)+'</td><td class="why">'+(m.why||'')+'</td></tr>'; }).join('');
-    // 요약 카드 + 판정 캘린더
-    try{
-      const v30=all.find(m=>m.model==='v30');
-      const champ='🏆 <b>지금 기준</b> — 챔피언 <b>v30</b> <span class="badge b-sig">유의(8/09 정본)</span>'
-        +(v30?' <span class="ci">(OOS '+v30.oos_days+'일 · 지금 누적 h20 IC '+(v30.h20&&v30.h20.ic!=null?(v30.h20.ic>0?'+':'')+v30.h20.ic.toFixed(3):'-')+')</span>':'')
-        +' · 저변동 표시 기준 <b>lv_b</b> <span class="badge b-lean">기움(8/29 정본)</span>';
-      const wait=act.filter(m=>(m.oos_days||0)<need(m)).map(m=>({m:m.model,t:m.track,d:need(m)-(m.oos_days||0)})).sort((a,b)=>a.d-b.d);
-      const cal='📅 <b>판정 캘린더</b> — '+(wait.map(x=>'<b>'+x.m+'</b> D-'+x.d+(x.t==='large'?'<span class="ci">(h60)</span>':'')).join(' · ')||'대기 중인 모델 없음');
-      document.getElementById('summary').innerHTML=champ+'<br>'+cal; document.getElementById('summary').style.display='block';
-    }catch(e){}
-    const g=d.gates||{};
-    document.getElementById('gates').textContent='게이트 제외 — 부분실행: '+((g.partial_run||[]).join(', ')||'없음')+' · 이중실행: '+((g.double_run||[]).join(', ')||'없음')+' · 판정 기준 OOS '+MINOOS+'거래일 · 트랙 간 IC 절대값 비교 금지';
-    document.getElementById('meta').textContent='모델 '+all.length+'개(현역 '+act.length+' · 판정완료 '+done.length+' · 은퇴 '+ret.length+') · '+(d.note||'');
-  }).catch(e=>{
-    document.querySelector('#active tbody').innerHTML='<tr><td colspan="9" class="err">leaderboard.json 로드 실패: '+e.message+'</td></tr>';
-    document.getElementById('meta').textContent='로드 실패';
-  });
-
-  // ---- ① 돈 표 (cross_sim.json trailing) ----
-  fetch('cross_sim.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(cs=>{
-    const tr=cs.trailing; if(!tr||!tr.rows) throw 0;
-    document.getElementById('asof2').textContent=tr.asof.slice(4,6)+'/'+tr.asof.slice(6);
-    const rows=[{model:'시장평균(전종목)',r1:tr.bench.r1,r5:tr.bench.r5,r20:tr.bench.r20,bench:true},{model:'KOSDAQ 지수',r1:tr.kosdaq.r1,r5:tr.kosdaq.r5,r20:tr.kosdaq.r20,bench:true},
-      ...[...tr.rows].sort((x,y)=>((y.r20==null?-1e9:y.r20)-(x.r20==null?-1e9:x.r20)))];
-    document.querySelector('#money tbody').innerHTML=rows.map(r=>{ const rel=(r.bench||r.r20==null)?null:r.r20-tr.bench.r20;
-      const line=r.bench?'':(rel==null?'창을 못 채움(신생)':(rel>3?'최근 한 달 시장을 크게 앞섬':rel>0?'시장보다 조금 나음':'시장을 못 따라감')+(r.mdd!=null&&r.mdd<-25?' · 낙폭 큼':''));
-      return '<tr><td>'+(r.bench?'<span class="na">'+r.model+'</span>':nm(r.model)+(STAR.has(r.model)?'<span class="star">★</span>':''))+'</td><td class="num">'+f1(r.r1,'%')+'</td><td class="num">'+f1(r.r5,'%')+'</td><td class="num">'+f1(r.r20,'%')+'</td>'
-        +'<td class="num">'+(rel==null?'—':f1(rel,'%p'))+'</td><td class="num">'+(r.bench?'—':f1(r.rall,'%')+'<div class="tr">'+(r.since?r.since.slice(4,6)+'/'+r.since.slice(6):'')+'~, '+r.n+'일</div>')+'</td><td class="num">'+(r.bench?'—':f1(r.mdd,'%'))+'</td><td class="tr">'+line+'</td></tr>'; }).join('');
-  }).catch(()=>{ document.querySelector('#money tbody').innerHTML='<tr><td colspan="8" class="err">cross_sim.json 없음</td></tr>'; });
-
-  // ---- [2026-08-14] 공통 잣대 모의계좌 (관측 전용 · build_cross_sim.py → cross_sim.json) ----
-  fetch('cross_sim.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); })
-    .then(cs=>{
-      if(cs.status!=='ok'||!cs.panels) return;
-      const pn=(v,d)=>{ const s=(v>0?'+':'')+v.toFixed(d===undefined?1:d);
-        return '<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+s+'</span>'; };
-      let h='<div style="font-size:15px;font-weight:600;margin-bottom:4px">💼 공통 잣대 모의계좌 '
-        +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 같은 기간에 각 모델 상위'
-        +cs.topn+'을 매일 따라 샀다면 (전날 저녁 선정 → 다음 날 매수 · 수수료 0 · <b>관측 전용, §11 판정 무관</b>)</span></div>'
-        +'<details class="explain"><summary>이 표 읽는 법 — 쉬운 설명 (처음이면 꼭 한 번 읽기)</summary><div class="explain-body">'
-
-        +'<p><b>이 표는 뭐냐</b> — 위 판정표(IC)가 "순위 맞히기 시험 점수"라면, 이 표는 <b>실전 모의고사</b>다.'
-        +' 규칙은 이렇다: 매일 저녁 각 모델이 매긴 점수에서 <b>상위 '+cs.topn+'종목</b>을 골라, <b>다음 날</b>'
-        +' 같은 금액씩 산다고 치고(전날 저녁에 알고 다음 날 사는 현실 순서 그대로 — 미래 정보 안 씀),'
-        +' 이걸 기간 내내 매일 반복했을 때 계좌가 어떻게 됐는지를 계산한 것이다.'
-        +' 모든 모델에 <b>같은 기간·같은 규칙·같은 비교 대상</b>을 적용하기 때문에, 위 표에서는 금지인'
-        +' "트랙이 다른 모델끼리 비교"가 여기서는 가능하다 — 어느 동네 출신이든 같은 시험장에서 겨루니까.</p>'
-
-        +'<p><b>맨 윗줄의 두 기준선</b> — <b>시장평균(전종목)</b>은 "아무 실력 없이, 거래되는 모든'
-        +' 종목을 똑같은 금액씩 다 샀다면" 얼마 벌었을지다. 모델과 똑같은 조건에서 "안 고르고 다 산'
-        +' 사람"의 성적이라, 모델이 이걸 못 이기면 고르는 의미가 없는 것. <b>KOSPI</b>는 뉴스에 나오는'
-        +' 그 지수인데, 삼성전자처럼 덩치 큰 회사가 지수 점수를 대부분 좌우한다. 그래서 작은 종목들이'
-        +' 선전한 달엔 "지수는 −14%인데 시장평균은 +3.5%" 같은 일이 실제로 벌어진다 — 큰 회사들은'
-        +' 빠졌는데 작은 회사들은 올랐다는 뜻이다.</p>'
-
-        +'<p><b>누적수익%</b> — 기간 첫날 100만원으로 시작해 위 규칙대로 굴렸을 때의 최종 결과.'
-        +' +15.3%면 115만 3천원이 됐다는 뜻이다(매일 번 돈이 다음 날 원금에 합쳐져 굴러간 값).'
-        +' ⚠️ 단, 수수료·세금·"사려는 순간 가격이 살짝 불리해지는 비용"을 전부 0으로 쳤고, 매일'
-        +' '+cs.topn+'종목을 전부 갈아타는 걸 전제한다 — 실제로 따라 하면 이보다 상당히 낮아진다.'
-        +' 그래서 숫자 자체보다 <b>모델끼리 누가 앞섰나(순서)</b>를 보는 용도다.</p>'
-
-        +'<p><b>한줄 평가</b> — 시장평균(전종목을 같은 금액씩 산 것)보다 누적으로 몇 %p 앞섰나를 말로 바꾼 것. 🟢 이김(+2%p 이상) · 🟡 시장 수준(±2%p — 고른 보람 없음) · 🔴 뒤짐(−2%p 이하). <b>같은 색끼리는 동률로 읽어야 한다</b> — 이 표의 1~2%p 순위 차이는 하루 이벤트나 시작일 하나로 뒤집히는 노이즈임을 실측했다(예: lv_a가 lv_b보다 위에 보여도 그 차이는 7/31 하루가 만든 것 — 순위 실력의 정본인 IC에서는 lv_b가 일관 우위). ±2%p 경계는 그 실측에서 온 해석 규칙이다.</p>'+'<p><b>일평균%</b> — 하루 평균 몇 %씩 굴렀나(복리 기준). +0.5면 매일 평균 0.5%씩 — 감으로 잡기 좋은 단위지만, 하루하루는 일변동성만큼(±3% 안팎) 출렁인 평균일 뿐이다.</p>'
-
-        +'<p><b>일변동성%</b> — 하루하루 계좌가 얼마나 널뛰었나. 3.5라면 평범한 날에도 ±3.5%'
-        +' 안팎씩 오르내렸다는 뜻이고, 운 나쁜 날은 그 두세 배도 움직인다. 왜 중요하냐면 —'
-        +' <b>최종 수익이 같아도 타는 기분이 다르다</b>. 변동성 2로 +15% 번 모델과 변동성 4로'
-        +' +15% 번 모델은 결과는 같지만 후자는 내내 두 배로 흔들렸고, 흔들림이 클수록 사람은'
-        +' 바닥에서 포기하고 팔아버리기 쉽다.</p>'
-
-        +'<p><b>MDD%</b>(최대낙폭) — 기간 중 계좌가 <b>고점 대비 최대 몇 %까지 빠져 봤나</b>.'
-        +' 예: 100만원 → 120만원 → 90만원 → 130만원으로 끝났다면 최종 수익은 +30%지만, 중간에'
-        +' 120→90으로 <b>−25%</b> 구간이 있었다 — 그 −25%가 MDD다. 이 숫자가 중요한 이유는 심리다:'
-        +' 계산 속의 가상 계좌는 −25%를 아무렇지 않게 버티지만, 실제 사람은 대부분 그 바닥 근처에서'
-        +' 무서워서 판다. "이 모델을 따라가려면 중간에 이만큼 빠지는 걸 견뎌야 한다"는'
-        +' <b>입장료</b>라고 생각하면 된다.</p>'
-
-        +'<p><b>n일</b> — 이 성적이 몇 거래일치 표본인가. 20일이면 한 달, 250일이면 1년이다.'
-        +' 짧을수록 운(그 기간 장세)의 비중이 크다. 지금처럼 수십 일 수준이면 "이 장에서는 이랬다"'
-        +' 이상의 결론을 내리면 안 된다.</p>'
-
-        +'<p><b>종합 읽는 법</b> — ① 수익%는 반드시 변동성·MDD와 세트로 본다. lv_a가 lv_b보다 수익이'
-        +' 높은데 변동성·MDD도 크다면, 그건 공짜 우위가 아니라 <b>더 크게 출렁이는 걸 감수한 대가</b>다.'
-        +' ② 위 판정표의 IC와 결론이 다를 수 있다 — IC는 그 모델이 보는 전체 종목의 순위 실력이고,'
-        +' 이 표는 꼭대기 '+cs.topn+'개만의 실전 성적이라 재는 게 다르기 때문(자세한 건 위 설명 박스의'
-        +' "IC는 낮은데 수익이 높다?" 문단). ③ 최종 판단의 정본은 어디까지나 §11 판정표다 — 이 표는'
-        +' 그 판정에 "실전 감각"을 더해 주는 보조 자료다.</p>'
-        +'</div></details>';
-      for(const p of cs.panels){
-        h+='<div class="foot" style="margin:8px 0 2px">'+p.label+' → '+p.end.slice(4,6)+'/'+p.end.slice(6)
-          +' · 시장평균(전종목) '+pn(p.bench_cum)+'% · KOSPI '+pn(p.kospi_cum)+'%</div>'
-          +'<table style="margin-bottom:6px"><thead><tr><th>모델</th>'
-          +'<th title="시장평균(전종목을 같은 금액씩 산 것) 대비 누적 %p. 같은 색끼리는 동률로 읽기 — 순위 차이는 노이즈">한줄 평가</th>'
-          +'<th>누적수익%</th><th title="하루 평균 몇 %씩 굴렀나(기하평균)">일평균%</th>'
-          +'<th title="하루하루 얼마나 널뛰었나">일변동성%</th><th title="최대낙폭 — 기간 중 고점 대비 최대 하락. 따라가려면 견뎌야 하는 멀미의 크기">MDD%</th><th>n일</th></tr></thead><tbody>';
-        const verdict=(e)=> e==null?'<span class="na">-</span>'
-          : e>=2 ? '<span class="pos">🟢 시장 이김 '+pn(e)+'%p</span>'
-          : e<=-2 ? '<span class="neg">🔴 시장에 뒤짐 '+pn(e)+'%p</span>'
-          : '<span class="na">🟡 시장 수준 '+pn(e)+'%p</span>';
-        for(const r of p.rows){
-          h+='<tr><td><b>'+r.model+'</b></td><td>'+verdict(r.exc_cum)+'</td><td>'+pn(r.cum)+'</td>'
-            +'<td>'+(r.day_avg!=null?pn(r.day_avg):'-')+'</td>'
-            +'<td>'+r.vol.toFixed(2)+'</td><td>'+pn(r.mdd)+'</td><td>'+r.n+'</td></tr>';
-        }
-        h+='</tbody></table>';
-      }
-      h+='<div class="foot">표시 기준: 각 트랙 대표 + 직접 비교쌍만(섀도우 변형 제외 — 전체는 위 판정표). 등록일이 창 시작보다 늦은 신모델(px_a 등)은 창 전체를 커버할 때까지 자동 대기(공백일 0% 채움 왜곡 방지, 2026-08-29).</div>';
-      h+='<div class="foot">⚠ 짧은 창·단일 국면·거래비용 0 — "이 기간 이 장에서"의 성적일 뿐 일반화 금지. '
-        +'통계적 판정은 위 §11 표가 정본.</div>';
-      document.getElementById('crosssim').innerHTML=h;
-
-    }).catch(()=>{});
-
-  // [2026-08-30] 요즘 폼 패널 — build_recent_ic.py 가 매일 생성 (관측 전용, 판정 무관)
-  fetch('recent_ic.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); })
-    .then(ri=>{
-      if(ri.status!=='ok'||!ri.models||!ri.models.length) return;
-      const pn=(v)=>'<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+(v>0?'+':'')+v.toFixed(3)+'</span>';
-      const TRK={v3:'🔵 과매도 v3',lowvol:'🟢 저변동',wu:'🟣 전체종목'};
-      let h='<div style="font-size:15px;font-weight:600;margin-bottom:4px">🔥 요즘 폼 '
-        +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 최근 '+ri.k
-        +'개 마감 앵커(h'+ri.h+')만의 IC vs 전체 평균 (<b>관측 전용, §11 판정 무관</b>)</span></div>'
-        +'<details class="explain"><summary>이 표 읽는 법 — 쉬운 설명</summary><div class="explain-body">'
-        +'<p><b>위 판정표의 IC는 "지금까지 전체 시험의 평균"</b>이라 새 시험 성적이 평균에 천천히만 '
-        +'반영됩니다(장기 실력 판정용으로는 그게 맞습니다). 이 표는 반대로 <b>가장 최근에 채점이 '
-        +'끝난 시험 '+ri.k+'개만의 평균</b> — "요즘 잘 맞히고 있나"를 직접 봅니다.</p>'
-        +'<p>▼는 요즘이 전체 평균보다 식었다는 뜻, ▲는 달아오르는 중. 여러 모델이 한꺼번에 ▼면 '
-        +'모델 문제가 아니라 <b>국면이 바뀌는 중</b>일 가능성이 큽니다.</p>'
-        +'<p>⚠ 최근 '+ri.k+'개는 창이 겹치는 작은 표본이라 노이즈가 큽니다 — 서열·채택 판단 금지, '
-        +'식었나/달아올랐나의 방향 참고까지만. 판정 정본은 위 §11 표.</p></div></details>'
-        +'<table style="margin-bottom:6px"><thead><tr><th>모델</th><th title="최근 '+ri.k+'개 마감 앵커만의 평균 IC">요즘 IC</th>'
-        +'<th title="등록 후 전체 마감 앵커 평균(판정표 값)">전체 IC</th><th>추세</th>'
-        +'<th title="최근 앵커 중 IC>0 비율">양(+)</th><th title="최근 앵커 선정일 구간">구간</th></tr></thead><tbody>';
-      let cur='';
-      for(const m of ri.models){
-        if(m.track!==cur){ cur=m.track;
-          h+='<tr><td colspan="6" style="color:var(--sub);font-size:11px;padding-top:8px">'+(TRK[cur]||cur)+'</td></tr>'; }
-        const d=m.ic_recent-m.ic_all;
-        const ar=d>0.01?'<span class="pos">▲</span>':(d<-0.01?'<span class="neg">▼</span>':'→');
-        h+='<tr><td><b>'+m.model+'</b></td><td class="num">'+pn(m.ic_recent)+'</td>'
-          +'<td class="num">'+pn(m.ic_all)+'</td><td>'+ar+'</td>'
-          +'<td class="num">'+Math.round(m.pos_recent*100)+'%</td>'
-          +'<td style="font-size:10px;color:var(--sub)">'+m.recent_span.slice(4,8)+'~'+m.recent_span.slice(13)+'</td></tr>';
-      }
-      h+='</tbody></table><div class="foot">앵커=선정일(h'+ri.h+' 채점 완료분만) · 프로토콜은 판정표와 동일 '
-        +'· 데이터: recent_ic.json (매일 갱신, build_recent_ic.py)</div>';
-      document.getElementById('recentic').innerHTML=h;
-    }).catch(()=>{});
-
-  // [2026-08-29] 알파/베타 관측 패널 — build_alpha_beta.py 가 매일 생성 (관측 전용, 판정 무관)
-  fetch('alpha_beta.json?t='+Date.now()).then(r=>{ if(!r.ok) throw 0; return r.json(); })
-    .then(ab=>{
-      if(ab.status!=='ok'||!ab.models) return;
-      const pn=(v,d)=>{ const s=(v>0?'+':'')+v.toFixed(d===undefined?1:d);
-        return '<span class="'+(v>0?'pos':(v<0?'neg':''))+'">'+s+'</span>'; };
-      let h='<div style="font-size:15px;font-weight:600;margin-bottom:4px">📐 알파/베타 관측 '
-        +'<span style="font-size:11px;color:var(--sub);font-weight:400">— 최근 '+ab.window
-        +'유효일 · 기준 '+ab.asof.slice(4,6)+'/'+ab.asof.slice(6)+' (<b>관측 전용, §11 판정 무관</b>)</span></div>'
-        +'<details class="explain"><summary>이 표 읽는 법 — 쉬운 설명</summary><div class="explain-body">'
-        +'<p><b>수익을 두 조각으로 나눕니다.</b> 배(시장)가 떠오르면 배 위의 모두가 같이 떠오르죠 — '
-        +'그 몫이 <b>베타(β)</b>입니다(1이면 시장과 똑같이 출렁임). 배와 무관하게 좋은 자리를 골라 '
-        +'더 벌어준 몫이 <b>알파(α)</b>, 즉 종목 선택의 실력분입니다.</p>'
-        +'<p><b>α 옆의 t 는 "우연과 구분되는 정도"</b> — 대략 2를 넘어야 우연이 아니라고 말할 수 '
-        +'있습니다. 그 전까지는 참고만. 누적 분해는 "최근 창의 수익 중 몇 %p가 장 덕이고 몇 %p가 '
-        +'선택 덕인지"의 근사 분해입니다.</p>'
-        +'<p>⚠ 비용 0·짧은 창의 관측이며 매일 갱신됩니다. 판정 정본은 위 §11 표.</p></div></details>'
-        +'<table style="margin-bottom:6px"><thead><tr><th>모델</th><th title="시장을 따라 움직인 정도(1=시장과 동일)">β</th>'
-        +'<th title="장과 무관한 일평균 초과분">α/일</th><th title="α가 우연과 구분되는 정도(≥2 권장)">t</th>'
-        +'<th>창 누적</th><th title="누적 중 시장(베타) 몫 — 근사">장 덕(%p)</th>'
-        +'<th title="누적 중 선택(알파) 몫 — 근사">선택 덕(%p)</th><th>n일</th></tr></thead><tbody>';
-      for(const [m,v] of Object.entries(ab.models)){
-        h+='<tr><td><b>'+m+'</b></td><td class="num">'+v.beta.toFixed(2)+'</td>'
-          +'<td class="num">'+pn(v.alpha_d_pct,2)+'%</td>'
-          +'<td class="num">'+(v.alpha_t==null?'-':v.alpha_t.toFixed(1))+'</td>'
-          +'<td class="num">'+pn(v.cum_pct)+'%</td><td class="num">'+pn(v.beta_cum_pp)+'</td>'
-          +'<td class="num">'+pn(v.alpha_cum_pp)+'</td><td class="num">'+v.n+'</td></tr>';
-      }
-      h+='</tbody></table><div class="foot">벤치마크 = 전종목(거래대금 20일평균 ≥5억) 동일가중 · '
-        +'상위20 EW·비용 0 가정 · t&lt;2 는 "아직 우연과 구분 안 됨" · 데이터: alpha_beta.json (매일 갱신)</div>';
-      document.getElementById('alphabeta').innerHTML=h;
-    }).catch(()=>{});
-})();
+const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',ls_t1:'_large_test.html'};
+const LABEL={'유의':'효과 확인됨','기움':'좋아 보이지만 확정 아님','노이즈':'차이 없음','역작동':'반대로 감 (점수 높을수록 나쁨)'};
+const f1=(v,u='%')=>v==null?'—':(v>0?'+':'')+v.toFixed(1)+u;
+const cls=v=>v==null?'':v>0?'pos':v<0?'neg':'';
+const fd=d=>d?(+d.slice(4,6))+'/'+(+d.slice(6)):'';
+function lab(m){
+  const s=m.sealed, l=m.live||{};
+  const when=s?((s.short.match(/\((.*)\)/)||[])[1]||''):'';
+  const v=s?`<b>${LABEL[s.v]||s.v}</b><br><span class="small">${s.v} · ${when}</span>`:(l.oos_days!=null&&l.oos_days<40?`<b>아직 결론 전</b><br><span class="small">검증 ${l.oos_days}/40일</span>`:`<b>아직 결론 전</b>`);
+  return `<div class="lab">${v}</div>`;
+}
+function det(m){
+  const s=m.sealed, l=m.live||{}, f=m.fix;
+  const a=s?`검증 결론은 ${m.verdict_window||''} 창을 20일 보유 기준으로 본 것(원래 용어 '${s.v}').`:`검증 창 ${m.verdict_window||''} 진행 중.`;
+  const o=l.ic20!=null?`지금 흐름(참고): 20일 뒤 순서 맞춤 ${f1(l.ic20*100,'')}/100, ${l.n}일치${l.ic5!=null?' · 5일 뒤 '+f1(l.ic5*100,''):''}.`:'지금 흐름: 아직 20일 지난 자료 없음.';
+  const b=f&&f.ci_ref?` 참고 구간 ${f1(f.ci_ref[0],'')}~${f1(f.ci_ref[1],'%p')}, 가장 나빴던 날 ${f1(f.worst,'%p')}, 가장 좋았던 날 ${f1(f.best,'%p')} (${fd(f.first)}~${fd(f.last)} 매수).`:'';
+  return `${a} ${o}${b} 시작 ${fd(m.reg_date)}.`;
+}
+function nameCell(m){
+  const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model];
+  const t=p?`<a href="${p}"><b>${nm}</b> ${m.model}</a>`:`<b>${nm}</b> <span class="muted">${m.model}</span>`;
+  return `<td class="l wrap">${t}${m.retired?'<span class="role">은퇴</span>':''}<span class="more">▾</span></td>`;
+}
+function row(m){
+  const f=m.fix, nm=nameCell(m), dr=`<tr class="det" hidden><td colspan="8">${det(m)}</td></tr>`;
+  if(!f||f.n<4) return `<tr class="main">${nm}<td colspan="6" class="l">${m.retired?`<span class="small">새 리스트 중단 · 기록용 (40일 끝난 매수일 ${f?f.n:0}일)</span>`:`<span class="wait">결과 기다리는 중</span> <span class="small">첫 결과 ${m.first_done_eta?'~'+m.first_done_eta:'곧'}</span>`}</td><td class="l">${lab(m)}</td></tr>`+dr;
+  return `<tr class="main">${nm}<td>${f1(f.ret_mean)}</td><td class="muted">${f1(f.bench_mean)}</td><td class="mid ${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td class="${cls(f.exc_median)}">${f1(f.exc_median,'%p')}</td><td>${Math.round(f.win*100)}%</td><td>${f.n} <span class="small">(${f.blocks})</span></td><td class="l">${lab(m)}</td></tr>`+dr;
+}
+function render(D){
+  document.getElementById('asof').textContent='실제 저장 자료 · '+fd(D.asof)+' 종가 기준 · 참고 성적(검증 결론 아님)';
+  document.getElementById('cond').innerHTML=`시장별 상위 ${D.TOP} · 다음 거래일 종가 매수 · ${D.H}거래일 보유 · 비용 0(왕복 ${D.COST}%를 빼면 각 −${D.COST}%p) · 급등 제외 없음 · 배당 제외`;
+  document.getElementById('cond2').innerHTML=`참고 구간은 겹치는 40일 창을 따로따로인 것처럼 다시 뽑은 것이라 실제보다 좁다 — 정식 결론은 미리 정한 절차(40일 묶음 단위·묶음 4개·2027-06, PREREGISTER_ops_adoption)에서만. 희석 배지 제외·시점 유니버스는 이 표에 미적용. 가격 없는 종목(ohlcv 미수집)은 바구니에서 빠짐. 생성 ${D.generated}`;
+  const A=D.models.filter(m=>m.track!=='large'), B=D.models.filter(m=>m.track==='large');
+  document.querySelector('#tblA tbody').innerHTML=A.map(row).join('');
+  document.querySelector('#tblB tbody').innerHTML=B.map(row).join('')||'<tr><td colspan="8" class="l muted">없음</td></tr>';
+  document.querySelectorAll('tr.main').forEach(tr=>tr.onclick=(e)=>{ if(e.target.closest('a')) return; const d=tr.nextElementSibling; if(d&&d.classList.contains('det')) d.hidden=!d.hidden;});
+  document.querySelector('#tblNow tbody').innerHTML=D.models.filter(m=>m.now).map(m=>{const n=m.now;return `<tr><td class="l">${m.name}</td><td>${n.n}</td><td>${f1(n.ret_mean)}</td><td>${f1(n.ret_median)}</td><td class="muted">${f1(n.bench_mean)}</td><td class="${cls(n.exc_mean)}">${f1(n.exc_mean,'%p')}</td><td>${Math.round(n.win*100)}%</td></tr>`}).join('');
+  document.querySelector('#tblCI tbody').innerHTML=D.models.filter(m=>m.fix&&m.fix.ci_ref).map(m=>{const f=m.fix;return `<tr><td class="l">${m.name}</td><td class="${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td>${f1(f.ci_ref[0],'')} ~ ${f1(f.ci_ref[1],'%p')}</td><td class="neg">${f1(f.worst,'%p')}</td><td class="pos">${f1(f.best,'%p')}</td><td class="small">${fd(f.first)}~${fd(f.last)} 매수</td></tr>`}).join('');
+  const ok=A.filter(m=>m.fix&&m.fix.n>=8).sort((a,b)=>b.fix.exc_mean-a.fix.exc_mean);
+  let s='';
+  if(ok.length){const t=ok[0], cmp=A.filter(m=>m.fix&&m.fix.n>=4), beat=cmp.filter(m=>m.fix.exc_mean>0).length;
+    s=`이 방식으로 사고팔았다면 <b>${t.name}</b>이(가) 시장 평균보다 평균 ${f1(t.fix.exc_mean,'%p')} 더 벌어 가장 앞섰습니다. 비교할 수 있는 ${cmp.length}개 모델 중 ${beat}개가 시장 평균을 이겼습니다.`;}
+  else s='아직 40일이 끝난 매수일이 8일 이상인 모델이 없습니다.';
+  document.getElementById('lead').innerHTML=s+`<small>모든 모델을 같은 매매 방식으로 잰 참고 성적입니다. 성적이 좋다고 바로 채택되지는 않으며, 채택 여부는 오른쪽 '검증 결론' 열의 미리 정한 절차로만 정합니다.</small>`;
+}
+fetch('scoreboard.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(render)
+  .catch(()=>{document.getElementById('lead').innerHTML='<span class="loading">데이터 없음 (scoreboard.json)</span>';document.getElementById('asof').textContent='';});
 </script>
 </body>
 </html>

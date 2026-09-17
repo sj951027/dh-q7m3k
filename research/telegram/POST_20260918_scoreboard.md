@@ -1,12 +1,12 @@
 # 텔레그램 1회성 안내문 (2026-09-18) — 모델 성적표 페이지 추가
 
 첨부: research/telegram/scoreboard_20260918.png (9/17 종가 기준 캡처)
-링크: https://sj951027.github.io/dh-q7m3k/scoreboard.html
+링크: https://sj951027.github.io/dh-q7m3k/leaderboard.html
 
 ---- 아래를 그대로 붙여 넣으면 됩니다 ----
 
 📋 새 페이지: 모델 성적표
-https://sj951027.github.io/dh-q7m3k/scoreboard.html
+https://sj951027.github.io/dh-q7m3k/leaderboard.html
 
 무엇이 바뀌었나
 · 모델마다 잣대가 달라 헷갈렸던 걸 하나로 통일했습니다. "매일 시장별 상위 10을 사서 40거래일 들고 있었다면 시장 평균보다 얼마나 더 벌었나" — 모든 모델을 같은 방식으로 잽니다.
