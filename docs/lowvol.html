@@ -42,6 +42,10 @@
   .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
     padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
   .tab.active{border-color:var(--accent);color:var(--accent)}
+  .dtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center}
+  .dtab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px;color:var(--sub)}
+  .dtab.active{border-color:var(--accent);color:var(--accent)}.dtab.more{color:var(--sub);opacity:.8}
+  .dnote{font-size:12px;color:var(--sub);margin:0 0 8px}.pos{color:#2dd4a7}.neg{color:#f0997b}
   .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
   .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
   .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
@@ -144,6 +148,9 @@
 
 
   <div class="meta" id="meta"></div>
+  <!-- [2026-09-17] 지난 날짜 리스트 탭 — docs/hist/lv_b.json (당시 동결 점수 · 표시 전용) -->
+  <div class="dtabs" id="dtabs"></div>
+  <div class="dnote" id="dnote" hidden></div>
   <div class="tabs">
     <div class="tab active" data-mkt="kospi">🔵 KOSPI</div>
     <div class="tab" data-mkt="kosdaq">🟠 KOSDAQ</div>
@@ -270,7 +277,7 @@ function render(rows){
 }
 
 function load(mkt){
-  curMkt = mkt;
+  curMkt = mkt; curDate=null; document.getElementById('filters').style.display=''; const _n=document.getElementById('dnote'); if(_n) _n.hidden=true;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mkt===mkt));
   document.querySelector('#tbl tbody').innerHTML='<tr><td colspan="20" class="loading">불러오는 중…</td></tr>';
   fetch('latest_'+mkt+'_lowvol.csv?ts='+Date.now())
@@ -309,7 +316,35 @@ function load(mkt){
     });
 }
 
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>load(t.dataset.mkt));
+// ---- [2026-09-17] 지난 날짜 탭 (hist/lv_b.json) ----
+let histData=null, curDate=null, showMore=false;
+const HIST_COLS=[['rank','그날 순위'],['name','종목'],['ticker','코드'],['score','점수'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+function fmtD(d){return d? (+d.slice(4,6))+'/'+(+d.slice(6)) : '';}
+function renderDtabs(){
+  const box=document.getElementById('dtabs'); if(!histData){box.innerHTML='';return;}
+  const days=histData.days; const vis=showMore? days : days.slice(0,3);
+  box.innerHTML = vis.map((d,i)=>`<div class="dtab${(curDate===null&&i===0)||curDate===d.date?' active':''}" data-date="${i===0?'':d.date}">${i===0?'오늘('+fmtD(d.date)+')':fmtD(d.date)}</div>`).join('')
+    + (days.length>3? `<div class="dtab more" id="dmore">${showMore?'접기 ▴':'더 보기 ▾ ('+(days.length-3)+'일)'}</div>`:'');
+  box.querySelectorAll('.dtab[data-date]').forEach(t=>t.onclick=()=>{ curDate=t.dataset.date||null; if(curDate===null){load(curMkt);} else {renderHist();} renderDtabs(); });
+  const m=document.getElementById('dmore'); if(m) m.onclick=()=>{showMore=!showMore; renderDtabs();};
+}
+function renderHist(){
+  const day=histData.days.find(d=>d.date===curDate); if(!day) return;
+  document.getElementById('filters').style.display='none';
+  const note=document.getElementById('dnote'); note.hidden=false;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · 표시 전용, 매수신호 아님`;
+  const rows=day.rows.filter(r=>r.market===curMkt);
+  const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
+  thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
+  tbody.innerHTML=rows.map(r=>'<tr'+(r.rank<=10?' class="top10row"':'')+'>'+HIST_COLS.map(c=>{
+    const v=r[c[0]]; if(v===null||v===undefined) return '<td>—</td>';
+    if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
+    if(c[0]==='px_then'||c[0]==='px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
+    return `<td>${v}</td>`; }).join('')+'</tr>').join('') || '<tr><td colspan="8" class="loading">이 시장 자료 없음</td></tr>';
+  document.getElementById('fcount').textContent='';
+}
+fetch('hist/lv_b.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ if(curDate===null){load(t.dataset.mkt);} else {curMkt=t.dataset.mkt; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.mkt===curMkt)); renderHist();} });
 document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
   const f=b.dataset.f;
   if(activeF.has(f)){activeF.delete(f); b.classList.remove('on');}

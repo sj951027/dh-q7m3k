@@ -23,6 +23,15 @@
     color: #1a202c;
   }
   
+  .dtabs { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 12px; }
+  .dtab { background:#fff; border:1px solid #cbd5e0; border-radius:8px; padding:6px 12px; font-size:12.5px; color:#4a5568; cursor:pointer; }
+  .dtab.active { border-color:#4299e1; color:#2b6cb0; font-weight:600; }
+  .dnote { font-size:12.5px; color:#5f4a12; background:#fffbea; border:1px solid #f4d56b; border-radius:8px; padding:8px 12px; margin-bottom:10px; }
+  .hist-table { width:100%; border-collapse:collapse; font-size:13px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+  .hist-table th { text-align:left; padding:8px 10px; background:#f7fafc; color:#4a5568; font-size:12px; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+  .hist-table td { padding:7px 10px; border-bottom:1px solid #edf2f7; white-space:nowrap; }
+  .hist-table tr.r10 td { background:#fffdf3; }
+  .hist-table .pos { color:#2f855a; } .hist-table .neg { color:#c53030; }
   .howto-box { background:#fffbea; border:1px solid #f4d56b; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:#5f4a12; line-height:1.6; }
   .howto-box ul { margin:6px 0 4px 18px; padding:0; }
   .howto-box li { margin:2px 0; }
@@ -460,6 +469,12 @@
   </div>
   
   <!-- 메인 컨텐츠 -->
+  <!-- [2026-09-17] 지난 날짜 리스트 탭 — hist/v30.json (당시 동결 점수 · 표시 전용) -->
+  <div class="dtabs" id="dtabs"></div>
+  <div id="histPanel" hidden>
+    <div class="dnote" id="dnote"></div>
+    <div style="overflow-x:auto"><table class="hist-table"><thead id="histHead"></thead><tbody id="histBody"></tbody></table></div>
+  </div>
   <div class="main-content" id="mainContent">
     
     <!-- 요약 카드 -->
@@ -790,6 +805,8 @@ function autoLoad(market) {
     b.style.background = on ? '#4299e1' : '#fff';
     b.style.color = on ? '#fff' : '#2d3748';
   });
+  window.curMktV3 = market;
+  if (window.curDateV3) { renderHistV3(); status.textContent = market.toUpperCase() + ' · 지난 리스트'; return; }
   fetch('latest_' + market + '_enriched.csv?ts=' + Date.now())
     .then(r => r.ok ? r.text() : Promise.reject('no-enriched'))
     .catch(() => fetch('latest_' + market + '_final.csv?ts=' + Date.now())
@@ -805,6 +822,39 @@ function autoLoad(market) {
 }
 
 // 페이지 열리면 KOSPI 자동 로드
+// ---- [2026-09-17] 지난 날짜 탭 (hist/v30.json) — 당시 동결 점수, 그날 종가→오늘 종가 등락. 표시 전용 ----
+window.curDateV3 = null; window.curMktV3 = 'kospi';
+let histV3 = null, showMoreV3 = false;
+const HIST_COLS_V3 = [['rank','그날 순위'],['name','종목'],['ticker','코드'],['score','V3점수'],['grade','등급'],['bucket','버킷'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+function fmtDV3(d){ return d ? (+d.slice(4,6)) + '/' + (+d.slice(6)) : ''; }
+function renderDtabsV3(){
+  const box = document.getElementById('dtabs'); if (!histV3) { box.innerHTML = ''; return; }
+  const days = histV3.days, vis = showMoreV3 ? days : days.slice(0, 3);
+  box.innerHTML = vis.map((d, i) => `<div class="dtab${(window.curDateV3 === null && i === 0) || window.curDateV3 === d.date ? ' active' : ''}" data-date="${i === 0 ? '' : d.date}">${i === 0 ? '오늘(' + fmtDV3(d.date) + ')' : fmtDV3(d.date)}</div>`).join('')
+    + (days.length > 3 ? `<div class="dtab" id="dmore">${showMoreV3 ? '접기 ▴' : '더 보기 ▾ (' + (days.length - 3) + '일)'}</div>` : '');
+  box.querySelectorAll('.dtab[data-date]').forEach(t => t.onclick = () => {
+    window.curDateV3 = t.dataset.date || null;
+    if (window.curDateV3 === null) { document.getElementById('histPanel').hidden = true; document.getElementById('mainContent').style.display = ''; autoLoad(window.curMktV3); }
+    else { renderHistV3(); }
+    renderDtabsV3();
+  });
+  const m = document.getElementById('dmore'); if (m) m.onclick = () => { showMoreV3 = !showMoreV3; renderDtabsV3(); };
+}
+function renderHistV3(){
+  const day = histV3 && histV3.days.find(d => d.date === window.curDateV3); if (!day) return;
+  document.getElementById('mainContent').style.display = 'none';
+  const panel = document.getElementById('histPanel'); panel.hidden = false;
+  const rows = day.rows.filter(r => r.market === window.curMktV3);
+  document.getElementById('dnote').innerHTML = `📅 <b>${fmtDV3(day.date)}</b> ${window.curMktV3.toUpperCase()} 리스트 — 당시 동결 점수(V3점수) 기준 상위 ${rows.length} · 등락은 그날 종가→오늘(${fmtDV3(histV3.asof)}) 종가 · 표시 전용, 매수신호 아님 · 상위 10 행은 옅은 배경`;
+  document.getElementById('histHead').innerHTML = '<tr>' + HIST_COLS_V3.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
+  document.getElementById('histBody').innerHTML = rows.map(r => '<tr' + (r.rank <= 10 ? ' class="r10"' : '') + '>' + HIST_COLS_V3.map(c => {
+    const v = r[c[0]]; if (v === null || v === undefined || v === '') return '<td>—</td>';
+    if (c[0] === 'chg_pct') return `<td class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</td>`;
+    if (c[0] === 'px_then' || c[0] === 'px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
+    return `<td>${v}</td>`; }).join('') + '</tr>').join('') || '<tr><td colspan="10">이 시장 자료 없음</td></tr>';
+}
+fetch('hist/v30.json?ts=' + Date.now()).then(r => r.ok ? r.json() : null).then(h => { histV3 = h; renderDtabsV3(); }).catch(() => {});
+
 window.addEventListener('DOMContentLoaded', () => autoLoad('kospi'));
 
 // ===== CSV 파서 =====
