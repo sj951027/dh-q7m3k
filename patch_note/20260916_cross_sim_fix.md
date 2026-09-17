@@ -44,3 +44,8 @@
 - 원인 실측: `finance.naver.com/item/main.naver` → `stock.naver.com/domestic/stock/{code}/price` 302, 새 페이지에 '투자의견' 표 없음(수급 크롤링 9/11 사건과 동일).
 - `fetch_consensus.py fetch_one`: 새 페이지의 JSON API `m.stock.naver.com/api/stock/{code}/integration` 의 `consensusInfo`(recommMean·priceTargetMean·createDate)로 교체. 척도·값이 구 페이지와 동일(005930 목표가 487,045 일치, 점수 4.00 vs 9/07 4.05). 라벨은 점수 구간으로 복원(9/07 실측 매수 3.5~4.08 · 중립 3.0~3.33). consensusInfo=null(HTTP 200) = 실제 무커버리지, 예외·비JSON = 실패 → 저장 안 함.
 - 실행은 하지 않음(주간 가드 통과 상태라 09-17 배치가 자동 수집·저장). 커버리지 <20% 실패 감지는 그대로.
+
+## 09-17 확인
+- 09-17 배치 정상(20:10~21:16, 12단계 0, push 2회, 텔레그램 첫 줄 ✅·💰 정정 숫자). 컨센서스 새 API 로 첫 저장(2,513행 · 커버리지 533 · 실패 0).
+- 커버리지가 옛 2,159 에서 533 으로 줄어든 이유를 실측: 옛 파서가 무커버 종목에서 **52주 최고가를 목표주가로 오인**(97% 일치). 새 값이 맞고 옛 값은 의견점수 있는 행만 유효 — research/RESEARCH_consensus_old_target_artifact_20260917.md.
+- qs_a·mom_b 40거래일 도달(자동 라벨 역작동 참고) → §11 정식 판정 예정.
