@@ -32,3 +32,17 @@
 
 ## 추가(00:3x) — 주소 교체
 - 사용자 확인: 별도 페이지가 아니라 **기존 리더보드 자리**에 새 화면. → 새 성적표를 `docs/leaderboard.html` 로, 기존 전체 자료는 `docs/leaderboard_full.html` 로 이동(제목 '검증 자료 전체', 상단 배너로 왕복). `scoreboard.html` 은 leaderboard.html 로 자동 이동하는 빈 껍데기. 텔레그램·주간 리캡·각 모델 페이지의 기존 링크(leaderboard.html)는 그대로 새 첫 화면을 연다. 데이터 파일 이름(`scoreboard.json`)과 빌드 스크립트는 그대로.
+
+## 마무리 점검(00:5x, 사용자 요청 "결함·버그 확인")
+| 항목 | 결과(실측) |
+|---|---|
+| 배치 순서 | leaderboard.json 은 run_and_diversify 2.91단계에서 먼저 생성 → Large 단계의 build_scoreboard 가 읽음. 순서 문제 없음 |
+| 코드 참조 | notify_telegram·notify_weekly 의 링크는 leaderboard.html(새 첫 화면)로 그대로 유효. run_and_diversify 의 언급은 주석뿐 |
+| SEALED 인라인 맵 | 이제 `docs/leaderboard_full.html` 에 있음 — notify_telegram.py 주석 갱신. 판정·은퇴 시 registry + _full 인라인 맵 동기화(종전과 동일, 파일명만 변경) |
+| 새 첫 화면 | 데스크톱·375px 모두 콘솔 오류 0, 페이지 가로 넘침 없음(카드 안 스크롤), 트랙 A 12행, 모델 링크 9개 200 |
+| 기존 전체 페이지 | leaderboard_full.html 정상 로드(표 10개, meta 26모델), 첫 화면으로 돌아가는 링크 있음. scoreboard.html 은 leaderboard.html 로 자동 이동 확인 |
+| 테스트 | 교체 후 `python tests/run_tests.py` 재실행 통과 |
+
+고친 것: `build_scoreboard.py` — 등록 직후 앵커 0개인 모델에서 빈 DataFrame 컬럼 접근으로 전체 실패할 수 있던 경로 방어(컬럼 고정) · 은퇴 모델은 트랙 맨 아래 정렬. 데이터 재생성 결과 수치 동일.
+
+남은 것(별건): leaderboard.py 실시간 라벨 규칙(IC<−0.03 → 역작동, 구간 무시)과 정본 기준 불일치 — _full 페이지 표시만 숫자로 바꾸는 안 대기. ohlcv 미수집 종목(코스닥 글로벌·영문코드) 결정 대기.

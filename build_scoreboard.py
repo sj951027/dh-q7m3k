@@ -66,9 +66,9 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
                 if len(a) >= MIN_BASKET: fx.append(a.mean() * 100); bf.append(b.mean() * 100)
         rows.append({"date": dates[t], "done": bool(done and fx), "ret40": np.mean(fx) if fx else None, "bench40": np.mean(bf) if bf else None,
                      "ret_now": np.mean(nw) if nw else None, "bench_now": np.mean(bn) if bn else None})
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows, columns=["date", "done", "ret40", "bench40", "ret_now", "bench_now"])   # 앵커 0개(등록 직후)여도 컬럼 보장
     out = {"model": m["model"], "name": NAME.get(m["model"], m["model"]), "track": m["track"], "reg_date": reg, "n_anchors": int(len(df))}
-    d = df[df.done] if len(df) else df
+    d = df[df.done.astype(bool)]
     if len(d):
         ex = (d.ret40 - d.bench40).values
         out["fix"] = {"n": int(len(d)), "blocks": round(len(d) / H, 1), "ret_mean": float(d.ret40.mean()), "ret_median": float(d.ret40.median()), "bench_mean": float(d.bench40.mean()),
@@ -104,7 +104,7 @@ def main():
     reg_json = json.loads((HERE / "docs/models_registry.json").read_text(encoding="utf-8"))
     res = [observe(con, m, close, mk, dates, didx, excl, reg_json) for m in lbj["models"] if m["model"] in NAME]
     con.close()
-    res.sort(key=lambda r: (r["track"] == "large", -(r["fix"]["exc_mean"] if r["fix"] and r["fix"]["n"] >= 4 else -99)))
+    res.sort(key=lambda r: (r["track"] == "large", r["retired"], -(r["fix"]["exc_mean"] if r["fix"] and r["fix"]["n"] >= 4 else -99)))   # 은퇴는 트랙 맨 아래
     payload = {"asof": dates[-1], "generated": datetime.now().isoformat(timespec="seconds"), "H": H, "TOP": TOP, "COST": COST,
                "note": "참고 성적 · 검증 결론 아님 · 사전등록 v5 와 뼈대 동일하나 희석 제외·PIT·블록 CI 미적용", "models": res}
     (HERE / "docs" / "scoreboard.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
