@@ -112,6 +112,9 @@ if errorlevel 1 set "FAILED=%FAILED% build_large_test"
 rem [2026-09-17] past-day list tabs for model pages (docs/hist/*.json, display only, non-fatal)
 python build_daily_lists.py
 if errorlevel 1 set "FAILED=%FAILED% build_daily_lists"
+rem [2026-09-18] model scoreboard (docs/scoreboard.json, display only, non-fatal)
+python build_scoreboard.py
+if errorlevel 1 set "FAILED=%FAILED% build_scoreboard"
 
 echo.
 echo ========================================================================

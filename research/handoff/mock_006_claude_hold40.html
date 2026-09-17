@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모델 성적표 — 40일 보유 기준 (샘플)</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--line:#e3e6ee;--txt:#1d2333;--sub:#6b7386;--blue:#2f5fd8;--soft:#eef3ff;--good:#1a8f5a;--bad:#c9403a;--warn:#8a6d1a;--warnbg:#fff7dc}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 40px}
+  .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;color:var(--sub);font-size:12px}
+  .tag{background:var(--soft);color:var(--blue);border-radius:6px;padding:2px 8px;font-size:12px}
+  h1{font-size:22px;margin:10px 0 2px} .sub{color:var(--sub);margin:0 0 14px}
+  .lead{background:var(--card);border-left:4px solid var(--blue);border-radius:8px;padding:12px 16px;margin:0 0 14px;font-size:16px}
+  .lead small{display:block;color:var(--sub);font-size:12.5px;margin-top:4px}
+  .cond{font-size:12.5px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:15px;margin:0 0 2px} .card .h{color:var(--sub);font-size:12px;margin-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .card{overflow-x:auto} table{border-collapse:collapse;width:100%;min-width:640px} th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:top}
+  td.wrap{white-space:normal;min-width:150px;max-width:260px} tr.det td{white-space:normal;text-align:left;background:#fafbfe;color:var(--sub);font-size:12px;padding:6px 10px 10px} tr.main{cursor:pointer} .more{color:var(--blue);font-size:11px;margin-left:4px}
+  th{color:var(--sub);font-weight:500;font-size:12px} td.l,th.l{text-align:left} tr.bench td{background:var(--soft)}
+  .mid{font-weight:700;font-size:15px} .pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--sub)} .small{font-size:11.5px;color:var(--sub)}
+  .role{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-left:4px;color:var(--sub)}
+  .role.live{border-color:var(--blue);color:var(--blue)} .role.ret{border-color:#ccc;color:#999}
+  .lab{font-size:12.5px} .lab b{font-weight:600} .lab .obs{display:block;color:var(--sub);font-size:11.5px}
+  .wait{color:var(--warn);background:var(--warnbg);border-radius:5px;padding:1px 6px;font-size:12px}
+  details{margin:8px 0} summary{cursor:pointer;color:var(--blue);font-size:13px}
+  .foot{color:var(--sub);font-size:12px;margin-top:10px;line-height:1.6}
+  @media(max-width:700px){.wrap{padding:12px 10px} th,td{padding:7px 5px;font-size:12px} .mid{font-size:14px} h1{font-size:19px} .hide-m{display:none}}
+</style>
+</head>
+<body><div class="wrap">
+  <div class="top"><span>SCREENER / 모델 성적표 (Claude 샘플 · 운영 화면 아님)</span><span class="tag" id="asof"></span></div>
+  <h1>매일 상위 10을 사서 40거래일 들고 있었다면</h1>
+  <p class="sub">모델이 등록된 날부터 매 거래일, 그날 리스트의 시장별 상위 10 종목을 같은 금액씩 다음날 종가에 사서 40거래일 뒤 종가에 판 결과. 비교는 <b>같은 시장 아무 종목이나 같은 방식으로 산 평균</b>.</p>
+  <div class="lead" id="lead"></div>
+  <div class="cond" id="cond"></div>
+
+  <div class="card">
+    <h2>트랙 A · 과매도 / 저변동 / 전체종목</h2>
+    <div class="h"><span>수익은 평균(%) · 더 번 수익은 %p · 이긴 날은 매수일 중 비율 · 매수한 날 괄호는 40일 묶음 수 · 행을 누르면 검증 창과 지금 흐름</span><span>정렬: 시장보다 더 번 수익</span></div>
+    <table id="tblA"><thead><tr>
+      <th class="l">모델</th><th>40일 수익</th><th>시장 평균</th><th>시장보다<br>더 번 수익</th><th>중앙값</th><th>시장을<br>이긴 날</th><th>매수한<br>날</th><th class="l">검증 결론</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <h2>트랙 B · 대형 가치 (별도 유니버스 — 트랙 A 와 숫자 비교 금지)</h2>
+    <div class="h"><span>비교 = 그날 대형 후보군(large_final 전체) 평균</span></div>
+    <table id="tblB"><thead><tr>
+      <th class="l">모델</th><th>40일 수익</th><th>후보군 평균</th><th>후보군보다<br>더 번 수익</th><th>중앙값</th><th>이긴 날</th><th>매수한<br>날</th><th class="l">검증 결론</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <details><summary>"오늘까지 계속 들고 있었다면"으로 보면? (참고 — 산 지 하루 된 것과 두 달 된 것이 섞여 기준으로 쓰지 않음)</summary>
+    <table id="tblNow"><thead><tr><th class="l">모델</th><th>매수한 날</th><th>수익 평균</th><th>중앙값</th><th>시장 평균</th><th>시장보다 더 번 수익</th><th>시장을 이긴 날(%)</th></tr></thead><tbody></tbody></table>
+    <div class="foot">어제 산 것과 두 달 전 산 것이 한 평균에 섞인다. 시장이 오르면 모두 좋아 보이므로 시장 평균 없이는 읽지 말 것.</div>
+  </details>
+  <details><summary>참고 구간 · 가장 나빴던/좋았던 날 · 계산 조건</summary>
+    <table id="tblCI"><thead><tr><th class="l">모델</th><th>시장보다 더 번 수익(평균)</th><th>참고 95% 구간</th><th>가장 나빴던 날</th><th>가장 좋았던 날</th><th>매수 기간</th></tr></thead><tbody></tbody></table>
+    <div class="foot" id="cond2"></div>
+  </details>
+  <div class="foot">검증 결론 = 미리 정해 둔 40거래일 창에서 20일 보유 기준으로 한 번 내린 결론(날짜·창 병기, 채택 여부는 여기서만 정함). 지금 흐름 = 오늘까지 쌓인 "20일 뒤 순서를 얼마나 맞췄나"(100점 만점 환산)로 매일 바뀌는 참고치. 결론을 다시 내리려면 새 창을 미리 정해 두고 다시 봄.</div>
+</div>
+<script>
+const D={"asof": "20260917", "generated": "2026-09-17T23:51:32", "H": 40, "TOP": 10, "COST": 0.35, "note": "관측 전용 · 판정 아님 · 사전등록 v5 와 뼈대 동일하나 희석 제외·PIT·블록 CI 미적용", "models": [{"model": "v30", "name": "과매도 v3", "track": "v3", "reg_date": "20260606", "n_anchors": 66, "retired": false, "fix": {"n": 29, "blocks": 0.7, "ret_mean": 6.812059743523306, "ret_median": 6.56271715968545, "bench_mean": 0.9120517012486263, "exc_mean": 5.900008042274679, "exc_median": 5.106461869522905, "win": 0.9310344827586207, "first": "20260605", "last": "20260721", "ci_ref": [4.350141848295017, 7.534381013307745], "worst": -0.5422452237173232, "best": 18.744439200193156}, "first_done_eta": null, "now": {"n": 66, "ret_mean": 5.197290873537067, "ret_median": 3.5876082020218982, "bench_mean": 2.583095416537995, "exc_mean": 2.614195456999073, "exc_median": 1.4289170687220807, "win": 0.7121212121212122}, "sealed": {"v": "유의", "short": "유의(8/09 정본)"}, "verdict_window": "06/06~08/04", "live": {"ic20": 0.0456, "n": 48, "ci": [0.0165, 0.0766], "ic5": 0.0299, "oos_days": 67}, "role": "참고 모델"}, {"model": "mom_a", "name": "모멘텀 mom_a", "track": "lowvol", "reg_date": "20260627", "n_anchors": 52, "retired": false, "fix": {"n": 15, "blocks": 0.4, "ret_mean": 8.304889880405254, "ret_median": 8.180654720185327, "bench_mean": 4.905814337531788, "exc_mean": 3.3990755428734665, "exc_median": 5.477247101654584, "win": 0.6, "first": "20260626", "last": "20260721", "ci_ref": [-0.1437905413167758, 6.54806933964234], "worst": -13.335910792774333, "best": 11.367867727368647}, "first_done_eta": null, "now": {"n": 52, "ret_mean": 4.121098827856123, "ret_median": 2.797895826377138, "bench_mean": 3.80553321710355, "exc_mean": 0.31556561075257394, "exc_median": -0.18438821098768132, "win": 0.4423076923076923}, "sealed": {"v": "노이즈", "short": "노이즈(8/29)"}, "verdict_window": "06/27~08/26", "live": {"ic20": -0.0186, "n": 34, "ci": [-0.0791, 0.0422], "ic5": 0.0327, "oos_days": 53}, "role": "관측 중"}, {"model": "lv_a", "name": "저변동+반전 lv_a", "track": "lowvol", "reg_date": "20260625", "n_anchors": 53, "retired": false, "fix": {"n": 16, "blocks": 0.4, "ret_mean": 7.198344040590781, "ret_median": 8.056879525840433, "bench_mean": 5.020201528529831, "exc_mean": 2.1781425120609508, "exc_median": 2.0105989173335796, "win": 0.75, "first": "20260625", "last": "20260721", "ci_ref": [-0.23237853994991498, 4.5367966846768555], "worst": -5.407195496952375, "best": 12.457347587590354}, "first_done_eta": null, "now": {"n": 53, "ret_mean": 4.2055458545254405, "ret_median": 2.3366233742159768, "bench_mean": 3.898509058148405, "exc_mean": 0.3070367963770361, "exc_median": -0.1463680945710646, "win": 0.4716981132075472}, "sealed": {"v": "노이즈", "short": "노이즈(8/29)"}, "verdict_window": "06/25~08/24", "live": {"ic20": -0.0304, "n": 34, "ci": [-0.0835, 0.0211], "ic5": 0.0507, "oos_days": 54}, "role": "관측 중"}, {"model": "le_a", "name": "저점탈출 le_a", "track": "wu", "reg_date": "20260715", "n_anchors": 44, "retired": false, "fix": {"n": 4, "blocks": 0.1, "ret_mean": 9.634245136813885, "ret_median": 9.903780204587168, "bench_mean": 7.471112946141203, "exc_mean": 2.163132190672682, "exc_median": 1.3296066783411842, "win": 0.75, "first": "20260715", "last": "20260721", "ci_ref": [0.0006740260983009172, 5.159115867578562], "worst": -0.5867451860557651, "best": 6.580060592064125}, "first_done_eta": null, "now": {"n": 44, "ret_mean": 7.056121688685388, "ret_median": 4.066764332830603, "bench_mean": 3.486959014526387, "exc_mean": 3.5691626741590015, "exc_median": 1.6442254778055667, "win": 0.7045454545454546}, "sealed": {"v": "노이즈", "short": "노이즈(9/13)"}, "verdict_window": "07/15~09/11", "live": {"ic20": -0.0261, "n": 24, "ci": [-0.0545, 0.0031], "ic5": -0.0318, "oos_days": 45}, "role": "관측 중"}, {"model": "lv_b", "name": "저변동 lv_b", "track": "lowvol", "reg_date": "20260625", "n_anchors": 53, "retired": false, "fix": {"n": 16, "blocks": 0.4, "ret_mean": 6.288699976396797, "ret_median": 6.696569871273439, "bench_mean": 5.020201528529831, "exc_mean": 1.2684984478669659, "exc_median": 0.851098417040816, "win": 0.625, "first": "20260625", "last": "20260721", "ci_ref": [-0.5271487869643069, 3.0777661282467883], "worst": -4.670885954557405, "best": 9.20445962165698}, "first_done_eta": null, "now": {"n": 53, "ret_mean": 2.4787657041972966, "ret_median": 1.0422705533859964, "bench_mean": 3.898509058148405, "exc_mean": -1.4197433539511075, "exc_median": -1.0919056857349947, "win": 0.3018867924528302}, "sealed": {"v": "기움", "short": "기움(8/29 정본)"}, "verdict_window": "06/25~08/24", "live": {"ic20": -0.0012, "n": 34, "ci": [-0.0675, 0.066], "ic5": 0.0422, "oos_days": 54}, "role": "운용 중"}, {"model": "sm_a", "name": "초소형 sm_a", "track": "lowvol", "reg_date": "20260627", "n_anchors": 51, "retired": false, "fix": {"n": 15, "blocks": 0.4, "ret_mean": 5.853903437483491, "ret_median": 6.460529940037969, "bench_mean": 4.905814337531788, "exc_mean": 0.9480890999517041, "exc_median": -0.029563558186586292, "win": 0.4666666666666667, "first": "20260626", "last": "20260721", "ci_ref": [-0.4528645435383727, 2.574656420063881], "worst": -2.286087713835934, "best": 7.358392929223278}, "first_done_eta": null, "now": {"n": 51, "ret_mean": 3.897722266992022, "ret_median": 3.0489390957913964, "bench_mean": 4.002275550494098, "exc_mean": -0.10455328350207595, "exc_median": -1.0264092267060811, "win": 0.35294117647058826}, "sealed": {"v": "노이즈", "short": "노이즈(9/01)"}, "verdict_window": "06/27~08/26", "live": {"ic20": 0.0313, "n": 31, "ci": [-0.0391, 0.1022], "ic5": 0.0334, "oos_days": 52}, "role": "관측 중"}, {"model": "sv_a", "name": "공매도비중 sv_a", "track": "wu", "reg_date": "20260715", "n_anchors": 44, "retired": false, "fix": {"n": 4, "blocks": 0.1, "ret_mean": 3.8844088489689397, "ret_median": 3.417868122169216, "bench_mean": 7.471112946141203, "exc_mean": -3.5867040971722632, "exc_median": -4.91451447309901, "win": 0.25, "first": "20260715", "last": "20260721", "ci_ref": [-5.191299074261721, -0.6542987441560584], "worst": -5.312194539750599, "best": 0.7944070972595672}, "first_done_eta": null, "now": {"n": 44, "ret_mean": 1.3893772452036235, "ret_median": 0.9151741802578015, "bench_mean": 3.486959014526387, "exc_mean": -2.0975817693227636, "exc_median": -2.035256654895698, "win": 0.1590909090909091}, "sealed": {"v": "기움", "short": "기움(9/13 정본)"}, "verdict_window": "07/15~09/11", "live": {"ic20": 0.0279, "n": 24, "ci": [0.0118, 0.0437], "ic5": 0.0368, "oos_days": 45}, "role": "관측 중"}, {"model": "px_a", "name": "가격4팩터 px_a", "track": "wu", "reg_date": "20260810", "n_anchors": 27, "retired": false, "fix": null, "first_done_eta": "10/07", "now": {"n": 27, "ret_mean": 0.04083812117608669, "ret_median": 0.174941192626763, "bench_mean": 0.622248299148002, "exc_mean": -0.5814101779719153, "exc_median": -0.38130112319925996, "win": 0.3333333333333333}, "sealed": null, "verdict_window": "08/10~09/17", "live": {"ic20": 0.0606, "n": 7, "ci": [0.0131, 0.1047], "ic5": 0.071, "oos_days": 28}, "role": "관측 중"}, {"model": "qs_a", "name": "조용한강자 qs_a", "track": "wu", "reg_date": "20260723", "n_anchors": 39, "retired": false, "fix": null, "first_done_eta": "09/20", "now": {"n": 39, "ret_mean": 0.7305857325634915, "ret_median": 0.02166705513227396, "bench_mean": 2.993524395337014, "exc_mean": -2.2629386627735224, "exc_median": -1.4497966282308725, "win": 0.1282051282051282}, "sealed": {"v": "노이즈", "short": "노이즈(9/17)"}, "verdict_window": "07/23~09/17", "live": {"ic20": -0.0564, "n": 19, "ci": [-0.1341, 0.0124], "ic5": -0.0355, "oos_days": 40}, "role": "관측 중"}, {"model": "mom_b", "name": "모멘텀+눌림 mom_b", "track": "lowvol", "reg_date": "20260717", "n_anchors": 39, "retired": true, "fix": {"n": 2, "blocks": 0.1, "ret_mean": 7.607403832984446, "ret_median": 7.607403832984446, "bench_mean": 7.423697961837375, "exc_mean": 0.1837058711470716, "exc_median": 0.1837058711470716, "win": 0.5, "first": "20260720", "last": "20260721", "ci_ref": null, "worst": -2.9723676484151245, "best": 3.3397793907092677}, "first_done_eta": null, "now": {"n": 39, "ret_mean": 3.7311579524028438, "ret_median": 2.358629741551068, "bench_mean": 3.4579449079169478, "exc_mean": 0.27321304448589556, "exc_median": -0.48176412231513055, "win": 0.46153846153846156}, "sealed": {"v": "역작동", "short": "역작동(9/17 정본)"}, "verdict_window": "07/17~09/15", "live": {"ic20": -0.0917, "n": 21, "ci": [-0.1446, -0.0425], "ic5": 0.0033, "oos_days": 40}, "role": "은퇴(기록)"}, {"model": "lv_e", "name": "저변동+저회전 lv_e", "track": "lowvol", "reg_date": "20260901", "n_anchors": 11, "retired": false, "fix": null, "first_done_eta": "10/29", "now": {"n": 11, "ret_mean": -0.14590938625636027, "ret_median": -0.19674738389682245, "bench_mean": 0.5067276727747548, "exc_mean": -0.652637059031115, "exc_median": -0.6230910015933466, "win": 0.18181818181818182}, "sealed": null, "verdict_window": "09/01~09/17", "live": {"ic20": null, "n": 0, "ci": [null, null], "ic5": -0.0599, "oos_days": 12}, "role": "관측 중"}, {"model": "sv_b", "name": "공매도+신용 sv_b", "track": "wu", "reg_date": "20260914", "n_anchors": 3, "retired": false, "fix": null, "first_done_eta": "11/11", "now": {"n": 3, "ret_mean": 0.33623720200817386, "ret_median": 0.0, "bench_mean": 0.3632234340292542, "exc_mean": -0.02698623202108036, "exc_median": 0.0, "win": 0.3333333333333333}, "sealed": null, "verdict_window": "09/14~09/17", "live": {"ic20": null, "n": 0, "ci": [null, null], "ic5": null, "oos_days": 4}, "role": "관측 중"}, {"model": "ls_t1", "name": "대형밸류 ls_t1", "track": "large", "reg_date": "20260806", "n_anchors": 26, "retired": false, "fix": null, "first_done_eta": "10/04", "now": {"n": 26, "ret_mean": 0.5484331966598404, "ret_median": 0.29122614050070217, "bench_mean": 0.2697272411297345, "exc_mean": 0.27870595553010585, "exc_median": 0.3915086391251809, "win": 0.6153846153846154}, "sealed": null, "verdict_window": "08/06~09/17", "live": {"ic20": 0.1134, "n": 8, "ci": [0.0626, 0.1573], "ic5": 0.0708, "oos_days": 26}, "role": "관측 중"}]};
+const f1=(v,u='%')=>v==null?'—':(v>0?'+':'')+v.toFixed(1)+u;
+const cls=v=>v==null?'':v>0?'pos':v<0?'neg':'';
+const fd=d=>d?(+d.slice(4,6))+'/'+(+d.slice(6)):'';
+document.getElementById('asof').textContent='실제 저장 자료 · '+fd(D.asof)+' 종가 기준 · 참고 성적(검증 결론 아님)';
+document.getElementById('cond').innerHTML=`시장별 상위 ${D.TOP} · 다음 거래일 종가 매수 · ${D.H}거래일 보유 · 비용 0(왕복 ${D.COST}%를 빼면 각 −${D.COST}%p) · 급등 제외 없음 · 배당 제외`;
+document.getElementById('cond2').innerHTML=`참고 구간은 겹치는 40일 창을 따로따로인 것처럼 다시 뽑은 것이라 실제보다 좁다 — 정식 결론은 미리 정한 절차(40일 묶음 단위·묶음 4개·2027-06)에서만. 희석 배지 제외·PIT 유니버스는 이 샘플에 미적용. 가격 없는 종목(ohlcv 미수집 약 130종목)은 바구니에서 빠짐. 생성 ${D.generated}`;
+const A=D.models.filter(m=>m.track!=='large'), B=D.models.filter(m=>m.track==='large');
+const LABEL={'유의':'효과 확인됨','기움':'좋아 보이지만 확정 아님','노이즈':'차이 없음','역작동':'반대로 감 (점수 높을수록 나쁨)'};
+function lab(m){
+  const s=m.sealed, l=m.live||{};
+  const when=s?((s.short.match(/\((.*)\)/)||[])[1]||''):'';
+  const v=s?`<b>${LABEL[s.v]||s.v}</b><br><span class="small">${s.v} · ${when}</span>`:(l.oos_days!=null&&l.oos_days<40?`<b>아직 결론 전</b><br><span class="small">검증 ${l.oos_days}/40일</span>`:`<b>아직 결론 전</b>`);
+  return `<div class="lab">${v}</div>`;
+}
+function det(m){
+  const s=m.sealed, l=m.live||{}, f=m.fix;
+  const a=s?`검증 결론은 ${m.verdict_window||''} 창을 20일 보유 기준으로 본 것(원래 용어 '${s.v}').`:`검증 창 ${m.verdict_window||''} 진행 중.`;
+  const o=l.ic20!=null?`지금 흐름(참고): 20일 뒤 순서 맞춤 ${f1(l.ic20*100,'')}/100, ${l.n}일치${l.ic5!=null?' · 5일 뒤 '+f1(l.ic5*100,''):''}.`:'지금 흐름: 아직 20일 지난 자료 없음.';
+  const b=f&&f.ci_ref?` 참고 구간 ${f1(f.ci_ref[0],'')}~${f1(f.ci_ref[1],'%p')}, 가장 나빴던 날 ${f1(f.worst,'%p')}, 가장 좋았던 날 ${f1(f.best,'%p')} (${fd(f.first)}~${fd(f.last)} 매수).`:'';
+  return `${a} ${o}${b} 시작 ${fd(m.reg_date)}.`;
+}
+function roleTag(m){return m.retired?`<span class="role ret">은퇴</span>`:'';}
+function row(m,large){
+  const f=m.fix, nm=`<td class="l wrap"><b>${m.name.replace(m.model,'').trim()}</b> <span class="muted">${m.model}</span>${roleTag(m)}<span class="more">▾</span></td>`;
+  const dr=`<tr class="det" hidden><td colspan="8">${det(m)}</td></tr>`;
+  if(!f||f.n<4) return `<tr class="main">${nm}<td colspan="6" class="l">${m.retired?`<span class="small">새 리스트 중단 · 기록용 (40일 끝난 매수일 ${f?f.n:0}일)</span>`:`<span class="wait">결과 기다리는 중</span> <span class="small">첫 결과 ${m.first_done_eta?'~'+m.first_done_eta:'곧'}</span>`}</td><td class="l">${lab(m)}</td></tr>`+dr;
+  return `<tr class="main">${nm}<td>${f1(f.ret_mean)}</td><td class="muted">${f1(f.bench_mean)}</td><td class="mid ${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td class="${cls(f.exc_median)}">${f1(f.exc_median,'%p')}</td><td>${Math.round(f.win*100)}%</td><td>${f.n} <span class="small">(${f.blocks})</span></td><td class="l">${lab(m)}</td></tr>`+dr;
+}
+document.querySelector('#tblA tbody').innerHTML=A.map(m=>row(m)).join('');
+document.querySelector('#tblB tbody').innerHTML=B.map(m=>row(m,true)).join('')||'<tr><td colspan="8" class="l muted">없음</td></tr>';
+document.querySelectorAll('tr.main').forEach(tr=>tr.onclick=()=>{const d=tr.nextElementSibling; if(d&&d.classList.contains('det')) d.hidden=!d.hidden;});
+document.querySelector('#tblNow tbody').innerHTML=D.models.filter(m=>m.now).map(m=>{const n=m.now;return `<tr><td class="l">${m.name}</td><td>${n.n}</td><td>${f1(n.ret_mean)}</td><td>${f1(n.ret_median)}</td><td class="muted">${f1(n.bench_mean)}</td><td class="${cls(n.exc_mean)}">${f1(n.exc_mean,'%p')}</td><td>${Math.round(n.win*100)}%</td></tr>`}).join('');
+document.querySelector('#tblCI tbody').innerHTML=D.models.filter(m=>m.fix&&m.fix.ci_ref).map(m=>{const f=m.fix;return `<tr><td class="l">${m.name}</td><td class="${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td>${f1(f.ci_ref[0],'')} ~ ${f1(f.ci_ref[1],'%p')}</td><td class="neg">${f1(f.worst,'%p')}</td><td class="pos">${f1(f.best,'%p')}</td><td class="small">${fd(f.first)}~${fd(f.last)} 매수</td></tr>`}).join('');
+// 한 줄 결론(규칙: 완결 8건 이상 중 초과 평균 1위 + 운용 중 모델의 위치)
+const ok=A.filter(m=>m.fix&&m.fix.n>=8).sort((a,b)=>b.fix.exc_mean-a.fix.exc_mean);
+let s='';
+if(ok.length){const t=ok[0], cmp=A.filter(m=>m.fix&&m.fix.n>=4), beat=cmp.filter(m=>m.fix.exc_mean>0).length;
+  s=`이 방식으로 사고팔았다면 <b>${t.name}</b>이(가) 시장 평균보다 평균 ${f1(t.fix.exc_mean,'%p')} 더 벌어 가장 앞섰습니다. 비교할 수 있는 ${cmp.length}개 모델 중 ${beat}개가 시장 평균을 이겼습니다.`;}
+document.getElementById('lead').innerHTML=s+`<small>모든 모델을 같은 매매 방식으로 잰 참고 성적입니다. 성적이 좋다고 바로 채택되지는 않으며, 채택 여부는 오른쪽 '검증 결론' 열의 미리 정한 절차로만 정합니다.</small>`;
+</script>
+</body>
+</html>
