@@ -117,3 +117,4 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         print(f"⚠ scoreboard 생성 실패(비치명): {e}")
+        sys.exit(1)   # [2026-09-21] 조용히 낡는 것 방지 — .bat 의 FAILED 에 잡혀 텔레그램 🔔(표시 전용 단계라 첫 줄은 안 바뀜)

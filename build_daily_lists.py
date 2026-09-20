@@ -4,7 +4,9 @@
 history.db 의 동결 점수(v3_scores·lowvol_scores·wu_scores)에서 최근 N거래일 앵커별 시장별 상위 K 를 뽑아
 docs/hist/{model}.json 으로 내보낸다. 종목명은 같은 run 의 stage3_final, 없으면 listing_cache. 가격은 ohlcv.db close
 (그날 종가 → 최신 종가 등락%). run_id→거래일·게이트는 leaderboard.py 규약(anchor/dedupe_by_anchor/build_gates).
-점수·판정 코드 미접촉 · 읽기 전용 · 실패해도 비치명. 실행: python build_daily_lists.py [--days 10] [--top 50]
+점수·판정 코드 미접촉 · 읽기 전용 · 실패해도 비치명(배치는 계속, 종료코드 1 로 텔레그램 🔔 에만 표시).
+[소비자] docs 의 모델 페이지 날짜 탭 + **Position-Tracker-Web**(app/screener.py model_entry — hist/v30.json·hist/ls_t1.json 의
+  days[0].date 와 rows[].rank/ticker/market 을 읽어 매수 폼에 '오늘 목록 순위'를 보여 준다). 이 키 이름·구조를 바꾸면 PTW 도 같이 고칠 것. 실행: python build_daily_lists.py [--days 10] [--top 50]
 """
 import argparse, json, sqlite3, sys
 from datetime import datetime
@@ -99,3 +101,4 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         print(f"⚠ daily_lists 생성 실패(비치명): {e}")
+        sys.exit(1)   # [2026-09-21] 조용히 낡는 것 방지 — .bat 의 FAILED 에 잡혀 텔레그램 🔔(관측 전용 단계라 첫 줄은 안 바뀜)

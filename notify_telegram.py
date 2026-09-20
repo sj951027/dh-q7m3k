@@ -606,7 +606,8 @@ def _change_events_v3(act, min_oos, need):
             if names:
                 # [2026-09-16] 관측 전용 수집기(점수·추천·판정에 안 들어감)의 실패는 🔔 로만 알리고 첫 줄을 '확인 필요'로 바꾸지 않는다.
                 #   09-16 첫 사례: fetch_consensus(네이버 구조 변경) 실패 감지가 작동해 첫 줄이 ⚠️ 가 됐는데, 스크리너 결과와는 무관.
-                OBS_ONLY = {"fetch_consensus", "dart_events", "dart_backfill"}
+                OBS_ONLY = {"fetch_consensus", "dart_events", "dart_backfill",
+                            "build_daily_lists", "build_scoreboard"}   # [2026-09-21] 표시 전용 산출물(날짜 탭·성적표)
                 parts = [n for n in names.replace(",", " ").split() if n]
                 crit = [n for n in parts if n not in OBS_ONLY]; obs = [n for n in parts if n in OBS_ONLY]
                 if crit:
