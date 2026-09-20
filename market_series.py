@@ -71,6 +71,7 @@ def repair(start):
     con = sqlite3.connect(OHLCV_DB)
     px_last = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
     from pykrx import stock as _krx
+    fixed = 0
     for name, kcode in KRX_INDEX.items():
         kdf = _krx.get_index_ohlcv_by_date(start, px_last, kcode)
         if kdf is None or kdf.empty:
@@ -80,8 +81,10 @@ def repair(start):
             d = idx.strftime("%Y%m%d")
             old = con.execute("SELECT close FROM market_daily WHERE series=? AND date=?", (name, d)).fetchone()
             con.execute("INSERT OR REPLACE INTO market_daily VALUES (?,?,?)", (name, d, float(v)))
+            fixed += 1
             print(f"  ✓ {name} {d}: {old[0] if old else '없음'} → {float(v)}")
     con.commit(); con.close()
+    return fixed
 
 
 def main():
@@ -151,7 +154,14 @@ def main():
 if __name__ == "__main__":
     try:
         if len(sys.argv) >= 3 and sys.argv[1] == "--repair-from":
-            repair(sys.argv[2])
+            # [2026-09-21] 정정은 사람이 시키는 1회성 작업 — 한 행도 못 고쳤거나 예외면 종료코드 1(배치용 main 은 종전대로 비치명 0).
+            try:
+                n = repair(sys.argv[2])
+            except Exception as e:
+                print(f"❌ 정정 실패: {e}"); sys.exit(1)
+            if not n:
+                print("❌ 정정된 행 0 — KRX 응답 없음/로그인 실패 가능"); sys.exit(1)
+            print(f"정정 완료: {n}행"); sys.exit(0)
         else:
             main()
     except Exception as e:
