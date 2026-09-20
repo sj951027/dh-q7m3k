@@ -41,7 +41,51 @@ DDL = """CREATE TABLE IF NOT EXISTS market_daily (
 )"""
 
 
+KRX_INDEX = {"KOSPI": "1001", "KOSDAQ": "2001"}   # pykrx 지수 코드
+
+
+def _load_dotenv():
+    """[2026-09-20] .env 를 os.environ 에 로드(이미 있으면 안 덮음 · 값은 출력하지 않음).
+    9/18 실측: FDR 지수가 9/17에서 멈춰 pykrx 예비가 처음 발동했는데, 이 스크립트만 .env 를 안 읽어
+    KRX_ID/KRX_PW 가 비어 'KRX 로그인 실패(환경 변수 미설정)'로 떨어졌다. notify_telegram._load_dotenv 와 같은 동작."""
+    p = HERE / ".env"
+    if not p.exists():
+        return
+    try:
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+    except Exception:
+        pass
+
+
+def repair(start):
+    """[2026-09-20] 지수 정정: start(YYYYMMDD)부터 시세 마지막 날까지 KOSPI/KOSDAQ 를 pykrx(KRX) 값으로 덮어쓴다(REPLACE).
+    용도: FDR 지수 소스가 장중에 멈춰 확정 전 값이 저장된 날 정정. 사용: python market_series.py --repair-from 20260917"""
+    _load_dotenv()
+    con = sqlite3.connect(OHLCV_DB)
+    px_last = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
+    from pykrx import stock as _krx
+    for name, kcode in KRX_INDEX.items():
+        kdf = _krx.get_index_ohlcv_by_date(start, px_last, kcode)
+        if kdf is None or kdf.empty:
+            print(f"  ⚠️ {name}: pykrx 데이터 없음 — 정정 안 함"); continue
+        ccol = "종가" if "종가" in kdf.columns else kdf.columns[3]
+        for idx, v in kdf[ccol].dropna().items():
+            d = idx.strftime("%Y%m%d")
+            old = con.execute("SELECT close FROM market_daily WHERE series=? AND date=?", (name, d)).fetchone()
+            con.execute("INSERT OR REPLACE INTO market_daily VALUES (?,?,?)", (name, d, float(v)))
+            print(f"  ✓ {name} {d}: {old[0] if old else '없음'} → {float(v)}")
+    con.commit(); con.close()
+
+
 def main():
+    _load_dotenv()
     if not os.path.exists(OHLCV_DB):
         print(f"⚠️ ohlcv.db 없음({OHLCV_DB}) — 생략(비치명).")
         return
@@ -80,7 +124,6 @@ def main():
         px_last = con.execute("SELECT MAX(date) FROM daily_ohlcv").fetchone()[0]
     except Exception:
         px_last = None
-    KRX_INDEX = {"KOSPI": "1001", "KOSDAQ": "2001"}
     for name, kcode in KRX_INDEX.items():
         last = con.execute("SELECT MAX(date) FROM market_daily WHERE series=?", (name,)).fetchone()[0]
         if not px_last or not last or last >= px_last:
@@ -107,7 +150,10 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        if len(sys.argv) >= 3 and sys.argv[1] == "--repair-from":
+            repair(sys.argv[2])
+        else:
+            main()
     except Exception as e:
         print(f"❌ 실패(비치명 — 파이프라인 계속): {e}")
         sys.exit(0)
