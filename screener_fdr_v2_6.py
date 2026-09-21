@@ -394,12 +394,76 @@ def _analyze_index_regime(cfg):
     from_date = (today - timedelta(days=450)).strftime("%Y-%m-%d")
 
     try:
-        df = fdr.DataReader(cfg['index_code'], from_date)
-        if df is None or len(df) < 200:
+        close = _index_close_series(cfg, from_date)
+        if close is None or len(close) < 200:
             print("   ⚠️  지수 데이터 부족 (200일 이상 필요)")
             return None
+        return _regime_from_close(close, cfg)
+    except Exception as e:
+        print(f"   ⚠️  지수 조회 실패: {str(e)[:80]}")
+        return None
 
-        close = df['Close']
+
+_INDEX_DB_SERIES = {'KS11': 'KOSPI', 'KQ11': 'KOSDAQ'}
+
+
+def _index_close_db(index_code, from_date):
+    """[2026-09-21] ohlcv.db market_daily 의 지수 종가(Series, index=날짜). 없거나 실패면 None.
+    market_series.py 가 매일 FDR → (정지 시) KRX 예비로 채우는 같은 지수다."""
+    try:
+        name = _INDEX_DB_SERIES.get(index_code)
+        if not name or not _os.path.exists(OHLCV_DB_PATH):
+            return None
+        import sqlite3
+        con = sqlite3.connect(f"file:{_os.path.abspath(OHLCV_DB_PATH)}?mode=ro", uri=True)
+        try:
+            rows = con.execute("SELECT date, close FROM market_daily WHERE series=? AND date>=? ORDER BY date",
+                               (name, from_date.replace("-", ""))).fetchall()
+        finally:
+            con.close()
+        if not rows:
+            return None
+        ser = pd.Series([float(c) for _, c in rows],
+                        index=pd.to_datetime([d for d, _ in rows], format="%Y%m%d"), dtype=float)
+        return ser.dropna()
+    except Exception:
+        return None
+
+
+def _pick_index_series(fdr_close, db_close):
+    """[2026-09-21] 어느 지수 시리즈를 쓸지 — 순수 함수(테스트용).
+    원칙: **FDR 가 DB 만큼 최신이면 종전대로 FDR**(평소 결과 0-diff). DB 의 마지막 날짜가 더 뒤일 때만 DB.
+    반환 (시리즈 또는 None, 'fdr'|'db'|None)."""
+    f_ok = fdr_close is not None and len(fdr_close) > 0
+    d_ok = db_close is not None and len(db_close) > 0
+    if f_ok and (not d_ok or fdr_close.index[-1] >= db_close.index[-1]):
+        return fdr_close, 'fdr'
+    if d_ok:
+        return db_close, 'db'
+    return None, None
+
+
+def _index_close_series(cfg, from_date):
+    """지수 종가 시리즈. 2026-09-17 FDR 지수(KS11/KQ11)가 장중 값에서 멈춘 채 며칠째 갱신되지 않아
+    레짐이 낡은 지수로 계산됐다(9/18~9/21 실측: KOSPI 6,724 고정 vs 실제 7,008). FDR 가 뒤처지면 우리 DB 로 대체."""
+    fdr_close = None
+    try:
+        df = fdr.DataReader(cfg['index_code'], from_date)
+        if df is not None and len(df) and 'Close' in df.columns:
+            fdr_close = df['Close'].dropna()
+    except Exception as e:
+        print(f"   ⚠️  FDR 지수 조회 실패: {str(e)[:80]}")
+    db_close = _index_close_db(cfg['index_code'], from_date)
+    close, src = _pick_index_series(fdr_close, db_close)
+    if src == 'db':
+        f_last = fdr_close.index[-1].strftime('%Y-%m-%d') if fdr_close is not None and len(fdr_close) else '없음'
+        print(f"   ℹ️  지수 소스: ohlcv.db market_daily (~{close.index[-1].strftime('%Y-%m-%d')}) — FDR 는 {f_last} 에서 정지")
+    return close
+
+
+def _regime_from_close(close, cfg):
+    """지수 종가 시리즈 → 레짐 dict. 계산식은 종전 _analyze_index_regime 본문 그대로(옮기기만 함)."""
+    if True:
         latest = float(close.iloc[-1])
         prev = float(close.iloc[-2])
         sma50 = float(close.rolling(50).mean().iloc[-1])
@@ -438,9 +502,6 @@ def _analyze_index_regime(cfg):
             'kospi_return_1m_%': round(return_1m_pct, 1),
             'kospi_return_3m_%': round(return_3m_pct, 1),
         }
-    except Exception as e:
-        print(f"   ⚠️  지수 조회 실패: {str(e)[:80]}")
-        return None
 
 
 def _analyze_fx_trend(cfg):

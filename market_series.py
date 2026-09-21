@@ -26,6 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
 HERE = Path(__file__).resolve().parent
 OHLCV_DB = os.environ.get("OHLCV_DB", str(HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
 BACKFILL_START = "2023-06-01"
+REFRESH_DAYS = 7   # [2026-09-21] 증분 실행 때 다시 받아 덮어쓰는 최근 달력일 수(임시값 자동 정정)
 
 SERIES = {  # 이름: FDR 코드
     "KOSPI": "KS11",
@@ -103,8 +104,14 @@ def main():
     for name, code in SERIES.items():
         last = con.execute(
             "SELECT MAX(date) FROM market_daily WHERE series=?", (name,)).fetchone()[0]
-        start = BACKFILL_START if last is None else \
-            f"{last[:4]}-{last[4:6]}-{last[6:]}"  # 마지막 날짜부터(중복은 IGNORE)
+        # [2026-09-21] 마지막 날짜의 7일 전부터 다시 받아 **덮어쓴다(REPLACE)** — 20:10 에 받은 당일 값이 확정 전 수치일 때
+        #   (실측: 8/27 KOSPI 6879.87 저장 vs 공식 6912.37, 9/17 6724.34 vs 6715.41) 다음 실행에서 공식 종가로 바로잡힌다.
+        #   종전 IGNORE 는 한 번 들어간 임시값이 영영 남았다. 소스가 빈 응답이면 아무것도 안 바뀐다.
+        if last is None:
+            start = BACKFILL_START
+        else:
+            from datetime import datetime as _dt0, timedelta as _td0
+            start = (_dt0.strptime(last, "%Y%m%d") - _td0(days=REFRESH_DAYS)).strftime("%Y-%m-%d")
         try:
             df = fdr.DataReader(code, start)
         except Exception as e:
@@ -115,11 +122,17 @@ def main():
             continue
         rows = [(name, idx.strftime("%Y%m%d"), float(v))
                 for idx, v in df["Close"].dropna().items()]
-        cur = con.executemany(
-            "INSERT OR IGNORE INTO market_daily VALUES (?,?,?)", rows)
+        n_new = sum(1 for r in rows if last is None or r[1] > last)
+        # 임시값은 '소스의 마지막 행'(받는 시점의 당일 값)에서만 생긴다 → 그 행은 종전대로 IGNORE(있으면 안 건드림),
+        #   그보다 앞선 행만 REPLACE 로 바로잡는다. 소스가 살아 있으면 다음 실행 때 그 날짜는 더 이상 마지막 행이 아니라 정정된다.
+        #   소스가 멈춰 있으면(9/17 에서 정지한 FDR 처럼) 마지막 행은 영영 IGNORE 라, KRX 로 정정해 둔 값을 되돌리지 못한다.
+        #   (2026-09-21 실측: 전부 REPLACE 로 했더니 정지한 FDR 의 9/17 임시값 6724.34 가 정정값 6715.41 을 덮어썼다 → 즉시 수정.)
+        if rows:
+            con.executemany("INSERT OR REPLACE INTO market_daily VALUES (?,?,?)", rows[:-1])
+            con.execute("INSERT OR IGNORE INTO market_daily VALUES (?,?,?)", rows[-1])
         con.commit()
-        total += cur.rowcount
-        print(f"  ✓ {name}: 신규 {cur.rowcount}행 (마지막 {rows[-1][1] if rows else '-'})")
+        total += n_new
+        print(f"  ✓ {name}: 신규 {n_new}행 (마지막 {rows[-1][1] if rows else '-'}) · 최근 {REFRESH_DAYS}일 재확인")
     # [2026-09-09] 예비 소스 — FDR 지수(KS11/KQ11)가 시세(daily_ohlcv)보다 뒤처지면 pykrx(KRX 지수 1001/2001)로 보충.
     #   9/08~09 실측: FDR 상장목록 404 와 함께 지수도 9/07에서 멈춤(시세·환율은 정상). 판정엔 안 쓰이지만
     #   리더보드 '돈' 표의 코스피 참고선이 ffill 로 조용히 낡는 것을 막는다. 둘 다 실패하면 경고만.
