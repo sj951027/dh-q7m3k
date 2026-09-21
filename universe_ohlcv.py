@@ -226,6 +226,58 @@ def record_skip(con, code, reason, at_date, fetched_at):
     )
 
 
+def close_revisions(con, code, df):
+    """[2026-09-21] 종가 정정 감시(측정만) — 재확인 창에서 '이미 저장된 종가'와 '방금 다시 받은 종가'가 다른 날 목록.
+    배경: 2026-09-14 KRX 애프터마켓(16~20시) 도입 뒤 20:10 수집값이 확정 전인 날이 있었다(9/14 15종목·9/16 11종목,
+    research/RESEARCH_krx_after_market_20260918.md). 다음 날 재수집에서 공식 종가로 바뀌므로, 그 '바뀐 건수'가 곧 전날 오염 규모다.
+    수정주가 재조정(ADJ_TOL 초과)은 별건이라 제외. 반환 [(date, old, new)]. 예외 없음."""
+    out = []
+    try:
+        dates = [idx.strftime("%Y%m%d") for idx in df.index]
+        if not dates:
+            return out
+        have = dict(con.execute(
+            "SELECT date, close FROM daily_ohlcv WHERE ticker=? AND date>=? AND date<=?", (code, min(dates), max(dates))).fetchall())
+        for idx, c in zip(dates, df["Close"].tolist()):
+            old = have.get(idx)
+            new = _safe_int(c)
+            if old is None or new is None or old <= 0 or old == new:
+                continue
+            if abs(new / old - 1) <= ADJ_TOL:
+                out.append((idx, old, new))
+    except Exception:
+        return []
+    return out
+
+
+def summarize_revisions(revs, today_ymd):
+    """{date: {"n":종목 수, "max_pct":최대 |변화%|}} — 오늘 날짜 행은 제외(오늘은 처음 받는 날)."""
+    agg = {}
+    for d, old, new in revs:
+        if d >= today_ymd:
+            continue
+        a = agg.setdefault(d, {"n": 0, "max_pct": 0.0})
+        a["n"] += 1
+        a["max_pct"] = max(a["max_pct"], abs(new / old - 1) * 100)
+    return agg
+
+
+def log_revisions(agg, n_checked, fetched_at):
+    """logs/close_revisions.csv 에 누적(측정 기록 — 실패해도 비치명)."""
+    try:
+        from pathlib import Path as _P
+        f = _P(__file__).resolve().parent / "logs" / "close_revisions.csv"
+        f.parent.mkdir(exist_ok=True)
+        new = not f.exists()
+        with open(f, "a", encoding="utf-8", newline="") as fh:
+            if new:
+                fh.write("checked_at,target_date,n_tickers_checked,n_close_revised,max_abs_pct\n")
+            for d in sorted(agg):
+                fh.write(f"{fetched_at},{d},{n_checked},{agg[d]['n']},{agg[d]['max_pct']:.2f}\n")
+    except Exception:
+        pass
+
+
 def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_WINDOW, tickers=None):
     fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     today = datetime.now()
@@ -249,6 +301,7 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
 
     end = today.strftime("%Y-%m-%d")
     n_ok = n_skip = n_rows = n_readj = 0
+    _revs = []   # [2026-09-21] 종가 정정 감시용 (date, old, new)
     t0 = time.time()
 
     for i, item in enumerate(universe, 1):
@@ -288,6 +341,8 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
                 else:
                     res = full; smap = shares_map(con, code); n_readj += 1
                     print(f"  ♻️  {code} 수정주가 재조정 감지(재확인 창 종가 불일치 >{ADJ_TOL:.0%}) → 전 기간 {len(res)}행 재적재")
+            if not backfill and not tickers:
+                _revs.extend(close_revisions(con, code, res))   # [2026-09-21] 측정만 — 적재 동작 불변
             added = upsert_ohlcv(con, code, mkt, shares, res, fetched_at, shares_by_date=smap)
             n_rows += added
             n_ok += 1
@@ -306,6 +361,16 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
     con.commit()
     con.close()
     print(f"\n[완료] 성공 {n_ok}종목 / 스킵 {n_skip} / 총 {n_rows:,}행 적재 / 수정주가 재조정 재적재 {n_readj}종목")
+    if not backfill and not tickers:
+        _agg = summarize_revisions(_revs, today.strftime("%Y%m%d"))
+        if _agg:
+            _last = max(_agg)
+            print(f"[종가 정정 감시] 직전 저장값과 달라진 종가: " + " · ".join(f"{d} {_agg[d]['n']}종목(최대 ±{_agg[d]['max_pct']:.1f}%)" for d in sorted(_agg)[-3:]))
+            if _agg[_last]["n"] >= 5:
+                print(f"   ⚠️ {_last} 에 {_agg[_last]['n']}종목 — 그날 20:10 수집값이 확정 전이었을 가능성(애프터마켓). 누적 기록: logs/close_revisions.csv")
+        else:
+            print("[종가 정정 감시] 재확인 창에서 달라진 종가 0건 — 전날 수집값이 공식 종가와 같았다")
+        log_revisions(_agg, n_ok, fetched_at)
     print(f"       소요 {time.time()-t0:.0f}초. DB: {DB_PATH}")
 
 
