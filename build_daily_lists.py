@@ -25,6 +25,9 @@ MODELS = {
     # [2026-09-17] 추가 — mom_b 는 9/17 은퇴(적재 중지)라 기록용(마지막 적재일까지). ls_t1 은 점수 테이블이 없어 large_final 에서 합성.
     "mom_b": ("lowvol_scores", "lowvol_score", None, "20260717"),
     "ls_t1": ("large_final", None, None, "20260806"),
+    # [2026-09-21] mom.html·lva.html 날짜 탭용 — 둘 다 §11 '노이즈'(8/29) 확정 모델이라 기록·관찰용 표시.
+    "mom_a": ("lowvol_scores", "lowvol_score", None, "20260627"),
+    "lv_a": ("lowvol_scores", "lowvol_score", None, "20260625"),
 }
 
 
