@@ -110,4 +110,44 @@ check("행이 늘거나 줄지 않음", len(g) == len(days))
 src = (REPO / "market_series.py").read_text(encoding="utf-8")
 check("정정 명령은 0행·예외 시 종료코드 1", "sys.exit(1)" in src and "정정된 행 0" in src)
 
+print("[D] validate_scores.PriceProvider — 지수만 예비 소스, 종목은 종전 경로")
+import validate_scores as vs
+days2 = pd.bdate_range("2026-08-03", periods=30)
+full = pd.Series(np.linspace(100, 129, 30), index=days2)
+stale_df = pd.DataFrame({"Close": full.iloc[:-4]})
+check("순수 선택: 같은 날까지면 FDR", vs._prefer_fresher_index(full, full)[1] == "fdr")
+check("순수 선택: DB 가 더 최신이면 DB", vs._prefer_fresher_index(full.iloc[:-4], full)[1] == "db")
+check("순수 선택: 둘 다 없으면 None", vs._prefer_fresher_index(None, None) == (None, None))
+calls = []
+vs._index_close_db = lambda code, st, en: (calls.append(code) or full[(full.index >= pd.Timestamp(st)) & (full.index <= pd.Timestamp(en))])
+st, en = days2[0].strftime("%Y-%m-%d"), days2[-1].strftime("%Y-%m-%d")
+prov = vs.PriceProvider(cache_dir=tempfile.mkdtemp())
+prov._fdr = types.SimpleNamespace(DataReader=lambda code, s0, e0: stale_df.copy())
+with contextlib.redirect_stdout(io.StringIO()) as buf:
+    got = prov.get_close("KS11", st, en)
+check("지수: FDR 가 4일 멈춤 → DB 의 마지막 날까지 나온다", got.index[-1] == days2[-1] and float(got.iloc[-1]) == 129.0)
+check("지수: 대체 사실을 로그에", "지수 소스: ohlcv.db market_daily" in buf.getvalue())
+prov2 = vs.PriceProvider(cache_dir=tempfile.mkdtemp())
+prov2._fdr = types.SimpleNamespace(DataReader=lambda code, s0, e0: pd.DataFrame({"Close": full}))
+with contextlib.redirect_stdout(io.StringIO()) as buf:
+    got2 = prov2.get_close("KQ11", st, en)
+check("지수: FDR 가 최신이면 FDR 시리즈 그대로·로그 없음", got2.equals(full.astype(float)) and "지수 소스" not in buf.getvalue())
+calls.clear()
+prov3 = vs.PriceProvider(cache_dir=tempfile.mkdtemp())
+prov3._fdr = types.SimpleNamespace(DataReader=lambda code, s0, e0: stale_df.copy())
+with contextlib.redirect_stdout(io.StringIO()):
+    got3 = prov3.get_close("005930", st, en)
+check("종목 코드는 예비 소스를 아예 조회하지 않는다", calls == [] and got3.index[-1] == stale_df.index[-1])
+
+
+def _boom(code, s0, e0):
+    raise RuntimeError("404")
+
+
+prov4 = vs.PriceProvider(cache_dir=tempfile.mkdtemp())
+prov4._fdr = types.SimpleNamespace(DataReader=_boom)
+with contextlib.redirect_stdout(io.StringIO()):
+    got4 = prov4.get_close("KS11", st, en); got5 = prov4.get_close("000660", st, en)
+check("FDR 예외: 지수는 DB 로 계속, 종목은 종전대로 None", got4 is not None and got4.index[-1] == days2[-1] and got5 is None)
+
 print(f"\n전체 {P}체크 통과")

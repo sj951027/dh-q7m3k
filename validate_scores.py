@@ -106,6 +106,44 @@ FACTOR_COLUMNS = [
 # ─────────────────────────────────────────────────────────────
 # 시세 공급자 (실제로는 FinanceDataReader, 자가점검 때는 가짜)
 # ─────────────────────────────────────────────────────────────
+# [2026-09-21] 지수 예비 소스 — FDR 지수(KS11/KQ11)가 2026-09-17 장중 값에서 멈춘 채 갱신되지 않는다.
+#   '시장초과 수익'은 지수의 이후 종가가 있어야 계산되므로, 소스가 멈추면 9/17 이후 날짜가 필요한 앵커의 초과수익이 비게 된다.
+#   ohlcv.db market_daily(market_series.py 가 매일 FDR→KRX 예비로 채움)가 요청 구간에서 더 최신이면 그쪽을 쓴다.
+#   FDR 가 DB 만큼 최신이면 종전대로 FDR(평소 결과 0-diff). 종목 코드는 대상 아님.
+_INDEX_DB_SERIES = {"KS11": "KOSPI", "KQ11": "KOSDAQ"}
+_INDEX_DB_PATH = os.environ.get("OHLCV_DB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dh-q7m3k-data", "ohlcv.db"))
+
+
+def _index_close_db(code, start, end):
+    """market_daily 의 [start, end] 지수 종가 Series — 없거나 실패면 None. 읽기 전용."""
+    try:
+        name = _INDEX_DB_SERIES.get(code)
+        if not name or not os.path.exists(_INDEX_DB_PATH):
+            return None
+        con = sqlite3.connect(f"file:{os.path.abspath(_INDEX_DB_PATH)}?mode=ro", uri=True)
+        try:
+            rows = con.execute("SELECT date, close FROM market_daily WHERE series=? AND date>=? AND date<=? ORDER BY date",
+                               (name, pd.Timestamp(start).strftime("%Y%m%d"), pd.Timestamp(end).strftime("%Y%m%d"))).fetchall()
+        finally:
+            con.close()
+        if not rows:
+            return None
+        return pd.Series([float(c) for _, c in rows], index=pd.to_datetime([d for d, _ in rows], format="%Y%m%d"), dtype=float).dropna()
+    except Exception:
+        return None
+
+
+def _prefer_fresher_index(fdr_close, db_close):
+    """순수 함수: FDR 가 DB 만큼 최신이면 FDR(종전 경로), DB 의 마지막 날짜가 더 뒤일 때만 DB. 반환 (Series|None, 'fdr'|'db'|None)."""
+    f_ok = fdr_close is not None and len(fdr_close) > 0
+    d_ok = db_close is not None and len(db_close) > 0
+    if f_ok and (not d_ok or fdr_close.index[-1] >= db_close.index[-1]):
+        return fdr_close, "fdr"
+    if d_ok:
+        return db_close, "db"
+    return None, None
+
+
 class PriceProvider:
     """ticker/지수의 일별 종가 시리즈를 돌려준다. 캐시 사용."""
 
@@ -158,14 +196,23 @@ class PriceProvider:
                         pass
             except Exception as e:
                 print(f"      ⚠️  {code} 시세 조회 실패: {type(e).__name__}")
-                if df is None:
+                if df is None and code not in _INDEX_DB_SERIES:
                     self._mem[key] = None
                     return None
 
-        if df is None or df.empty:
+        s = None if (df is None or df.empty) else df["Close"].astype(float).sort_index()
+        if code in _INDEX_DB_SERIES:   # [2026-09-21] 지수만: 요청 구간에서 DB 가 더 최신이면 DB
+            s_win = None if s is None else s[(s.index >= pd.Timestamp(start)) & (s.index <= pd.Timestamp(end))]
+            picked, src = _prefer_fresher_index(s_win, _index_close_db(code, start, end))
+            if src == "db":
+                if not getattr(self, "_idx_note", None):
+                    self._idx_note = True
+                    f_last = s_win.index[-1].strftime("%Y-%m-%d") if s_win is not None and len(s_win) else "없음"
+                    print(f"      ℹ️  지수 소스: ohlcv.db market_daily (~{picked.index[-1].strftime('%Y-%m-%d')}) — FDR 는 {f_last} 에서 정지")
+                s = picked
+        if s is None or len(s) == 0:
             self._mem[key] = None
             return None
-        s = df["Close"].astype(float).sort_index()
         self._mem[key] = s
         return s
 
