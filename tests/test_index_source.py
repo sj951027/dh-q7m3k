@@ -157,14 +157,14 @@ mem.execute("CREATE TABLE daily_ohlcv (ticker TEXT, date TEXT, close INTEGER)")
 mem.executemany("INSERT INTO daily_ohlcv VALUES (?,?,?)", [("A", "20260917", 1000), ("A", "20260918", 2430), ("A", "20260921", 500)])
 dfE = pd.DataFrame({"Close": [1000, 2495, 250, 777]}, index=pd.to_datetime(["2026-09-17", "2026-09-18", "2026-09-21", "2026-09-22"]))
 rv = uo.close_revisions(mem, "A", dfE)
-check("같은 값·새 날짜는 제외, 확정 전 값 정정(2430→2495)만 잡는다", rv == [("20260918", 2430, 2495)], str(rv))
-check("±5% 넘는 변화(수정주가 재조정)는 별건이라 제외", all(d != "20260921" for d, _, _ in rv))
-ag = uo.summarize_revisions(rv + [("20260922", 1, 2)], "20260922")
+check("같은 값·새 날짜는 제외, 확정 전 값 정정(2430→2495)만 잡는다 (2026-09-22: 종목코드 포함 4-튜플)", rv == [("20260918", 2430, 2495, "A")], str(rv))
+check("±5% 넘는 변화(수정주가 재조정)는 별건이라 제외", all(r[0] != "20260921" for r in rv))
+ag = uo.summarize_revisions(rv + [("20260922", 1, 2, "A")], "20260922")
 check("요약: 오늘 날짜 행은 세지 않는다", set(ag) == {"20260918"} and ag["20260918"]["n"] == 1 and round(ag["20260918"]["max_pct"], 1) == 2.7)
 check("DB 오류에도 예외 없이 빈 목록", uo.close_revisions(None, "A", dfE) == [])
 srcE = (REPO / "universe_ohlcv.py").read_text(encoding="utf-8")
 check("감시는 증분 모드에서만, 적재(upsert) 앞에서 읽기만 한다",
-      "if not backfill and not tickers:\n                _revs.extend(close_revisions(con, code, res))" in srcE
-      and srcE.index("_revs.extend(close_revisions(con, code, res))") < srcE.index("added = upsert_ohlcv(con, code, mkt, shares, res, fetched_at, shares_by_date=smap)"))
+      "if not backfill and not tickers:\n" in srcE and "close_revisions(con, code, res))" in srcE   # 2026-09-22: 종목별 조회 시각을 붙이는 감싸기 허용
+      and srcE.index("if not backfill and not tickers:\n") < srcE.index("close_revisions(con, code, res))") < srcE.index("added = upsert_ohlcv(con, code, mkt, shares, res, fetched_at, shares_by_date=smap)"))
 
 print(f"\n전체 {P}체크 통과")

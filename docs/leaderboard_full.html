@@ -66,7 +66,7 @@
 
   <div class="howto">
     <div><b>① 돈 — 최근 성적</b>모델 상위 20개를 그대로 따라 샀을 때 얼마였나. 수수료 0, 관측 전용. "얼마나 벌었나"는 여기.</div>
-    <div><b>② 확신 — 판정</b>20일 뒤 시장보다 얼마나 앞섰는지(%p)와, 그게 우연이 아닌지. "믿어도 되나"는 여기. 40거래일이 차야 판정.</div>
+    <div><b>② 확신 — 판정</b>20일 뒤 시장보다 얼마나 앞섰는지(%p)와, 95% 구간이 0을 벗어나는지. "믿어도 되나"는 여기. 40거래일이 차야 판정.</div>
     <div><b>순위 정확도(IC)</b>유니버스 전체 순위를 얼마나 맞혔나. 숫자가 작아 보여도 정상 — <b>IC 0.01 ≈ 20일 시장초과 +0.3%p</b>(2026-09-03 실측, 22모델 상관 0.81).</div>
   </div>
 
@@ -76,15 +76,15 @@
   <div class="foot">시작일이 달라 '등록 후 전체'는 모델끼리 직접 비교 금지. 어제/1주/1개월 열은 같은 기간이라 비교 가능. 짧은 기간일수록 운의 비중이 큼 — 서열·채택 판단은 ② 판정이 정본. 대형밸류 ls_t1 은 유니버스(시총 상위 500)가 달라 '시장대비'는 참고만(전종목 평균은 소형주 비중이 큼). 등록 20일 미만 모델은 '창을 못 채움'. 데이터: cross_sim.json</div></div>
 
   <h2>② 확신 — 판정 진행 <span class="track">(현역만 · h=20d 주지표 · 데이터: leaderboard.json)</span></h2>
-  <div class="warn" id="rulebox"><b>§11 판정 규칙</b> — OOS 40거래일 미만은 숫자가 좋아 보여도 무조건 <b>노이즈</b>(표본 부족 기본값). 트랙 간 IC 절대값 비교 금지(유니버스가 다름). 판정 정본은 VERDICT 문서 — 이 표의 라벨은 자동 계산 참고값이고, '상태' 칸의 정본 판정이 우선.</div>
-  <div class="card"><table class="easy" id="active"><thead><tr><th>모델</th><th>트랙</th><th>판정까지</th><th class="num">20일 뒤 시장보다</th><th class="num">이긴 비율</th><th class="num">순위 정확도 IC</th><th>확신</th><th>상태</th><th>한 줄 번역</th></tr></thead><tbody><tr><td colspan="9" class="err">로딩 중…</td></tr></tbody></table>
-  <div class="foot">확신: ●●● = 95% 구간이 0 위(우연 아님) · ●● = 평균은 양(+)인데 구간이 0을 걸침(기움) · ● = 아직 40일 미만(노이즈가 기본값). ★ = 화면 표시 기준 모델. 상태의 '정본'은 VERDICT 문서에서 봉인한 판정 — 이후 표본이 더 쌓여 지금 IC·라벨이 달라져도 결정은 정본으로.</div>
+  <div class="warn" id="rulebox"><b>§11 판정 규칙</b> — OOS 40거래일 미만은 숫자가 좋아 보여도 무조건 <b>노이즈</b>(표본 부족 기본값). 트랙 간 IC 절대값 비교 금지(유니버스가 다름). 판정 정본은 VERDICT 문서 — 이 페이지는 자동 계산 라벨(유의/기움/노이즈/역작동)을 보이지 않고 IC·95% 구간 숫자만 보인다(2026-09-22). '상태'·'정본 판정' 칸이 결론.</div>
+  <div class="card"><table class="easy" id="active"><thead><tr><th>모델</th><th>트랙</th><th>판정까지</th><th class="num">20일 뒤 시장보다</th><th class="num">IC 양수 비율</th><th class="num">순위 정확도 IC</th><th>확신</th><th>상태</th><th>한 줄 번역</th></tr></thead><tbody><tr><td colspan="9" class="err">로딩 중…</td></tr></tbody></table>
+  <div class="foot">확신(자동·숫자 해석만): ●●● = 95% 구간이 0 위 또는 0 아래 · ●● = 평균 양(+)인데 구간이 0을 걸침 · ● = 40일 미만 또는 구분 안 됨. 'IC 양수 비율' = 앵커 거래일별 IC 가 양수였던 날의 비율(시장을 이긴 비율이 아님). ★ = 화면 표시 기준 모델. 상태의 '정본'은 VERDICT 문서에서 봉인한 판정 — 이후 표본이 더 쌓여 지금 IC·라벨이 달라져도 결정은 정본으로.</div>
   <details class="sec"><summary>판정 끝난 모델 (노이즈·역작동 — 적재는 유지, 가중 0) 펼치기</summary><table class="easy" id="done"><thead><tr><th>모델</th><th>트랙</th><th class="num">20일 뒤 시장보다</th><th class="num">IC</th><th>정본 판정</th><th>한 줄</th></tr></thead><tbody></tbody></table></details>
   <details class="sec"><summary id="retsum">은퇴 모델 (적재 중지·행 보존) 펼치기</summary><table class="easy" id="retired"><thead><tr><th>모델</th><th>트랙</th><th class="num">20일 뒤 시장보다</th><th class="num">IC</th><th>비고</th></tr></thead><tbody></tbody></table></details>
   <div class="foot" id="gates"></div></div>
 
   <details class="sec"><summary>🔎 자세히 보기 — 원본 전체 컬럼 (h1·h3·h5·h10·h20 IC · 95%CI · 초과 · h5 추이 · 사유)</summary>
-  <div class="card"><table id="tbl"><thead><tr><th>트랙</th><th>모델</th><th>등록일</th><th>OOS</th><th>h1 IC</th><th>h3 IC</th><th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th><th>h5 추이</th><th>h10 IC</th><th>h20 IC</th><th>n</th><th>h20 95%CI</th><th>h20 초과%p</th><th>판정(자동)</th><th>사유</th></tr></thead>
+  <div class="card"><table id="tbl"><thead><tr><th>트랙</th><th>모델</th><th>등록일</th><th>OOS</th><th>h1 IC</th><th>h3 IC</th><th>h5 IC</th><th>n</th><th>h5 95%CI</th><th>h5 초과%p</th><th>h5 추이</th><th>h10 IC</th><th>h20 IC</th><th>n</th><th>h20 95%CI</th><th>h20 초과%p</th><th>구간 위치(자동·숫자만)</th><th>정본 판정</th></tr></thead>
   <tbody id="tbody"><tr><td colspan="18" class="err">로딩 중…</td></tr></tbody></table></div></details>
 
   <details class="sec">
@@ -159,7 +159,7 @@
   <details class="sec"><summary>💼 과거 고정 창 기록 — 7/02·7/24·8/10 시작 모의계좌 (펼쳐 보기)</summary><div id="crosssim"></div></details>
   <details class="sec"><summary>📐 알파/베타 — 수익이 실력(α)인지 장 덕(β)인지 (펼쳐 보기)</summary><div id="alphabeta"></div></details>
 
-  <div class="foot" style="margin-top:14px">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는 docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.09.4 (2안 이식 — 이력: patch_note/20260904_leaderboard_v2.md)</div>
+  <div class="foot" style="margin-top:14px">표시 전용 페이지 — 데이터는 파이프라인 2.91단계(leaderboard.py)가 매일 갱신하는 docs/leaderboard.json. 이 페이지는 점수·판정을 계산하지 않는다. · 버전 2026.09.4 (2안 이식 — 이력: patch_note/20260904_leaderboard_v2.md) · 2026.09.22 자동 라벨→숫자·문구 통일(patch_note/20260922_leaderboard_full_numeric.md)</div>
 </div>
 
 <script>
@@ -210,21 +210,36 @@
   let RET_DATE={v31a:'8/09',v31b:'8/09',v31c:'8/09',v31d:'8/09',v31f:'8/09',v31g:'8/09',lv_c:'9/04',lv_d:'9/04',hv_a:'9/04',lv_a3:'9/04',lv_short:'9/04',wu_a:'9/04',wu_b:'9/04',mom_b:'9/17'};
 
   const need=(m)=>m.track==='large'?60:40;
-  function conf(m){ const h=m.h20||{}; const ci=h.ci||[null,null];
+  // [2026-09-22] 95% 구간 위치 판단은 이 함수 하나만 쓴다(conf·autoNum 공유 — 결측 처리가 다시 어긋나지 않게).
+  //   반환 k: 'na'(양 끝 결측) | 'above'(0 위) | 'below'(0 아래) | 'straddle'(0 걸침)
+  function ciPos(h){ const ci=(h&&h.ci)||[null,null]; if(ci[0]==null||ci[1]==null) return {k:'na',t:'구간 계산 불가'};
+    if(ci[0]>0) return {k:'above',t:'구간 0 위'}; if(ci[1]<0) return {k:'below',t:'구간 0 아래'}; return {k:'straddle',t:'구간 0 걸침'}; }
+  function conf(m){ const h=m.h20||{}; const p=ciPos(h);
     if(m.oos_days<need(m)) return {c:1,t:'●',w:'아직 ('+m.oos_days+'/'+need(m)+'일)'};
-    if(ci[0]!=null&&ci[0]>0) return {c:3,t:'●●●',w:'우연 아님'};
-    if(ci[1]!=null&&ci[1]<0) return {c:3,t:'●●●',w:'거꾸로 작동(우연 아님)'};
-    if((h.ic||0)>0) return {c:2,t:'●●',w:'기움'}; return {c:1,t:'●',w:'구분 안 됨'}; }
+    if(p.k==='na') return {c:1,t:'●',w:p.t};
+    if(p.k==='above'||p.k==='below') return {c:3,t:'●●●',w:p.t};
+    if((h.ic||0)>0) return {c:2,t:'●●',w:'평균 양(+)·구간 0 걸침'}; return {c:1,t:'●',w:'구분 안 됨'}; }
+  // [2026-09-22] 한 줄 번역도 사실만: 초과수익 %p · IC 양수 비율(=날짜별 IC>0 비율, 시장을 이긴 비율 아님) · 구간 위치. 해석 문구 없음.
   function translate(m){ const h=m.h20||{}, e=m.exc20||{}; const left=need(m)-m.oos_days;
-    if(h.ic==null||e.mean==null) return '아직 20일 뒤 결과가 안 쌓임 — 판정까지 D-'+Math.max(left,0)+(m.h5&&m.h5.n>=8&&m.h5.ci[0]>0?' (5일 잣대는 좋음)':'');
-    const wins=Math.round((h.pos||0)*(h.n||0));
-    let s='20일 뒤 시장보다 '+(e.mean>0?'+':'')+e.mean.toFixed(1)+'%p, '+h.n+'번 중 '+wins+'번 이김';
-    const c=conf(m); if(c.c===3&&e.mean>0) s+=' — 우연이 아님'; else if(c.c===3) s+=' — 점수가 거꾸로';
-    else if(c.c===2) s+=' — 방향은 좋은데 아직 확신 부족'; else if(left>0) s+=' — 판정까지 D-'+left; else s+=' — 신호 없음';
-    return s; }
+    if(h.ic==null||e.mean==null) return '아직 20일 뒤 결과가 안 쌓임 — 판정까지 D-'+Math.max(left,0);
+    let s='20일 뒤 시장 대비 '+(e.mean>0?'+':'')+e.mean.toFixed(1)+'%p · IC 양수 비율 '+pct(h.pos)+' (관측 '+h.n+'회)';
+    const c=conf(m); s+=' — '+c.w; if(left>0) s+=' · 판정까지 D-'+left; return s; }
   function state(m){ const s=SEALED[m.model]; if(s) return '<span class="badge '+s.cls+'" title="'+(s.doc||'')+'">'+s.t+'</span>';
     const left=need(m)-m.oos_days; if(left>0) return '<span class="badge b-noise">판정 대기 D-'+left+'</span>';
-    return badge(m.verdict)+' <span class="ci">자동</span>'; }
+    return '<span class="badge b-nm">40일 도달 · 정본 판정 대기</span> <span class="ci">'+autoNum(m,true)+'</span>'; }
+  // [2026-09-22] 자동 라벨(json.verdict 유의/기움/노이즈/역작동) 표시 중단 — 숫자만 보인다(표시 전용, leaderboard.json·leaderboard.py 무변경).
+  //   이유: leaderboard.py verdict() 는 IC<-0.03 이면 95% 구간이 0을 걸쳐도 '역작동'을 찍는다(lv_a: IC -0.034, 구간 [-0.087,+0.020] → 정본은 노이즈).
+  //   구간 위치 = 95% 구간이 0 위/0 걸침/0 아래 — 사실만. 판정 라벨은 정본(VERDICT 문서 → models_registry.json → SEALED)만 쓴다.
+  function autoNum(m,withIc){ const h=m.h20||{}; const left=need(m)-(m.oos_days||0);
+    if(left>0) return '<span class="na">대기 D-'+left+'</span>';
+    if(!(h.n>0)||h.ic==null) return '<span class="na">h20 표본 0</span>';
+    const ci=h.ci||[null,null]; const p=ciPos(h);
+    if(p.k==='na') return '<span class="na">구간 계산 불가 · n'+h.n+'</span>';
+    const pos=p.t;
+    const head=withIc?('IC '+sic(h.ic)+' '+sci(ci)+' · '):'';
+    return head+'<span class="na">'+pos+' · n'+h.n+(h.pos!=null?' · IC 양수 비율 '+pct(h.pos):'')+'</span>'; }
+  function sealedTxt(m){ const s=SEALED[m.model]; if(s) return '<span class="badge '+s.cls+'" title="'+(s.doc||'')+'">'+s.t+'</span>';
+    const left=need(m)-(m.oos_days||0); return '<span class="na">'+(left>0?'판정 전(D-'+left+')':'40일 도달 — 정본 판정 대기(VERDICT 문서)')+'</span>'; }
   function bar(m){ const p=Math.min(100,Math.round(100*m.oos_days/need(m))); const done=m.oos_days>=need(m);
     return '<span class="bar '+(done?'done':'')+'"><i style="width:'+p+'%"></i></span><span class="na">'+(done?'도달':'D-'+(need(m)-m.oos_days))+' '+m.oos_days+'/'+need(m)+'</span>'; }
   const spark=(hist,model)=>{
@@ -261,7 +276,7 @@
     document.querySelector('#active tbody').innerHTML=act.map(m=>{ const h=m.h20||{}, e=m.exc20||{}, c=conf(m);
       return '<tr><td>'+nm(m.model)+(STAR.has(m.model)?'<span class="star">★</span>':'')+'</td><td class="na">'+(TRACK[m.track]||m.track)+'</td><td>'+bar(m)+'</td>'
         +'<td class="num">'+f1(e.mean,'%p')+'<div class="tr">'+((e.ci&&e.ci[0]!=null)?'['+e.ci[0].toFixed(1)+', '+e.ci[1].toFixed(1)+']':'')+'</div></td>'
-        +'<td class="num">'+pct(h.pos)+(h.n?'<div class="tr">'+h.n+'번 중</div>':'')+'</td><td class="num na">'+sic(h.ic)+'</td>'
+        +'<td class="num">'+pct(h.pos)+(h.n?'<div class="tr">'+'관측 '+h.n+'회</div>':'')+'</td><td class="num na">'+sic(h.ic)+'</td>'
         +'<td><span class="dots c'+c.c+'">'+c.t+'</span><div class="tr">'+c.w+'</div></td><td>'+state(m)+'</td><td class="tr">'+translate(m)+'</td></tr>'; }).join('')
       ||'<tr><td colspan="9" class="err">모델 없음</td></tr>';
     done.sort(byExc);
@@ -277,7 +292,7 @@
       return '<tr'+(isRet(m)?' style="opacity:.55"':'')+'><td class="track">'+(m.track||'')+'</td><td>'+mlink(m.model)+(isRet(m)?' 🪦':'')+'</td><td class="track">'+(m.reg_date||'')+'</td><td>'+(m.oos_days!=null?m.oos_days:'-')+'</td>'
         +'<td>'+icn(m.h1)+'</td><td>'+icn(m.h3)+'</td><td>'+(h5.n>0?sic(h5.ic):'<span class="na">n/a</span>')+'</td><td>'+(h5.n||0)+'</td><td>'+(h5.n>0?sci(h5.ci):'<span class="na">-</span>')+'</td><td>'+exc(m.exc5)+'</td><td>'+spark(hist,m.model)+'</td>'
         +'<td>'+icn(m.h10)+'</td><td>'+(h20.n>0?sic(h20.ic):'<span class="na">n/a</span>')+'</td><td>'+(h20.n||0)+'</td><td>'+(h20.n>0?sci(h20.ci):'<span class="na">-</span>')+'</td><td>'+exc(m.exc20)+'</td>'
-        +'<td>'+badge(m.verdict)+'</td><td class="why">'+(m.why||'')+'</td></tr>'; }).join('');
+        +'<td>'+autoNum(m,false)+'</td><td class="why">'+sealedTxt(m)+'</td></tr>'; }).join('');
     // 요약 카드 + 판정 캘린더
     try{
       const v30=all.find(m=>m.model==='v30');

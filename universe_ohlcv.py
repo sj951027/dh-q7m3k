@@ -27,6 +27,7 @@ import time
 import sys
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 DB_DIR = os.path.join("..", "dh-q7m3k-data")  # ★ 레포 바깥(git·핸드오프 범위 밖). raw 데이터 격리.
 DB_PATH = os.path.join(DB_DIR, "ohlcv.db")
@@ -230,7 +231,7 @@ def close_revisions(con, code, df):
     """[2026-09-21] 종가 정정 감시(측정만) — 재확인 창에서 '이미 저장된 종가'와 '방금 다시 받은 종가'가 다른 날 목록.
     배경: 2026-09-14 KRX 애프터마켓(16~20시) 도입 뒤 20:10 수집값이 확정 전인 날이 있었다(9/14 15종목·9/16 11종목,
     research/RESEARCH_krx_after_market_20260918.md). 다음 날 재수집에서 공식 종가로 바뀌므로, 그 '바뀐 건수'가 곧 전날 오염 규모다.
-    수정주가 재조정(ADJ_TOL 초과)은 별건이라 제외. 반환 [(date, old, new)]. 예외 없음."""
+    수정주가 재조정(ADJ_TOL 초과)은 별건이라 제외. 반환 [(date, old, new, code)]. 예외 없음."""
     out = []
     try:
         dates = [idx.strftime("%Y%m%d") for idx in df.index]
@@ -244,7 +245,7 @@ def close_revisions(con, code, df):
             if old is None or new is None or old <= 0 or old == new:
                 continue
             if abs(new / old - 1) <= ADJ_TOL:
-                out.append((idx, old, new))
+                out.append((idx, old, new, code))   # [2026-09-22] 종목코드 포함(상세 기록용)
     except Exception:
         return []
     return out
@@ -253,7 +254,7 @@ def close_revisions(con, code, df):
 def summarize_revisions(revs, today_ymd):
     """{date: {"n":종목 수, "max_pct":최대 |변화%|}} — 오늘 날짜 행은 제외(오늘은 처음 받는 날)."""
     agg = {}
-    for d, old, new in revs:
+    for d, old, new, *_ in revs:
         if d >= today_ymd:
             continue
         a = agg.setdefault(d, {"n": 0, "max_pct": 0.0})
@@ -276,6 +277,33 @@ def log_revisions(agg, n_checked, fetched_at):
                 fh.write(f"{fetched_at},{d},{n_checked},{agg[d]['n']},{agg[d]['max_pct']:.2f}\n")
     except Exception:
         pass
+
+
+REV_DETAIL_CSV = Path(__file__).resolve().parent / "logs" / "close_revisions_detail.csv"   # [2026-09-22] 테스트에서 바꿔 끼움
+
+
+def log_revision_details(revs, today_ymd, fetched_at, agg=None):
+    """[2026-09-22] 종가 정정 상세(측정만) — logs/close_revisions_detail.csv 에 수집 시작 시각(run_started_at)·종목별 조회 직후 시각(observed_at)·대상 날짜·종목·이전 종가·새 종가·변화% 누적.
+    이전 종가는 upsert 전에 읽은 값(close_revisions 가 upsert 앞에서 불린다). 오늘 날짜 행은 요약과 같은 규칙으로 제외.
+    어떤 실패도 수집·적재를 멈추지 않는다 — 경고 한 줄만. 요약(close_revisions.csv) 건수와 대조해 출력. 반환: 기록 행 수(실패 -1)."""
+    try:
+        rows = [(d, old, new, code, (rest[0] if rest else "")) for d, old, new, code, *rest in revs if d < today_ymd]
+        if not rows:
+            return 0
+        REV_DETAIL_CSV.parent.mkdir(exist_ok=True)
+        new_file = not REV_DETAIL_CSV.exists()
+        with open(REV_DETAIL_CSV, "a", encoding="utf-8", newline="") as fh:
+            if new_file:
+                fh.write("run_started_at,observed_at,target_date,ticker,old_close,new_close,pct\n")
+            for d, old, new, code, obs in sorted(rows):
+                fh.write(f"{fetched_at},{obs},{d},{code},{old},{new},{(new / old - 1) * 100:.2f}\n")
+        n_sum = sum(a["n"] for a in (agg or {}).values())
+        tag = "일치" if n_sum == len(rows) else f"불일치(요약 {n_sum})"
+        print(f"   상세 기록 {len(rows)}행 → {REV_DETAIL_CSV.name} (요약 건수 대조: {tag})")
+        return len(rows)
+    except Exception as e:
+        print(f"   ⚠️ 종가 정정 상세 기록 실패(측정만 — 수집·적재 무영향): {str(e)[:80]}")
+        return -1
 
 
 def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_WINDOW, tickers=None):
@@ -342,7 +370,8 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
                     res = full; smap = shares_map(con, code); n_readj += 1
                     print(f"  ♻️  {code} 수정주가 재조정 감지(재확인 창 종가 불일치 >{ADJ_TOL:.0%}) → 전 기간 {len(res)}행 재적재")
             if not backfill and not tickers:
-                _revs.extend(close_revisions(con, code, res))   # [2026-09-21] 측정만 — 적재 동작 불변
+                _obs = datetime.now().strftime("%H:%M:%S")   # [2026-09-22] 종목별 실제 조회 직후 시각(상세 기록용)
+                _revs.extend(r + (_obs,) for r in close_revisions(con, code, res))   # [2026-09-21] 측정만 — 적재 동작 불변
             added = upsert_ohlcv(con, code, mkt, shares, res, fetched_at, shares_by_date=smap)
             n_rows += added
             n_ok += 1
@@ -367,10 +396,11 @@ def collect(backfill=False, years=3, limit=None, incremental_window=INCREMENTAL_
             _last = max(_agg)
             print(f"[종가 정정 감시] 직전 저장값과 달라진 종가: " + " · ".join(f"{d} {_agg[d]['n']}종목(최대 ±{_agg[d]['max_pct']:.1f}%)" for d in sorted(_agg)[-3:]))
             if _agg[_last]["n"] >= 5:
-                print(f"   ⚠️ {_last} 에 {_agg[_last]['n']}종목 — 그날 20:10 수집값이 확정 전이었을 가능성(애프터마켓). 누적 기록: logs/close_revisions.csv")
+                print(f"   ⚠️ {_last} 에 {_agg[_last]['n']}종목 — 원인 미확정(애프터마켓 임시값·가격 조정 등 후보) — 종목별 상세 logs/close_revisions_detail.csv 로 확인. 요약: logs/close_revisions.csv")
         else:
-            print("[종가 정정 감시] 재확인 창에서 달라진 종가 0건 — 전날 수집값이 공식 종가와 같았다")
+            print("[종가 정정 감시] 재확인 범위에서 감시 조건에 해당하는 종가 변경 0건(±5% 초과 재조정은 별건)")
         log_revisions(_agg, n_ok, fetched_at)
+        log_revision_details(_revs, today.strftime("%Y%m%d"), fetched_at, _agg)   # [2026-09-22] 상세(측정만·실패 격리)
     print(f"       소요 {time.time()-t0:.0f}초. DB: {DB_PATH}")
 
 
