@@ -1,0 +1,28 @@
+{
+  "batch_exception": "User explicitly stated 2026-09-24 batch was skipped and authorized continuation",
+  "selection_start": "20240801",
+  "selection_end": "20260303",
+  "account_start": "20240802",
+  "account_end": "20260827",
+  "horizon": 120,
+  "n_months": 20,
+  "cost_roundtrip": 0.005,
+  "stock_slots": 20,
+  "allocation": "NAV/6 monthly, capped by cash including entry fee; no borrowing",
+  "benchmark_buyhold_50_50": {
+    "total": 0.8197524475314917,
+    "cagr": 0.3522164201622531,
+    "mdd": -0.37543294248661985
+  },
+  "reproduction_max_error": 8.326672684688674e-17,
+  "latest_listing_market": "Same last-observed market labels as R1 source; historical market transfers not audited",
+  "notes": [
+    "No fresh OOS: these periods and candidates already inspected",
+    "Estimated historical shares and survivor/backfill bias remain",
+    "Entry at next close; no realistic limit-up fill or price impact model",
+    "Cohort exit marks last close; account exits postpone if suspended",
+    "Monthly cohort returns subtract fixed cost; account charges actual buy/sell value at 0.25% per side",
+    "No dividends, no cash interest. Account metrics are descriptive, not confidence intervals",
+    "20 complete entry cohorts: entry stops in March2026 and remaining positions run off; this is a closed study window"
+  ]
+}

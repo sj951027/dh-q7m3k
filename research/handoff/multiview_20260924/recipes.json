@@ -1,0 +1,478 @@
+[
+  {
+    "name": "base_beta_near",
+    "family": "baseline",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "base_amount",
+    "family": "baseline",
+    "keys": [
+      "amount"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "base_R1_amount",
+    "family": "baseline",
+    "keys": [
+      "mom",
+      "beta",
+      "near",
+      "amount"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "up_capture",
+    "family": "market_response",
+    "keys": [
+      "up_beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "asymmetry",
+    "family": "market_response",
+    "keys": [
+      "asym_beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "downside_filter",
+    "family": "market_response",
+    "keys": [
+      "beta",
+      "near",
+      "low_down_beta"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "resilience",
+    "family": "market_response",
+    "keys": [
+      "beta",
+      "near",
+      "resilience"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "relative_resilience",
+    "family": "market_response",
+    "keys": [
+      "relative60",
+      "resilience",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "steady60",
+    "family": "trend_quality",
+    "keys": [
+      "beta",
+      "near",
+      "steady60"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "steady126",
+    "family": "trend_quality",
+    "keys": [
+      "beta",
+      "near",
+      "steady126"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "efficient",
+    "family": "trend_quality",
+    "keys": [
+      "beta",
+      "near",
+      "efficient60"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "drift",
+    "family": "trend_quality",
+    "keys": [
+      "beta",
+      "near",
+      "drift_without_bestday"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "small_losses",
+    "family": "trend_quality",
+    "keys": [
+      "beta",
+      "near",
+      "small_worstday"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "quiet_recent",
+    "family": "trend_quality",
+    "keys": [
+      "beta",
+      "near",
+      "quiet20"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "repeated_high",
+    "family": "trend_persistence",
+    "keys": [
+      "beta",
+      "repeat_high"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "price_nearness",
+    "family": "trend_persistence",
+    "keys": [
+      "beta",
+      "near_price"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "multi_horizon",
+    "family": "trend_persistence",
+    "keys": [
+      "beta",
+      "near",
+      "relative20",
+      "relative60"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "accelerating",
+    "family": "trend_persistence",
+    "keys": [
+      "beta",
+      "near",
+      "acceleration"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "squeeze_then_strength",
+    "family": "price_volume_sequence",
+    "keys": [
+      "prior_squeeze",
+      "relative20",
+      "breakout20"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "squeeze_in_leaders",
+    "family": "price_volume_sequence",
+    "keys": [
+      "beta",
+      "near",
+      "prior_squeeze"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "tight_now",
+    "family": "price_volume_sequence",
+    "keys": [
+      "beta",
+      "near",
+      "compression"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "dry_then_strength",
+    "family": "price_volume_sequence",
+    "keys": [
+      "prior_dry",
+      "relative20",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "dry_in_leaders",
+    "family": "price_volume_sequence",
+    "keys": [
+      "beta",
+      "near",
+      "prior_dry"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "dry_now",
+    "family": "price_volume_sequence",
+    "keys": [
+      "beta",
+      "near",
+      "dry"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "restart",
+    "family": "price_volume_sequence",
+    "keys": [
+      "beta",
+      "near",
+      "volume_restart"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "firm_close",
+    "family": "price_volume_sequence",
+    "keys": [
+      "beta",
+      "near",
+      "clv20"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "pullback_dry",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near",
+      "low_short_return",
+      "dry"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "pullback_rebound",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near",
+      "prior_pullback",
+      "rebound3"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "leaders_only",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "large_only",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "mid_only",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "kospi_only",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "kosdaq_only",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "up_market_only",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "quiet_gate_leaders",
+    "family": "conditional_universe",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "slots_10",
+    "family": "construction",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 10,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "slots_40",
+    "family": "construction",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 40,
+    "delay": 1,
+    "corr": null
+  },
+  {
+    "name": "diversify_0.7",
+    "family": "construction",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": 0.7
+  },
+  {
+    "name": "diversify_0.85",
+    "family": "construction",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 1,
+    "corr": 0.85
+  },
+  {
+    "name": "delay_5",
+    "family": "entry_timing",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 5,
+    "corr": null
+  },
+  {
+    "name": "delay_10",
+    "family": "entry_timing",
+    "keys": [
+      "beta",
+      "near"
+    ],
+    "slots": 20,
+    "delay": 10,
+    "corr": null
+  }
+]

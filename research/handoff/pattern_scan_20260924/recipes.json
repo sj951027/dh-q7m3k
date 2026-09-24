@@ -1,0 +1,387 @@
+[
+  {
+    "name": "base_quiet",
+    "family": "baseline",
+    "keys": [
+      "quiet"
+    ]
+  },
+  {
+    "name": "base_quiet_turn",
+    "family": "baseline",
+    "keys": [
+      "quiet",
+      "turn_low"
+    ]
+  },
+  {
+    "name": "base_relative60",
+    "family": "baseline",
+    "keys": [
+      "rs60"
+    ]
+  },
+  {
+    "name": "base_nearhigh",
+    "family": "baseline",
+    "keys": [
+      "nearhigh"
+    ]
+  },
+  {
+    "name": "quiet_strength_rs5",
+    "family": "quiet_strength",
+    "keys": [
+      "prior_quiet",
+      "rs5"
+    ]
+  },
+  {
+    "name": "quiet_strength_rs20",
+    "family": "quiet_strength",
+    "keys": [
+      "prior_quiet",
+      "rs20"
+    ]
+  },
+  {
+    "name": "quiet_strength_accelerate",
+    "family": "quiet_strength",
+    "keys": [
+      "prior_quiet",
+      "acceleration"
+    ]
+  },
+  {
+    "name": "quiet_strength_steady",
+    "family": "quiet_strength",
+    "keys": [
+      "quiet",
+      "steady",
+      "rs20"
+    ]
+  },
+  {
+    "name": "quiet_strength_clv",
+    "family": "quiet_strength",
+    "keys": [
+      "quiet",
+      "clv",
+      "rs20"
+    ]
+  },
+  {
+    "name": "squeeze_20",
+    "family": "squeeze",
+    "keys": [
+      "prior_compression",
+      "break20"
+    ]
+  },
+  {
+    "name": "squeeze_60",
+    "family": "squeeze",
+    "keys": [
+      "prior_compression",
+      "break60"
+    ]
+  },
+  {
+    "name": "squeeze_volume",
+    "family": "squeeze",
+    "keys": [
+      "prior_compression",
+      "break20",
+      "volume_restart"
+    ]
+  },
+  {
+    "name": "squeeze_relative",
+    "family": "squeeze",
+    "keys": [
+      "prior_compression",
+      "break20",
+      "rs20"
+    ]
+  },
+  {
+    "name": "squeeze_range",
+    "family": "squeeze",
+    "keys": [
+      "range_compression",
+      "nearhigh",
+      "rs20"
+    ]
+  },
+  {
+    "name": "pullback_dry",
+    "family": "pullback",
+    "keys": [
+      "rs60",
+      "pullback",
+      "dry"
+    ]
+  },
+  {
+    "name": "pullback_quiet",
+    "family": "pullback",
+    "keys": [
+      "rs60",
+      "pullback",
+      "quiet20"
+    ]
+  },
+  {
+    "name": "pullback_rebound",
+    "family": "pullback",
+    "keys": [
+      "rs60",
+      "prior_pullback",
+      "rebound"
+    ]
+  },
+  {
+    "name": "pullback_high",
+    "family": "pullback",
+    "keys": [
+      "nearhigh",
+      "pullback",
+      "dry"
+    ]
+  },
+  {
+    "name": "pullback_resume",
+    "family": "pullback",
+    "keys": [
+      "rs60",
+      "prior_pullback",
+      "rebound",
+      "prior_dry"
+    ]
+  },
+  {
+    "name": "volume_clv",
+    "family": "volume_sequence",
+    "keys": [
+      "dry",
+      "clv",
+      "nearhigh"
+    ]
+  },
+  {
+    "name": "volume_restart",
+    "family": "volume_sequence",
+    "keys": [
+      "prior_dry",
+      "volume_restart",
+      "rs5"
+    ]
+  },
+  {
+    "name": "volume_quiet_restart",
+    "family": "volume_sequence",
+    "keys": [
+      "prior_quiet",
+      "prior_dry",
+      "rs5",
+      "volume_restart"
+    ]
+  },
+  {
+    "name": "volume_upvolume",
+    "family": "volume_sequence",
+    "keys": [
+      "upvolume",
+      "quiet",
+      "rs20"
+    ]
+  },
+  {
+    "name": "volume_hold",
+    "family": "volume_sequence",
+    "keys": [
+      "prior_dry",
+      "nearhigh",
+      "rs20"
+    ]
+  },
+  {
+    "name": "relative_quiet",
+    "family": "relative_strength",
+    "keys": [
+      "rs20",
+      "quiet"
+    ]
+  },
+  {
+    "name": "relative_persistent",
+    "family": "relative_strength",
+    "keys": [
+      "rs60",
+      "rs20",
+      "steady"
+    ]
+  },
+  {
+    "name": "relative_accelerate",
+    "family": "relative_strength",
+    "keys": [
+      "rs60",
+      "acceleration"
+    ]
+  },
+  {
+    "name": "relative_high",
+    "family": "relative_strength",
+    "keys": [
+      "rs20",
+      "nearhigh"
+    ]
+  },
+  {
+    "name": "relative_efficient",
+    "family": "relative_strength",
+    "keys": [
+      "rs20",
+      "efficiency",
+      "quiet"
+    ]
+  },
+  {
+    "name": "recovery_quiet",
+    "family": "recovery",
+    "keys": [
+      "low_recovery",
+      "quiet20"
+    ]
+  },
+  {
+    "name": "recovery_slope",
+    "family": "recovery",
+    "keys": [
+      "low_recovery",
+      "ma_slope",
+      "dry"
+    ]
+  },
+  {
+    "name": "recovery_rebound",
+    "family": "recovery",
+    "keys": [
+      "prior_pullback",
+      "rebound",
+      "quiet"
+    ]
+  },
+  {
+    "name": "recovery_cross",
+    "family": "recovery",
+    "keys": [
+      "rs20",
+      "ma_slope",
+      "prior_quiet"
+    ]
+  },
+  {
+    "name": "quiet_gate_steady",
+    "family": "quiet_gate",
+    "keys": [
+      "steady",
+      "nearhigh"
+    ]
+  },
+  {
+    "name": "quiet_gate_rs20",
+    "family": "quiet_gate",
+    "keys": [
+      "rs20"
+    ]
+  },
+  {
+    "name": "quiet_gate_accelerate",
+    "family": "quiet_gate",
+    "keys": [
+      "acceleration",
+      "nearhigh"
+    ]
+  },
+  {
+    "name": "quiet_gate_size",
+    "family": "quiet_gate",
+    "keys": [
+      "size",
+      "steady"
+    ]
+  },
+  {
+    "name": "quiet_gate_no_size",
+    "family": "quiet_gate",
+    "keys": [
+      "steady"
+    ]
+  },
+  {
+    "name": "quiet_gate_turn",
+    "family": "quiet_gate",
+    "keys": [
+      "turn_low",
+      "rs20"
+    ]
+  },
+  {
+    "name": "quiet_strength_with_size",
+    "family": "share_approx",
+    "keys": [
+      "quiet",
+      "rs20",
+      "size"
+    ]
+  },
+  {
+    "name": "quiet_strength_with_turn",
+    "family": "share_approx",
+    "keys": [
+      "quiet",
+      "rs20",
+      "turn_low"
+    ]
+  },
+  {
+    "name": "quiet_strength_no_shares",
+    "family": "share_approx",
+    "keys": [
+      "quiet",
+      "rs20"
+    ]
+  },
+  {
+    "name": "control_size",
+    "family": "posthoc_control",
+    "keys": [
+      "size"
+    ]
+  },
+  {
+    "name": "control_amount",
+    "family": "posthoc_control",
+    "keys": [
+      "amount"
+    ]
+  },
+  {
+    "name": "control_quiet_size",
+    "family": "posthoc_control",
+    "keys": [
+      "quiet",
+      "size"
+    ]
+  },
+  {
+    "name": "control_rs20_size",
+    "family": "posthoc_control",
+    "keys": [
+      "rs20",
+      "size"
+    ]
+  }
+]

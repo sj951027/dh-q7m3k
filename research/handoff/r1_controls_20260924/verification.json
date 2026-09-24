@@ -1,0 +1,10 @@
+{
+  "account": "R1_amount",
+  "days": 501,
+  "max_nav_cash_error": 6.217248937900877e-15,
+  "max_budget_error": 1.5265566588595902e-15,
+  "remaining_positions": 1,
+  "final_cash": 2.4243865275216003,
+  "final_marked_value": 0.006132880548374394,
+  "final_nav": 2.4305194080699746
+}

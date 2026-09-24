@@ -1,0 +1,19 @@
+{
+  "recipes": 41,
+  "new_recipes": 38,
+  "monthly_anchors": 20,
+  "raw_span": [
+    "20230626",
+    "20260923"
+  ],
+  "cohort_window": [
+    "20240801",
+    "20260303"
+  ],
+  "simultaneous_halfwidth": 0.192642802936696,
+  "hypotheses": "Asymmetric market response, trend quality, persistent highs, price-volume sequence, conditional universe, diversification, entry delay",
+  "bias": "All historical exploratory: no untouched test set; 46 earlier recipes plus original bigwinner research already inspected",
+  "exception": "User authorized research after confirming 2026-09-24 batch skipped; only today bypassed",
+  "details": "Future price is used only for evaluation. Suspended/missing entries remain cash. Exits marked at last price. Dividends excluded. Slots with no signal remain cash.",
+  "stability": "h180 has fewer mature cohorts, compare each recipe to baseline on its own identical dates. top2_to_cash is a hindsight stress, never a trade rule."
+}

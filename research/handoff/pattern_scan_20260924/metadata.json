@@ -1,0 +1,44 @@
+{
+  "rows": 2008625,
+  "tickers": 2655,
+  "dates": 792,
+  "first": "20230626",
+  "last": "20260923",
+  "recipes": 46,
+  "winners": {
+    "pullback": "pullback_quiet",
+    "quiet_gate": "quiet_gate_steady",
+    "quiet_strength": "quiet_strength_clv",
+    "recovery": "recovery_quiet",
+    "relative_strength": "relative_quiet",
+    "share_approx": "quiet_strength_with_size",
+    "squeeze": "squeeze_60",
+    "volume_sequence": "volume_upvolume"
+  },
+  "chosen": [
+    "base_quiet",
+    "base_quiet_turn",
+    "pullback_quiet",
+    "quiet_gate_steady",
+    "quiet_strength_clv",
+    "recovery_quiet",
+    "relative_quiet",
+    "quiet_strength_with_size",
+    "squeeze_60",
+    "volume_upvolume"
+  ],
+  "missing_exits": 493,
+  "cost_roundtrip": 0.0035,
+  "selection": "2024 h40 mean excess over own-market index; outcome closed by 2024-12-31",
+  "limitations": [
+    "Historical data already explored in earlier research; NOT untouched OOS",
+    "Surviving/backfilled universe; historical delisted coverage not proven",
+    "Adjusted historical OHLCV can differ from what was known then",
+    "shares and turnover use approximate historical shares",
+    "Price-only returns; dividends excluded for stocks and index",
+    "Close*volume is approximate trading value; adjusted-price volume basis may differ",
+    "95% block intervals are nominal, uncorrected for multiple research choices",
+    "Last observed close marks missing exits; separate total-loss sensitivity provided",
+    "Daily OHLCV cannot fully model limit-up fills, slippage, or suspension liquidation"
+  ]
+}

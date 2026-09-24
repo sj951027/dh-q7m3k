@@ -1,0 +1,32 @@
+{
+  "shape": [
+    792,
+    2655
+  ],
+  "base_obs": 896393,
+  "base_events": 22175,
+  "base_rate": 0.024738033429533696,
+  "episodes": 760,
+  "unique": 589,
+  "excluded_above500": 914,
+  "missing_future": 181,
+  "raw_rate": 0.02573143862691364,
+  "raw_events": 23089,
+  "reproduction_max_net_error": 8.326672684688674e-17,
+  "reproduction_max_benchmark_error": 1.1102230246251565e-16,
+  "winner_paths": {
+    "n": 22175,
+    "median_mdd": -0.294633077765608,
+    "median_entry_low": -0.06290672451193058,
+    "p_mdd25": 0.6652085682074408,
+    "p_entry25": 0.058985343855693345,
+    "p_entry10": 0.34358511837655015,
+    "p_mdd10": 0.9968883878241263,
+    "p_entry7": 0.4662457722660654
+  },
+  "episode_median_mdd": -0.282139608051249,
+  "episode_score_available": 517,
+  "episode_r1top20": 162,
+  "episode_top_rate_with_score": 0.31334622823984526,
+  "stop_note": "All picked names; fixed loss from entry; trigger on close, execute at next tradable close; cash thereafter; no reinvestment"
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>주도주 관측 (ld_a) · 관측 전용</title><style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--txt:#e6e8ec;--sub:#9aa3b2;--accent:#5aa9ff;--warn:#f0b429;--warnbg:#2a230f;--good:#2dd4a7;--bad:#f0997b}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px} h1{font-size:18px;margin:0 0 4px} h2{font-size:14px;margin:18px 0 8px}
+  .sub{color:var(--sub);font-size:12px;margin-bottom:14px} .sub a{color:var(--accent)}
+  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12.5px} .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;list-style:none} .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px} .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65} .explain-body b{color:var(--txt)}
+  .warnp{background:#1f1a0c;border-left:3px solid var(--warn);padding:9px 12px;color:#e8dcc0} .warnp b{color:var(--warn)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px} .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--sub)} .chip b{color:var(--txt)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px} .kpi .l{color:var(--sub);font-size:11px} .kpi .v{font-size:18px;font-weight:700} .kpi .s{color:var(--sub);font-size:11px}
+  .badge{display:inline-block;border-radius:6px;padding:2px 7px;font-size:11px;border:1px solid var(--line);color:var(--sub);margin-left:6px} .badge.open{border-color:var(--warn);color:var(--warn)} .badge.done{border-color:var(--good);color:var(--good)}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px} table{border-collapse:collapse;width:100%;font-size:11.5px}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)} th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0}
+  th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left} tr:hover td{background:#1b1f28}
+  .pos{color:var(--good)} .neg{color:var(--bad)} .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7} .empty{padding:30px;text-align:center;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:10px}
+</style></head><body><div class="wrap"><h1>주도주 관측 — ld_a (lead 트랙)</h1>
+<div class="sub">고베타 × 최근 52주 신고가 · 매월 첫 거래일 상위 20 · 120거래일 보유 · 동행그룹당 4종목 · 가중 0 · <b>관측 전용</b> — <a href="../PREREGISTER_ld_a.md">PREREGISTER_ld_a.md</a> · <a href="leaderboard.html">리더보드로</a></div>
+<div class="warn"><b>추천 목록이 아닙니다.</b> 사전등록한 규칙이 새 데이터에서 어떻게 되는지 기록만 합니다. 판정은 겹치지 않는 120일 창 3개가 쌓인 뒤(≈2028-03) 한 번 — 그 전엔 '관측 중'. 리더보드(매일 상위 10·40일 보유 잣대)와 규칙이 달라 그 표에는 넣지 않습니다. 손절·익절 없음(연구에서 손절이 성과를 깎았음).</div>
+<details class="explain"><summary>이 규칙이 뭔가요 · 무엇과 비교하나요</summary><div class="explain-body">
+<p><b>고르는 법</b>: 가드(거래정지·급등락·저유동 제외)를 통과한 전 종목을 두 가지로 줄 세워 더합니다 — 지수와 같이 크게 움직이는 종목(베타60 높을수록), 최근에 52주 신고가를 찍은 종목(경과일 짧을수록). 상위 20을 사되 수익률이 같이 움직이는 동행그룹에서 4개까지만.</p>
+<p><b>비교 셋</b>: ① 뽑힌 종목의 코스피/코스닥 비중대로 섞은 지수 ② 같은 날 가드 유니버스 전체를 동일가중으로 산 것 ③ 그냥 거래대금 상위 20을 산 것(대조군). ③을 못 이기면 "주도주 규칙"이 아니라 "큰 종목 사기"일 뿐입니다.</p>
+<div class="warnp"><b>읽을 때 주의</b>: 한 앵커 수익은 그 반년 시장의 결과가 대부분입니다. 앵커가 여러 개 쌓여 구간(CI)이 나올 때까지 좋고 나쁨을 말하지 않습니다.</div></div></details><div class="meta"><span class="chip">등록 <b>2026-09-24</b></span><span class="chip">첫 앵커 <b>2026-10-01</b></span><span class="chip">앵커 <b>0</b>개 (마감 0 · 진행 0)</span><span class="chip">비겹침 창 <b>0/3</b></span><span class="chip">spec <b>4f01c8fcfb95</b></span><span class="chip">다음 앵커 <b>2026-10 첫 거래일</b></span><span class="chip">기준일 <b>20260923</b></span></div><div class="empty">아직 적재된 앵커가 없습니다. 첫 앵커는 2026-10-01(목) 배치에서 저장되고, 이 페이지는 그때부터 채워집니다.</div><div class="foot">잣대·라벨 규칙: PREREGISTER_ld_a.md §3 · 적재: lead_observe.py(월 첫 거래일) · 평가: lead_eval.py · 이 페이지는 표시 전용(점수·판정 무관). 비용 왕복 0.5%, 종가 체결 가정, 진입 불가는 현금, 거래정지는 마지막 관측가. 한 앵커의 수익은 독립 표본이 아니라 그 반년 장세 하나. 생성 2026-09-24 22:07</div></div></body></html>

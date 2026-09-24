@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주도주 관측 (ld_a) · 관측 전용</title><style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
+    --accent:#5aa9ff; --warn:#f0b429; --warnbg:#2a230f; --good:#2dd4a7; --bad:#f0997b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    font-size:14px;line-height:1.5}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:12px;margin-bottom:14px}
+  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px}
+  .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;
+    list-style:none;user-select:none}
+  .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px}
+  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
+  .explain-body b{color:var(--txt)}
+  .explain .warnp{background:#1f1a0c;border-left:3px solid var(--warn);
+    padding:9px 12px;color:#e8dcc0}
+  .explain .warnp b{color:var(--warn)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 10px;font-size:12px;color:var(--sub)}
+  .chip b{color:var(--txt)}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
+  .tab.active{border-color:var(--accent);color:var(--accent)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+  .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
+  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub);user-select:none}
+  .fbtn.on{border-color:var(--accent);color:var(--accent);background:#141c26}
+  .fcount{color:var(--sub);font-size:12px;margin-left:auto}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;min-width:0}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0;cursor:pointer}
+  th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left}
+  .top50row td{background:#131b26}
+  .top50row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .top50row td:nth-child(2){color:var(--accent);font-weight:700}
+  tr:hover td{background:#1b1f28}
+  .score{color:var(--accent);font-weight:700}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .v3{color:var(--sub);font-size:11px}
+  .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7}
+  .loading{padding:40px;text-align:center;color:var(--sub)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kpi .l{color:var(--sub);font-size:11px} .kpi .v{font-size:18px;font-weight:700} .kpi .s{color:var(--sub);font-size:11px}
+  .badge{display:inline-block;border-radius:6px;padding:2px 7px;font-size:11px;border:1px solid var(--line);color:var(--sub);margin-left:6px}
+  .badge.open{border-color:var(--warn);color:var(--warn)} .badge.done{border-color:var(--good);color:var(--good)}
+  h2{font-size:14px;margin:18px 0 8px;color:var(--txt)}
+  .mock{position:fixed;right:12px;top:12px;background:#3a1e1e;border:1px solid #f0997b;color:#f0997b;padding:6px 10px;border-radius:8px;font-size:12px;z-index:9}
+</style></head><body><div class="mock">시안(mock) — 실제 페이지 아님 · 3월 앵커는 사본 DB 예시</div><div class="wrap">
+<h1>주도주 관측 — ld_a (lead 트랙)</h1>
+<div class="sub">고베타 × 최근 52주 신고가 · 매월 첫 거래일 상위 20 · 120거래일 보유 · 동행그룹당 4종목 · 가중 0 · <b>관측 전용</b> — PREREGISTER_ld_a.md</div>
+<div class="warn"><b>추천 목록이 아닙니다.</b> 이 페이지는 사전등록한 규칙이 새 데이터에서 어떻게 되는지 기록만 합니다. 판정은 겹치지 않는 120일 창 3개가 쌓인 뒤(≈2028-03) 한 번 — 그 전엔 '관측 중'. 리더보드(20일 IC 잣대)와 잣대가 달라 거기엔 안 올립니다. 손절·익절 규칙 없음(연구상 손절이 성과를 깎았음).</div>
+<details class="explain"><summary>이 규칙이 뭔가요 · 무엇과 비교하나요</summary><div class="explain-body">
+<p><b>고르는 법</b>: 가드(거래정지·급등락·저유동 제외)를 통과한 전 종목을 두 가지로 줄 세워 더합니다 — 지수와 같이 크게 움직이는 종목(베타60 높을수록), 최근에 52주 신고가를 찍은 종목(경과일 짧을수록). 상위 20을 사되 수익률이 함께 움직이는 동행그룹에서 4개까지만.</p>
+<p><b>비교 셋</b>: ① 뽑힌 종목의 코스피/코스닥 비중대로 섞은 지수 ② 같은 날 가드 유니버스 전체를 동일가중으로 산 것 ③ 그냥 거래대금 상위 20을 산 것(대조군). ③을 못 이기면 "주도주 규칙"이 아니라 "큰 종목 사기"일 뿐입니다.</p>
+<div class="warnp"><b>읽을 때 주의</b>: 한 앵커 수익은 그 반년 시장의 결과가 대부분입니다. 앵커가 여러 개 쌓여 구간(CI)이 나올 때까지 좋고 나쁨을 말하지 않습니다.</div>
+</div></details>
+<div class="meta"><span class="chip">등록 <b>2026-09-24</b></span><span class="chip">첫 앵커 <b>2026-10-01</b></span><span class="chip">앵커 <b>2</b>개 (마감 1 · 진행 1)</span><span class="chip">비겹침 창 <b>1/3</b></span><span class="chip">spec <b>4f01c8fcfb95</b></span><span class="chip">다음 앵커 <b>2026-10-01</b></span></div>
+<h2>누적 (창 마감 앵커만 · 비용 0.5% 후)</h2>
+<div class="tablewrap"><table><thead><tr><th>비교</th><th>평균 초과</th><th>95% 구간(6개월 블록)</th><th>앵커 n</th><th>비겹침 창 부호</th></tr></thead><tbody>
+<tr><td>① 픽 시장비중 지수 대비</td><td class="neg">−1.5%p</td><td>n&lt;3 · 계산 안 함</td><td>1</td><td>−</td></tr>
+<tr><td>② 유니버스 동일가중 대비</td><td class="pos">+18.8%p</td><td>n&lt;3 · 계산 안 함</td><td>1</td><td>+</td></tr>
+<tr><td>③ 대조군(거래대금 상위20) 대비</td><td class="neg">−23.8%p</td><td>n&lt;3 · 계산 안 함</td><td>1</td><td>−</td></tr>
+</tbody></table></div>
+
+<h2>앵커 2026-09-01 <span class="badge open">진행 중 · 15/120일</span></h2>
+<div class="meta">
+ <span class="chip">진입 <b>20260902</b> 종가 · 기준일 <b>20260923</b></span>
+ <span class="chip">유니버스 <b>1,126</b> 종목</span>
+ <span class="chip">코스피 비중 <b>20%</b></span>
+</div>
+<div class="grid">
+ <div class="kpi"><div class="l">바스켓 수익(비용 0.5% 후)</div><div class="v pos">+16.7%</div><div class="s">동일가중 20종목</div></div>
+ <div class="kpi"><div class="l">① 픽 시장비중 지수</div><div class="v">+5.6%</div><div class="s">초과 <b class="pos">+11.1%</b> · KOSPI +7.9% / KOSDAQ +5.0%</div></div>
+ <div class="kpi"><div class="l">② 유니버스 동일가중</div><div class="v">—</div><div class="s">초과 <b class="">—</b></div></div>
+ <div class="kpi"><div class="l">③ 대조군(거래대금 상위20)</div><div class="v">+3.1%</div><div class="s">초과 <b class="pos">+13.6%</b></div></div>
+</div>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>코드</th><th>종목</th><th>시장</th><th>베타60</th><th>신고가 후 일수</th><th>동행그룹</th><th>거래대금20</th><th>현재까지(15일)</th><th>같은 시장 지수 대비</th></tr></thead><tbody><tr><td>1</td><td>131290</td><td>티에스이</td><td>KOSDAQ</td><td>1.52</td><td>32</td><td>3</td><td>299억</td><td class='pos'>+23.5%</td><td class='pos'>+18.5%</td></tr><tr><td>2</td><td>031980</td><td>피에스케이홀딩스</td><td>KOSDAQ</td><td>1.54</td><td>42</td><td>3</td><td>187억</td><td class='pos'>+33.8%</td><td class='pos'>+28.7%</td></tr><tr><td>3</td><td>084370</td><td>유진테크</td><td>KOSDAQ</td><td>1.54</td><td>42</td><td>3</td><td>179억</td><td class='pos'>+21.2%</td><td class='pos'>+16.2%</td></tr><tr><td>4</td><td>089970</td><td>브이엠</td><td>KOSDAQ</td><td>1.52</td><td>42</td><td>3</td><td>330억</td><td class='pos'>+12.5%</td><td class='pos'>+7.5%</td></tr><tr><td>5</td><td>000660</td><td>SK하이닉스</td><td>KOSPI</td><td>1.53</td><td>46</td><td>6</td><td>67,464억</td><td class='pos'>+15.5%</td><td class='pos'>+7.6%</td></tr><tr><td>6</td><td>226340</td><td>본느</td><td>KOSDAQ</td><td>1.36</td><td>14</td><td>20</td><td>239억</td><td class='neg'>-24.5%</td><td class='neg'>-29.5%</td></tr><tr><td>7</td><td>402340</td><td>SK스퀘어</td><td>KOSPI</td><td>1.51</td><td>49</td><td>6</td><td>6,589억</td><td class='pos'>+20.3%</td><td class='pos'>+12.4%</td></tr><tr><td>8</td><td>098120</td><td>마이크로컨텍솔</td><td>KOSDAQ</td><td>1.30</td><td>5</td><td>0</td><td>88억</td><td class='pos'>+42.8%</td><td class='pos'>+37.8%</td></tr><tr><td>9</td><td>033640</td><td>네패스</td><td>KOSDAQ</td><td>1.48</td><td>53</td><td>0</td><td>30억</td><td class='pos'>+22.9%</td><td class='pos'>+17.9%</td></tr><tr><td>10</td><td>119850</td><td>지엔씨에너지</td><td>KOSDAQ</td><td>1.24</td><td>12</td><td>12</td><td>480억</td><td class='pos'>+34.1%</td><td class='pos'>+29.0%</td></tr><tr><td>11</td><td>009155</td><td></td><td>KOSPI</td><td>1.38</td><td>49</td><td>6</td><td>199억</td><td class='pos'>+0.6%</td><td class='neg'>-7.3%</td></tr><tr><td>12</td><td>009150</td><td>삼성전기</td><td>KOSPI</td><td>1.37</td><td>50</td><td>0</td><td>10,847억</td><td class='pos'>+7.2%</td><td class='neg'>-0.7%</td></tr><tr><td>13</td><td>074600</td><td>원익QnC</td><td>KOSDAQ</td><td>1.40</td><td>55</td><td>4</td><td>65억</td><td class='pos'>+15.9%</td><td class='pos'>+10.9%</td></tr><tr><td>14</td><td>178320</td><td>서진시스템</td><td>KOSDAQ</td><td>1.54</td><td>65</td><td>0</td><td>406억</td><td class='neg'>-4.0%</td><td class='neg'>-9.1%</td></tr><tr><td>15</td><td>200470</td><td>에이팩트</td><td>KOSDAQ</td><td>1.37</td><td>52</td><td>4</td><td>48억</td><td class='pos'>+35.7%</td><td class='pos'>+30.7%</td></tr><tr><td>16</td><td>252990</td><td>샘씨엔에스</td><td>KOSDAQ</td><td>1.38</td><td>55</td><td>4</td><td>70억</td><td class='pos'>+33.9%</td><td class='pos'>+28.8%</td></tr><tr><td>17</td><td>456010</td><td>아이씨티케이</td><td>KOSDAQ</td><td>1.44</td><td>66</td><td>17</td><td>40억</td><td class='pos'>+52.1%</td><td class='pos'>+47.0%</td></tr><tr><td>18</td><td>033160</td><td>엠케이전자</td><td>KOSDAQ</td><td>1.60</td><td>68</td><td>8</td><td>187억</td><td class='pos'>+14.7%</td><td class='pos'>+9.7%</td></tr><tr><td>19</td><td>019210</td><td>와이지-원</td><td>KOSDAQ</td><td>1.21</td><td>39</td><td>17</td><td>148억</td><td class='neg'>-5.1%</td><td class='neg'>-10.2%</td></tr><tr><td>20</td><td>347850</td><td>디앤디파마텍</td><td>KOSDAQ</td><td>1.28</td><td>50</td><td>21</td><td>846억</td><td class='neg'>-9.0%</td><td class='neg'>-14.0%</td></tr></tbody></table></div>
+
+<h2>앵커 2026-03-03 <span class="badge done">창 마감 · 120일</span></h2>
+<div class="meta">
+ <span class="chip">진입 <b>20260304</b> 종가 · 기준일 <b>20260827</b></span>
+ <span class="chip">유니버스 <b>1,788</b> 종목</span>
+ <span class="chip">코스피 비중 <b>55%</b></span>
+</div>
+<div class="grid">
+ <div class="kpi"><div class="l">바스켓 수익(비용 0.5% 후)</div><div class="v pos">+11.7%</div><div class="s">동일가중 20종목</div></div>
+ <div class="kpi"><div class="l">① 픽 시장비중 지수</div><div class="v">+13.2%</div><div class="s">초과 <b class="neg">-1.5%</b> · KOSPI +35.7% / KOSDAQ -14.4%</div></div>
+ <div class="kpi"><div class="l">② 유니버스 동일가중</div><div class="v">-7.1%</div><div class="s">초과 <b class="pos">+18.8%</b></div></div>
+ <div class="kpi"><div class="l">③ 대조군(거래대금 상위20)</div><div class="v">+35.4%</div><div class="s">초과 <b class="neg">-23.8%</b></div></div>
+</div>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>코드</th><th>종목</th><th>시장</th><th>베타60</th><th>신고가 후 일수</th><th>동행그룹</th><th>거래대금20</th><th>120일 수익</th><th>같은 시장 지수 대비</th></tr></thead><tbody><tr><td>1</td><td>000250</td><td>삼천당제약</td><td>KOSDAQ</td><td>2.02</td><td>1</td><td>2</td><td>1,926억</td><td class='neg'>-73.2%</td><td class='neg'>-58.8%</td></tr><tr><td>2</td><td>042700</td><td>한미반도체</td><td>KOSPI</td><td>1.69</td><td>1</td><td>6</td><td>5,828억</td><td class='neg'>-14.3%</td><td class='neg'>-50.0%</td></tr><tr><td>3</td><td>043260</td><td>성호전자</td><td>KOSDAQ</td><td>1.21</td><td>0</td><td>24</td><td>565억</td><td class='neg'>-35.6%</td><td class='neg'>-21.2%</td></tr><tr><td>4</td><td>001440</td><td>대한전선</td><td>KOSPI</td><td>1.50</td><td>1</td><td>20</td><td>2,327억</td><td class='pos'>+14.4%</td><td class='neg'>-21.3%</td></tr><tr><td>5</td><td>103590</td><td>일진전기</td><td>KOSPI</td><td>1.44</td><td>1</td><td>6</td><td>636억</td><td class='pos'>+3.7%</td><td class='neg'>-32.0%</td></tr><tr><td>6</td><td>448900</td><td>한국피아이엠</td><td>KOSDAQ</td><td>1.41</td><td>1</td><td>9</td><td>170억</td><td class='neg'>-52.7%</td><td class='neg'>-38.3%</td></tr><tr><td>7</td><td>000720</td><td>현대건설</td><td>KOSPI</td><td>1.38</td><td>1</td><td>20</td><td>2,852억</td><td class='pos'>+1.9%</td><td class='neg'>-33.8%</td></tr><tr><td>8</td><td>006340</td><td>대원전선</td><td>KOSPI</td><td>1.34</td><td>1</td><td>14</td><td>1,053억</td><td class='pos'>+182.8%</td><td class='pos'>+147.1%</td></tr><tr><td>9</td><td>080220</td><td>제주반도체</td><td>KOSDAQ</td><td>1.32</td><td>1</td><td>12</td><td>2,961억</td><td class='pos'>+110.9%</td><td class='pos'>+125.2%</td></tr><tr><td>10</td><td>027360</td><td>아주IB투자</td><td>KOSDAQ</td><td>1.31</td><td>1</td><td>24</td><td>685억</td><td class='neg'>-19.0%</td><td class='neg'>-4.6%</td></tr><tr><td>11</td><td>095340</td><td>ISC</td><td>KOSDAQ</td><td>1.25</td><td>1</td><td>12</td><td>461억</td><td class='pos'>+4.5%</td><td class='pos'>+18.8%</td></tr><tr><td>12</td><td>000150</td><td>두산</td><td>KOSPI</td><td>1.24</td><td>1</td><td>6</td><td>1,558억</td><td class='pos'>+26.1%</td><td class='neg'>-9.6%</td></tr><tr><td>13</td><td>218410</td><td>RFHIC</td><td>KOSDAQ</td><td>1.08</td><td>0</td><td>7</td><td>293억</td><td class='neg'>-14.4%</td><td class='pos'>+0.0%</td></tr><tr><td>14</td><td>277810</td><td>레인보우로보틱스</td><td>KOSDAQ</td><td>1.77</td><td>2</td><td>7</td><td>2,119억</td><td class='neg'>-33.1%</td><td class='neg'>-18.7%</td></tr><tr><td>15</td><td>006400</td><td>삼성SDI</td><td>KOSPI</td><td>1.20</td><td>1</td><td>22</td><td>4,328억</td><td class='pos'>+62.1%</td><td class='pos'>+26.4%</td></tr><tr><td>16</td><td>001510</td><td></td><td>KOSPI</td><td>1.67</td><td>2</td><td>5</td><td>1,488억</td><td class='neg'>-12.0%</td><td class='neg'>-47.8%</td></tr><tr><td>17</td><td>001290</td><td></td><td>KOSPI</td><td>1.65</td><td>2</td><td>5</td><td>125억</td><td class='neg'>-0.7%</td><td class='neg'>-36.4%</td></tr><tr><td>18</td><td>006800</td><td></td><td>KOSPI</td><td>1.59</td><td>2</td><td>5</td><td>5,132억</td><td class='neg'>-35.8%</td><td class='neg'>-71.5%</td></tr><tr><td>19</td><td>402340</td><td>SK스퀘어</td><td>KOSPI</td><td>1.59</td><td>2</td><td>12</td><td>4,667억</td><td class='pos'>+110.7%</td><td class='pos'>+74.9%</td></tr><tr><td>20</td><td>084370</td><td>유진테크</td><td>KOSDAQ</td><td>1.57</td><td>2</td><td>12</td><td>446억</td><td class='pos'>+17.0%</td><td class='pos'>+31.4%</td></tr></tbody></table></div>
+
+<div class="foot">잣대·라벨 규칙: PREREGISTER_ld_a.md §3 · 적재: lead_observe.py(월 첫 거래일) · 평가: lead_eval.py · 표시 전용(점수·판정 무관). 비용 왕복 0.5%, 종가 체결 가정, 거래정지는 마지막 관측가. 한 앵커의 수익은 독립 표본이 아니라 그 반년 장세 하나입니다.</div>
+</div></body></html>
