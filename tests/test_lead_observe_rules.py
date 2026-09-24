@@ -42,6 +42,12 @@ check("9/1 은 첫 거래일", lo.is_first_trading_day(dates, "20260901"))
 check("9/2 는 아님", not lo.is_first_trading_day(dates, "20260902"))
 check("10/1 (다음 달 첫날)", lo.is_first_trading_day(dates, "20261001"))
 
+print("[3b] 자동 앵커(month_anchor) — 최신 달 첫 거래일, 등록일 이전 달은 None")
+check("10월 데이터 첫날", lo.month_anchor(["20260929", "20260930", "20261001"], "20261001") == "20261001")
+check("10월 셋째 날에도 앵커는 10/1(따라잡기)", lo.month_anchor(["20260930", "20261001", "20261002", "20261005"], "20261001") == "20261001")
+check("최신 달이 등록일 이전(9월)이면 None", lo.month_anchor(["20260901", "20260902", "20260923"], "20261001") is None)
+check("REG_DATE 상수 = 20261001", lo.REG_DATE == "20261001")
+
 print("[4] 그룹당 상한")
 order = np.arange(10); labels = {i: (0 if i < 6 else 1) for i in range(10)}
 pick = lo.pick_with_cap(order, labels, 4, 6)

@@ -8,8 +8,9 @@
        ld_ctl_amt = 거래대금20 상위 20 (대조군 — 모델 아님, 판정 짝비교용)
 판정:  PREREGISTER_ld_a.md §3 — 120거래일 보유·비용 0.5%·픽 시장비중 지수/동일가중/대조군 3중 · 비겹침 3창.
        §11(h20 IC·40거래일)은 이 트랙에 적용하지 않는다. 평가는 lead_eval.py.
-게이트: 앵커일 = daily_ohlcv 최신일. 같은 달에 더 이른 거래일이 있으면 '첫 거래일 아님' → 아무것도 안 하고 종료 0.
-        같은 (model_id, run_id) 또는 같은 달 행이 이미 있으면 재적재 금지(동결). --dry-run 은 DB 무접촉.
+게이트: 자동 앵커 = daily_ohlcv '최신 달의 첫 거래일'(month_anchor). 그날 배치가 못 돌아도 같은 달 안의 다음 배치가 따라잡는다
+        (팩터는 앵커일까지 정보만 쓰므로 스펙 동일 — 2026-09-24 전수점검 결함 1 수정). 등록일(REG_DATE 20261001) 이전 달은 건너뜀.
+        같은 달 행이 이미 있으면 재적재 금지(동결). 앵커일 종목 수 <2000 이면 적재 안 하고 exit 1(다음 배치 재시도). --dry-run 은 DB 무접촉.
 실행:  python lead_observe.py                (배치, 월초 자동)
        python lead_observe.py --anchor 20260901 --dry-run     (재현/검증 — 첫 거래일 아니어도 --force 로 계산만)
 """
@@ -63,6 +64,16 @@ def is_first_trading_day(dates_sorted, anchor):
     """같은 YYYYMM 안에 anchor 보다 이른 거래일이 없으면 True."""
     ym = anchor[:6]
     return not any(d < anchor and d[:6] == ym for d in dates_sorted)
+
+REG_DATE = "20261001"   # PREREGISTER_ld_a — 이 날 이전 달은 앵커로 잡지 않는다(소급 적재 없음)
+
+def month_anchor(dates_sorted, reg_date=REG_DATE):
+    """자동 앵커 = daily_ohlcv 최신 달의 '첫 거래일'. 그날 배치가 못 돌아도(PC 꺼짐·부분 수집) 같은 달 안에서 따라잡는다 —
+    팩터는 앵커일까지 정보만 쓰므로 며칠 뒤 계산해도 같은 스펙. 최신 달의 첫 거래일이 reg_date 이전이면 None."""
+    if not dates_sorted: return None
+    ym = dates_sorted[-1][:6]
+    first = next(d for d in dates_sorted if d[:6] == ym)
+    return first if first >= reg_date else None
 
 def kmeans(X, k, seed=0, it=30):
     rng = np.random.default_rng(seed)
@@ -131,6 +142,7 @@ def compute(P):
         cov = roll_mean(ret * mi, 60, 40) - roll_mean(ret, 60, 40) * roll_mean(mi, 60, 40)
         var = roll_std(mi, 60, 40) ** 2
         beta60 = cov / var
+        beta60[~np.isfinite(beta60)] = np.nan          # 지수 분산 0 등 비유한값 → 결측(핵심 팩터라 제외)
         rm = roll_max(c, 252, 120); ishigh = c >= rm * 0.999
         dsh = np.full((T, N), np.nan); cnt = np.full(N, np.nan)
         for t in range(T):
@@ -200,13 +212,18 @@ def main():
         print("[중단] --force 는 --dry-run 과 함께만(동결 원칙)"); return 2
     con0 = sqlite3.connect(f"file:{OHLCV}?mode=ro", uri=True)
     all_dates = [r[0] for r in con0.execute("SELECT DISTINCT date FROM daily_ohlcv ORDER BY date")]
-    anchor = a.anchor or all_dates[-1]
+    if a.anchor:
+        anchor = a.anchor
+        if not is_first_trading_day(all_dates, anchor) and not a.force:
+            print(f"[lead_observe] {anchor} 은 첫 거래일 아님({anchor[:6]}월) → 건너뜀"); con0.close(); return 0
+    else:
+        anchor = month_anchor(all_dates, REG_DATE)
+        if anchor is None:
+            print(f"[lead_observe] 최신 달({all_dates[-1][:6]}) 첫 거래일이 등록일({REG_DATE}) 이전 → 건너뜀"); con0.close(); return 0
     nrow = con0.execute("SELECT COUNT(*) FROM daily_ohlcv WHERE date=?", (anchor,)).fetchone()[0]; con0.close()
-    print(f"[lead_observe] 앵커 {anchor} · 행 {nrow}")
-    if not is_first_trading_day(all_dates, anchor) and not a.force:
-        print(f"  첫 거래일 아님({anchor[:6]}월) → 건너뜀"); return 0
+    print(f"[lead_observe] 앵커 {anchor} · 행 {nrow} · 최신일 {all_dates[-1]}")
     if nrow < 2000:
-        print(f"  [중단] 앵커일 종목 수 {nrow} < 2000 (부분 수집 의심) → 적재 안 함"); return 1
+        print(f"  [중단] 앵커일 종목 수 {nrow} < 2000 (부분 수집 의심) → 적재 안 함(다음 배치에서 재시도)"); return 1
     if not a.dry_run:
         con = sqlite3.connect(HIST); ensure_table(con)
         dup = con.execute(f"SELECT COUNT(*) FROM {TABLE} WHERE model_id=? AND substr(run_id,1,6)=?", (MODEL, anchor[:6])).fetchone()[0]

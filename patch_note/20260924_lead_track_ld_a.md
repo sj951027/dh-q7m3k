@@ -33,3 +33,18 @@
 - **le.html 신설**(사용자 요청 — 성적표 참고 수익 +4.2%p 가 눈에 띄어서): sv.html 을 본떠 le_a 목록·날짜 탭. **§11 정본은 노이즈(9/13)** 이므로 lva/mom 페이지처럼 '판정 완료 노이즈 · 기록·관찰용' 경고를 앞세움. 성적표 수치는 매수일 8일(40일 묶음 0.2개)짜리 참고치임을 페이지에 명시.
 - **어떻게**: `build_lead_page.py` update_daily/daily_html · `docs/le.html`(신규) · `build_wu_filter.py --model le_a --out latest_le.csv`(run_and_diversify 2.89c3 단계, 비치명) → `docs/latest_le.csv`·`le_meta.json` · `build_daily_lists.py` MODELS 에 le_a → `docs/hist/le_a.json` · leaderboard.html·leaderboard_full.html MODEL_PAGES 에 le_a→le.html(성적표 모델 이름이 링크가 됨).
 - **검증(실측)**: lead.html 10일 탭 렌더 · le.html 로컬 렌더(1,037종목, 희석 배지 74) · py_compile · run_tests 통과. 점수·판정·게이트 0-diff.
+
+## §4. 같은 날 밤 — 신규 코드 전수 점검(사용자 요청) 결과와 수정
+점검 범위: lead_observe.py · lead_eval.py · build_lead_page.py · docs/lead.html·le.html · build_daily_lists.py · run_and_diversify.py · run_all_and_diversify.bat · tests · checkup.REG_DATE · models_registry.json · .gitignore. 방법: 소비자 역추적(grep)·정독·사본 DB 시나리오 실행·전체 테스트.
+
+| # | 발견 | 심각도 | 조치 |
+|---|---|---|---|
+| 1 | `lead_observe` 가 "오늘 = 그 달 첫 거래일"일 때만 적재 → 10/1 배치 미실행·부분 수집(<2000행)이면 **그 달 앵커 영구 누락** | 높음 | 자동 앵커 = 최신 달의 첫 거래일(`month_anchor`), 같은 달 안에서 따라잡기. 팩터는 앵커일까지 정보만 쓰므로 스펙 동일. 등록일(20261001) 이전 달은 건너뜀. 테스트 4개 추가 |
+| 2 | beta60 = cov/var 에서 var=0 이면 inf → 순위 1위 가능 | 낮음(실제 발생 어려움) | 비유한값 → NaN(핵심 팩터라 제외) |
+| 3 | lead.html 의 사전등록 링크 `../PREREGISTER_ld_a.md` 가 GitHub Pages 에서 404 | 낮음 | 저장소 blob URL 로 교체 |
+| 4 | `month_anchor` 기본 인자가 정의 시점 상수에 묶여 테스트 오버라이드 무효 | 낮음(테스트만) | 호출 시 `REG_DATE` 명시 |
+| — | 확인·이상 없음: Bonferroni 분모는 점수 테이블(v3/lowvol/wu) 실측이라 `lead_picks`·REG_DATE 추가 무영향 · checkup 은 점수 있는 모델만 대상 · registry `observe` 키는 어떤 소비자도 안 읽음 · bat 3줄 ASCII·CRLF·비치명 · INSERT 컬럼 17개 = 테이블 17개 · JSON 직렬화 타입 · 첫 거래일 당일은 페이지에 미표시(t+1 종가 전) · 루트 latest_le.csv gitignore | | |
+| — | 알려진 제약(수정 안 함): build_lead_page 의 '마지막 관측가' 조회가 앵커마다 전체 테이블 GROUP BY(앵커 36개 시 ~1분 추정) · 한 달을 통째로 놓친 뒤 다음 달이 되면 그 달은 소급 안 됨(소급 적재 금지 원칙) · 앵커일 market_daily 결측 시 그날 지수수익 0 으로 베타 계산 | | |
+
+검증(실측): 실 DB `python lead_observe.py` → "최신 달(202609) 첫 거래일이 등록일 이전 → 건너뜀"(exit 0) · 사본 DB 에 등록일을 9/1 로 가정해 자동 앵커 적재 → 재실행 동결 · 전체 테스트 통과(lead 테스트 18체크) · py_compile.
+- 별건: le_a 보유기간 연구 `research/RESEARCH_le_hold_20260924.md`(정점 없음·시장평균 대비 선형 누적·지수 대비 0).

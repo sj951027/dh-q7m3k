@@ -46,7 +46,7 @@ CSS = """
   .pos{color:var(--good)} .neg{color:var(--bad)} .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7} .empty{padding:30px;text-align:center;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:10px}
 """
 HEAD = """<h1>주도주 관측 — ld_a (lead 트랙)</h1>
-<div class="sub">고베타 × 최근 52주 신고가 · 매월 첫 거래일 상위 20 · 120거래일 보유 · 동행그룹당 4종목 · 가중 0 · <b>관측 전용</b> — <a href="../PREREGISTER_ld_a.md">PREREGISTER_ld_a.md</a> · <a href="leaderboard.html">리더보드로</a></div>
+<div class="sub">고베타 × 최근 52주 신고가 · 매월 첫 거래일 상위 20 · 120거래일 보유 · 동행그룹당 4종목 · 가중 0 · <b>관측 전용</b> — <a href="https://github.com/sj951027/dh-q7m3k/blob/main/PREREGISTER_ld_a.md">PREREGISTER_ld_a.md</a> · <a href="leaderboard.html">리더보드로</a></div>
 <div class="warn"><b>추천 목록이 아닙니다.</b> 사전등록한 규칙이 새 데이터에서 어떻게 되는지 기록만 합니다. 판정은 겹치지 않는 120일 창 3개가 쌓인 뒤(≈2028-03) 한 번 — 그 전엔 '관측 중'. 리더보드(매일 상위 10·40일 보유 잣대)와 규칙이 달라 그 표에는 넣지 않습니다. 손절·익절 없음(연구에서 손절이 성과를 깎았음).</div>
 <details class="explain"><summary>이 규칙이 뭔가요 · 무엇과 비교하나요</summary><div class="explain-body">
 <p><b>고르는 법</b>: 가드(거래정지·급등락·저유동 제외)를 통과한 전 종목을 두 가지로 줄 세워 더합니다 — 지수와 같이 크게 움직이는 종목(베타60 높을수록), 최근에 52주 신고가를 찍은 종목(경과일 짧을수록). 상위 20을 사되 수익률이 같이 움직이는 동행그룹에서 4개까지만.</p>
