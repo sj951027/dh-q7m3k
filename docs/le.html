@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>저점탈출 (le_a) · 노이즈(9/13 정본) · 관측</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
+    --accent:#5aa9ff; --warn:#f0b429; --warnbg:#2a230f; --good:#2dd4a7; --bad:#f0997b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    font-size:14px;line-height:1.5}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:12px;margin-bottom:14px}
+  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px}
+  .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;
+    list-style:none;user-select:none}
+  .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px}
+  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
+  .explain-body b{color:var(--txt)}
+  .explain .warnp{background:#1f1a0c;border-left:3px solid var(--warn);
+    padding:9px 12px;color:#e8dcc0}
+  .explain .warnp b{color:var(--warn)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 10px;font-size:12px;color:var(--sub)}
+  .chip b{color:var(--txt)}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
+  .tab.active{border-color:var(--accent);color:var(--accent)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+  .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
+  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub);user-select:none}
+  .fbtn.on{border-color:var(--accent);color:var(--accent);background:#141c26}
+  .fcount{color:var(--sub);font-size:12px;margin-left:auto}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;min-width:0}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0;cursor:pointer}
+  th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left}
+  .top50row td{background:#131b26}
+  .top50row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .top50row td:nth-child(2){color:var(--accent);font-weight:700}
+  tr:hover td{background:#1b1f28}
+  .score{color:var(--accent);font-weight:700}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .dtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center}
+  .dtab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px;color:var(--sub)}
+  .dtab.active{border-color:var(--accent);color:var(--accent)}.dtab.more{color:var(--sub);opacity:.8}
+  .dnote{font-size:12px;color:var(--sub);margin:0 0 8px}
+  .v3{color:var(--sub);font-size:11px}
+  .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7}
+  .loading{padding:40px;text-align:center;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>저점탈출 <span style="color:var(--accent)">le_a</span> · 관측 <small style="font-size:.55em;opacity:.75">(§11 판정: 노이즈 · 9/13 정본)</small></h1>
+  <div class="sub">52주 저점 대비 상승(dlow52↑) + OBV 미매집(obv63↓) + 유동성(amt20↑) 순위합 · 전체 상장(과매도 게이트 없음) · v3·large·lowvol·sv_a 와 별개 관측 모델 · 표시 전용(2026-09-24 열람용 배선)</div>
+  <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
+  <script>
+  // [2026-08-29] 목록 신선도 배지 — le_meta.json 의 run_id 기준 (lowvol.html 과 동일 패턴).
+  fetch('le_meta.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json();}).then(m=>{
+    const el=document.getElementById('freshness');
+    const rid=String(m.run_id||''); if(rid.length!==8) return;
+    const run=new Date(+rid.slice(0,4), +rid.slice(4,6)-1, +rid.slice(6,8));
+    const today=new Date(); today.setHours(0,0,0,0);
+    let wd=0; for(let d=new Date(run); d<today; d.setDate(d.getDate()+1)){
+      d.setHours(0,0,0,0); const w=new Date(d); w.setDate(w.getDate()+1);
+      if(w.getDay()!==0 && w.getDay()!==6) wd++;
+    }
+    const ds=rid.slice(0,4)+'-'+rid.slice(4,6)+'-'+rid.slice(6,8);
+    el.style.display='block';
+    if(wd>=2){
+      el.style.background='#3a1f1f'; el.style.border='1px solid #b45555'; el.style.color='#f0b0b0';
+      el.innerHTML='⚠️ <b>이 목록은 '+ds+' 기준</b> — 주중 기준 약 '+wd+'일 전 자료입니다. '
+        +'파이프라인 미실행·적재 제외(유니버스 고갈 등)로 갱신이 지연됐을 수 있으니, '
+        +'<b>최신 목록이 아님을 감안</b>하고 매수 근거로 쓰지 마세요. (공휴일이면 정상일 수 있음)';
+    }else{
+      el.style.background='var(--card,#1c1f26)'; el.style.border='1px solid #2c3440'; el.style.color='var(--sub,#8a93a5)';
+      el.textContent='목록 기준일: '+ds+' (정상 범위)';
+    }
+  }).catch(()=>{});
+  </script>
+
+  <div class="warn">
+    ⚠️ <b>§11 판정 완료(2026-09-13 정본): 노이즈 — 매수신호 아님.</b> OOS 40거래일 h20 IC <b>−0.015</b>, 95% 구간 [−0.044, +0.015](0 걸침), 주별 양(+) 20%, h5·h10 도 음(−)~0. 같은 앵커 짝비교에서 sv_a 가 le_a 보다 +0.048 우위(유의). 적재는 유지되지만 <b>가중 0·판정 종료</b>이고 이 페이지는 <b>기록·관찰용</b>입니다(VERDICT_20260913_wu_sv_le.md).
+    리더보드 성적표(매일 상위 10·40일 보유)의 le_a 참고 수익은 <b>매수일 8일(40일 묶음 0.2개)</b>짜리라 판정을 뒤집을 근거가 아닙니다. 이 점수(le_a, wu_score 컬럼)는 급등꼬리 연구(2026-07-14)에서 나온 사후 탐색 가설(PREREGISTER_le_sv.md, 등록 2026-07-15)이었습니다. 실제 추천 기준은 여전히 v3·lv_b 입니다.
+  </div>
+
+  <details class="explain" open>
+    <summary>📖 점수·지표 읽는 법 (눌러서 접기)</summary>
+    <div class="explain-body">
+      <p><b>le점수 (wu_score 컬럼)</b> — 세 가지의 백분위 순위합입니다: <b>dlow52</b>(종가 ÷ 52주 최저가 − 1, 저점에서 이미 많이 오른 종목 ↑, 핵심·실측 필수) · <b>obv63</b>(63일 OBV 누적 ÷ 거래량 합, 낮을수록 ↑ = 아직 매집 안 된 종목) · <b>amt20f</b>(20일 평균 거래대금, 높을수록 ↑). 0~3 범위, 가중 동일.</p>
+
+      <p class="warnp">📌 <b>판정 결과 요약</b> — 발견 당시(2026-07 급등꼬리 연구) h5 우위가 있었지만 OOS 에서는 h5·h10·h20 전부 음(−)~0 이었습니다. "저점에서 올라온 미매집·유동성 종목"이 이후 더 오른다는 가설은 <b>새 데이터에서 재현되지 않았습니다.</b> 이 페이지는 그 기록을 그대로 두고 보는 용도입니다.</p>
+
+      <p>아래 <b>변동성63·고점대비%·12-1모멘텀%·최근20일%·시총·수급</b> 컬럼은 전부
+      <b>참고 표시</b>입니다(점수 미포함). <b>거래대금억</b>은 점수 성분(amt20f)이자 가드(5억 미만 제외)입니다.</p>
+    </div>
+  </details>
+
+  <div class="meta" id="meta"></div>
+
+  <div class="tabs">
+    <span class="tab active" data-mkt="all">전체</span>
+    <span class="tab" data-mkt="KOSPI">KOSPI</span>
+    <span class="tab" data-mkt="KOSDAQ">KOSDAQ</span>
+  </div>
+
+  <!-- [2026-09-17] 지난 날짜 리스트 탭 (hist/sv_a.json, 표시 전용) -->
+  <div class="dtabs" id="dtabs"></div>
+  <div class="dnote" id="dnote" hidden></div>
+  <div class="filters" id="filters">
+    <span class="flabel">필터:</span>
+    <span class="fbtn" data-f="top50">top50</span>
+    <span class="fbtn" data-f="nearhigh">고점 −10% 이내</span>
+    <span class="fbtn" data-f="amtlow">거래대금 ≤ 50억</span>
+    <span class="fbtn" data-f="f5pos">외인5일 +</span>
+    <span class="fbtn" data-f="i5pos">기관5일 +</span>
+    <span class="fbtn" data-f="any5pos">외인·기관 한쪽 +</span>
+    <span class="fcount" id="fcount"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="tbl"><thead></thead><tbody>
+      <tr><td colspan="20" class="loading">데이터 불러오는 중…</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+// 표시 컬럼 정의: [CSV키, 라벨, 타입, 툴팁]
+const COLS = [
+  ['rank','#','int','그날 le_a 전체 유니버스 단일 순위'],
+  ['wu_score','le점수','score','dlow52↑ + obv63↓ + amt20f↑ 백분위 순위합(0~3). 높을수록 상위'],
+  ['name','종목','str',''],
+  ['dilution_60d','⚠️희석공시','dil','직전 60거래일 내 유상증자·CB·BW·EB 결정 공시(정정 제외). 3년 실측: 같은 유니버스 대비 −1.4~−6.6%p/60일 — 사람이 보고 제외 판단. 점수·순위에는 미반영'],
+  ['ticker','코드','str',''],
+  ['market','시장','str',''],
+  ['sector','업종','str','업종(sector_cache 기준, 전체 유니버스라 일부 빈칸)'],
+  ['mcap_조','시총(조)','num2','당일 종가×상장주식수. 참고용(점수 미포함)'],
+  ['lv63','변동성63','num4','63거래일 일수익 표준편차. 참고용(점수 미포함)'],
+  ['nh252_%','고점대비%','signed','52주 최고가 대비. 참고용(점수 미포함)'],
+  ['amt20_억','거래대금억','num1','20일 평균 일거래대금. 점수 성분(높을수록 ↑) · 5억 미만 가드 제외'],
+  ['mom12_%','12-1모멘텀%','signed','참고용(점수 미포함)'],
+  ['r20d_%','최근20일%','signed','참고용(점수 미포함)'],
+  ['foreign_5d_억','외인5일','signed','외국인 최근5거래일 순매수(억, KIS). 적재된 날만 합산(4일 미만이면 빈칸)'],
+  ['foreign_20d_억','외인20일','signed','외국인 최근20거래일 순매수(억). 15일 미만 적재 종목은 빈칸'],
+  ['inst_5d_억','기관5일','signed','기관 최근5거래일 순매수(억, KIS). 적재된 날만 합산(4일 미만이면 빈칸)'],
+  ['inst_20d_억','기관20일','signed','기관 최근20거래일 순매수(억). 15일 미만 적재 종목은 빈칸'],
+  ['v3_bucket','v3참고','v3','v3 스크리너 버킷(비교용 — 섞지 않음. 전체 유니버스라 대부분 빈칸)'],
+];
+
+let curMkt = 'all';
+let sortKey = 'rank', sortAsc = true;
+let allRows = [];
+let activeF = new Set();
+
+const FILTERS = {
+  top50:    r => parseInt(r['top50']) === 1,
+  nearhigh: r => parseFloat(r['nh252_%']) >= -10,
+  amtlow:   r => parseFloat(r['amt20_억']) <= 50,
+  f5pos:    r => parseFloat(r['foreign_5d_억']) > 0,
+  i5pos:    r => parseFloat(r['inst_5d_억']) > 0,
+  any5pos:  r => parseFloat(r['foreign_5d_억']) > 0 || parseFloat(r['inst_5d_억']) > 0,
+};
+
+function applyFilters(){
+  let rows = allRows;
+  if(curMkt !== 'all') rows = rows.filter(r => r['market'] === curMkt);
+  rows = rows.filter(r => [...activeF].every(f => {
+    const fn = FILTERS[f]; if(!fn) return true;
+    return fn(r) === true;   // NaN 비교는 false → 제외
+  }));
+  render(rows.slice());
+  const fc = document.getElementById('fcount');
+  if(fc) fc.textContent = (activeF.size || curMkt!=='all')
+    ? `${rows.length} / ${allRows.length} 종목 (필터 적용)`
+    : `${allRows.length} 종목`;
+}
+
+function fmt(v, type){
+  if(type==='dil') return v?'<span style="color:#e53e3e;font-weight:600" title="희석 공시 60거래일 내">⚠️ '+v+'</span>':'';
+  if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
+  if(type==='int'){const n=parseInt(v);return isNaN(n)?'<span class="v3">-</span>':n}
+  if(type==='score'){const n=parseFloat(v);return isNaN(n)?'-':'<span class="score">'+n.toFixed(3)+'</span>'}
+  if(type==='num1'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(1)}
+  if(type==='num2'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(2)}
+  if(type==='num4'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(4)}
+  if(type==='signed'){const n=parseFloat(v);if(isNaN(n))return '-';
+    return '<span class="'+(n>=0?'pos':'neg')+'">'+(n>=0?'+':'')+n.toFixed(1)+'</span>'}
+  if(type==='v3') return '<span class="v3">'+v+'</span>';
+  return v;
+}
+
+function parseCSV(txt){
+  const lines = txt.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.length);
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line=>{
+    const vals = line.split(',');   // 간단 파서(값에 콤마 없음 가정)
+    const row = {};
+    headers.forEach((h,i)=> row[h.trim()] = (vals[i]??'').trim());
+    return row;
+  });
+}
+
+function render(rows){
+  const thead = document.querySelector('#tbl thead');
+  const tbody = document.querySelector('#tbl tbody');
+  thead.innerHTML = '<tr>' + COLS.map(c=>
+    `<th data-key="${c[0]}"${c[3]?` title="${c[3]}"`:''}>${c[1]}${sortKey===c[0]?(sortAsc?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+  rows.sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    const nx=parseFloat(x), ny=parseFloat(y);
+    if(!isNaN(nx)&&!isNaN(ny)){x=nx;y=ny}
+    if(x<y)return sortAsc?-1:1; if(x>y)return sortAsc?1:-1; return 0;
+  });
+  tbody.innerHTML = rows.map(r=>{
+    const isTop = parseInt(r['top50']) === 1;
+    return '<tr'+(isTop?' class="top50row"':'')+'>'+COLS.map(c=>`<td>${fmt(r[c[0]],c[2])}</td>`).join('')+'</tr>';
+  }).join('');
+  thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.key; if(k===sortKey){sortAsc=!sortAsc}else{sortKey=k;sortAsc=(k==='rank')}
+    render(rows);
+  });
+}
+
+function load(){
+  curDate=null; document.getElementById('filters').style.display=''; const _n=document.getElementById('dnote'); if(_n) _n.hidden=true;
+  fetch('latest_le.csv?ts='+Date.now())
+    .then(r=>{if(!r.ok)throw 0;return r.text()})
+    .then(txt=>{
+      allRows = parseCSV(txt);
+      sortKey='rank'; sortAsc=true;
+      applyFilters();
+      const nuni = allRows.length? allRows[0]['n_universe']:'-';
+      document.getElementById('meta').innerHTML =
+        `<div class="chip">모델 <b>le_a</b> (저점탈출+OBV미매집+유동성)</div>`+
+        `<div class="chip">run <b>${allRows.length? '유효':''} ${allRows.length}</b> 종목</div>`+
+        `<div class="chip">유니버스 <b>${nuni}</b></div>`+
+        `<div class="chip">구성 <b>dlow52↑ + obv63↓ + amt20f↑ (순위합·가중 동일)</b></div>`+
+        `<div class="chip">가드 <b>변동성·거래정지·점프컷·유동≥5억</b></div>`;
+    })
+    .catch(()=>{
+      document.querySelector('#tbl tbody').innerHTML=
+        '<tr><td colspan="20" class="loading">데이터 없음 (latest_le.csv)</td></tr>';
+    });
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  curMkt = t.dataset.mkt;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x===t));
+  sortKey='rank'; sortAsc=true;
+  if(curDate!==null){ renderHist(); return; }
+  applyFilters();
+});
+document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
+  const f=b.dataset.f;
+  if(activeF.has(f)){activeF.delete(f); b.classList.remove('on');}
+  else{activeF.add(f); b.classList.add('on');}
+  sortKey='rank'; sortAsc=true;
+  applyFilters();
+});
+document.getElementById('foot').innerHTML =
+  '※ <b>관측·기록</b> 페이지(§11 판정 완료: 노이즈 · 9/13 정본) · le점수 높을수록 규칙상 상위(매수 아님) · v3·large·lowvol·sv_a 와 별개<br>'+
+  '등록 2026-07-15(PREREGISTER_le_sv.md) · 판정 VERDICT_20260913_wu_sv_le.md · 열람용 배선 2026-09-24(표시 전용, 점수·판정 0-diff) · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
+// ---- [2026-09-17] 지난 날짜 리스트 탭 (당시 동결 점수 · 표시 전용) ----
+let histData=null, curDate=null, showMore=false;
+const HIST_COLS=[['rank','그날 순위'],['market','시장'],['name','종목'],['ticker','코드'],['score','le점수'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+function fmtD(d){return d? (+d.slice(4,6))+'/'+(+d.slice(6)) : '';}
+function renderDtabs(){
+  const box=document.getElementById('dtabs'); if(!histData){box.innerHTML='';return;}
+  const days=histData.days; const vis=showMore? days : days.slice(0,3);
+  box.innerHTML = vis.map((d,i)=>`<div class="dtab${(curDate===null&&i===0)||curDate===d.date?' active':''}" data-date="${i===0?'':d.date}">${i===0?'오늘('+fmtD(d.date)+')':fmtD(d.date)}</div>`).join('')
+    + (days.length>3? `<div class="dtab more" id="dmore">${showMore?'접기 ▴':'더 보기 ▾ ('+(days.length-3)+'일)'}</div>`:'');
+  box.querySelectorAll('.dtab[data-date]').forEach(t=>t.onclick=()=>{ curDate=t.dataset.date||null; if(curDate===null){load();} else {renderHist();} renderDtabs(); });
+  const m=document.getElementById('dmore'); if(m) m.onclick=()=>{showMore=!showMore; renderDtabs();};
+}
+function renderHist(){
+  const day=histData.days.find(d=>d.date===curDate); if(!day) return;
+  document.getElementById('filters').style.display='none';
+  const note=document.getElementById('dnote'); note.hidden=false;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(le_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 관측 모델, 매수신호 아님`;
+  const rows=day.rows.filter(r=>curMkt==='all' || (r.market||'').toUpperCase()===curMkt);
+  const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
+  thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
+  tbody.innerHTML=rows.map(r=>'<tr>'+HIST_COLS.map(c=>{
+    const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';
+    if(c[0]==='market') return `<td>${String(v).toUpperCase()}</td>`;
+    if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
+    if(c[0]==='px_then'||c[0]==='px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
+    return `<td>${v}</td>`; }).join('')+'</tr>').join('') || '<tr><td colspan="9" class="loading">이 시장 자료 없음</td></tr>';
+  const fc=document.getElementById('fcount'); if(fc) fc.textContent='';
+}
+fetch('hist/le_a.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});
+load();
+</script>
+</body>
+</html>

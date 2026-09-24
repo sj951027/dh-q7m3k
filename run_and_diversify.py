@@ -366,6 +366,12 @@ def main():
         run_script(["build_wu_filter.py", "--model", "sv_a", "--out", "latest_sv.csv"],
                    "2.89c2단계: 공매도비중 sv_a 관측 CSV (섀도우)")
 
+    # 2.89c3) 저점탈출(le_a) 관측 CSV — le.html 이 fetch할 docs/latest_le.csv 갱신 (2026-09-24, 열람용 배선).
+    #        §11 노이즈(9/13) 확정 모델 — 기록·관찰용 표시 전용(점수·판정 0-diff), 실패해도 비치명.
+    if (HERE / "build_wu_filter.py").exists():
+        run_script(["build_wu_filter.py", "--model", "le_a", "--out", "latest_le.csv"],
+                   "2.89c3단계: 저점탈출 le_a 관측 CSV (기록용)")
+
     # 2.89c) 가격 4팩터(px_a) 관측 CSV — px.html 이 fetch할 docs/latest_px.csv 갱신.
     #        점수 적재는 2.88(wu_score)이 이미 처리(px_a 는 wu_scores 공유, PREREGISTER_px_a.md).
     #        2026-08-11 사용자 결정: 테스트 열람용 표시 배선 — 표시 전용(판정·점수 0-diff), 실패해도 비치명.

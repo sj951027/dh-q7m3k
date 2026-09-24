@@ -42,6 +42,7 @@ CSS = """
   .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px} table{border-collapse:collapse;width:100%;font-size:11.5px}
   th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)} th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0}
   th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left} tr:hover td{background:#1b1f28}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px} .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub)} .tab.active{border-color:var(--accent);color:var(--accent)}
   .pos{color:var(--good)} .neg{color:var(--bad)} .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7} .empty{padding:30px;text-align:center;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:10px}
 """
 HEAD = """<h1>주도주 관측 — ld_a (lead 트랙)</h1>
@@ -51,6 +52,45 @@ HEAD = """<h1>주도주 관측 — ld_a (lead 트랙)</h1>
 <p><b>고르는 법</b>: 가드(거래정지·급등락·저유동 제외)를 통과한 전 종목을 두 가지로 줄 세워 더합니다 — 지수와 같이 크게 움직이는 종목(베타60 높을수록), 최근에 52주 신고가를 찍은 종목(경과일 짧을수록). 상위 20을 사되 수익률이 같이 움직이는 동행그룹에서 4개까지만.</p>
 <p><b>비교 셋</b>: ① 뽑힌 종목의 코스피/코스닥 비중대로 섞은 지수 ② 같은 날 가드 유니버스 전체를 동일가중으로 산 것 ③ 그냥 거래대금 상위 20을 산 것(대조군). ③을 못 이기면 "주도주 규칙"이 아니라 "큰 종목 사기"일 뿐입니다.</p>
 <div class="warnp"><b>읽을 때 주의</b>: 한 앵커 수익은 그 반년 시장의 결과가 대부분입니다. 앵커가 여러 개 쌓여 구간(CI)이 나올 때까지 좋고 나쁨을 말하지 않습니다.</div></div></details>"""
+
+DAILY_JSON = os.path.join(HERE, "docs", "hist", "lead_daily.json"); DAILY_KEEP = 10
+
+def update_daily(today, oc):
+    """오늘 기준 ld_a 상위 20(참고 · 동결 아님)을 docs/hist/lead_daily.json 에 누적(최근 DAILY_KEEP 거래일). 실패는 비치명."""
+    try:
+        data = {"days": []}
+        if os.path.exists(DAILY_JSON):
+            import json; data = json.loads(open(DAILY_JSON, encoding="utf-8").read())
+        if any(d["date"] == today for d in data["days"]): return data
+        nrow = oc.execute("SELECT COUNT(*) FROM daily_ohlcv WHERE date=?", (today,)).fetchone()[0]
+        if nrow < 2000: return data
+        P, _ = lo.load_panel(today); F = lo.compute(P); ai = int(np.where(P["dates"] == today)[0][0])
+        rows_m, _, meta = lo.select(P, F, ai); nm = lo.names_map()
+        day = {"date": today, "n_universe": meta["n_universe"], "cap_applied": meta["cap_applied"],
+               "rows": [{"rank": r["rank"], "ticker": r["ticker"], "name": nm.get(r["ticker"], ""), "market": r["market"], "beta60": round(r["beta60"], 3),
+                         "dsh": r["days_since_high"], "cluster": r["cluster"], "amt20": r["amt20"], "close": r["close"]} for r in rows_m]}
+        data["days"] = sorted([d for d in data["days"] if d["date"] != today] + [day], key=lambda d: d["date"], reverse=True)[:DAILY_KEEP]
+        import json; os.makedirs(os.path.dirname(DAILY_JSON), exist_ok=True)
+        open(DAILY_JSON, "w", encoding="utf-8").write(json.dumps(data, ensure_ascii=False))
+        return data
+    except Exception as e:
+        print(f"  [경고] 일별 참고 목록 갱신 실패(비치명): {e}"); return {"days": []}
+
+def daily_html(data, oc, today):
+    days = data.get("days", [])
+    if not days: return ""
+    tk = sorted({r["ticker"] for d in days for r in d["rows"]})
+    q = ",".join("?" * len(tk))
+    latest = dict(oc.execute(f"SELECT ticker, close FROM daily_ohlcv WHERE date=? AND ticker IN ({q})", (today, *tk)).fetchall())
+    tabs = "".join(f'<button class="tab{" active" if i == 0 else ""}" data-i="{i}">{d["date"][4:6]}/{d["date"][6:]}</button>' for i, d in enumerate(days))
+    panes = []
+    for i, d in enumerate(days):
+        tr = "".join(f"<tr><td>{r['rank']}</td><td>{r['ticker']}</td><td>{html.escape(r.get('name') or '')}</td><td>{r['market']}</td><td>{r['beta60']:.2f}</td><td>{'' if r['dsh'] is None else r['dsh']}</td><td>{r['cluster']}</td><td>{r['amt20']/1e8:,.0f}억</td><td>{r['close']:,.0f}</td><td class='{cls((latest.get(r['ticker'], np.nan) / r['close'] - 1) if r['close'] else np.nan)}'>{pct((latest.get(r['ticker'], np.nan) / r['close'] - 1) if r['close'] else np.nan)}</td></tr>" for r in d["rows"])
+        panes.append(f'<div class="pane" data-i="{i}"{"" if i == 0 else " hidden"}><div class="sub">유니버스 {d["n_universe"]:,} · 그룹 상한 {"적용" if d["cap_applied"] else "미적용"} · 그날 종가 → {today} 종가 등락</div><div class="tablewrap"><table><thead><tr><th>#</th><th>코드</th><th>종목</th><th>시장</th><th>베타60</th><th>신고가 후 일수</th><th>동행그룹</th><th>거래대금20</th><th>그날 종가</th><th>이후 등락</th></tr></thead><tbody>{tr}</tbody></table></div></div>')
+    return f"""<h2>오늘 기준 순위 — 최근 {len(days)}거래일 <span class="badge">참고 · 동결 아님 · 판정에 안 씀</span></h2>
+<div class="sub">같은 규칙을 매일 돌려 본 것입니다. 실제 기록(위 앵커)은 <b>매월 첫 거래일</b> 것만 동결되고, 판정도 그것만 씁니다. 이 탭은 "규칙이 지금 무엇을 가리키나"를 보는 용도입니다.</div>
+<div class="tabs">{tabs}</div>{"".join(panes)}
+<script>document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.pane').forEach(p=>p.hidden=p.dataset.i!==b.dataset.i);}});</script>"""
 
 def main():
     hc = sqlite3.connect(f"file:{lo.HIST}?mode=ro", uri=True)
@@ -86,6 +126,7 @@ def main():
         u = uni[uni.run_id == run_id].ticker.tolist(); ew = float(np.mean([r_(tk) for tk in u])) - COST if u else np.nan
         blocks.append(dict(anchor=run_id, entry=de, asof=dend, closed=closed, elapsed=elapsed, rows=rows, ret=ret_m, bench=bench, ew=ew, ctl=ret_c,
                            kospi_share=pk, ik=ik, iq=iq, n_universe=int(gm.n_universe.iloc[0]) if len(gm) else len(u), cap=int(gm.cap_applied.min()) if len(gm) else 0))
+    daily = update_daily(today, oc); daily_section = daily_html(daily, oc, today)
     oc.close()
     parts = [HEAD]
     n_closed = sum(b["closed"] for b in blocks); n_open = len(blocks) - n_closed
@@ -120,6 +161,7 @@ def main():
  <div class="kpi"><div class="l">③ 대조군(거래대금 상위20)</div><div class="v">{pct(b['ctl'])}</div><div class="s">초과 <b class="{cls(b['ret']-b['ctl'])}">{pp(b['ret']-b['ctl'])}</b></div></div>
 </div>
 <div class="tablewrap"><table><thead><tr><th>#</th><th>코드</th><th>종목</th><th>시장</th><th>베타60</th><th>신고가 후 일수</th><th>동행그룹</th><th>거래대금20</th><th>{head_ret}</th><th>같은 시장 지수 대비</th></tr></thead><tbody>{tr}</tbody></table></div>""")
+    parts.append(daily_section)
     parts.append(f'<div class="foot">잣대·라벨 규칙: PREREGISTER_ld_a.md §3 · 적재: lead_observe.py(월 첫 거래일) · 평가: lead_eval.py · 이 페이지는 표시 전용(점수·판정 무관). 비용 왕복 {COST*100:.1f}%, 종가 체결 가정, 진입 불가는 현금, 거래정지는 마지막 관측가. 한 앵커의 수익은 독립 표본이 아니라 그 반년 장세 하나. 생성 {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>')
     page = f'<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>주도주 관측 (ld_a) · 관측 전용</title><style>{CSS}</style></head><body><div class="wrap">{"".join(parts)}</div></body></html>'
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

@@ -72,7 +72,7 @@
   <div class="foot">검증 결론 = 미리 정해 둔 40거래일 창에서 20일 보유 기준으로 한 번 내린 결론(날짜·창 병기, 채택 여부는 여기서만 정함). 지금 흐름 = 오늘까지 쌓인 "20일 뒤 순서를 얼마나 맞췄나"(100점 만점 환산)로 매일 바뀌는 참고치. 결론을 다시 내리려면 새 창을 미리 정해 두고 다시 봄. 이 표는 매수 추천이 아니며, 성적이 좋다고 바로 채택되지 않는다.</div>
 </div>
 <script>
-const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',ls_t1:'_large_test.html'};
+const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',le_a:'le.html',ls_t1:'_large_test.html'};
 const LABEL={'유의':'효과 확인됨','기움':'좋아 보이지만 확정 아님','노이즈':'차이 없음','역작동':'반대로 감 (점수 높을수록 나쁨)'};
 const f1=(v,u='%')=>v==null?'—':(v>0?'+':'')+v.toFixed(1)+u;
 const cls=v=>v==null?'':v>0?'pos':v<0?'neg':'';

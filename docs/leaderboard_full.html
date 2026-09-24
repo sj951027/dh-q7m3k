@@ -181,7 +181,7 @@
 
   // 모델 셀 → 표시 페이지 링크 (페이지가 실존하는 모델만)
   const MODEL_PAGES={ 'v30':'filter.html', 'lv_b':'lowvol.html', 'lv_a':'lva.html', 'wu_a':'wu.html',
-    'mom_a':'mom.html', 'qs_a':'qs.html', 'ls_t1':'_large_test.html', 'px_a':'px.html', 'sv_a':'sv.html', 'mom_b':'mom_b.html' };
+    'mom_a':'mom.html', 'qs_a':'qs.html', 'ls_t1':'_large_test.html', 'px_a':'px.html', 'sv_a':'sv.html', 'mom_b':'mom_b.html', 'le_a':'le.html' };
   const mlink=(model)=>{ const p=MODEL_PAGES[model]; return p ? '<a href="'+p+'"><b>'+model+'</b></a>' : '<b>'+(model||'')+'</b>'; };
   // 쉬운 이름(표시 전용)
   const NAME={v30:'과매도 v3',lv_b:'저변동 lv_b',lv_a:'저변동+반전 lv_a',lv_e:'저변동+저회전 lv_e',mom_a:'모멘텀 mom_a',mom_b:'모멘텀+눌림 mom_b',

@@ -27,3 +27,9 @@
 - **뭐가 바뀌나**: `docs/lead.html` 신설 — 앵커별 픽 20(코드·이름·베타·신고가 후 일수·동행그룹·거래대금·현재까지/120일 수익·같은 시장 지수 대비), ① 픽 시장비중 지수 ② 앵커 유니버스 동일가중 ③ 대조군 3중 비교 KPI, 창 마감 앵커 누적(6개월 블록 CI는 n≥3 부터), 비겹침 창 부호. 앵커가 없으면 "첫 앵커 2026-10-01 대기" 문구. `docs/leaderboard.html` 하단 링크 1줄("별도 잣대라 위 표엔 없음"). **성적표(40일 보유) 표에는 넣지 않음** — 규칙(월 1회·통합 20·120일)이 달라 같은 잣대로 재면 사전등록과 다른 것을 재게 됨(사용자 질문 9/24 밤).
 - **어떻게**: `build_lead_page.py`(신규, 읽기 전용) · `lead_observe.py` 에 `lead_universe`(앵커일 가드 유니버스 ticker·market, 월 ~1,100행) 저장 추가(② 재현용, spec_hash 무관) · bat 에 `python build_lead_page.py` 1단계(lead_observe 직후, 비치명) · PREREGISTER_ld_a "표시 없음" → "표시 전용 페이지" 갱신.
 - **검증(실측)**: 실 DB(픽 없음) → 대기 문구 페이지 생성 · 사본 DB 에 2026-03-03(마감)·2026-09-01(진행 16일) 적재 → 두 상태 렌더 확인(브라우저) · run_tests 통과. docs/lead.html 은 다음 배치가 push(9/28 월).
+
+## §3. 같은 날 밤 보강 2 — lead 페이지 '오늘 기준 순위' 탭 + le_a 열람 페이지 (표시 전용)
+- **lead.html 일별 참고 탭**: 같은 규칙을 매일 돌린 상위 20을 `docs/hist/lead_daily.json` 에 최근 10거래일 누적(배치마다 오늘치 1회 계산, ~6초)하고 페이지 하단에 날짜 탭으로 표시(그날 종가→오늘 등락). **"참고 · 동결 아님 · 판정에 안 씀"** 배지 — 판정은 월 첫 거래일 동결분(lead_picks)만. 첫 10일치는 9/10~9/23 로 백필(표시용).
+- **le.html 신설**(사용자 요청 — 성적표 참고 수익 +4.2%p 가 눈에 띄어서): sv.html 을 본떠 le_a 목록·날짜 탭. **§11 정본은 노이즈(9/13)** 이므로 lva/mom 페이지처럼 '판정 완료 노이즈 · 기록·관찰용' 경고를 앞세움. 성적표 수치는 매수일 8일(40일 묶음 0.2개)짜리 참고치임을 페이지에 명시.
+- **어떻게**: `build_lead_page.py` update_daily/daily_html · `docs/le.html`(신규) · `build_wu_filter.py --model le_a --out latest_le.csv`(run_and_diversify 2.89c3 단계, 비치명) → `docs/latest_le.csv`·`le_meta.json` · `build_daily_lists.py` MODELS 에 le_a → `docs/hist/le_a.json` · leaderboard.html·leaderboard_full.html MODEL_PAGES 에 le_a→le.html(성적표 모델 이름이 링크가 됨).
+- **검증(실측)**: lead.html 10일 탭 렌더 · le.html 로컬 렌더(1,037종목, 희석 배지 74) · py_compile · run_tests 통과. 점수·판정·게이트 0-diff.
