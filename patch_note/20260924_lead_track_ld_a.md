@@ -48,3 +48,7 @@
 
 검증(실측): 실 DB `python lead_observe.py` → "최신 달(202609) 첫 거래일이 등록일 이전 → 건너뜀"(exit 0) · 사본 DB 에 등록일을 9/1 로 가정해 자동 앵커 적재 → 재실행 동결 · 전체 테스트 통과(lead 테스트 18체크) · py_compile.
 - 별건: le_a 보유기간 연구 `research/RESEARCH_le_hold_20260924.md`(정점 없음·시장평균 대비 선형 누적·지수 대비 0).
+
+## §5. 2026-09-27 — PTW 연동용 `docs/hist/ld_a.json` (표시 전용)
+- PTW(Position-Tracker-Web v5.28)가 매수 폼 출처에 le_a·ld_a 를 추가하면서 스크리너 `hist/{model}.json` 을 읽는다. le_a 는 9/24 `build_daily_lists.py` 로 이미 생성 중. **ld_a 는 `build_lead_page.py`(write_hist_ld_a)** 가 `lead_daily.json`(오늘 기준 참고 순위, 통합 상위 20)을 다른 모델과 같은 스키마(days[0]=최신 · rows: rank·ticker·name·market 소문자·score=beta60·px_then·px_now·chg_pct·rank_today)로 매일 내보낸다. 정식 기록(월 1회 lead_picks)이 아니라 참고 순위임을 note 에 명시.
+- 검증(실측): 생성 10일·20행/일·스키마 키 일치 · 전체 테스트 통과. 점수·판정 0-diff.

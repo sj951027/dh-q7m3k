@@ -61,7 +61,8 @@ def update_daily(today, oc):
         data = {"days": []}
         if os.path.exists(DAILY_JSON):
             import json; data = json.loads(open(DAILY_JSON, encoding="utf-8").read())
-        if any(d["date"] == today for d in data["days"]): return data
+        if any(d["date"] == today for d in data["days"]):
+            write_hist_ld_a(data, oc, today); return data      # 오늘치가 이미 있어도 PTW 용 hist 는 매번 갱신(px_now)
         nrow = oc.execute("SELECT COUNT(*) FROM daily_ohlcv WHERE date=?", (today,)).fetchone()[0]
         if nrow < 2000: return data
         P, _ = lo.load_panel(today); F = lo.compute(P); ai = int(np.where(P["dates"] == today)[0][0])
@@ -72,9 +73,38 @@ def update_daily(today, oc):
         data["days"] = sorted([d for d in data["days"] if d["date"] != today] + [day], key=lambda d: d["date"], reverse=True)[:DAILY_KEEP]
         import json; os.makedirs(os.path.dirname(DAILY_JSON), exist_ok=True)
         open(DAILY_JSON, "w", encoding="utf-8").write(json.dumps(data, ensure_ascii=False))
+        write_hist_ld_a(data, oc, today)
         return data
     except Exception as e:
         print(f"  [경고] 일별 참고 목록 갱신 실패(비치명): {e}"); return {"days": []}
+
+def write_hist_ld_a(data, oc, today):
+    """[2026-09-27] PTW(Position-Tracker-Web) 매수 폼 '오늘 목록 순위'용 — 다른 모델과 같은 hist/{model}.json 스키마로
+    docs/hist/ld_a.json 을 쓴다(days[0] = 최신, rows: rank·ticker·name·market(소문자)·score·px_then·px_now·chg_pct·rank_today).
+    통합 상위 20 의 '오늘 기준 참고 순위'(동결 아님) — 정식 기록은 월 1회 lead_picks. 표시 전용."""
+    try:
+        import json
+        days = data.get("days", [])
+        if not days: return
+        tk = sorted({r["ticker"] for d in days for r in d["rows"]}); q = ",".join("?" * len(tk))
+        latest = dict(oc.execute(f"SELECT ticker, close FROM daily_ohlcv WHERE date=? AND ticker IN ({q})", (today, *tk)).fetchall())
+        today_rank = {r["ticker"]: r["rank"] for r in days[0]["rows"]}
+        out_days = []
+        for d in days:
+            rows = []
+            for r in d["rows"]:
+                p0 = r.get("close"); p1 = latest.get(r["ticker"])
+                chg = round((p1 / p0 - 1) * 100, 1) if (p0 and p1 and p0 > 0) else None
+                rows.append({"rank": r["rank"], "ticker": r["ticker"], "name": r.get("name") or "", "market": (r.get("market") or "").lower(),
+                             "score": r.get("beta60"), "grade": None, "bucket": None, "px_then": p0, "px_now": p1, "chg_pct": chg,
+                             "rank_today": today_rank.get(r["ticker"])})
+            out_days.append({"run_id": d["date"], "date": d["date"], "rows": rows})
+        payload = {"model": "ld_a", "asof": today, "generated": datetime.now().isoformat(timespec="seconds"),
+                   "note": "ld_a 오늘 기준 참고 순위(통합 상위 20 · 동결 아님 · 판정에 안 씀) · 등락 = 그날 종가→최신 종가 · 표시 전용(PTW 매수 폼 순위 참고)", "days": out_days}
+        open(os.path.join(HERE, "docs", "hist", "ld_a.json"), "w", encoding="utf-8").write(json.dumps(payload, ensure_ascii=False))
+        print(f"  ✓ docs/hist/ld_a.json — {len(out_days)}일")
+    except Exception as e:
+        print(f"  [경고] hist/ld_a.json 생성 실패(비치명): {e}")
 
 def daily_html(data, oc, today):
     days = data.get("days", [])
