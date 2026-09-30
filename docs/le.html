@@ -105,7 +105,7 @@
     <div class="explain-body">
       <p><b>le점수 (wu_score 컬럼)</b> — 세 가지의 백분위 순위합입니다: <b>dlow52</b>(종가 ÷ 52주 최저가 − 1, 저점에서 이미 많이 오른 종목 ↑, 핵심·실측 필수) · <b>obv63</b>(63일 OBV 누적 ÷ 거래량 합, 낮을수록 ↑ = 아직 매집 안 된 종목) · <b>amt20f</b>(20일 평균 거래대금, 높을수록 ↑). 0~3 범위, 가중 동일.</p>
 
-      <p class="warnp">📉 <b>3개월↓순위 (관측용 · 2026-09-30 추가)</b> — 같은 시장 목록 안에서 <b>3개월(63거래일) 수익률이 낮은 순</b>(1 = 가장 덜 오름·많이 떨어짐). 점수·순위에는 안 들어갑니다. 10위 이내는 노란 칸.<br>과거 기록(같은 기간 데이터로 본 것 — 앞으로도 그럴지는 모름, le_a 원래 상위10 대비 %p): le_a 순위에 3개월↓를 0.3 섞으면 7월 +8.1 · 8월 +1.7 · 9월(5일 확정) +1.1 · 9월(9/29까지) +1.4 / le_a 상위50 중 3개월 최저 10개는 7월 +8.8 · 8월 +6.1 · 9월(5일) +1.3 · 9월(9/29까지) +0.4. 7월에 가장 컸고 9월엔 작아졌습니다. 3개월↓를 가치·거래대금 등과 섞은 복합 공식은 9월에 크게 꺾였습니다(RESEARCH_v30_formula_search_20260930). <b>매수 기준 아님.</b></p>
+      <p class="warnp">📉 <b>3개월↓순위 (관측용 · 2026-09-30 추가)</b> — 같은 시장 목록 안에서 <b>3개월(63거래일) 수익률이 낮은 순</b>(1 = 가장 덜 오름·많이 떨어짐). 점수·순위에는 안 들어갑니다. 10위 이내는 노란 칸.<br>과거 기록(같은 기간 데이터로 본 것 — 앞으로도 그럴지는 모름, le_a 원래 상위10 대비 %p): le_a 순위에 3개월↓를 0.3 섞으면 7월 +8.1 · 8월 +1.7 · 9월(5일 확정) +1.1 · 9월(9/29까지) +1.4 / le_a 상위50 중 3개월 최저 10개는 7월 +8.8 · 8월 +6.1 · 9월(5일) +1.3 · 9월(9/29까지) +0.4. 7월에 가장 컸고 9월엔 작아졌습니다. <b>le+3개월점수·순위</b> 컬럼이 바로 이 'le_a 순위 + 3개월↓ 0.3' 방식입니다(분석은 60거래일, 화면은 63거래일 수익률). 3개월↓를 가치·거래대금 등과 섞은 복합 공식은 9월에 크게 꺾였습니다(RESEARCH_v30_formula_search_20260930). <b>매수 기준 아님.</b></p>
 
       <p class="warnp">📌 <b>판정 결과 요약</b> — 발견 당시(2026-07 급등꼬리 연구) h5 우위가 있었지만 OOS 에서는 h5·h10·h20 전부 음(−)~0 이었습니다. "저점에서 올라온 미매집·유동성 종목"이 이후 더 오른다는 가설은 <b>새 데이터에서 재현되지 않았습니다.</b> 이 페이지는 그 기록을 그대로 두고 보는 용도입니다.</p>
 
@@ -163,6 +163,8 @@ const COLS = [
   ['r20d_%','최근20일%','signed','참고용(점수 미포함)'],
   ['r63d_%','3개월%','signed','3개월(63거래일) 수익률. 참고용(점수 미포함) · 2026-09-30 추가'],
   ['r3m_low_rank','3개월↓순위','lowrank','같은 시장 목록 안 3개월 수익률 낮은 순(1=가장 덜 오름). 관측용 — 점수·순위 미반영. 위 설명 참고'],
+  ['le3m_score','le+3개월점수','num3','같은 시장 안 le점수 백분위 + 0.3×(1−3개월 수익률 백분위). 0~1.3, 클수록 우선. 관측용 — le_a 점수·판정 미반영'],
+  ['le3m_rank','le+3개월순위','lowrank','le+3개월점수의 같은 시장 안 순위(1=최우선). 관측용 — 매수 기준 아님'],
   ['foreign_5d_억','외인5일','signed','외국인 최근5거래일 순매수(억, KIS). 적재된 날만 합산(4일 미만이면 빈칸)'],
   ['foreign_20d_억','외인20일','signed','외국인 최근20거래일 순매수(억). 15일 미만 적재 종목은 빈칸'],
   ['inst_5d_억','기관5일','signed','기관 최근5거래일 순매수(억, KIS). 적재된 날만 합산(4일 미만이면 빈칸)'],
@@ -206,6 +208,7 @@ function fmt(v, type){
   if(type==='num1'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(1)}
   if(type==='num2'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(2)}
   if(type==='num4'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(4)}
+  if(type==='num3'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(3)}
   if(type==='signed'){const n=parseFloat(v);if(isNaN(n))return '-';
     return '<span class="'+(n>=0?'pos':'neg')+'">'+(n>=0?'+':'')+n.toFixed(1)+'</span>'}
   if(type==='v3') return '<span class="v3">'+v+'</span>';
@@ -232,7 +235,7 @@ function render(rows){
   rows.sort((a,b)=>{
     let x=a[sortKey], y=b[sortKey];
     const nx=parseFloat(x), ny=parseFloat(y);
-    if(sortKey==='r3m_low_rank'){ if(isNaN(nx)&&isNaN(ny))return 0; if(isNaN(nx))return 1; if(isNaN(ny))return -1; }
+    if(sortKey==='r3m_low_rank'||sortKey==='le3m_rank'){ if(isNaN(nx)&&isNaN(ny))return 0; if(isNaN(nx))return 1; if(isNaN(ny))return -1; }
     if(!isNaN(nx)&&!isNaN(ny)){x=nx;y=ny}
     if(x<y)return sortAsc?-1:1; if(x>y)return sortAsc?1:-1; return 0;
   });
@@ -241,7 +244,7 @@ function render(rows){
     return '<tr'+(isTop?' class="top50row"':'')+'>'+COLS.map(c=>`<td>${fmt(r[c[0]],c[2])}</td>`).join('')+'</tr>';
   }).join('');
   thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
-    const k=th.dataset.key; if(k===sortKey){sortAsc=!sortAsc}else{sortKey=k;sortAsc=(k==='rank'||k==='r3m_low_rank')}
+    const k=th.dataset.key; if(k===sortKey){sortAsc=!sortAsc}else{sortKey=k;sortAsc=(k==='rank'||k==='r3m_low_rank'||k==='le3m_rank')}
     render(rows);
   });
 }
@@ -256,6 +259,15 @@ function load(){
       ['KOSPI','KOSDAQ'].forEach(mk=>{ const rs=allRows.filter(r=>r['market']===mk && !isNaN(parseFloat(r['r63d_%'])));
         rs.sort((a,b)=>parseFloat(a['r63d_%'])-parseFloat(b['r63d_%'])).forEach((r,i)=>{ r['r3m_low_rank']=String(i+1); }); });
       allRows.forEach(r=>{ if(r['r3m_low_rank']===undefined) r['r3m_low_rank']=''; });
+      // [2026-09-30] le+3개월 = 같은 시장 le점수 백분위 + 0.3×(1−3개월 수익률 백분위), 결측 0.5. 순위 1=최우선. 표시 전용.
+      const pctRank=(arr,key)=>{ const v=arr.map(r=>parseFloat(r[key])); const ok=v.map((x,i)=>[x,i]).filter(z=>!isNaN(z[0])).sort((a,b)=>a[0]-b[0]);
+        const out=new Array(arr.length).fill(NaN); let i=0; while(i<ok.length){ let j=i; while(j+1<ok.length && ok[j+1][0]===ok[i][0]) j++;
+          const pr=((i+j)/2+1)/ok.length; for(let k=i;k<=j;k++) out[ok[k][1]]=pr; i=j+1; } return out; };
+      ['KOSPI','KOSDAQ'].forEach(mk=>{ const rs=allRows.filter(r=>r['market']===mk && !isNaN(parseFloat(r['wu_score'])));
+        const lp=pctRank(rs,'wu_score'), rp=pctRank(rs,'r63d_%');
+        rs.forEach((r,i)=>{ r['le3m_score']=(lp[i]+0.3*(1-(isNaN(rp[i])?0.5:rp[i]))).toFixed(3); });
+        [...rs].sort((a,b)=>parseFloat(b['le3m_score'])-parseFloat(a['le3m_score'])).forEach((r,i)=>{ r['le3m_rank']=String(i+1); }); });
+      allRows.forEach(r=>{ if(r['le3m_rank']===undefined){ r['le3m_rank']=''; r['le3m_score']=''; } });
       sortKey='rank'; sortAsc=true;
       applyFilters();
       const nuni = allRows.length? allRows[0]['n_universe']:'-';
