@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>저변동 트랙 (lv_b) · 운용 기준</title>
+<title>저변동 트랙 (lv_b) · 표시 기준</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -70,7 +70,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>저변동 트랙 <span style="color:var(--accent)">lv_b</span> · 운용 기준 <small style="font-size:.55em;opacity:.75">(§11 판정: 기움 · 8/29 정본)</small></h1>
+  <h1>저변동 트랙 <span style="color:var(--accent)">lv_b</span> · 표시 기준 <small style="font-size:.55em;opacity:.75">(§11 판정: 기움 · 8/29 정본)</small></h1>
   <div class="sub">저변동 + ROE 순위합 (반전 제외) · v3 과매도 스크리너와 별개 트랙</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -101,7 +101,7 @@
   </script>
 
   <div class="warn">
-    ⚠️ <b>매수신호 아님 — 운용 기준 모델(lv_b).</b> §11 판정(2026-08-29 정본): <b>기움</b>(채택 아님 — IC +0.069, 95% CI 가 0을 걸침). 실거래 사용은 사용자 판단이며 운영 권고(OPS_GUIDE)는 <b>시장별 상위 10 · 다음 거래일 매수 · 40거래일 보유 · 손절 없음</b>. 판정 정본은 VERDICT_20260829_lowvol.md, 현재 수치는 리더보드.
+    ⚠️ <b>매수신호 아님 — 표시 기준 모델(lv_b) · 2026-09-30부터 사용자 운용 안 함.</b> §11 판정(2026-08-29 정본): <b>기움</b>(채택 아님 — IC +0.069, 95% CI 가 0을 걸침). 실거래 사용은 사용자 판단이며 운영 권고(OPS_GUIDE)는 <b>시장별 상위 10 · 다음 거래일 매수 · 40거래일 보유 · 손절 없음</b>. 판정 정본은 VERDICT_20260829_lowvol.md, 현재 수치는 리더보드.
     점수가 높을수록 "선호"지 "사라" 가 아닙니다.
   </div>
 
@@ -353,7 +353,7 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
   applyFilters();
 });
 document.getElementById('foot').innerHTML =
-  '※ <b>운용 기준</b> 페이지(§11 판정: 기움) · lowvol_score 높을수록 선호(매수 아님) · v3·large 와 별개 트랙<br>'+
+  '※ <b>표시 기준</b> 페이지(§11 판정: 기움) · lowvol_score 높을수록 선호(매수 아님) · v3·large 와 별개 트랙<br>'+
   '실현변동성 낮을수록 / ROE 높을수록 점수↑ (반전 항 없음 = lv_b) · 컬럼 클릭 시 정렬 · 운영 권고: 시장별 상위 10 · 40거래일 보유';
 load('kospi');
 </script>

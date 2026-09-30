@@ -1101,6 +1101,8 @@ function loadColumnPrefs() {
   } catch (e) { /* 무시 */ }
   // 저장된 설정이 없으면 핵심 12개 기본값 유지
   visibleColumns = new Set(DEFAULT_COLUMNS);
+  // [2026-09-30] 기본값에 이미 3개월 컬럼이 있으므로 '한 번 켜기' 표시도 남긴다(이후 끄면 그대로 유지)
+  try { localStorage.setItem('csv_filter_r3m_cols_20260930', '1'); } catch (e) { /* 무시 */ }
 }
 
 // ===== 필터 적용 =====

@@ -102,20 +102,19 @@ def main():
 
 
 if __name__ == "__main__":
+    rc = 0
     try:
         main()
     except Exception as e:
         print(f"⚠ daily_lists 생성 실패(비치명): {e}")
-        sys.exit(1)   # [2026-09-21] 조용히 낡는 것 방지 — .bat 의 FAILED 에 잡혀 텔레그램 🔔(관측 전용 단계라 첫 줄은 안 바뀜)
-    # [2026-09-30] v30 관측 공식 F1~F4 순위(docs/latest_v30_obs.csv · docs/hist/v30_obs.json) — 표시 전용, 실패해도 이 단계는 성공으로 둔다
-    try:
-        import v30_obs_formulas
-        v30_obs_formulas.main()
-    except Exception as e:
-        print(f"   ⚠ v30_obs 생성 실패(비치명): {e}")
-    # [2026-09-30] le.html 지난 탭 3개월 관측 컬럼(docs/hist/le_a_3m.json) — 표시 전용, 비치명
-    try:
-        import le_obs_3m
-        le_obs_3m.main()
-    except Exception as e:
-        print(f"   ⚠ le_obs_3m 생성 실패(비치명): {e}")
+        rc = 1   # [2026-09-21] 조용히 낡는 것 방지 — .bat 의 FAILED 에 잡혀 텔레그램 🔔(관측 전용 단계라 첫 줄은 안 바뀜)
+    # [2026-09-30] 관측 산출물 — 본 단계와 독립 실행. 실패하면 종료코드 1(위와 같은 🔔, OBS_ONLY).
+    #   v30_obs: docs/latest_v30_obs.csv · docs/hist/v30_obs.json (v30 F1~F4, 화면 미표시·10월 채점용)
+    #   le_obs_3m: docs/hist/le_a_3m.json (le.html 지난 탭 3개월 컬럼 — hist/le_a.json 필요)
+    for _mod in ("v30_obs_formulas", "le_obs_3m"):
+        try:
+            __import__(_mod).main()
+        except Exception as e:
+            print(f"⚠ {_mod} 생성 실패(비치명): {e}")
+            rc = 1
+    sys.exit(rc)

@@ -55,9 +55,10 @@ def main():
             tk = gm.ticker.values
             c0 = close.iloc[t].reindex(tk).values
             cb = close.iloc[t - LOOK].reindex(tk).values if t >= LOOK else [float("nan")] * len(tk)
-            gm["r63"] = (pd.Series(c0, index=gm.index) / pd.Series(cb, index=gm.index) - 1) * 100
-            lp = gm.score.rank(pct=True); rp = gm.r63.rank(pct=True)
-            gm["le3m"] = lp + W3M * (1 - rp.fillna(0.5))
+            gm["r63"] = ((pd.Series(c0, index=gm.index) / pd.Series(cb, index=gm.index) - 1) * 100).round(1)   # CSV(r63d_%)와 같은 반올림
+            gm = gm.sort_values("score", ascending=False, kind="mergesort")   # 동점 순서 = 오늘 탭(CSV rank 순)과 동일
+            lp = gm.score.round(3).rank(pct=True); rp = gm.r63.rank(pct=True)   # CSV wu_score(소수 3자리)와 같은 값으로 백분위
+            gm["le3m"] = (lp + W3M * (1 - rp.fillna(0.5))).round(3)   # 오늘 탭(JS toFixed(3))과 같은 반올림 → 동점 순서도 동일
             gm["le_rank"] = gm.score.rank(ascending=False, method="first").astype(int)
             gm["le3m_rank"] = gm.le3m.rank(ascending=False, method="first").astype(int)
             gm["r3m_low"] = gm.r63.rank(ascending=True, method="first")

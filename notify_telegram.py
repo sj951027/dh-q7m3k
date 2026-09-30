@@ -255,13 +255,13 @@ RETIRED_FALLBACK_V2 = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
                        "lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "wu_a", "wu_b", "mom_b"}   # 구 json 폴백
 MONEY_MODELS_V2 = ["v30", "lv_b"]      # ② 돈 줄 대표(+ 판정 캘린더 선두 1개 자동 추가)
 
-# [2026-09-12] 표시 순서 = 실제 운용 순서. 사용자는 lv_b 로 운용한다(OPS_GUIDE §0 · PTW #저변동).
-#   v30 은 챔피언(유의)이지만 실거래는 lv_b 라, 알림은 lv_b 를 먼저 놓고 v30 을 참고로 뒤에 둔다.
-#   판정 라벨(기움/유의)은 그대로 병기한다 — 운용 여부와 §11 판정은 별개다.
-LIVE_MODEL_V3 = "lv_b"                  # 실제 운용 중(표시 순서 1번)
+# [2026-09-12→09-30] 표시 순서. 9/12~9/29 는 lv_b 운용(첫 줄)이었고, 9/30 부터 사용자가 lv_b 를 운용하지 않는다.
+#   live = 실제 운용 모델(빈 값 = 없음 → '← 운용 중' 표시 없음). live 가 있으면 항상 첫 줄, show 는 나머지 순서.
+#   판정 라벨(기움/유의)은 그대로 병기한다 — 운용 여부와 §11 판정은 별개다. 아래는 registry 를 못 읽을 때의 폴백.
+LIVE_MODEL_V3 = ""                      # 실제 운용 모델(없음)
 REF_MODEL_V3 = "v30"                    # 참고(챔피언)
 # [2026-09-30] 알림에 보여줄 모델 순서(registry "show"). live 가 비면(운용 모델 없음) '← 운용 중' 표시를 붙이지 않는다.
-SHOW_V3 = [LIVE_MODEL_V3, REF_MODEL_V3]
+SHOW_V3 = ["v30", "lv_b"]              # 폴백 표시 순서
 MODEL_ICON_V3 = {"lv_b": "🧪", "v30": "🏆"}
 
 
@@ -301,14 +301,26 @@ def _apply_registry():
         if sealed: SEALED_V2 = sealed
         if ret: RETIRED_FALLBACK_V2 = ret
         if reg.get("money"): MONEY_MODELS_V2 = list(reg["money"])
-        # [2026-09-12] 운용 모델도 원장(registry)에서 읽는다 — 나중에 lv_b 가 아닌 모델로 옮기면
-        #   models_registry.json 의 "live" 한 줄만 고치면 알림 순서가 따라온다(코드 수정 불필요).
-        global LIVE_MODEL_V3, REF_MODEL_V3, SHOW_V3
-        if "live" in reg: LIVE_MODEL_V3 = str(reg["live"] or "")   # [2026-09-30] 빈 값 = 운용 모델 없음
-        if reg.get("reference"): REF_MODEL_V3 = str(reg["reference"])
-        SHOW_V3 = [str(x) for x in (reg.get("show") or [LIVE_MODEL_V3, REF_MODEL_V3]) if x]
     except Exception:
         pass
+    # [2026-09-30] 운용·표시 모델은 따로 읽는다(위 sealed 등에서 예외가 나도 이 부분은 적용되도록).
+    try:
+        reg = json.loads((HERE / "docs" / "models_registry.json").read_text(encoding="utf-8"))
+        _apply_show(reg)
+    except Exception:
+        pass
+
+
+def _apply_show(reg):
+    """[2026-09-30] live(운용 모델, 빈 값=없음)·reference·show(표시 순서) → LIVE/REF/SHOW. live 가 있으면 항상 첫 줄,
+    show 는 나머지 순서(리스트가 아니면 무시, 은퇴 모델 제외). 운용 모델을 바꿀 때는 live 한 줄만 고치면 된다."""
+    global LIVE_MODEL_V3, REF_MODEL_V3, SHOW_V3
+    if "live" in reg: LIVE_MODEL_V3 = str(reg["live"] or "")
+    if reg.get("reference"): REF_MODEL_V3 = str(reg["reference"])
+    show = reg.get("show")
+    show = [str(x) for x in show if x] if isinstance(show, list) else [REF_MODEL_V3]
+    rest = [m for m in show if m != LIVE_MODEL_V3 and m not in RETIRED_FALLBACK_V2]
+    SHOW_V3 = ([LIVE_MODEL_V3] if LIVE_MODEL_V3 else []) + rest or [REF_MODEL_V3]
 
 
 _apply_registry()
@@ -464,7 +476,7 @@ def _model_status_lines_v2():
 
 
 def _status_lines_v3():
-    """[2026-09-12] 섹션형 본문. lv_b(운용) → v30(참고) → 돈 → 판정 일정 → (있을 때만) 달라진 것.
+    """[2026-09-12] 섹션형 본문. 모델 줄(SHOW_V3 순서, 운용 모델 있으면 첫 줄) → 돈 → 판정 일정 → (있을 때만) 달라진 것.
     한 줄에 정보를 몰아넣지 않는다 — 폰에서 줄바꿈으로 접히던 것을 없애려는 것. 표시 전용."""
     p = HERE / "docs" / "leaderboard.json"
     try:
@@ -477,7 +489,7 @@ def _status_lines_v3():
                if not m.get("retired") and m["model"] not in RETIRED_FALLBACK_V2]
         out = []
 
-        # ① 운용 중 → 참고 순서. 유니버스 크기는 8/12 고갈 사건 이후 매일 보는 값.
+        # ① 표시 순서(SHOW_V3). 유니버스 크기는 8/12 고갈 사건 이후 매일 보는 값.
         for mid in SHOW_V3:
             u, _ = _uni_latest2(mid)
             line = f"{MODEL_ICON_V3.get(mid, '·')} <b>{mid}</b>"
@@ -494,7 +506,7 @@ def _status_lines_v3():
                    and m["model"] not in SEALED_V2]
         soon = wait[0]["model"] if wait else None
 
-        # ② 돈 — 공통 잣대(cross_sim) 최근 20거래일 vs 시장. 운용 2개 + 판정 임박 1개만.
+        # ② 돈 — 공통 잣대(cross_sim) 최근 20거래일 vs 시장. 표시 모델(SHOW_V3) + 판정 임박 1개만.
         if MONEY_HOLD:
             out.append(""); out.append(MONEY_HOLD_LINE)
         #    전부 싣지 않는 이유: 한 달 수익으로 줄 세우기가 되면 트랙 간 비교 금지 원칙과 어긋난다.
@@ -625,7 +637,7 @@ def _change_events_v3(act, min_oos, need):
 def build_message():
     # [2026-09-12] v3 레이아웃. 종전 v2(제목+리더보드 링크+한 줄 요약 4개+링크 3줄)는
     #   _model_status_lines_v2() 로 보존 — 되돌리려면 아래 lines 구성만 v2 로 바꾸면 된다.
-    #   바뀐 점: ① 날짜를 데이터 기준(run_id)으로 ② lv_b(운용)를 먼저, v30(참고)을 뒤로
+    #   바뀐 점: ① 날짜를 데이터 기준(run_id)으로 ② 모델 줄은 SHOW_V3 순서(9/30~ v30 먼저, 운용 표시 없음)
     #   ③ 한 줄에 몰아넣지 않고 섹션 분리 ④ 링크 4개→2개(저변동 종목·리더보드)
     #   ⑤ '달라진 것: 없음' 줄 삭제(있을 때만 표시).
     # [2026-09-13] 첫 줄은 본문 경고(⚠️) 유무에 따른다 — 경고가 있는 날 '이상 없음'으로 나가던 것 교정.
