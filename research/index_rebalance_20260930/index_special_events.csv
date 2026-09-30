@@ -1,0 +1,8 @@
+index,effective_date,action,name,code,type,source_url,note
+KOSPI200,20231215,IN,에코프로머티,450080,신규상장 특례편입(정기변경일 동시 반영),https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=02587926635836552,기사(2023-12-08) + KODEX 200 PDF 20231214 diff 둘 다로 확인
+KOSPI200,20231215,OUT,케이카,381970,특례편입에 따른 제외(시총 최하위),https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=02587926635836552,기사 + KODEX 200 PDF diff 둘 다로 확인. 정기변경 편출 7종목과 별개
+KOSPI200,20251125,IN,삼성에피스홀딩스,0126Z0,기업분할 재상장 특례편입,https://www.fnnews.com/news/202511181751434673,편입일은 기사(재상장 다음 매매거래일 25일). 코드는 KIND 상장목록·KODEX 200 PDF(20260929) 이름매칭. 이 편입으로 12월 정기변경은 편입7/편출8
+KOSDAQ150,,IN,에임드바이오,0009K0,신규상장 특례편입(2026년 3월),https://www.samsungpop.com/common.do?cmd=down&contentType=application%2Fpdf&fileName=1040%2F2026032617070277K_02_02.pdf&inlineYn=Y&saveKey=research.pdf,정확한 날짜 확인불가(삼성증권 2026-03-27 리포트 서술만). 코드는 KIND·KODEX PDF 이름매칭. 이 특례로 셀바스AI가 당시 제외됨(리포트)
+KOSDAQ150,,OUT,메지온,140410,투자주의환기종목 지정에 따른 수시 제외(2026년 3월),https://www.samsungpop.com/common.do?cmd=down&contentType=application%2Fpdf&fileName=1040%2F2026032617070277K_02_02.pdf&inlineYn=Y&saveKey=research.pdf,확인불가: 3/27 리포트는 '메지온 편출→셀바스AI 수시편입'이라 적었으나 4/24 리포트는 수시편입 계기를 '유티아이·하이젠알앤엠'으로 적음(서로 다름). 날짜 미확보. 코드는 KIND 이름매칭
+KOSDAQ150,,OUT,하이젠알앤엠,160190,투자주의환기종목 지정에 따른 수시 제외(2026년 3월),https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=1040/2026042406284649K_02_01.pdf,날짜 미확보. 현대힘스가 예비종목 1순위로 수시편입(3/27·4/24 리포트 모두 서술)
+KOSDAQ150,,OUT,유티아이,179900,투자주의환기종목 지정에 따른 수시 제외(2026년 3월 전후),https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=1040/2026042406284649K_02_01.pdf,확인불가: 4/24 리포트 서술만. 날짜 미확보. 현재(20260929) KODEX 코스닥150 PDF에 없음은 관찰

@@ -1,0 +1,253 @@
+index,review,announce_date,effective_date,action,name,code,source_url,note
+KOSPI200,202306,20230518,20230609,IN,금양,001570,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSPI200,202306,20230518,20230609,IN,코스모화학,005420,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSPI200,202306,20230518,20230609,OUT,동원산업,006040,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSPI200,202306,20230518,20230609,OUT,화승엔터프라이즈,241590,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,어반리튬,073570,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,제이시스메디칼,287410,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,루트로닉,085370,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,미래나노텍,095500,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,포스코엠텍,009520,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,레인보우로보틱스,277810,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,윤성에프앤씨,372170,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,IN,한국정보통신,025770,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,에이스테크,088800,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,휴온스,243070,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,바이넥스,053030,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,유바이오로직스,206650,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,한국비엔씨,256840,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,이엔에프테크놀로지,102710,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,유진기업,023410,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSDAQ150,202306,20230518,20230609,OUT,크리스에프앤씨,110790,https://www.mt.co.kr/stock/2023/05/18/2023051817090289803,
+KOSPI200,202312,20231123,20231215,IN,세아베스틸지주,001430,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,IN,TCC스틸,002710,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,IN,삼아알미늄,006110,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,IN,HD현대일렉트릭,267260,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,IN,KG모빌리티,003620,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,IN,영원무역홀딩스,009970,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,IN,덴티움,145720,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,태광산업,003240,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,HDC현대산업개발,294870,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,지누스,013890,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,한섬,020000,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,현대홈쇼핑,057050,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,쿠쿠홈시스,284740,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSPI200,202312,20231123,20231215,OUT,보령,003850,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,같은 날 에코프로머티 신규상장 특례편입 동시 반영 추정(ETF PDF 관찰) - index_special_events.csv 참조
+KOSDAQ150,202312,20231123,20231215,IN,에스피지,058610,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,강원에너지,114190,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,하나기술,299030,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,탑머티리얼,360070,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,제이오,418550,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,모트렉스,118990,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,큐렉소,060280,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,아이센스,099190,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,보로노이,310210,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,루닛,328130,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,원텍,336570,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,프로텍,053610,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,엠로,058970,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,셀바스AI,108860,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,제이앤티씨,204270,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,네오위즈,095660,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,IN,데브시스터즈,194480,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,삼표시멘트,038500,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,원익머트리얼즈,104830,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,선광,003100,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,코엔텍,029960,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,인선이엔티,060150,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,티케이케미칼,104480,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,헬릭스미스,084990,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,셀트리온헬스케어,091990,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,아미코젠,092040,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,휴마시스,205470,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,메드팩토,235980,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,아주IB투자,027360,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,상상인,038540,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,다날,064260,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,쿠콘,294570,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,원익홀딩스,030530,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSDAQ150,202312,20231123,20231215,OUT,위지윅스튜디오,299900,https://www.dnews.co.kr/uhtml/view.jsp?idxno=202311231633023270533,
+KOSPI200,202406,20240524,20240614,IN,이수스페셜티케미컬,457190,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSPI200,202406,20240524,20240614,IN,세아제강지주,003030,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSPI200,202406,20240524,20240614,IN,엘앤에프,066970,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSPI200,202406,20240524,20240614,IN,두산로보틱스,454910,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSPI200,202406,20240524,20240614,IN,한미반도체,042700,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSPI200,202406,20240524,20240614,IN,코스모신소재,005070,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202406,20240524,20240614,OUT,쌍용C&E,003410,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=웹 조회(상장폐지/사명 불일치 종목)
+KOSPI200,202406,20240524,20240614,OUT,신풍제약,019170,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202406,20240524,20240614,OUT,아이에스동서,010780,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202406,20240524,20240614,OUT,아시아나항공,020560,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202406,20240524,20240614,OUT,DB하이텍,000990,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSPI200,202406,20240524,20240614,OUT,롯데에너지머티리얼즈,020150,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,IN,LS머트리얼즈,417200,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,제룡전기,033100,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,실리콘투,257720,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,브이티,018290,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,펩트론,087010,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,칩스앤미디어,094360,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,IN,기가비스,420770,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,가온칩스,399720,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,테크윙,089030,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,제주반도체,080220,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,시노펙스,025320,https://m.ceoscoredaily.com/page/view/2024052416233346839,
+KOSDAQ150,202406,20240524,20240614,IN,오픈엣지테크놀로지,394280,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,IN,유티아이,179900,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,하이드로리튬,101670,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,코웰패션,033290,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=웹 조회(상장폐지/사명 불일치 종목)
+KOSDAQ150,202406,20240524,20240614,OUT,모두투어,080160,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,더네이쳐홀딩스,298540,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,제넥신,095700,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,코미팜,041960,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,이오플로우,294090,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,LB세미콘,061970,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,상아프론테크,089980,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,새로닉스,042600,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,유니테스트,086390,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,에치에프알,230240,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202406,20240524,20240614,OUT,리튬포어스,073570,https://m.ceoscoredaily.com/page/view/2024052416233346839,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202412,20241121,20241213,IN,효성중공업,298040,https://ceoscoredaily.com/page/view/2024112116524269343,편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,IN,에이피알,278470,https://ceoscoredaily.com/page/view/2024112116524269343,편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,IN,미원상사,002840,https://ceoscoredaily.com/page/view/2024112116524269343,편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,IN,OCI,456040,https://ceoscoredaily.com/page/view/2024112116524269343,편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,OUT,효성,004800,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,OUT,롯데관광개발,032350,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,OUT,명신산업,009900,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,OUT,영풍,000670,https://ceoscoredaily.com/page/view/2024112116524269343,편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSPI200,202412,20241121,20241213,OUT,KG스틸,016380,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입4/편출5: 한화에어로스페이스 인적분할(한화비전 신설)로 심사 시점 201종목이었음(기사)
+KOSDAQ150,202412,20241121,20241213,IN,신성델타테크,065350,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,IN,아이패밀리에스씨,114840,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,IN,코스메카코리아,241710,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,IN,와이씨,232140,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,IN,덕산테코피아,317330,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,IN,카페24,042000,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,IN,선익시스템,171090,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,IN,네오셈,253590,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,OUT,강원에너지,114190,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,OUT,하나기술,299030,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,OUT,탑머티리얼,360070,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,OUT,바텍,043150,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,OUT,신라젠,215600,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,OUT,박셀바이오,323990,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202412,20241121,20241213,OUT,한국정보통신,025770,https://ceoscoredaily.com/page/view/2024112116524269343,
+KOSDAQ150,202412,20241121,20241213,OUT,KH바텍,060720,https://ceoscoredaily.com/page/view/2024112116524269343,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202506,20250527,20250613,IN,동원산업,006040,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,IN,DN오토모티브,007340,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,IN,HD현대마린솔루션,443060,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,IN,HDC,012630,https://www.smarttoday.co.kr/ko-kr/articles/81929,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202506,20250527,20250613,IN,영풍,000670,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,IN,미원에스씨,268280,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,IN,한국카본,017960,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,IN,지역난방공사,071320,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,일진하이솔루스,271940,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,한세실업,105630,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,두산퓨얼셀,336260,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,LX인터내셔널,001120,https://www.smarttoday.co.kr/ko-kr/articles/81929,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202506,20250527,20250613,OUT,SK네트웍스,001740,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,PI첨단소재,178920,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,삼아알미늄,006110,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSPI200,202506,20250527,20250613,OUT,코스모신소재,005070,https://www.smarttoday.co.kr/ko-kr/articles/81929,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202506,20250527,20250613,IN,동성화인텍,033500,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,하이젠알앤엠,160190,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,성광벤드,014620,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,한국기업평가,034950,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,태성,323280,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,제우스,079370,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,쏠리드,050890,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,필옵틱스,161580,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,IN,위메이드맥스,101730,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,모트렉스,118990,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,다원시스,068240,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,제이오,418550,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,더블유씨피,393890,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,윤성에프앤씨,372170,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,KG이니시스,035600,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,네패스,033640,https://www.smarttoday.co.kr/ko-kr/articles/81929,
+KOSDAQ150,202506,20250527,20250613,OUT,티이엠씨,425040,https://www.smarttoday.co.kr/ko-kr/articles/81929,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202506,20250527,20250613,OUT,지씨셀,144510,https://www.smarttoday.co.kr/ko-kr/articles/81929,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202512,20251118,20251212,IN,산일전기,062040,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,IN,한화엔진,082740,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,IN,LG씨엔에스,064400,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,IN,이수페타시스,007660,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,IN,현대오토에버,307950,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,IN,파라다이스,034230,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,IN,아세아,002030,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,HD현대미포,010620,https://www.fnnews.com/news/202511181751434673,코드=웹 조회(상장폐지/사명 불일치 종목); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,HDC,012630,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,한화비전,489790,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,덴티움,145720,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,하나투어,039130,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,KG모빌리티,003620,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,TCC스틸,002710,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능); 편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSPI200,202512,20251118,20251212,OUT,OCI,456040,https://www.fnnews.com/news/202511181751434673,편입7/편출8: 삼성에피스홀딩스 11/25 특례편입(분할 재상장) 반영(기사)
+KOSDAQ150,202512,20251118,20251212,IN,펌텍코리아,251970,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,비에이치아이,083650,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,LS마린솔루션,060370,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,유일로보틱스,388720,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,유진로봇,056080,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,감성코퍼레이션,036620,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,올릭스,226950,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,디앤디파마텍,347850,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,인카금융서비스,211050,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,로보티즈,108490,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,코나아이,052400,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,미코,059090,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,솔트룩스,304100,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,아이쓰리시스템,214430,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,우리기술,032820,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,IN,클로봇,466100,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,미래나노텍,095500,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,아이패밀리에스씨,114840,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,매일유업,267980,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,아이센스,099190,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,HLB테라퓨틱스,115450,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,바이오니아,064550,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,한국기업평가,034950,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,파트론,091700,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,덕산테코피아,317330,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,기가비스,420770,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,칩스앤미디어,094360,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,프로텍,053610,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,아이티엠반도체,084850,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,오픈엣지테크놀로지,394280,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSDAQ150,202512,20251118,20251212,OUT,인탑스,049070,https://www.fnnews.com/news/202511181751434673,
+KOSDAQ150,202512,20251118,20251212,OUT,이엠텍,091120,https://www.fnnews.com/news/202511181751434673,코드=현재 상장사명 단순매칭(단일출처; 사명변경 시 오류 가능)
+KOSPI200,202606,20260522,20260612,IN,HD건설기계,267270,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,IN,DB하이텍,000990,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,IN,달바글로벌,483650,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,IN,OCI,456040,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,OUT,GS건설,006360,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,OUT,세방전지,004490,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,OUT,GKL,114090,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSPI200,202606,20260522,20260612,OUT,녹십자홀딩스,005250,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,삼표시멘트,038500,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,에이치브이엠,295310,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,현대무벡스,319400,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,쎄트렉아이,099320,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,휴림로봇,090710,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,비츠로셀,082920,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,삼현,437730,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,한라캐스트,125490,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,오름테라퓨틱,475830,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,미래에셋벤처투자,100790,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,원익홀딩스,030530,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,성호전자,043260,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,아이티센글로벌,124500,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,브이엠,089970,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,로보스타,090360,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,IN,기가비스,420770,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,성일하이텍,365340,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,현대힘스,460930,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,에코프로에이치엔,383310,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,에코앤드림,101360,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,골프존,215000,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,콜마비앤에이치,200130,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,동국제약,086450,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,메디톡스,086900,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,원텍,336570,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,바이넥스,053030,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,미코,059090,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,제우스,079370,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,서울반도체,046890,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,엠로,058970,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,셀바스AI,108860,https://www.smarttoday.co.kr/ko-kr/articles/107787,
+KOSDAQ150,202606,20260522,20260612,OUT,솔트룩스,304100,https://www.smarttoday.co.kr/ko-kr/articles/107787,

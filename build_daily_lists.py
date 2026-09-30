@@ -107,3 +107,9 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"⚠ daily_lists 생성 실패(비치명): {e}")
         sys.exit(1)   # [2026-09-21] 조용히 낡는 것 방지 — .bat 의 FAILED 에 잡혀 텔레그램 🔔(관측 전용 단계라 첫 줄은 안 바뀜)
+    # [2026-09-30] v30 관측 공식 F1~F4 순위(docs/latest_v30_obs.csv · docs/hist/v30_obs.json) — 표시 전용, 실패해도 이 단계는 성공으로 둔다
+    try:
+        import v30_obs_formulas
+        v30_obs_formulas.main()
+    except Exception as e:
+        print(f"   ⚠ v30_obs 생성 실패(비치명): {e}")
