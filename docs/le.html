@@ -303,7 +303,10 @@ document.getElementById('foot').innerHTML =
   '등록 2026-07-15(PREREGISTER_le_sv.md) · 판정 VERDICT_20260913_wu_sv_le.md · 열람용 배선 2026-09-24(표시 전용, 점수·판정 0-diff) · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
 // ---- [2026-09-17] 지난 날짜 리스트 탭 (당시 동결 점수 · 표시 전용) ----
 let histData=null, curDate=null, showMore=false;
-const HIST_COLS=[['rank','그날 순위'],['market','시장'],['name','종목'],['ticker','코드'],['score','le점수'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+const HIST_COLS=[['rank','그날 순위'],['market','시장'],['name','종목'],['ticker','코드'],['score','le점수'],['r63','3개월%'],['r3m_low_rank','3개월↓순위'],['le3m_score','le+3개월점수'],['le3m_rank','le+3개월순위'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+// [2026-09-30] 지난 날짜의 3개월 관측 컬럼 — hist/le_a_3m.json (le_obs_3m.py). 표시 전용. histSort: 'rank'(그날 순위) | 'le3m'(le+3개월 순위)
+let hist3m=null, histSort='rank';
+fetch('hist/le_a_3m.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{hist3m=h; if(curDate!==null) renderHist();}).catch(()=>{});
 function fmtD(d){return d? (+d.slice(4,6))+'/'+(+d.slice(6)) : '';}
 function renderDtabs(){
   const box=document.getElementById('dtabs'); if(!histData){box.innerHTML='';return;}
@@ -317,16 +320,30 @@ function renderHist(){
   const day=histData.days.find(d=>d.date===curDate); if(!day) return;
   document.getElementById('filters').style.display='none';
   const note=document.getElementById('dnote'); note.hidden=false;
-  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(le_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 관측 모델, 매수신호 아님`;
-  const rows=day.rows.filter(r=>curMkt==='all' || (r.market||'').toUpperCase()===curMkt);
+  const d3=hist3m? hist3m.days.find(x=>x.run_id===day.run_id) : null;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(le_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 관측 모델, 매수신호 아님`
+    + (d3? `<br>📉 3개월 컬럼은 그날 기준 · 정렬: <a href="#" id="hsRank" style="color:var(--accent)">${histSort==='rank'?'<b>그날 순위</b>':'그날 순위'}</a> | <a href="#" id="hsLe3m" style="color:var(--accent)">${histSort==='le3m'?'<b>le+3개월 순위</b>':'le+3개월 순위'}</a> · 🔸= le_a 상위 50 밖이지만 le+3개월 상위 20` : '');
+  let rows=day.rows.map(r=>Object.assign({},r));
+  if(d3){ (d3.extra||[]).forEach(x=>rows.push(Object.assign({},x)));
+    rows.forEach(r=>{ const v=d3.rows[(r.market||'').toLowerCase()+':'+r.ticker]; if(v){ r.le3m_rank=v[0]; r.le3m_score=v[1]; r.r3m_low_rank=v[2]; r.r63=v[3]; } }); }
+  rows=rows.filter(r=>curMkt==='all' || (r.market||'').toUpperCase()===curMkt);
+  if(histSort==='le3m') rows.sort((a,b)=>(a.le3m_rank??1e9)-(b.le3m_rank??1e9));
+  else rows.sort((a,b)=>(a.rank??1e9)-(b.rank??1e9));
   const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
   thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
   tbody.innerHTML=rows.map(r=>'<tr>'+HIST_COLS.map(c=>{
     const v=r[c[0]]; if(v===null||v===undefined||v==='') return '<td>—</td>';
+    if(c[0]==='rank' && r.extra) return `<td title="le_a 상위 50 밖(그날 le 순위 ${v})">🔸${v}</td>`;
     if(c[0]==='market') return `<td>${String(v).toUpperCase()}</td>`;
     if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
+    if(c[0]==='r63') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}</td>`;
+    if(c[0]==='r3m_low_rank'||c[0]==='le3m_rank') return `<td>${v<=10?'<span class="low3m">'+v+'</span>':v}</td>`;
+    if(c[0]==='le3m_score') return `<td>${(+v).toFixed(3)}</td>`;
     if(c[0]==='px_then'||c[0]==='px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
-    return `<td>${v}</td>`; }).join('')+'</tr>').join('') || '<tr><td colspan="9" class="loading">이 시장 자료 없음</td></tr>';
+    return `<td>${v}</td>`; }).join('')+'</tr>').join('') || '<tr><td colspan="13" class="loading">이 시장 자료 없음</td></tr>';
+  const a1=document.getElementById('hsRank'), a2=document.getElementById('hsLe3m');
+  if(a1) a1.onclick=e=>{e.preventDefault(); histSort='rank'; renderHist();};
+  if(a2) a2.onclick=e=>{e.preventDefault(); histSort='le3m'; renderHist();};
   const fc=document.getElementById('fcount'); if(fc) fc.textContent='';
 }
 fetch('hist/le_a.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});

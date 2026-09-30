@@ -113,3 +113,9 @@ if __name__ == "__main__":
         v30_obs_formulas.main()
     except Exception as e:
         print(f"   ⚠ v30_obs 생성 실패(비치명): {e}")
+    # [2026-09-30] le.html 지난 탭 3개월 관측 컬럼(docs/hist/le_a_3m.json) — 표시 전용, 비치명
+    try:
+        import le_obs_3m
+        le_obs_3m.main()
+    except Exception as e:
+        print(f"   ⚠ le_obs_3m 생성 실패(비치명): {e}")
