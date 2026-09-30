@@ -60,6 +60,8 @@ def _ohlcv_metrics(rid, tickers):
         m["nh252_%"] = ((c.iloc[t] / c.rolling(252, min_periods=120).max().iloc[t] - 1) * 100).round(1)
         m["mom12_%"] = ((c.shift(21).iloc[t] / c.shift(252).iloc[t] - 1) * 100).round(1)
         m["r20d_%"] = ((c.iloc[t] / c.iloc[max(0, t - 20)] - 1) * 100).round(1)
+        # [2026-09-30] 3개월(63거래일) 수익률 — le.html '3개월↓순위' 관측 표시용(v30 return_3m_% 와 같은 정의). 점수 미포함.
+        m["r63d_%"] = ((c.iloc[t] / c.iloc[t - 63] - 1) * 100).round(1) if t >= 63 else float("nan")
         m["amt20_억"] = ((c * v).rolling(20, min_periods=10).mean().iloc[t] / 1e8).round(1)
         return m.reindex(tickers)
     except Exception as e:

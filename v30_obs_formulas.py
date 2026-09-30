@@ -69,6 +69,20 @@ def score_run(run_id):
     return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
 
 
+def _v30_top(run_id, n):
+    """그날 v3_archive 의 final_score_v3 시장별 상위 n (날짜 탭 행과 같은 점수) → {(market, ticker)}."""
+    out = set()
+    for mkt in ("kospi", "kosdaq"):
+        p = ARCH / f"v3_{mkt}_{run_id}.csv"
+        if not p.exists():
+            continue
+        g = pd.read_csv(p, dtype={"ticker": str}, encoding="utf-8-sig", usecols=["ticker", "final_score_v3"])
+        g["ticker"] = g["ticker"].astype(str).str.zfill(6)
+        g["final_score_v3"] = pd.to_numeric(g["final_score_v3"], errors="coerce")
+        out |= {(mkt, t) for t in g.nlargest(n, "final_score_v3")["ticker"]}
+    return out
+
+
 def main():
     runs = sorted({Path(f).stem.split("_")[-1] for f in glob.glob(str(ARCH / "v3_kospi_*.csv"))})
     if not runs:
@@ -83,8 +97,11 @@ def main():
         d = cur if rid == latest else score_run(rid)
         if d.empty:
             continue
-        rows = {f"{r.market}:{r.ticker}": [int(getattr(r, f"{f}_rank")) for f in FORMULAS] + [float(getattr(r, f"{f}_score")) for f in FORMULAS]
-                for r in d.itertuples(index=False)}
+        # [용량] 날짜 탭에 보이는 종목(그날 v30 상위 60)과 어느 공식이든 상위 30 만 남긴다 — 전체 저장 시 하루 약 280KB
+        keep = _v30_top(rid, 60)
+        rows = {f"{r.market}:{r.ticker}": [int(getattr(r, f"{f}_rank")) for f in FORMULAS] + [round(float(getattr(r, f"{f}_score")), 2) for f in FORMULAS]
+                for r in d.itertuples(index=False)
+                if (r.market, r.ticker) in keep or min(int(getattr(r, f"{f}_rank")) for f in FORMULAS) <= 30}
         days.append({"run_id": rid, "rows": rows})
     payload = {"spec_date": SPEC_DATE, "generated": datetime.now().isoformat(timespec="seconds"),
                "formulas": {k: LABELS[k] for k in FORMULAS}, "fields": [f"{f}_rank" for f in FORMULAS] + [f"{f}_score" for f in FORMULAS],

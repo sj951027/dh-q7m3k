@@ -260,6 +260,8 @@ MONEY_MODELS_V2 = ["v30", "lv_b"]      # ② 돈 줄 대표(+ 판정 캘린더 �
 #   판정 라벨(기움/유의)은 그대로 병기한다 — 운용 여부와 §11 판정은 별개다.
 LIVE_MODEL_V3 = "lv_b"                  # 실제 운용 중(표시 순서 1번)
 REF_MODEL_V3 = "v30"                    # 참고(챔피언)
+# [2026-09-30] 알림에 보여줄 모델 순서(registry "show"). live 가 비면(운용 모델 없음) '← 운용 중' 표시를 붙이지 않는다.
+SHOW_V3 = [LIVE_MODEL_V3, REF_MODEL_V3]
 MODEL_ICON_V3 = {"lv_b": "🧪", "v30": "🏆"}
 
 
@@ -301,9 +303,10 @@ def _apply_registry():
         if reg.get("money"): MONEY_MODELS_V2 = list(reg["money"])
         # [2026-09-12] 운용 모델도 원장(registry)에서 읽는다 — 나중에 lv_b 가 아닌 모델로 옮기면
         #   models_registry.json 의 "live" 한 줄만 고치면 알림 순서가 따라온다(코드 수정 불필요).
-        global LIVE_MODEL_V3, REF_MODEL_V3
-        if reg.get("live"): LIVE_MODEL_V3 = str(reg["live"])
+        global LIVE_MODEL_V3, REF_MODEL_V3, SHOW_V3
+        if "live" in reg: LIVE_MODEL_V3 = str(reg["live"] or "")   # [2026-09-30] 빈 값 = 운용 모델 없음
         if reg.get("reference"): REF_MODEL_V3 = str(reg["reference"])
+        SHOW_V3 = [str(x) for x in (reg.get("show") or [LIVE_MODEL_V3, REF_MODEL_V3]) if x]
     except Exception:
         pass
 
@@ -475,7 +478,7 @@ def _status_lines_v3():
         out = []
 
         # ① 운용 중 → 참고 순서. 유니버스 크기는 8/12 고갈 사건 이후 매일 보는 값.
-        for mid in (LIVE_MODEL_V3, REF_MODEL_V3):
+        for mid in SHOW_V3:
             u, _ = _uni_latest2(mid)
             line = f"{MODEL_ICON_V3.get(mid, '·')} <b>{mid}</b>"
             if u:
@@ -500,8 +503,8 @@ def _status_lines_v3():
             tr = cs.get("trailing") or {}
             rows = {} if MONEY_HOLD else {r["model"]: r for r in tr.get("rows", [])}
             b20 = (tr.get("bench") or {}).get("r20")
-            picks = [(LIVE_MODEL_V3, "← 운용 중"), (REF_MODEL_V3, "")]
-            if soon and soon not in (LIVE_MODEL_V3, REF_MODEL_V3):
+            picks = [(m, "← 운용 중" if (LIVE_MODEL_V3 and m == LIVE_MODEL_V3) else "") for m in SHOW_V3]
+            if soon and soon not in SHOW_V3:
                 picks.append((soon, "← 판정 임박"))
             body = []
             for mid, tag in picks:
@@ -586,7 +589,7 @@ def _change_events_v3(act, min_oos, need):
                     ev.append(f"{mid} 자동 라벨 {q.get('v')}→{x.get('v')}(참고)")
     except Exception:
         pass
-    for mid in (LIVE_MODEL_V3, REF_MODEL_V3):
+    for mid in SHOW_V3:
         u, u0 = _uni_latest2(mid)
         if u and u0 and u < 0.5 * u0:
             ev.append(f"⚠️ {mid} 유니버스 {u0}→{u} 급감(판정 표본 얇아짐)")

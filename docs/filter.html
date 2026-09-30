@@ -35,11 +35,9 @@
   .howto-box { background:#fffbea; border:1px solid #f4d56b; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:#5f4a12; line-height:1.6; }
   .howto-box ul { margin:6px 0 4px 18px; padding:0; }
   .howto-box li { margin:2px 0; }
-  /* [2026-09-30] 관측 공식 F1~F4 설명 상자·순위 셀 (표시 전용) */
-  .obs-box { background:#f0f7ff; border:1px solid #90cdf4; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:#2a4365; line-height:1.6; }
-  .obs-box ul { margin:6px 0 4px 18px; padding:0; } .obs-box li { margin:2px 0; }
-  .obs-box .obs-foot { font-size:12px; color:#4a5568; margin-top:4px; }
-  td.obs-top { background:#fefcbf; font-weight:700; }
+  /* [2026-09-30] 3개월↓순위 설명 상자·10위 이내 칸 (표시 전용) */
+  .r3m-box { background:#f0f7ff; border:1px solid #90cdf4; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:12.5px; color:#2a4365; line-height:1.6; }
+  td.low3m { background:#fefcbf; font-weight:700; }
   .howto-foot { font-size:12px; color:#8a6d1f; margin-top:4px; }
   .reco { display:inline-block; font-size:10.5px; font-weight:700; color:#fff; background:#d69e2e; border-radius:4px; padding:0 5px; margin-left:4px; vertical-align:1px; }
   .subtitle {
@@ -443,18 +441,8 @@
     </ul>
     <div class="howto-foot">근거·수치는 저장소 OPS_GUIDE.md. 안 따라도 된다 — 화면은 권고만 표시한다. 판정 정본은 <a href="leaderboard.html">리더보드</a>.</div>
   </div>
-  <!-- [2026-09-30] 관측 공식 F1~F4 — docs/latest_v30_obs.csv · hist/v30_obs.json (v30_obs_formulas.py). 표시 전용, 점수·등급·권고10 무반영. -->
-  <details class="obs-box" open>
-    <summary style="cursor:pointer;font-weight:600;">🧪 관측 공식 F1~F4 순위 (2026-09-30 고정 · 표시 전용 — 매수 기준 아님)</summary>
-    <ul>
-      <li>무엇인가: v30 후보 중 버킷 WATCH·EXCLUDE와 희석공시 종목을 뺀 뒤, 아래 세 조건의 순위를 더해 매긴 <b>시장별 순위</b>(1 = 가장 우선). 빈칸 = 대상 아님. <b>10위 이내는 노란 칸</b>.</li>
-      <li><b>F1</b> — 거래대금 적음 + 3개월 많이 떨어짐 + 1개월 많이 떨어짐. 과거 v30 대비 20일 +6.2%p (6월 +4.3 · 7월 +11.0 · 8월 +2.3 · 8월 말 +0.5 · 9월 중간 +1.1)</li>
-      <li><b>F2</b> — PBR 낮음 + 52주 고점 대비 많이 빠짐 + 3개월 많이 떨어짐. 20일 +6.1%p · 40일 +10.2%p (40일 1위)</li>
-      <li><b>F3</b> — 거래대금 적음 + 3개월 많이 떨어짐 + 200일선 아래. 20일 +6.0%p</li>
-      <li><b>F4</b> — 가치점수 낮음 + PBR 낮음 + 3개월 많이 떨어짐. 20일 +5.7%p · ⚠️ 가치점수와 PBR 방향이 서로 모순 — 우연일 가능성 큼</li>
-    </ul>
-    <div class="obs-foot">⚠️ 약 7.5만 개 공식 중 <b>과거(6~9월)에 5개 기간 모두 v30보다 나았던 것</b>을 고른 것이라 앞으로도 좋을지는 모른다(같은 탐색의 1등 공식은 9월에 v30보다 나빠졌다). 오늘 날짜로 고정해 두고 10월 중순부터 고정 이후 성적으로 채점한다. 점수·등급·버킷·권고10에는 들어가지 않는다. <span id="obsAsof"></span></div>
-  </details>
+  <!-- [2026-09-30] 3개월↓순위 — 표시 전용(점수·등급·권고10 무반영). 근거 research/RESEARCH_v30_formula_search_20260930.md -->
+  <div class="r3m-box">📉 <b>3개월↓순위 (관측용 · 2026-09-30 추가)</b> — 이 시장 v30 후보(버킷 WATCH·EXCLUDE 제외) 안에서 <b>3개월 수익률이 낮은 순</b>(1 = 가장 많이 떨어짐). 10위 이내는 노란 칸. 점수·등급·권고10에는 안 들어갑니다.<br>과거 기록(같은 기간 데이터로 본 것 — 앞으로도 그럴지는 모름): v30 후보 안에서 3개월 수익률이 낮을수록 이후 20일이 좋았음(순위상관 −0.12). v30 순위에 3개월↓를 0.5 섞은 상위10은 v30 대비 <b>6월 −3.9</b> · 7월 +3.5 · 8월 +1.0 · 9월(9/29까지) +3.2%p — <b>달에 따라 반대로 간 적이 있음(6월).</b> 가치·거래대금 등과 섞은 복합 공식은 9월에 크게 꺾였습니다. <b>매수 기준 아님.</b></div>
 
   <!-- 시장 토글 (자동 로드) -->
   <div id="marketBar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
@@ -632,10 +620,6 @@ const COLUMN_DEFS = [
   { key: 'reversal_score', label: 'V3반전', type: 'number' },         // V3
   { key: 'supply_score_v2', label: 'V3수급', type: 'signed' },        // V3
   { key: 'oversold_component', label: 'V3과매도', type: 'number' },   // V3
-  { key: 'F1_rank', label: '🧪F1순위', type: 'obsrank' },            // [2026-09-30] 관측 공식(표시 전용)
-  { key: 'F2_rank', label: '🧪F2순위', type: 'obsrank' },
-  { key: 'F3_rank', label: '🧪F3순위', type: 'obsrank' },
-  { key: 'F4_rank', label: '🧪F4순위', type: 'obsrank' },
   { key: 'stock_score', label: '종목점수', type: 'score' },
   { key: 'stock_score_stage1', label: '1단계종목', type: 'score' },
   { key: 'oversold_score', label: '과매도', type: 'number' },
@@ -654,6 +638,8 @@ const COLUMN_DEFS = [
   { key: 'drawdown_52w_high_%', label: '52주高', type: 'pct' },
   { key: 'return_1w_%', label: '1주', type: 'pct' },
   { key: 'return_1m_%', label: '1개월', type: 'pct' },
+  { key: 'return_3m_%', label: '3개월', type: 'pct' },                // [2026-09-30] 표시 전용
+  { key: 'r3m_low_rank', label: '3개월↓순위', type: 'lowrank' },    // [2026-09-30] 후보 안 3개월 수익률 낮은 순(표시 전용)
   { key: 'foreign_5d_억', label: '외인5일', type: 'amount_signed' },
   { key: 'inst_5d_억', label: '기관5일', type: 'amount_signed' },
   { key: 'foreign_20d_억', label: '외인20일', type: 'amount_signed' },
@@ -699,11 +685,10 @@ const COLUMN_DEFS = [
 // ===== 컬럼 그룹 (토글 UI용) =====
 const COLUMN_GROUPS = [
   { name: '기본',         keys: ['name', 'dilution_60d', 'ticker', 'price'] },
-  { name: '🧪 관측공식',  keys: ['F1_rank', 'F2_rank', 'F3_rank', 'F4_rank'] },
   { name: '점수',         keys: ['final_score', 'stock_score', 'stock_score_stage1', 'oversold_score', 'acc_score', 'trend_score', 'supply_score', 'regime_score', 'fundamental_score', 'momentum_score', 'ocf_score'] },
   { name: '분류',         keys: ['earnings_pattern', 'ocf_pattern', 'risk_level'] },
   { name: '기술적',       keys: ['RSI', 'drawdown_52w_high_%'] },
-  { name: '수익률',       keys: ['return_1w_%', 'return_1m_%'] },
+  { name: '수익률',       keys: ['return_1w_%', 'return_1m_%', 'return_3m_%', 'r3m_low_rank'] },
   { name: '수급',         keys: ['foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억'] },
   { name: '실적/OCF',     keys: ['annual_yoy_%', 'quarterly_yoy_%', 'q_basis', 'q_period', 'annual_latest_억', 'ocf_latest_억', 'ocf_to_op_ratio', 'sector', 'ocf_threshold_group'] },
   { name: 'DART 진단',    keys: ['annual_fs_div', 'q_fs_div', 'q_source_api', 'q_latest_key', 'q_prev_key', 'annual_op_account_nm', 'q_op_account_nm', 'ocf_account_nm', 'dart_annual_status', 'dart_q_status', 'dart_ocf_status'] },
@@ -714,7 +699,7 @@ const COLUMN_GROUPS = [
 
 // ===== 사전 설정 뷰 (null이면 전체 표시) =====
 const VIEW_PRESETS = {
-  '🌟 V3 추천': ['name', 'dilution_60d', 'ticker', 'grade', 'bucket', 'final_score_v3', 'value_score', 'quality_score', 'turnaround_score', 'reversal_score', 'supply_score_v2', 'oversold_component', 'F1_rank', 'F2_rank', 'F3_rank', 'F4_rank', 'risk_level', 'sector', 'return_1m_%', 'return_1w_%'],
+  '🌟 V3 추천': ['name', 'dilution_60d', 'ticker', 'grade', 'bucket', 'final_score_v3', 'value_score', 'quality_score', 'turnaround_score', 'reversal_score', 'supply_score_v2', 'oversold_component', 'risk_level', 'sector', 'return_1m_%', 'return_1w_%', 'return_3m_%', 'r3m_low_rank'],
   '⭐ 핵심': ['name', 'ticker', 'grade', 'final_score_v3', 'bucket', 'final_score', 'earnings_pattern', 'ocf_pattern', 'risk_level', 'price', 'drawdown_52w_high_%', 'return_1m_%', 'market_regime'],
   '💎 수급': ['name', 'ticker', 'final_score', 'supply_score', 'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억', 'return_1m_%', 'drawdown_52w_high_%', 'earnings_pattern', 'market_regime'],
   '🏆 점수 비교': ['name', 'ticker', 'final_score', 'stock_score', 'oversold_score', 'acc_score', 'trend_score', 'supply_score', 'regime_score', 'fundamental_score', 'momentum_score', 'ocf_score', 'earnings_pattern', 'ocf_pattern', 'risk_level'],
@@ -726,8 +711,8 @@ const VIEW_PRESETS = {
 
 // ===== 처음 열 때 기본으로 보이는 핵심 컬럼 =====
 const DEFAULT_COLUMNS = [
-  'name', 'dilution_60d', 'ticker', 'grade', 'final_score_v3', 'bucket', 'F1_rank', 'F2_rank', 'F3_rank', 'F4_rank', 'RSI',
-  'earnings_pattern', 'ocf_pattern', 'risk_level', 'return_1m_%',
+  'name', 'dilution_60d', 'ticker', 'grade', 'final_score_v3', 'bucket', 'RSI',
+  'earnings_pattern', 'ocf_pattern', 'risk_level', 'return_1m_%', 'return_3m_%', 'r3m_low_rank',
   'foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억',
   'amt_avg_1w_억', 'amt_avg_1m_억', 'vol_1w_vs_1m_ratio',
 ];
@@ -791,30 +776,17 @@ function computeReco10() {
   ok.forEach(r => RECO10.add(String(r.ticker)));
 }
 
-// [2026-09-30] 관측 공식 F1~F4 순위 — latest_v30_obs.csv 를 (시장,코드)로 붙인다. 표시 전용.
-const OBS_KEYS = ['F1_rank', 'F2_rank', 'F3_rank', 'F4_rank'];
-let OBS_MAP = null, OBS_RUN = '';
-const obsReady = fetch('latest_v30_obs.csv?ts=' + Date.now()).then(r => r.ok ? r.text() : null).then(t => {
-  if (!t) return; const p = parseCSV(t); OBS_MAP = {};
-  p.data.forEach(r => { OBS_MAP[(r.market || '') + ':' + String(r.ticker).padStart(6, '0')] = r; OBS_RUN = r.run_id || OBS_RUN; });
-  const el = document.getElementById('obsAsof'); if (el && OBS_RUN) el.textContent = '(관측 순위 기준일 ' + OBS_RUN + ')';
-}).catch(() => {});
-function mergeObs(mkt) {
-  if (!OBS_MAP) return;
-  let hit = 0;
-  allData.forEach(r => {
-    const o = OBS_MAP[mkt + ':' + String(r.ticker).padStart(6, '0')];
-    OBS_KEYS.forEach(k => { r[k] = o ? o[k] : ''; r[k.replace('_rank', '_score')] = o ? o[k.replace('_rank', '_score')] : ''; });
-    if (o) hit++;
-  });
-  if (hit) OBS_KEYS.forEach(k => { if (!headers.includes(k)) headers.push(k); });
-}
-
 function applyCSVText(text) {
   const result = parseCSV(text);
   headers = result.headers;
   allData = result.data;
-  mergeObs(window.curMktV3 || 'kospi');
+  // [2026-09-30] 3개월↓순위 — 후보(버킷 BUY·WAIT·OBSERVE) 안에서 return_3m_% 오름차순(1=가장 많이 떨어짐). 표시 전용.
+  if (headers.includes('return_3m_%')) {
+    const pool = allData.filter(r => ['BUY', 'WAIT', 'OBSERVE'].includes(r.bucket) && !isNaN(parseFloat(r['return_3m_%'])));
+    pool.sort((a, b) => parseFloat(a['return_3m_%']) - parseFloat(b['return_3m_%'])).forEach((r, i) => { r.r3m_low_rank = String(i + 1); });
+    allData.forEach(r => { if (r.r3m_low_rank === undefined) r.r3m_low_rank = ''; });
+    if (!headers.includes('r3m_low_rank')) headers.push('r3m_low_rank');
+  }
   computeReco10();
   initializeUI();
   document.getElementById('mainContent').classList.add('active');
@@ -853,10 +825,10 @@ function autoLoad(market) {
     .then(r => r.ok ? r.text() : Promise.reject('no-enriched'))
     .catch(() => fetch('latest_' + market + '_final.csv?ts=' + Date.now())
                    .then(r => r.ok ? r.text() : Promise.reject(r.status)))
-    .then(text => obsReady.then(() => {
+    .then(text => {
       applyCSVText(text);
       status.textContent = market.toUpperCase() + ' · ' + allData.length + '종목';
-    }))
+    })
     .catch(() => {
       status.textContent = '자동 로드 실패 — 아래 "파일 직접 열기"로 CSV를 올려주세요.';
       document.getElementById('dropzone').style.display = 'block';
@@ -867,15 +839,7 @@ function autoLoad(market) {
 // ---- [2026-09-17] 지난 날짜 탭 (hist/v30.json) — 당시 동결 점수, 그날 종가→오늘 종가 등락. 표시 전용 ----
 window.curDateV3 = null; window.curMktV3 = 'kospi';
 let histV3 = null, showMoreV3 = false;
-const HIST_COLS_V3 = [['rank','그날 순위'],['name','종목'],['ticker','코드'],['score','V3점수'],['grade','등급'],['bucket','버킷'],['F1_rank','🧪F1'],['F2_rank','🧪F2'],['F3_rank','🧪F3'],['F4_rank','🧪F4'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
-// [2026-09-30] 지난 날짜의 관측 공식 순위 — hist/v30_obs.json (run_id 별 {시장:코드: [r1..r4, s1..s4]}). 표시 전용.
-let histObs = null;
-fetch('hist/v30_obs.json?ts=' + Date.now()).then(r => r.ok ? r.json() : null).then(h => { histObs = h; if (window.curDateV3) renderHistV3(); }).catch(() => {});
-function obsFor(day, r) {
-  if (!histObs) return null;
-  const d = histObs.days.find(x => x.run_id === (day.run_id || day.date)); if (!d) return null;
-  return d.rows[r.market + ':' + String(r.ticker).padStart(6, '0')] || null;
-}
+const HIST_COLS_V3 = [['rank','그날 순위'],['name','종목'],['ticker','코드'],['score','V3점수'],['grade','등급'],['bucket','버킷'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
 function fmtDV3(d){ return d ? (+d.slice(4,6)) + '/' + (+d.slice(6)) : ''; }
 function renderDtabsV3(){
   const box = document.getElementById('dtabs'); if (!histV3) { box.innerHTML = ''; return; }
@@ -898,14 +862,10 @@ function renderHistV3(){
   document.getElementById('dnote').innerHTML = `📅 <b>${fmtDV3(day.date)}</b> ${window.curMktV3.toUpperCase()} 리스트 — 당시 동결 점수(V3점수) 기준 상위 ${rows.length} · 등락은 그날 종가→오늘(${fmtDV3(histV3.asof)}) 종가 · 표시 전용, 매수신호 아님 · 상위 10 행은 옅은 배경 · '—' = 가격 자료 없음`;
   document.getElementById('histHead').innerHTML = '<tr>' + HIST_COLS_V3.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
   document.getElementById('histBody').innerHTML = rows.map(r => '<tr' + (r.rank <= 10 ? ' class="r10"' : '') + '>' + HIST_COLS_V3.map(c => {
-    if (c[0].endsWith('_rank')) {   // [2026-09-30] 관측 공식 순위(그날 기준) · 10위 이내 노란 칸
-      const o = obsFor(day, r), i = +c[0][1] - 1; if (!o) return '<td style="color:#cbd5e0">—</td>';
-      return `<td class="${o[i] <= 10 ? 'obs-top' : ''}" title="F${i + 1} 점수 ${o[i + 4]} (0~3) · 그날 v30 후보 안 시장별 순위">${o[i]}</td>`;
-    }
     const v = r[c[0]]; if (v === null || v === undefined || v === '') return '<td>—</td>';
     if (c[0] === 'chg_pct') return `<td class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</td>`;
     if (c[0] === 'px_then' || c[0] === 'px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
-    return `<td>${v}</td>`; }).join('') + '</tr>').join('') || '<tr><td colspan="14">이 시장 자료 없음</td></tr>';
+    return `<td>${v}</td>`; }).join('') + '</tr>').join('') || '<tr><td colspan="10">이 시장 자료 없음</td></tr>';
 }
 fetch('hist/v30.json?ts=' + Date.now()).then(r => r.ok ? r.json() : null).then(h => { histV3 = h; renderDtabsV3(); }).catch(() => {});
 
@@ -1030,7 +990,7 @@ function sortBy(col) {
     sortDesc = !sortDesc;
   } else {
     sortColumn = col;
-    sortDesc = !col.endsWith('_rank');   // [2026-09-30] 관측 순위는 1위부터(오름차순)
+    sortDesc = !col.endsWith('_rank');   // [2026-09-30] 순위 컬럼은 1위부터(오름차순)
   }
   renderTableHead();
   applyFilters();
@@ -1127,6 +1087,14 @@ function loadColumnPrefs() {
       const arr = JSON.parse(saved);
       if (Array.isArray(arr) && arr.length > 0) {
         visibleColumns = new Set(arr);
+        // [2026-09-30] 저장된 설정이 있어도 3개월 컬럼은 한 번만 켜 준다(이후 끄면 그 설정을 따름)
+        try {
+          if (!localStorage.getItem('csv_filter_r3m_cols_20260930')) {
+            ['return_3m_%', 'r3m_low_rank'].forEach(k => visibleColumns.add(k));
+            localStorage.setItem('csv_filter_r3m_cols_20260930', '1');
+            localStorage.setItem('csv_filter_visible_cols_v2', JSON.stringify([...visibleColumns]));
+          }
+        } catch (e) { /* 무시 */ }
         return;
       }
     }
@@ -1270,7 +1238,7 @@ function applyFilters() {
     let bv = b[sortColumn];
     const an = parseFloat(av);
     const bn = parseFloat(bv);
-    if (sortColumn.endsWith('_rank')) {   // [2026-09-30] 관측 순위: 빈칸(대상 아님)은 항상 맨 아래
+    if (sortColumn.endsWith('_rank')) {   // [2026-09-30] 순위 컬럼: 빈칸(대상 아님)은 항상 맨 아래
       if (isNaN(an) && isNaN(bn)) return 0; if (isNaN(an)) return 1; if (isNaN(bn)) return -1;
     }
     
@@ -1377,10 +1345,9 @@ function formatCell(row, col) {
       return `<td style="color:#e53e3e;font-weight:600;white-space:nowrap" title="직전 60거래일 내 유상증자·CB·BW·EB 결정 공시(정정 제외). 점수·순위 미반영 — 사람이 판단">⚠️ ${val}</td>`;
     case 'string':
       return `<td>${val}</td>`;
-    case 'obsrank': {   // [2026-09-30] 관측 공식 시장별 순위(1=최우선) · 10위 이내 노란 칸 · 점수는 툴팁
+    case 'lowrank': {   // [2026-09-30] 3개월↓순위 · 10위 이내 노란 칸
       const rk = parseInt(val); if (isNaN(rk)) return `<td class="num" style="color:#cbd5e0">-</td>`;
-      const sc = row[col.key.replace('_rank', '_score')];
-      return `<td class="num${rk <= 10 ? ' obs-top' : ''}" title="${col.key.slice(0, 2)} 점수 ${sc} (0~3, 클수록 우선) · 표시 전용">${rk}</td>`;
+      return `<td class="num${rk <= 10 ? ' low3m' : ''}" title="후보 안 3개월 수익률 ${row['return_3m_%']}% · 낮은 순 ${rk}위 · 표시 전용">${rk}</td>`;
     }
     case 'score':
       const sv = parseFloat(val);

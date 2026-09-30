@@ -1,0 +1,21 @@
+공식 수 74708
+C:\Users\SAMSUNG\AppData\Local\Temp\claude\C--Users-SAMSUNG-Documents-GitHub-dh-q7m3k\e2b3b4df-3a0c-4d65-ba0b-81d1f6891d1b\scratchpad\v30\v30_search.py:59: RuntimeWarning: Mean of empty slice
+  acc[k,s:e,ai]+=np.nanmean(Y[top,k],axis=0)
+real done 68 s
+C:\Users\SAMSUNG\AppData\Local\Temp\claude\C--Users-SAMSUNG-Documents-GitHub-dh-q7m3k\e2b3b4df-3a0c-4d65-ba0b-81d1f6891d1b\scratchpad\v30\v30_search.py:67: RuntimeWarning: Mean of empty slice
+  top=np.argsort(-v30)[:10]; base[:,ai]+=np.nanmean(Y[top],axis=0); cntb[ai]+=1
+C:\Users\SAMSUNG\AppData\Local\Temp\claude\C--Users-SAMSUNG-Documents-GitHub-dh-q7m3k\e2b3b4df-3a0c-4d65-ba0b-81d1f6891d1b\scratchpad\v30\v30_search.py:77: RuntimeWarning: Mean of empty slice
+  Yp=Y[rng.permutation(len(Y))]; bn[:,ai]+=np.nanmean(Yp[np.argsort(-v30)[:10]],axis=0)
+perm 0 best 2.4 120 s
+perm 1 best 1.99 176 s
+perm 2 best 2.38 232 s
+perm 3 best 1.76 286 s
+perm 4 best 1.67 339 s
+perm 5 best 1.89 393 s
+perm 6 best 1.35 445 s
+perm 7 best 1.79 499 s
+perm 8 best 2.13 552 s
+perm 9 best 1.54 606 s
+perm 10 best 2.0 659 s
+perm 11 best 1.08 715 s
+ALL DONE 715 s

@@ -3,7 +3,8 @@ import sys, os, numpy as np, pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downside_20260930"))   # flags.py·panel.py 재사용(DB 경로는 panel.py 참조)
 import flags as fl
 C=fl.C; D=fl.DATES; MK=fl.MK; MD=fl.MD
-ch=pd.read_csv('index_changes.csv',dtype=str); ch['code']=ch.code.str.zfill(6)
+HERE=os.path.dirname(os.path.abspath(__file__))
+ch=pd.read_csv(os.path.join(HERE,'index_changes.csv'),dtype=str); ch['code']=ch.code.str.zfill(6)
 rows=[]
 for (idx,rev),g in ch[ch.review>='202312'].groupby(['index','review']):
     mkt='kospi' if idx=='KOSPI200' else 'kosdaq'; bench='KOSPI' if mkt=='kospi' else 'KOSDAQ'
@@ -19,7 +20,7 @@ for (idx,rev),g in ch[ch.review>='202312'].groupby(['index','review']):
             for code,name in zip(g[g.action==act].code,g[g.action==act].name):
                 if code in ret.index and np.isfinite(ret[code]):
                     rows.append(dict(index=idx,rev=rev,lag=lag,act=act,code=code,name=name,ret=ret[code],ex=ret[code]-ew,exi=ret[code]-ix,days=b-a))
-E=pd.DataFrame(rows); E.to_csv('w2_robust.csv',index=False)
+E=pd.DataFrame(rows); E.to_csv(os.path.join(HERE,'w2_robust.csv'),index=False)
 for idx in ('KOSDAQ150','KOSPI200'):
     for act in ('IN','OUT'):
         s=E[(E['index']==idx)&(E.act==act)&(E.lag==1)]
