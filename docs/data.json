@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-10-02 21:12 KST",
+  "generated_at": "2026-10-02 22:38 KST",
   "runs": {
     "kospi": [
       {
         "run_id": "20261002",
         "market_regime": "강세",
         "regime_score": -3,
-        "usdkrw": 1347.88,
+        "usdkrw": 1344.98,
         "foreign_5d": -79432.0,
         "stage1_count": 738
       },
@@ -248,7 +248,7 @@
         "run_id": "20261002",
         "market_regime": "반등",
         "regime_score": -5,
-        "usdkrw": 1347.58,
+        "usdkrw": 1345.19,
         "foreign_5d": -3373.0,
         "stage1_count": 1618
       },
@@ -580,18 +580,18 @@
           "q_basis": "3개월"
         },
         {
-          "ticker": "037270",
-          "name": "YG PLUS",
-          "sector": "IT서비스",
+          "ticker": "005740",
+          "name": "크라운해태홀딩스",
+          "sector": "금융(은행)",
           "final_score_v3": 65.0,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "005740",
-          "name": "크라운해태홀딩스",
-          "sector": "금융(은행)",
+          "ticker": "037270",
+          "name": "YG PLUS",
+          "sector": "IT서비스",
           "final_score_v3": 65.0,
           "grade": "B",
           "bucket": "WAIT",
@@ -670,18 +670,18 @@
           "q_basis": "3개월"
         },
         {
-          "ticker": "204320",
-          "name": "HL만도",
-          "sector": "자동차·부품",
+          "ticker": "170900",
+          "name": "동아에스티",
+          "sector": "제약·바이오",
           "final_score_v3": 60.3,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "170900",
-          "name": "동아에스티",
-          "sector": "제약·바이오",
+          "ticker": "204320",
+          "name": "HL만도",
+          "sector": "자동차·부품",
           "final_score_v3": 60.3,
           "grade": "B",
           "bucket": "WAIT",
@@ -764,7 +764,7 @@
         "run_id": "20261002",
         "market_regime": "강세",
         "regime_score": -3,
-        "usdkrw": 1347.88,
+        "usdkrw": 1344.98,
         "foreign_5d": -79432.0,
         "stage1_count": 738
       },
@@ -800,6 +800,15 @@
           "q_basis": "3개월"
         },
         {
+          "ticker": "122450",
+          "name": "KX",
+          "sector": "방송",
+          "final_score_v3": 84.3,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
           "ticker": "179290",
           "name": "엠아이텍",
           "sector": "의료·정밀·광학",
@@ -809,10 +818,28 @@
           "q_basis": "3개월"
         },
         {
+          "ticker": "419120",
+          "name": "산돌",
+          "sector": "출판·SW",
+          "final_score_v3": 79.1,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
           "ticker": "100700",
           "name": "세운메디칼",
           "sector": "제약·바이오",
           "final_score_v3": 74.9,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "100030",
+          "name": "인지소프트",
+          "sector": "출판·SW",
+          "final_score_v3": 72.4,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -935,18 +962,18 @@
           "q_basis": "3개월"
         },
         {
-          "ticker": "010240",
-          "name": "흥국",
-          "sector": "기계·장비",
+          "ticker": "403850",
+          "name": "더핑크퐁컴퍼니",
+          "sector": "미디어·엔터",
           "final_score_v3": 57.0,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "403850",
-          "name": "더핑크퐁컴퍼니",
-          "sector": "미디어·엔터",
+          "ticker": "010240",
+          "name": "흥국",
+          "sector": "기계·장비",
           "final_score_v3": 57.0,
           "grade": "B",
           "bucket": "WAIT",
@@ -957,6 +984,15 @@
           "name": "서진오토모티브",
           "sector": "자동차·부품",
           "final_score_v3": 56.8,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "348030",
+          "name": "모비릭스",
+          "sector": "출판·SW",
+          "final_score_v3": 55.8,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -1005,49 +1041,13 @@
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
-        },
-        {
-          "ticker": "037230",
-          "name": "한국팩키지",
-          "sector": "펄프·종이",
-          "final_score_v3": 48.4,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "005860",
-          "name": "한일사료",
-          "sector": "식료품",
-          "final_score_v3": 43.4,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "035810",
-          "name": "이지홀딩스",
-          "sector": "식료품",
-          "final_score_v3": 42.1,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "025880",
-          "name": "케이씨피드",
-          "sector": "식료품",
-          "final_score_v3": 40.8,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
         }
       ],
       "meta": {
         "run_id": "20261002",
         "market_regime": "반등",
         "regime_score": -5,
-        "usdkrw": 1347.58,
+        "usdkrw": 1345.19,
         "foreign_5d": -3373.0,
         "stage1_count": 1618
       },
@@ -1302,11 +1302,11 @@
         "name": "디와이피엔에프",
         "ticker": "104460",
         "appearances": 73,
-        "avg_score": 62.3,
+        "avg_score": 62.1,
         "max_score": 96.7,
-        "v3_score": 41.5,
-        "grade": "C",
-        "bucket": "OBSERVE"
+        "v3_score": 21.5,
+        "grade": "WATCH",
+        "bucket": "WATCH"
       },
       {
         "name": "하이텍팜",
@@ -1412,9 +1412,9 @@
         "name": "우양",
         "ticker": "103840",
         "appearances": 70,
-        "avg_score": 75.6,
+        "avg_score": 75.4,
         "max_score": 105.8,
-        "v3_score": 23.6,
+        "v3_score": 8.6,
         "grade": "WATCH",
         "bucket": "WATCH"
       },
