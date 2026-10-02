@@ -573,6 +573,14 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <div id="ic-body" style="font-size:0.85rem;opacity:0.7;">불러오는 중…</div>
 </div>
 
+<!-- [2026-10-02] 첫 화면은 모델 성적표(leaderboard.html). 이 페이지는 '오늘의 과매도(v30) 목록'. -->
+<a href="leaderboard.html" style="display:block;text-align:center;margin:0 0 10px;padding:14px;
+   border:1px solid var(--rule,#d8d2c4);border-radius:10px;text-decoration:none;
+   font-weight:600;font-size:0.95rem;color:inherit;background:rgba(56,161,105,0.07);">
+  📊 모델 성적표(첫 화면) — 검증 결론은 여기서 →
+</a>
+<p style="font-size:0.72rem;opacity:0.6;margin:0 0 14px;line-height:1.5;">위 '점수 적중도' 카드는 최근 추천 종목에서 5일·20일 뒤 순서를 얼마나 맞혔는지 보는 참고값입니다. 모델의 검증 결론(효과 확인됨·차이 없음 등)과는 재는 방식이 달라 다르게 보일 수 있고, 결론은 성적표가 기준입니다.</p>
+
 <!-- 인터랙티브 필터 페이지로 -->
 <a href="filter.html" style="display:block;text-align:center;margin:0 0 10px;padding:14px;
    border:1px solid var(--rule,#d8d2c4);border-radius:10px;text-decoration:none;
@@ -594,7 +602,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">01</span>최신 회차 상위 종목</h2>
-      <span class="meta">v3 등급 · BUY → WAIT</span>
+      <span class="meta">버킷 순(BUY → WAIT) · 매수 권고 10종목은 필터의 권고10</span>
     </div>
     <div id="top-kospi"></div>
   </section>
@@ -625,7 +633,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">01</span>최신 회차 상위 종목</h2>
-      <span class="meta">v3 등급 · BUY → WAIT · KOSDAQ TUNED</span>
+      <span class="meta">버킷 순(BUY → WAIT) · 매수 권고 10종목은 필터의 권고10</span>
     </div>
     <div id="top-kosdaq"></div>
   </section>
@@ -752,9 +760,9 @@ function renderRegime(market) {
       <div class="regime-detail">RUN_ID ${meta.run_id || '—'}</div>
     </div>
     <div class="regime-cell">
-      <div class="regime-label">Regime Score</div>
+      <div class="regime-label">레짐 가감점</div>
       <div class="regime-value small ${regimeCls}">${fmt(meta.regime_score, 1)}</div>
-      <div class="regime-detail">시장 맥락 · 종목순위 무관</div>
+      <div class="regime-detail">전 종목에 똑같이 더하는 점수 · 종목 순위와 무관</div>
     </div>
     <div class="regime-cell">
       <div class="regime-label">USD/KRW</div>
@@ -821,7 +829,8 @@ function renderFrequent(market) {
   if (!freq.length) { el.innerHTML = '<div class="empty">아직 단골 데이터가 모이지 않았습니다.</div>'; return; }
   const rows = freq.map((r, i) => {
     const gr = (r.grade && r.grade !== '-') ? r.grade : '—';
-    const v3 = (r.v3_score === null || r.v3_score === undefined) ? '—' : fmtScore(r.v3_score);
+    // [2026-10-02] 제외 종목의 내부 값(-999)을 그대로 보이지 않는다.
+    const v3 = (r.v3_score === null || r.v3_score === undefined) ? '—' : (r.v3_score <= -900 ? '제외' : fmtScore(r.v3_score));
     return `
     <tr>
       <td class="rank">${i + 1}</td>

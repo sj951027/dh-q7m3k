@@ -97,15 +97,22 @@ def build_message():
             tr = cs.get("trailing") or {}
             b5 = (tr.get("bench") or {}).get("r5")
             act_ids = {m["model"] for ms in fams.values() for m in ms}
-            rows = [] if MONEY_HOLD else [(r["model"], r["r5"] - b5) for r in tr.get("rows", [])
+            # [2026-10-02] 시장 대비 %p 대신 실제 수익(%)으로 적는다 — '−1.5%p'가 '떨어졌다'로 읽혔다(실제론 +5.4%, 시장 +6.9%).
+            rows = [] if MONEY_HOLD else [(r["model"], r["r5"]) for r in tr.get("rows", [])
                     if r.get("r5") is not None and b5 is not None and r["model"] in act_ids]
             rows.sort(key=lambda x: -x[1])
+            b20 = (tr.get("bench") or {}).get("r20")
+            rows20 = [] if MONEY_HOLD else sorted([(r["model"], r["r20"]) for r in tr.get("rows", [])
+                      if r.get("r20") is not None and b20 is not None and r["model"] in act_ids], key=lambda x: -x[1])
             if MONEY_HOLD:
                 lines.append("📈 이번 주 성적(따라사기): 계산 오류 확인(매수 전 하루 수익 포함) — 정정 전까지 표시 보류")
             if rows:
-                lines.append(f"📈 <b>이번 주 성적</b> (상위20 따라사기 · 시장평균 {b5:+.1f}% 대비 · 비용 0)")
-                lines.append("  " + " · ".join(f"{m} {v:+.1f}%p" for m, v in rows))
-                lines.append("  ※ 1주는 운 비중이 큼 — 순서보다 시장 대비 ±만 보기 · 판정 정본은 §11")
+                lines.append(f"📈 <b>이번 주 수익</b> (상위20 따라사기 · 비용 0) — 시장 평균 {b5:+.1f}%")
+                lines.append("  " + " · ".join(f"{m} {v:+.1f}%" for m, v in rows))
+                if rows20:
+                    lines.append(f"  최근 20거래일 — 시장 평균 {b20:+.1f}%")
+                    lines.append("  " + " · ".join(f"{m} {v:+.1f}%" for m, v in rows20))
+                lines.append("  ※ 실제 수익(%)이에요. 시장 평균보다 높으면 더 번 것 · 1주는 운 비중이 큼 · 판정 정본은 §11")
         except Exception as e:
             lines.append(f"📈 이번 주 성적 실패(비치명): {str(e)[:60]}")
         # ③ 이번 주 달라진 것 — leaderboard_history 7일 범위(판정 표본 도달·자동 라벨 변경·은퇴)
@@ -180,8 +187,11 @@ def build_message():
     lines.append("")
     # [2026-09-13] 링크를 일간 알림과 동일하게(운용 기준 저변동 + 리더보드). 종전 qs_a 단독 링크는
     #   판정 전 모델을 권하는 모양새라 제거 — 관측·적재·qs.html 은 유지, 리더보드에서 모델명 클릭으로 접근.
-    lines.append('🔎 <a href="https://sj951027.github.io/dh-q7m3k/lowvol.html">저변동 종목 보기</a> · '
-                 '<a href="https://sj951027.github.io/dh-q7m3k/leaderboard.html">리더보드</a>(v30·다른 모델)')
+    # [2026-10-02] 일간 알림과 같은 링크(성적표 먼저 · 모델별 목록).
+    lines.append('🔎 <a href="https://sj951027.github.io/dh-q7m3k/leaderboard.html">성적표</a> · '
+                 '<a href="https://sj951027.github.io/dh-q7m3k/filter.html">v30 목록</a> · '
+                 '<a href="https://sj951027.github.io/dh-q7m3k/le.html">le_a 목록</a> · '
+                 '<a href="https://sj951027.github.io/dh-q7m3k/lowvol.html">lv_b 목록</a>')
     return "\n".join(lines)
 
 

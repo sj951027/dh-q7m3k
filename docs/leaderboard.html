@@ -30,7 +30,8 @@
   .foot{color:var(--sub);font-size:12px;margin-top:10px;line-height:1.6} .foot a{color:var(--blue)}
   .links{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0} .links a{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--txt);text-decoration:none;font-size:13px}
   .loading{color:var(--sub);text-align:center;padding:20px}
-  @media(max-width:700px){.wrap{padding:12px 10px} th,td{padding:7px 5px;font-size:12px} .mid{font-size:14px} h1{font-size:19px}}
+  .vmini{display:none}
+  @media(max-width:700px){.vmini{display:block;font-size:11px;color:var(--sub);font-weight:400;margin-top:2px} .wrap{padding:12px 10px} th,td{padding:7px 5px;font-size:12px} .mid{font-size:14px} h1{font-size:19px}}
 </style>
 </head>
 <body><div class="wrap">
@@ -93,7 +94,8 @@ function det(m){
 function nameCell(m){
   const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model];
   const t=p?`<a href="${p}"><b>${nm}</b> ${m.model}</a>`:`<b>${nm}</b> <span class="muted">${m.model}</span>`;
-  return `<td class="l wrap">${t}${m.retired?'<span class="role">은퇴</span>':''}<span class="more">▾</span></td>`;
+  const vm=m.sealed?(LABEL[m.sealed.v]||m.sealed.v):'아직 결론 전';   // [2026-10-02] 폰에서는 '검증 결론' 열이 화면 밖이라 이름 아래에 한 줄로도 보인다
+  return `<td class="l wrap">${t}${m.retired?'<span class="role">은퇴</span>':''}<span class="more">▾</span><div class="vmini">${vm}</div></td>`;
 }
 function row(m){
   const f=m.fix, nm=nameCell(m), dr=`<tr class="det" hidden><td colspan="8">${det(m)}</td></tr>`;
@@ -113,7 +115,7 @@ function render(D){
   const ok=A.filter(m=>m.fix&&m.fix.n>=8).sort((a,b)=>b.fix.exc_mean-a.fix.exc_mean);
   let s='';
   if(ok.length){const t=ok[0], cmp=A.filter(m=>m.fix&&m.fix.n>=4), beat=cmp.filter(m=>m.fix.exc_mean>0).length;
-    s=`이 방식으로 사고팔았다면 <b>${t.name}</b>이(가) 시장 평균보다 평균 ${f1(t.fix.exc_mean,'%p')} 더 벌어 가장 앞섰습니다. 비교할 수 있는 ${cmp.length}개 모델 중 ${beat}개가 시장 평균을 이겼습니다.`;}
+    s=`이 방식으로 사고팔았다면 <b>${t.name}</b>이(가) 시장 평균보다 평균 ${f1(t.fix.exc_mean,'%p')} 더 벌어 가장 앞섰습니다 — 다만 40일이 끝난 매수일은 ${t.fix.n}일이고 검증 결론은 '${t.sealed?(LABEL[t.sealed.v]||t.sealed.v):'아직 결론 전'}'입니다. 비교할 수 있는 ${cmp.length}개 모델 중 ${beat}개가 시장 평균을 이겼습니다.`;}
   else s='아직 40일이 끝난 매수일이 8일 이상인 모델이 없습니다.';
   document.getElementById('lead').innerHTML=s+`<small>모든 모델을 같은 매매 방식으로 잰 참고 성적입니다. 성적이 좋다고 바로 채택되지는 않으며, 채택 여부는 오른쪽 '검증 결론' 열의 미리 정한 절차로만 정합니다.</small>`;
 }

@@ -261,7 +261,29 @@ MONEY_MODELS_V2 = ["v30", "lv_b"]      # ② 돈 줄 대표(+ 판정 캘린더 �
 LIVE_MODEL_V3 = ""                      # 실제 운용 모델(없음)
 REF_MODEL_V3 = "v30"                    # 참고(챔피언)
 # [2026-09-30] 알림에 보여줄 모델 순서(registry "show"). live 가 비면(운용 모델 없음) '← 운용 중' 표시를 붙이지 않는다.
-SHOW_V3 = ["v30", "lv_b"]              # 폴백 표시 순서
+SHOW_V3 = ["v30", "le_a", "lv_b"]      # 폴백 표시 순서([2026-10-02] le_a 추가 — 사용자 결정)
+# [2026-10-02] 성적표 줄에 쓰는 쉬운 말(리더보드 첫 화면과 같은 뜻) · 모델별 목록 페이지(맨 아래 링크).
+PLAIN_VERDICT_V3 = {"유의": "효과 확인됨", "기움": "확정 아님", "노이즈": "차이 없음", "역작동": "반대로 감"}
+_PAGES = "https://sj951027.github.io/dh-q7m3k/"
+MODEL_PAGE_V3 = {"v30": _PAGES + "filter.html", "lv_b": _PAGES + "lowvol.html", "le_a": _PAGES + "le.html",
+                 "sv_a": _PAGES + "sv.html", "px_a": _PAGES + "px.html", "mom_a": _PAGES + "mom.html",
+                 "lv_a": _PAGES + "lva.html", "ls_t1": _PAGES + "_large_test.html"}
+
+
+def _scoreboard_row(mid, row):
+    """성적표 한 줄(고정폭). row = docs/scoreboard.json 의 모델 행 또는 None. 순수 함수(tests/test_telegram_scoreboard.py).
+    예: 'v30    +3.8%p · 38일 · 효과 확인됨' / 'px_a  결과 대기 · 결론 전'. 숫자는 리더보드 첫 화면과 같은 값."""
+    try:
+        v = ((row or {}).get("sealed") or {}).get("v")
+        if not v:
+            v = (SEALED_V2.get(mid) or "").split("(")[0].strip() or None
+        plain = PLAIN_VERDICT_V3.get(v, "결론 전")
+        fx = (row or {}).get("fix") or {}
+        if fx.get("n") and fx.get("exc_mean") is not None:
+            return f"{mid:<5} {float(fx['exc_mean']):+5.1f}%p · {int(fx['n'])}일 · {plain}"
+        return f"{mid:<5} 결과 대기 · {plain}"
+    except Exception:
+        return None
 MODEL_ICON_V3 = {"lv_b": "🧪", "v30": "🏆"}
 
 
@@ -489,15 +511,31 @@ def _status_lines_v3():
                if not m.get("retired") and m["model"] not in RETIRED_FALLBACK_V2]
         out = []
 
-        # ① 표시 순서(SHOW_V3). 유니버스 크기는 8/12 고갈 사건 이후 매일 보는 값.
-        for mid in SHOW_V3:
-            u, _ = _uni_latest2(mid)
-            line = f"{MODEL_ICON_V3.get(mid, '·')} <b>{mid}</b>"
-            if u:
-                line += f" {u}종목"
-            if SEALED_V2.get(mid):
-                line += f" · {SEALED_V2[mid]}"
-            out.append(line)
+        # ① [2026-10-02] 성적표 — 리더보드 첫 화면·PTW '모델 성적'과 같은 숫자(docs/scoreboard.json:
+        #   시장별 상위 10 · 40거래일 보유 · 같은 시장 평균 대비, 끝난 매수분만). 종전의 '모델 줄(종목 수·정본 라벨)'과
+        #   '💰 최근 1개월(상위20·20일, 시장 대비 %p)'을 대체한다. 바꾼 이유: ① %p 가 '떨어졌다'로 읽혔다(실제론 시장보다 덜 오른 것)
+        #   ② 첫 화면(상위10·40일)과 잣대가 달랐다 ③ 20일 성적은 다음 성적을 알려 주지 못했다(RESEARCH_model_rotation_20261002).
+        #   유니버스 급감은 아래 ④의 ⚠️ 경고가 계속 본다. 성적표를 못 읽으면 종전 모델 줄로 폴백.
+        sb_ok = False
+        try:
+            sb = json.loads((HERE / "docs" / "scoreboard.json").read_text(encoding="utf-8"))
+            by = {r.get("model"): r for r in sb.get("models", [])}
+            body = [x for x in (_scoreboard_row(mid, by.get(mid)) for mid in SHOW_V3) if x]
+            if body and any(by.get(mid) for mid in SHOW_V3):
+                out.append(f"📊 <b>성적표</b> (상위{sb.get('TOP', 10)}·{sb.get('H', 40)}일 보유, 시장 평균 대비)")
+                out.append("<pre>" + "\n".join(body) + "</pre>")
+                sb_ok = True
+        except Exception:
+            pass
+        if not sb_ok:
+            for mid in SHOW_V3:
+                u, _ = _uni_latest2(mid)
+                line = f"{MODEL_ICON_V3.get(mid, '·')} <b>{mid}</b>"
+                if u:
+                    line += f" {u}종목"
+                if SEALED_V2.get(mid):
+                    line += f" · {SEALED_V2[mid]}"
+                out.append(line)
 
         # ③ 판정 캘린더(먼저 계산 — ②의 '판정 임박' 모델에 필요)
         wait = sorted([m for m in act if (m.get("oos_days") or 0) < need(m)],
@@ -506,11 +544,13 @@ def _status_lines_v3():
                    and m["model"] not in SEALED_V2]
         soon = wait[0]["model"] if wait else None
 
-        # ② 돈 — 공통 잣대(cross_sim) 최근 20거래일 vs 시장. 표시 모델(SHOW_V3) + 판정 임박 1개만.
-        if MONEY_HOLD:
+        # ② [2026-10-02] '💰 최근 1개월' 블록은 매일 알림에서 뺐다(위 ① 주석). MONEY_DAILY_V3 를 True 로 바꾸면 종전대로 나온다.
+        #   최근 20거래일 수익은 주간 리캡(notify_weekly)에서 실제 수익(%)으로 본다.
+        if MONEY_HOLD and MONEY_DAILY_V3:
             out.append(""); out.append(MONEY_HOLD_LINE)
-        #    전부 싣지 않는 이유: 한 달 수익으로 줄 세우기가 되면 트랙 간 비교 금지 원칙과 어긋난다.
         try:
+            if not MONEY_DAILY_V3:
+                raise LookupError("daily money block off")
             cs = json.loads((HERE / "docs" / "cross_sim.json").read_text(encoding="utf-8"))
             tr = cs.get("trailing") or {}
             rows = {} if MONEY_HOLD else {r["model"]: r for r in tr.get("rows", [])}
@@ -554,10 +594,38 @@ def _status_lines_v3():
         return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
 
 
+# [2026-10-02] 재무 결손 경고 기준 — **시장별** 결손률이 이 값 이상이면 알린다(전일 대비 조건 없음).
+#   종전 기준(두 시장 합산 ≥10% 이면서 전일의 2배 이상)은 ① KOSDAQ 만 비는 날 합산하면 10% 아래로 희석되고
+#   ② 연속으로 나쁜 날은 '전일의 2배' 조건에 걸려 조용했다. 2026-08-25~10-02 26 run 중 DART 차단으로 재무가 빈 9일 가운데
+#   2일(8/31·9/11)만 울렸고, 10/02 저녁 배치(KOSDAQ 296종목 중 약 50개 결손)는 '이상 없음'으로 나갔다.
+#   근거(history.db 같은 기간): 평소 시장별 결손 0~1.7%(최대 7/421), 차단일 KOSDAQ 11~27%(최소 47/416).
+#   5% = 평소 최대의 약 3배, 차단일 최소의 절반 이하. 시장별 종목이 FIN_GAP_MIN_N 미만이면 판단하지 않는다(부분실행 등).
+FIN_GAP_WARN = 0.05
+FIN_GAP_MIN_N = 30
+
+
+def _fin_gap_lines(now, prev=None):
+    """{시장: (종목 수, 재무 결손 수)} → 경고 줄 리스트. 순수 함수(테스트: tests/test_fin_gap_warning.py). 표시 전용."""
+    out = []
+    for mkt in sorted(now or {}):
+        try:
+            n, g = now[mkt]
+            n, g = int(n or 0), int(g or 0)
+            if n < FIN_GAP_MIN_N or g / n < FIN_GAP_WARN:
+                continue
+            p = (prev or {}).get(mkt)
+            was = f", 전일 {int(p[1] or 0) / int(p[0]):.0%}" if p and p[0] else ""
+            out.append(f"⚠️ 재무 결손 {str(mkt).upper()} {g}/{n} ({g / n:.0%}{was}) — DART 연결 실패 추정 · "
+                       f"그 종목은 재무 빈 채 점수 동결(품질점수 −2) · 백필이 다음날 채움")
+        except Exception:
+            continue
+    return out
+
+
 def _input_coverage_warnings():
     """[2026-09-13] 핵심 입력이 통째로 사라진 날을 알린다 — 완전성 게이트는 행 수만 봐서(09-11 수급 0/979 통과)
     이 경우를 못 잡는다. **보류가 아니라 경고**: 보류는 화면 전체를 막는데 lv_b 는 수급을 안 쓴다.
-    기준(전일 대비): 수급 확보율 < 전일의 절반 · 재무 결손률 ≥10% 이면서 전일의 2배 이상. 표시 전용, 판정·점수 무관."""
+    기준: 수급 확보율 < 전일의 절반 · 재무 결손률이 시장별 FIN_GAP_WARN 이상([2026-10-02] 위 주석). 표시 전용, 판정·점수 무관."""
     import sqlite3
     out = []
     try:
@@ -567,15 +635,22 @@ def _input_coverage_warnings():
             "SUM(CASE WHEN supply_fetched IN (1,'1','True','true') THEN 1 ELSE 0 END), "
             "SUM(CASE WHEN ocf_pattern='데이터없음' THEN 1 ELSE 0 END) "
             "FROM stage3_final GROUP BY run_id ORDER BY run_id DESC LIMIT 2").fetchall()
+        # [2026-10-02] 재무 결손은 시장별로 본다(최신 run 과 그 전 run).
+        by_mkt = {}
+        if rows:
+            ids = [str(r[0]) for r in rows]
+            q = ("SELECT run_id, LOWER(market), COUNT(*), SUM(CASE WHEN ocf_pattern='데이터없음' THEN 1 ELSE 0 END) "
+                 f"FROM stage3_final WHERE run_id IN ({','.join('?' * len(ids))}) GROUP BY run_id, LOWER(market)")
+            for rid, mkt, n, g in con.execute(q, ids).fetchall():
+                by_mkt.setdefault(str(rid), {})[mkt] = (n, g)
         con.close()
         if len(rows) == 2 and rows[0][1] and rows[1][1]:
             (r1, n1, s1, g1), (r0, n0, s0, g0) = rows
             sup1, sup0 = s1 / n1, s0 / n0
-            gap1, gap0 = g1 / n1, g0 / n0
             if sup0 > 0 and sup1 < 0.5 * sup0:
                 out.append(f"⚠️ 수급 확보 급감 {sup1:.0%} (전일 {sup0:.0%}) — v30 수급 성분 영향, lv_b 무관 · 로그의 'KIS daily_flows' 줄 확인")
-            if gap1 >= 0.10 and gap1 >= 2 * max(gap0, 0.005):
-                out.append(f"⚠️ 재무 결손 {gap1:.0%} (전일 {gap0:.0%}) — DART 연결 실패분, 품질점수 −2 처리 · 백필이 다음날 채움")
+        if rows:
+            out += _fin_gap_lines(by_mkt.get(str(rows[0][0])), by_mkt.get(str(rows[1][0])) if len(rows) > 1 else None)
     except Exception:
         pass
     return out
@@ -648,8 +723,8 @@ def build_message():
     lines = [head, ""] + body
     lines += [
         "",
-        f'🔎 <a href="{LOWVOL_URL}">저변동 종목 보기</a> · '
-        f'<a href="{LEADERBOARD_URL}">리더보드</a>(v30·다른 모델)',
+        "🔎 " + " · ".join([f'<a href="{LEADERBOARD_URL}">성적표</a>']
+                           + [f'<a href="{MODEL_PAGE_V3[m]}">{m} 목록</a>' for m in SHOW_V3 if m in MODEL_PAGE_V3]),
         "<i>매수신호 아님 · 판정 정본은 VERDICT 문서</i>",
     ]
     return "\n".join(lines)
@@ -706,6 +781,7 @@ def _load_dotenv():
 # [2026-09-16] 모의계좌(cross_sim) 계산 오류 확인 — 신호 다음 날(매수 전) 하루 수익을 포함해 과대(연구 문서
 #   research/RESEARCH_cross_sim_entry_lag_20260916.md). build_cross_sim 정정·검증 전까지 💰 줄은 숫자 대신 보류 안내만 보낸다.
 MONEY_HOLD = False   # 2026-09-16 밤 정정 완료(build_cross_sim.simulate) → 해제
+MONEY_DAILY_V3 = False   # [2026-10-02] 매일 알림의 '💰 최근 1개월' 블록 — 끔(성적표 줄로 대체)
 MONEY_HOLD_LINE = "💰 최근 1개월 따라사기: 계산 오류 확인(매수 전 하루 수익 포함) — 정정 전까지 표시 보류"
 
 def main():

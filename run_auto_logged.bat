@@ -15,6 +15,15 @@ if %HH% GEQ 9 if %HH% LSS 20 (
   >"logs\auto_run_%TS%_SKIPPED.log" echo [daytime_guard] hour=%HH% is outside 20:00-08:59 window - run skipped. %DATE% %TIME%
   exit /b 0
 )
+rem [2026-10-02] skip_dates: market holidays listed ahead of time in skip_dates.txt
+rem   (one YYYYMMDD per line). If today is listed: write a marker log, exit 0.
+rem   The file is kept (unlike skip_once.flag) so several dates can be queued.
+if exist skip_dates.txt (
+  findstr /b /c:"%TS:~0,8%" skip_dates.txt >nul 2>&1 && (
+    >"logs\auto_run_%TS%_SKIPPED.log" echo [skip_dates] %TS:~0,8% is listed in skip_dates.txt - run skipped. %DATE% %TIME%
+    exit /b 0
+  )
+)
 rem [2026-08-17] skip_once: one-shot skip for market holidays. If skip_once.flag
 rem exists, write a marker log, delete the flag, exit 0. Next run is normal.
 if exist skip_once.flag (
