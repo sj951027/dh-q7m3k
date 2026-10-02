@@ -49,6 +49,7 @@ REQUEST_SLEEP = 0.05
 #        '데이터 없음' 등은 곧 채워질 수 있으니 짧게. 오류는 캐시하지 않음.
 #        끄기: 환경변수 DART_NO_CACHE=1
 import dart_cache_util as _dcache
+import dart_rate as _drate   # DART 호출 속도 상한(분당) — 차단 예방, 결과 불변
 FIN_CACHE_TTL = float(os.environ.get("DART_FIN_TTL_DAYS", "14")) * 86400      # 정상 응답
 NODATA_CACHE_TTL = float(os.environ.get("DART_NODATA_TTL_HOURS", "12")) * 3600  # 데이터없음 등
 _CACHE_STATS = {"hit": 0, "miss": 0}
@@ -88,6 +89,7 @@ def _request_json(url, params, timeout=15, max_retries=3):
     last_exc = None
     for attempt in range(max_retries):
         try:
+            _drate.wait()
             resp = requests.get(url, params=params, timeout=timeout)
             data = resp.json()
             status = str(data.get('status', ''))

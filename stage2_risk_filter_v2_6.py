@@ -31,6 +31,7 @@ import threading
 # ============================================================
 
 import os
+import dart_rate as _drate   # DART 호출 속도 상한(분당) — 차단 예방, 결과 불변
 
 # [V2.6 자동화] 환경변수 우선, 없으면 빈 값 → 자동화 시 GitHub Secrets 사용
 # 로컬 실행 시: .env 파일에 DART_API_KEY="..." 작성 후 export 또는 python-dotenv 사용
@@ -131,6 +132,7 @@ def fetch_disclosures(corp_code, api_key, days_back=365):
     fetch_status = "unknown"   # 정상 응답(000/013) 못 받으면 unknown = 조회 실패(미점검)
     while True:
         try:
+            _drate.wait()
             resp = requests.get(
                 "https://opendart.fss.or.kr/api/list.json",
                 params={
