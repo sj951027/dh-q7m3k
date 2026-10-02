@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>mom_b — 모멘텀+눌림 (은퇴 · 기록용)</title>
+<title>모멘텀+눌림 mom_b</title>
 <style>
   :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--txt:#e6e8ec;--sub:#9aa3b2;--accent:#5aa9ff;--good:#2dd4a7;--bad:#f0997b;--warn:#f0b429;--warnbg:#2a230f}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px}
@@ -28,7 +28,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>mom_b — 모멘텀+눌림 <small>저변동 트랙 파생 · 등록 2026-07-17</small></h1>
+  <h1>모멘텀+눌림 mom_b <small>기록용 · 등록 2026-07-17</small></h1>
   <div class="banner">⛔ <b>판정 완료: 역작동(유의) → 은퇴 (2026-09-17 정본)</b><br>
     40거래일 OOS에서 점수가 높을수록 이후 20일 수익이 <b>낮았다</b>(순위 실력 IC −0.092, 신뢰구간 전체가 0 아래, 5주 중 양(+)인 주 0, 점수 상위10% −5.2%p). 9/17 배치를 끝으로 새 점수 적재를 멈췄고 기존 행은 보존한다.
     이 페이지는 <b>그날 화면이 어땠는지 남기는 기록용</b>이다 — 매수신호 아님. 근거 문서: VERDICT_20260917_mom_b_qs_a.md(저장소) · <a href="leaderboard.html">리더보드</a></div>
@@ -65,5 +65,6 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{curMkt=t.dataset.mkt
 fetch('hist/mom_b.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(h=>{hist=h; curDate=h.days.length?h.days[0].date:null; tabs(); render();})
   .catch(()=>{document.querySelector('#tbl tbody').innerHTML='<tr><td colspan="8" class="loading">데이터 없음 (hist/mom_b.json)</td></tr>';});
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

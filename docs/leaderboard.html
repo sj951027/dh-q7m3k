@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>모델 리더보드 — 40일 보유 기준 성적표</title>
+<title>모델 성적표 — 매일 상위 10 · 40일 보유</title>
 <style>
   :root{--bg:#f6f7fb;--card:#fff;--line:#e3e6ee;--txt:#1d2333;--sub:#6b7386;--blue:#2f5fd8;--soft:#eef3ff;--good:#1a8f5a;--bad:#c9403a;--warn:#8a6d1a;--warnbg:#fff7dc}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}
@@ -37,7 +37,7 @@
 </style>
 </head>
 <body><div class="wrap">
-  <div class="top"><span>SCREENER / 모델 성적표 · <a href="leaderboard_full.html">검증 자료 전체(리더보드) →</a></span><span class="tag" id="asof">불러오는 중…</span></div>
+  <div class="top"><span>모델 성적표 · <a href="leaderboard_full.html">검증 자료 전체 →</a></span><span class="tag" id="asof">불러오는 중…</span></div>
   <h1>매일 상위 10을 사서 40거래일 들고 있었다면</h1>
   <p class="sub">모델이 등록된 날부터 매 거래일, 그날 리스트의 시장별 상위 10 종목을 같은 금액씩 다음날 종가에 사서 40거래일 뒤 종가에 판 결과. 비교는 <b>같은 시장 아무 종목이나 같은 방식으로 산 평균</b>. 모델 이름을 누르면 그 모델의 오늘 리스트(지난 날짜 탭 포함)로 갑니다.</p>
   <div class="lead" id="lead"><span class="loading">불러오는 중…</span></div>
@@ -47,7 +47,7 @@
     <h2>트랙 A · 과매도 / 저변동 / 전체종목</h2>
     <div class="h"><span>수익은 평균(%) · 더 번 수익은 %p · 이긴 날은 매수일 중 비율 · 매수한 날 괄호는 40일 묶음 수 · 행을 누르면 검증 창과 지금 흐름</span><span>정렬: 시장보다 더 번 수익</span></div>
     <table id="tblA"><thead><tr>
-      <th class="l">모델</th><th class="hm">40일 수익</th><th class="hm">시장 평균</th><th>시장보다<br>더 번 수익</th><th class="hm">중앙값</th><th>시장을<br>이긴 날</th><th>매수한<br>날</th><th class="l hm">검증 결론</th>
+      <th class="l">모델</th><th class="hm">40일 수익</th><th class="hm">시장 평균</th><th>시장보다<br>더 번 수익</th><th class="hm">중앙값</th><th>시장을<br>이긴 날</th><th>매수한<br>날</th><th class="l hm">시험 기록</th>
     </tr></thead><tbody></tbody></table>
     <p class="hmnote">폰에서는 40일 수익·시장 평균·중앙값 열을 숨기고 검증 결론을 모델 이름 아래에 적었어요. 화면을 가로로 돌리면 전부 보여요.</p>
   </div>
@@ -55,7 +55,7 @@
     <h2>트랙 B · 대형 가치 (별도 유니버스 — 트랙 A 와 숫자 비교 금지)</h2>
     <div class="h"><span>비교 = 그날 대형 후보군(large_final 전체) 평균</span></div>
     <table id="tblB"><thead><tr>
-      <th class="l">모델</th><th class="hm">40일 수익</th><th class="hm">후보군 평균</th><th>후보군보다<br>더 번 수익</th><th class="hm">중앙값</th><th>이긴 날</th><th>매수한<br>날</th><th class="l hm">검증 결론</th>
+      <th class="l">모델</th><th class="hm">40일 수익</th><th class="hm">후보군 평균</th><th>후보군보다<br>더 번 수익</th><th class="hm">중앙값</th><th>이긴 날</th><th>매수한<br>날</th><th class="l hm">시험 기록</th>
     </tr></thead><tbody></tbody></table>
   </div>
 
@@ -73,7 +73,7 @@
     <a href="filter.html">과매도 v3 리스트</a><a href="lowvol.html">저변동 lv_b 리스트</a><a href="index.html">오늘의 스크리너</a>
     <a href="lead.html">🔭 주도주 ld_a 관측 — 별도 잣대(월 1회·120일 보유)라 위 표엔 없음 · 판정 전</a>
   </div>
-  <div class="foot">검증 결론 = 미리 정해 둔 40거래일 창에서 20일 보유 기준으로 한 번 내린 결론(날짜·창 병기, 채택 여부는 여기서만 정함). 지금 흐름 = 오늘까지 쌓인 "20일 뒤 순서를 얼마나 맞췄나"(100점 만점 환산)로 매일 바뀌는 참고치. 결론을 다시 내리려면 새 창을 미리 정해 두고 다시 봄. 이 표는 매수 추천이 아니며, 성적이 좋다고 바로 채택되지 않는다.</div>
+  <div class="foot">시험 기록 = 미리 정해 둔 40거래일 창에서 20일 보유 기준으로 한 번 내린 결론(날짜·창 병기, 채택 여부는 여기서만 정함). 지금 흐름 = 오늘까지 쌓인 "20일 뒤 순서를 얼마나 맞췄나"(100점 만점 환산)로 매일 바뀌는 참고치. 결론을 다시 내리려면 새 창을 미리 정해 두고 다시 봄. 이 표는 매수 추천이 아니며, 성적이 좋다고 바로 채택되지 않는다.</div>
 </div>
 <script>
 const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',le_a:'le.html',ls_t1:'_large_test.html'};
@@ -84,7 +84,10 @@ const fd=d=>d?(+d.slice(4,6))+'/'+(+d.slice(6)):'';
 function lab(m){
   const s=m.sealed, l=m.live||{};
   const when=s?((s.short.match(/\((.*)\)/)||[])[1]||''):'';
-  const v=s?`<b>${LABEL[s.v]||s.v}</b><br><span class="small">${s.v} · ${when}</span>`:(l.oos_days!=null&&l.oos_days<40?`<b>아직 결론 전</b><br><span class="small">검증 ${l.oos_days}/40일</span>`:`<b>아직 결론 전</b>`);
+  // [2026-10-03] '시험 기록' 표기 — 날짜가 붙은 한 번의 결과 + 그 뒤에 산 매수분의 성적(오늘 가격 기준·참고).
+  const td=s&&s.date?`${+s.date.slice(4,6)}/${+s.date.slice(6,8)}`:when.replace(/ ?정본/,'');
+  const af=m.after?`<br><span class="small">그 뒤 매수 ${m.after.n}일: 시장보다 <span class="${cls(m.after.exc_mean)}">${f1(m.after.exc_mean,'%p')}</span></span>`:'';
+  const v=s?`<b>${td} 시험: ${LABEL[s.v]||s.v}</b><br><span class="small">원래 용어 '${s.v}'</span>${af}`:(l.oos_days!=null&&l.oos_days<40?`<b>아직 결론 전</b><br><span class="small">검증 ${l.oos_days}/40일</span>`:`<b>아직 결론 전</b>`);
   return `<div class="lab">${v}</div>`;
 }
 function det(m){
@@ -100,7 +103,7 @@ function det(m){
 function nameCell(m){
   const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model];
   const t=p?`<a href="${p}"><b>${nm}</b> ${m.model}</a>`:`<b>${nm}</b> <span class="muted">${m.model}</span>`;
-  const vm=m.sealed?(LABEL[m.sealed.v]||m.sealed.v):'아직 결론 전';   // [2026-10-02] 폰에서는 '검증 결론' 열이 화면 밖이라 이름 아래에 한 줄로도 보인다
+  const vm=m.sealed?((m.sealed.date?`${+m.sealed.date.slice(4,6)}/${+m.sealed.date.slice(6,8)} 시험: `:'')+(LABEL[m.sealed.v]||m.sealed.v)):'아직 결론 전';   // [2026-10-02] 폰에서는 '검증 결론' 열이 화면 밖이라 이름 아래에 한 줄로도 보인다
   return `<td class="l wrap">${t}${m.retired?'<span class="role">은퇴</span>':''}<span class="more">▾</span><div class="vmini">${vm}</div></td>`;
 }
 function row(m){
@@ -109,7 +112,7 @@ function row(m){
   return `<tr class="main">${nm}<td class="hm">${f1(f.ret_mean)}</td><td class="muted hm">${f1(f.bench_mean)}</td><td class="mid ${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td class="${cls(f.exc_median)} hm">${f1(f.exc_median,'%p')}</td><td>${Math.round(f.win*100)}%</td><td>${f.n} <span class="small">(${f.blocks})</span></td><td class="l hm">${lab(m)}</td></tr>`+dr;
 }
 function render(D){
-  document.getElementById('asof').textContent='실제 저장 자료 · '+fd(D.asof)+' 종가 기준 · 참고 성적(검증 결론 아님)';
+  document.getElementById('asof').textContent='실제 저장 자료 · '+fd(D.asof)+' 종가 기준 · 참고 성적(시험 기록과 별개)';
   document.getElementById('cond').innerHTML=`시장별 상위 ${D.TOP} · 다음 거래일 종가 매수 · ${D.H}거래일 보유 · 비용 0(왕복 ${D.COST}%를 빼면 각 −${D.COST}%p) · 급등 제외 없음 · 배당 제외`;
   document.getElementById('cond2').innerHTML=`참고 구간은 겹치는 40일 창을 따로따로인 것처럼 다시 뽑은 것이라 실제보다 좁다 — 정식 결론은 미리 정한 절차(40일 묶음 단위·묶음 4개·2027-06, PREREGISTER_ops_adoption)에서만. 희석 배지 제외·시점 유니버스는 이 표에 미적용. 가격 없는 종목(ohlcv 미수집)은 바구니에서 빠짐. 생성 ${D.generated}`;
   const A=D.models.filter(m=>m.track!=='large'), B=D.models.filter(m=>m.track==='large');
@@ -121,12 +124,13 @@ function render(D){
   const ok=A.filter(m=>m.fix&&m.fix.n>=8).sort((a,b)=>b.fix.exc_mean-a.fix.exc_mean);
   let s='';
   if(ok.length){const t=ok[0], cmp=A.filter(m=>m.fix&&m.fix.n>=4), beat=cmp.filter(m=>m.fix.exc_mean>0).length;
-    s=`이 방식으로 사고팔았다면 <b>${t.name}</b>이(가) 시장 평균보다 평균 ${f1(t.fix.exc_mean,'%p')} 더 벌어 가장 앞섰습니다 — 다만 40일이 끝난 매수일은 ${t.fix.n}일이고 검증 결론은 '${t.sealed?(LABEL[t.sealed.v]||t.sealed.v):'아직 결론 전'}'입니다. 비교할 수 있는 ${cmp.length}개 모델 중 ${beat}개가 시장 평균을 이겼습니다.`;}
+    s=`이 방식으로 사고팔았다면 <b>${t.name}</b>이(가) 시장 평균보다 평균 ${f1(t.fix.exc_mean,'%p')} 더 벌어 가장 앞섰습니다 — 다만 40일이 끝난 매수일은 ${t.fix.n}일이고 시험 기록은 '${t.sealed?(LABEL[t.sealed.v]||t.sealed.v):'아직 결론 전'}'입니다. 비교할 수 있는 ${cmp.length}개 모델 중 ${beat}개가 시장 평균을 이겼습니다.`;}
   else s='아직 40일이 끝난 매수일이 8일 이상인 모델이 없습니다.';
-  document.getElementById('lead').innerHTML=s+`<small>모든 모델을 같은 매매 방식으로 잰 참고 성적입니다. 성적이 좋다고 바로 채택되지는 않으며, 채택 여부는 오른쪽 '검증 결론' 열의 미리 정한 절차로만 정합니다.</small>`;
+  document.getElementById('lead').innerHTML=s+`<small>모든 모델을 같은 매매 방식으로 잰 참고 성적입니다. 성적이 좋다고 바로 채택되지는 않으며, 채택 여부는 오른쪽 '시험 기록' 열의 미리 정한 절차로만 정합니다. 시험 기록은 그 날짜에 한 번 본 결과이고, '그 뒤 매수'는 그 뒤에 산 것을 오늘 가격으로 잰 참고값입니다.</small>`;
 }
 fetch('scoreboard.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(render)
   .catch(()=>{document.getElementById('lead').innerHTML='<span class="loading">데이터 없음 (scoreboard.json)</span>';document.getElementById('asof').textContent='';});
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>가격 4팩터 (px_a) · 테스트·관측</title>
+<title>가격4팩터 px_a</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -66,7 +66,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🧪 가격 4팩터 <span style="color:var(--accent)">px_a</span> · 테스트·관측</h1>
+  <h1>가격4팩터 <span style="color:var(--accent)">px_a</span></h1>
   <div class="sub">저변동60 + 저회전율20 + 저변동20 + 52주고근접 순위합 · 전체 상장(과매도 게이트 없음) · v3·large·lowvol·wu_a 와 별개 관측 모델</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -321,5 +321,6 @@ function renderHist(){
 fetch('hist/px_a.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});
 load();
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

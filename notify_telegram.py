@@ -270,6 +270,15 @@ MODEL_PAGE_V3 = {"v30": _PAGES + "filter.html", "lv_b": _PAGES + "lowvol.html", 
                  "lv_a": _PAGES + "lva.html", "ls_t1": _PAGES + "_large_test.html"}
 
 
+def _model_names():
+    """[2026-10-03] {모델 코드: '이름 코드'} — docs/scoreboard.json 의 이름(성적표 화면과 같은 표기). 못 읽으면 {}."""
+    try:
+        sb = json.loads((HERE / "docs" / "scoreboard.json").read_text(encoding="utf-8"))
+        return {r.get("model"): (r.get("name") or r.get("model")) for r in sb.get("models", []) if r.get("model")}
+    except Exception:
+        return {}
+
+
 def _scoreboard_row(mid, row):
     """성적표 한 줄(고정폭). row = docs/scoreboard.json 의 모델 행 또는 None. 순수 함수(tests/test_telegram_scoreboard.py).
     예: 'v30    +3.8%p · 38일 · 효과 확인됨' / 'px_a  결과 대기 · 결론 전'. 숫자는 리더보드 첫 화면과 같은 값."""
@@ -522,7 +531,7 @@ def _status_lines_v3():
             by = {r.get("model"): r for r in sb.get("models", [])}
             body = [x for x in (_scoreboard_row(mid, by.get(mid)) for mid in SHOW_V3) if x]
             if body and any(by.get(mid) for mid in SHOW_V3):
-                out.append(f"📊 <b>성적표</b> (상위{sb.get('TOP', 10)}·{sb.get('H', 40)}일 보유, 시장 평균 대비)")
+                out.append(f"📊 <b>성적표</b> (상위{sb.get('TOP', 10)}·{sb.get('H', 40)}일 보유, 시장 평균 대비 · 일수 = 끝난 매수일)")
                 out.append("<pre>" + "\n".join(body) + "</pre>")
                 sb_ok = True
         except Exception:
@@ -572,13 +581,14 @@ def _status_lines_v3():
 
         # ③ 표시 — 남은 일수가 같은 모델끼리 묶고 최대 3줄. 전체는 리더보드에.
         cal = []
+        _nm = _model_names()   # [2026-10-03] 코드만 적지 않고 '이름 코드'로(예: 가격4팩터 px_a)
         if reached:
-            cal.append("· " + " · ".join(m["model"] for m in reached) + " → <b>판정 가능</b>")
+            cal.append("· " + " · ".join(_nm.get(m["model"], m["model"]) for m in reached) + " → <b>판정 가능</b>")
         grp = {}
         for m in wait:
             grp.setdefault(need(m) - (m.get("oos_days") or 0), []).append(m["model"])
         for dd in sorted(grp)[:(2 if reached else 3)]:   # 판정 가능 줄이 있으면 합쳐 3줄
-            cal.append(f"· {' · '.join(grp[dd])} → {dd}거래일 뒤")
+            cal.append(f"· {' · '.join(_nm.get(x, x) for x in grp[dd])} → {dd}거래일 뒤")
         if cal:
             out.append("")
             out.append("📅 <b>판정 일정</b>")
@@ -725,7 +735,7 @@ def build_message():
         "",
         "🔎 " + " · ".join([f'<a href="{LEADERBOARD_URL}">성적표</a>']
                            + [f'<a href="{MODEL_PAGE_V3[m]}">{m} 목록</a>' for m in SHOW_V3 if m in MODEL_PAGE_V3]),
-        "<i>매수신호 아님 · 판정 정본은 VERDICT 문서</i>",
+        "<i>매수 추천이 아닙니다 · 모델을 검증하는 기록입니다</i>",
     ]
     return "\n".join(lines)
 

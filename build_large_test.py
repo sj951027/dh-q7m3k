@@ -207,7 +207,7 @@ def render(g, rid, ts, ic):
       if(c[0]==='px_then'||c[0]==='px_now') return `<td>${{Math.round(v).toLocaleString()}}</td>`; return `<td>${{v}}</td>`; }}).join('')+'</tr>').join(''); }}
   fetch('hist/ls_t1.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{{hist=h; tabs();}}).catch(()=>{{}});
 }})();
-</script></html>"""
+</script><script src="common.js" defer></script></html>"""
 
 
 def main():

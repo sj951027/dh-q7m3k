@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>모멘텀 대조 모델 (mom_a) · 판정 완료: 노이즈(8/29 정본)</title>
+<title>모멘텀 mom_a</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -68,7 +68,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🧪 모멘텀 대조 모델 <span style="color:var(--accent)">mom_a</span> · <span style="color:#9aa3b2">판정 완료: 노이즈(8/29 정본)</span></h1>
+  <h1>모멘텀 <span style="color:var(--accent)">mom_a</span> <small style="font-size:.55em;opacity:.75">대조 모델</small></h1>
   <div class="sub">20일선 이격 + 1개월 모멘텀 + 거래량 팽창 순위합 · lowvol 트랙의 대조 관측(별개 점수)</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -343,5 +343,6 @@ document.getElementById('foot').innerHTML =
   '20일선 위·1개월 상승·거래량 터질수록 점수↑ · 하락장에선 "덜 빠진 종목"으로 작동(§15) · 판정은 OOS 40거래일+상승장 표본';
 load('kospi');
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

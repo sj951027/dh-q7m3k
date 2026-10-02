@@ -487,7 +487,7 @@ tb.tHead.rows[1].querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{{
      if(isNaN(x))return 1; if(isNaN(y))return -1; return asc[i]?x-y:y-x;}}
    return asc[i]?x.localeCompare(y,'ko'):y.localeCompare(x,'ko');}});
  rows.forEach(r=>tb.tBodies[0].appendChild(r));}});
-</script></body></html>"""
+</script><script src="common.js" defer></script></body></html>"""
 
 
 def main():

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>저변동 원본 (lv_a) · 판정 완료: 노이즈(8/29 정본)</title>
+<title>저변동+반전 lv_a</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -70,7 +70,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🧪 저변동 원본 <span style="color:var(--accent)">lv_a</span> · <span style="color:#9aa3b2">판정 완료: 노이즈(8/29 정본)</span></h1>
+  <h1>저변동+반전 <span style="color:var(--accent)">lv_a</span> <small style="font-size:.55em;opacity:.75">저변동 원본 모델</small></h1>
   <div class="sub">저변동 + ROE 순위합 (반전 제외) · v3 과매도 스크리너와 별개 트랙</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -356,5 +356,6 @@ document.getElementById('foot').innerHTML =
   '실현변동성 낮을수록 / 지난주 더 빠졌을수록 / ROE 높을수록 점수↑ · 컬럼 클릭 시 정렬 · 18일 in-sample 가설';
 load('kospi');
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

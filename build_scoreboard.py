@@ -10,7 +10,7 @@
 읽기 전용(mode=ro) · 점수·판정·게이트 코드 미접촉 · 실패해도 비치명. 실행: python build_scoreboard.py
 연구용 원본: research/hold40_observe.py (2026-09-17 샘플). 이 파일이 운영본.
 """
-import json, sqlite3, sys
+import json, re, sqlite3, sys
 from datetime import datetime
 from pathlib import Path
 import numpy as np, pandas as pd
@@ -101,6 +101,18 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
                       "exc_mean": float(exn.mean()), "exc_median": float(np.median(exn)), "win": float((exn > 0).mean())}
     s = reg_json["sealed"].get(m["model"])
     out["sealed"] = ({"v": s["v"], "short": s.get("short", s["t"])} if s else None)
+    # [2026-10-03] '시험 기록' 표시용 — 시험 날짜(registry 의 short/t 에 적힌 M/D)와 그 뒤에 산 매수분의 성적.
+    #   그 뒤 매수분은 40일이 안 찬 것이 대부분이라 '오늘 가격 기준'(now)으로 잰다 — 참고값, 결론을 바꾸지 않는다.
+    if s:
+        _md = re.search(r"(\d{1,2})/(\d{1,2})", str(s.get("short") or s.get("t") or ""))
+        if _md:
+            _vd = f"{dates[-1][:4]}{int(_md.group(1)):02d}{int(_md.group(2)):02d}"
+            out["sealed"]["date"] = _vd
+            _da = dn[dn.date > _vd]
+            if len(_da) >= 4:
+                _ex = (_da.ret_now - _da.bench_now).values
+                out["after"] = {"n": int(len(_da)), "exc_mean": float(_ex.mean()), "win": float((_ex > 0).mean()),
+                                "first": _da.date.min(), "last": _da.date.max()}
     h20 = m.get("h20") or {}; h5 = m.get("h5") or {}
     out["live"] = {"ic20": h20.get("ic"), "n": h20.get("n"), "ci": h20.get("ci"), "ic5": h5.get("ic"), "oos_days": m.get("oos_days")}
     out["retired"] = bool(m.get("retired")) or m["model"] in reg_json.get("retired", {})

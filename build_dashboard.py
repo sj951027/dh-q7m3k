@@ -205,7 +205,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V3.0 KOSPI/KOSDAQ Screener</title>
+<title>오늘의 과매도 목록 (과매도 v30)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -544,11 +544,11 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 
 <header class="masthead">
   <div class="masthead-top">
-    <span>V3.0 · ALGORITHMIC SCREENING</span>
-    <span>GENERATED <span id="generated-at"></span></span>
+    <span>과매도 v30 · 평일 저녁 갱신</span>
+    <span>&nbsp;· 생성 <span id="generated-at"></span></span>
   </div>
   <h1 class="title">
-    Oversold Screener
+    오늘의 과매도 목록
     <span class="subtitle">KOSPI · KOSDAQ — 시장 레짐과 펀더멘털 기반 일일 과매도 종목 발굴</span>
   </h1>
 </header>
@@ -610,7 +610,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">02</span>레짐 점수 추이</h2>
-      <span class="meta">RECENT 30 RUNS</span>
+      <span class="meta">최근 30회</span>
     </div>
     <div class="chart-frame">
       <svg class="chart-svg" id="chart-kospi" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
@@ -620,7 +620,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">03</span>단골 종목 — 최근 30회 자주 등장</h2>
-      <span class="meta">APPEARANCES ≥ 2</span>
+      <span class="meta">2회 이상 나온 종목</span>
     </div>
     <div id="frequent-kospi"></div>
   </section>
@@ -641,7 +641,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">02</span>레짐 점수 추이</h2>
-      <span class="meta">RECENT 30 RUNS</span>
+      <span class="meta">최근 30회</span>
     </div>
     <div class="chart-frame">
       <svg class="chart-svg" id="chart-kosdaq" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
@@ -651,7 +651,7 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
   <section>
     <div class="section-head">
       <h2><span class="num">03</span>단골 종목 — 최근 30회 자주 등장</h2>
-      <span class="meta">APPEARANCES ≥ 2</span>
+      <span class="meta">2회 이상 나온 종목</span>
     </div>
     <div id="frequent-kosdaq"></div>
   </section>
@@ -659,14 +659,11 @@ footer .colophon { max-width: 600px; line-height: 1.7; }
 
 <footer>
   <div class="colophon">
-    Built with V3.0 Pipeline · Stage 1 Regime/FX/Foreign Flow ·
-    Stage 2 DART Risk Filter · Stage 3 Fundamentals & Momentum.
-    Data accumulated to SQLite · Snapshots in Parquet.
-    Not investment advice.
+    과매도 v30 — 1단계 과매도·시장 국면·환율·외국인 수급 · 2단계 공시 위험 거르기 · 3단계 실적·현금흐름·모멘텀.
   </div>
   <div>
-    <div>SOURCE · FDR · NAVER · DART · BOK</div>
-    <div>RUN @ <span id="footer-generated"></span></div>
+    <div>자료 출처 · FDR · NAVER · DART · BOK</div>
+    <div>생성 <span id="footer-generated"></span></div>
   </div>
 </footer>
 
@@ -755,9 +752,9 @@ function renderRegime(market) {
   const flowVal = meta.foreign_5d;
   el.innerHTML = `
     <div class="regime-cell">
-      <div class="regime-label">Market Regime</div>
+      <div class="regime-label">시장 국면</div>
       <div class="regime-value">${meta.market_regime || '—'}</div>
-      <div class="regime-detail">RUN_ID ${meta.run_id || '—'}</div>
+      <div class="regime-detail">기준일 ${meta.run_id || '—'}</div>
     </div>
     <div class="regime-cell">
       <div class="regime-label">레짐 가감점</div>
@@ -770,14 +767,14 @@ function renderRegime(market) {
       <div class="regime-detail">원/달러</div>
     </div>
     <div class="regime-cell">
-      <div class="regime-label">외인 5일 (억)</div>
-      <div class="regime-value small ${(flowVal||0) >= 0 ? 'pos' : 'neg'}">${fmt(flowVal, 0)}</div>
+      <div class="regime-label">외국인 5일 순매수</div>
+      <div class="regime-value small ${(flowVal||0) >= 0 ? 'pos' : 'neg'}">${(flowVal === null || flowVal === undefined) ? '—' : (Math.abs(flowVal) >= 10000 ? (flowVal/10000).toFixed(1) + '조' : Math.round(flowVal).toLocaleString() + '억')}</div>
       <div class="regime-detail">시총상위 10종목</div>
     </div>
     <div class="regime-cell">
       <div class="regime-label">발굴 종목</div>
       <div class="regime-value small">${meta.stage1_count || 0}</div>
-      <div class="regime-detail">Stage 1 통과</div>
+      <div class="regime-detail">1단계(과매도) 통과</div>
     </div>
   `;
 }
@@ -933,7 +930,7 @@ document.querySelectorAll('.market-tab').forEach(btn => {
 
 renderAll();
 </script>
-
+<script src="common.js" defer></script>
 </body>
 </html>
 """

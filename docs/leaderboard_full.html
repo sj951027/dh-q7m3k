@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>모델 리더보드 · 판정 현황</title>
+<title>검증 자료 — 모델 판정 현황 전체</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -57,7 +57,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>📊 모델 리더보드 — 검증 자료 전체</h1>
+  <h1>📊 검증 자료 — 모델 판정 현황 전체</h1>
   <!-- [2026-09-18] 새 첫 화면(모델 성적표) 안내 -->
   <div style="background:var(--card);border:1px solid var(--accent,#5aa9ff);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13.5px">📋 첫 화면은 <a href="leaderboard.html" style="color:var(--accent,#5aa9ff);font-weight:600">모델 성적표</a>(매일 상위 10·40거래일 보유·시장 평균 대비)로 옮겼습니다. 이 페이지는 순위 실력(IC)·따라사기·검증 자료 전체(상세).</div>
   <div class="sub" id="meta">leaderboard.json 로딩 중…</div>
@@ -475,5 +475,6 @@
     }).catch(()=>{});
 })();
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

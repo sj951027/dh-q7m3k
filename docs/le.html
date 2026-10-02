@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>저점탈출 (le_a) · 노이즈(9/13 정본) · 관측</title>
+<title>저점탈출 le_a</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
@@ -67,7 +67,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>저점탈출 <span style="color:var(--accent)">le_a</span> · 관측 <small style="font-size:.55em;opacity:.75">(§11 판정: 노이즈 · 9/13 정본)</small></h1>
+  <h1>저점탈출 <span style="color:var(--accent)">le_a</span></h1>
   <div class="sub">52주 저점 대비 상승(dlow52↑) + OBV 미매집(obv63↓) + 유동성(amt20↑) 순위합 · 전체 상장(과매도 게이트 없음) · v3·large·lowvol·sv_a 와 별개 관측 모델 · 표시 전용(2026-09-24 열람용 배선)</div>
   <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
   <script>
@@ -349,5 +349,6 @@ function renderHist(){
 fetch('hist/le_a.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});
 load();
 </script>
+<script src="common.js" defer></script>
 </body>
 </html>

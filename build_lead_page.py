@@ -193,7 +193,7 @@ def main():
 <div class="tablewrap"><table><thead><tr><th>#</th><th>코드</th><th>종목</th><th>시장</th><th>베타60</th><th>신고가 후 일수</th><th>동행그룹</th><th>거래대금20</th><th>{head_ret}</th><th>같은 시장 지수 대비</th></tr></thead><tbody>{tr}</tbody></table></div>""")
     parts.append(daily_section)
     parts.append(f'<div class="foot">잣대·라벨 규칙: PREREGISTER_ld_a.md §3 · 적재: lead_observe.py(월 첫 거래일) · 평가: lead_eval.py · 이 페이지는 표시 전용(점수·판정 무관). 비용 왕복 {COST*100:.1f}%, 종가 체결 가정, 진입 불가는 현금, 거래정지는 마지막 관측가. 한 앵커의 수익은 독립 표본이 아니라 그 반년 장세 하나. 생성 {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>')
-    page = f'<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>주도주 관측 (ld_a) · 관측 전용</title><style>{CSS}</style></head><body><div class="wrap">{"".join(parts)}</div></body></html>'
+    page = f'<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>주도주 관측 (ld_a) · 관측 전용</title><style>{CSS}</style></head><body><div class="wrap">{"".join(parts)}</div><script src="common.js" defer></script></body></html>'
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as fh: fh.write(page)
     print(f"  ✓ docs/lead.html — 앵커 {len(blocks)}개(마감 {n_closed}) · 기준일 {today}")
