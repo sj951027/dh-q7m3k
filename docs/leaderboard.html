@@ -77,7 +77,7 @@
 </div>
 <script>
 const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',le_a:'le.html',ls_t1:'_large_test.html'};
-const LABEL={'유의':'효과 확인됨','기움':'좋아 보이지만 확정 아님','노이즈':'차이 없음','역작동':'반대로 감 (점수 높을수록 나쁨)'};
+const LABEL={'유의':'효과 확인됨','기움':'확정 못 함','노이즈':'차이 없음','역작동':'반대로 감 (점수 높을수록 나쁨)'};
 const f1=(v,u='%')=>v==null?'—':(v>0?'+':'')+v.toFixed(1)+u;
 const cls=v=>v==null?'':v>0?'pos':v<0?'neg':'';
 const fd=d=>d?(+d.slice(4,6))+'/'+(+d.slice(6)):'';

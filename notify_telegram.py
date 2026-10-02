@@ -263,7 +263,7 @@ REF_MODEL_V3 = "v30"                    # 참고(챔피언)
 # [2026-09-30] 알림에 보여줄 모델 순서(registry "show"). live 가 비면(운용 모델 없음) '← 운용 중' 표시를 붙이지 않는다.
 SHOW_V3 = ["v30", "le_a", "lv_b"]      # 폴백 표시 순서([2026-10-02] le_a 추가 — 사용자 결정)
 # [2026-10-02] 성적표 줄에 쓰는 쉬운 말(리더보드 첫 화면과 같은 뜻) · 모델별 목록 페이지(맨 아래 링크).
-PLAIN_VERDICT_V3 = {"유의": "효과 확인됨", "기움": "확정 아님", "노이즈": "차이 없음", "역작동": "반대로 감"}
+PLAIN_VERDICT_V3 = {"유의": "효과 확인됨", "기움": "확정 못 함", "노이즈": "차이 없음", "역작동": "반대로 감"}
 _PAGES = "https://sj951027.github.io/dh-q7m3k/"
 MODEL_PAGE_V3 = {"v30": _PAGES + "filter.html", "lv_b": _PAGES + "lowvol.html", "le_a": _PAGES + "le.html",
                  "sv_a": _PAGES + "sv.html", "px_a": _PAGES + "px.html", "mom_a": _PAGES + "mom.html",

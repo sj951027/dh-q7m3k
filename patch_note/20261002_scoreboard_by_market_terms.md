@@ -33,3 +33,11 @@
 ## 영향 범위
 - 판정·점수 0-diff. `scoreboard.json` 을 읽는 곳(성적표 화면·텔레그램·PTW)은 새 키를 무시하거나 쓰지 않는다 — 기존 키는 그대로.
 - PTW '모델 성적' 표에 시장별 줄을 넣는 것은 아직 안 했다(별도).
+
+## 추가 — 사용자 결정 3건 반영 (2026-10-03 · 2026.10.6 · 판정·점수 0-diff)
+- **'기움'의 쉬운 말 → "확정 못 함"**: 성적표(`docs/leaderboard.html` LABEL) · 텔레그램 성적표 줄(`PLAIN_VERDICT_V3`) · 테스트 2줄.
+  종전 "좋아 보이지만 확정 아님"은 결론을 낸 그때의 말인데 지금도 좋아 보인다는 뜻으로 읽혔다(lv_b 40일 성적 −1.7%p, sv_a −3.8%p).
+- **"표시 기준" 표기 삭제**: `docs/lowvol.html`(제목·머리글·안내·꼬리말) · `docs/lva.html` 2곳 · `docs/leaderboard_full.html`(lv_b 설명·요약 줄, ★ 는 검증 결론 '유의'인 v30 만) · `docs/models_registry.json`(lv_b·sv_a 의 `t` 문구).
+- **버킷 이름(BUY/WAIT/…)은 영어 그대로** — 변경 없음. `DISPLAY_TERMS.md` 에 결정 기록.
+- 검증: `python tests/run_tests.py` 통과 · registry json 파싱 확인 · 텔레그램 미리보기(전송 없음).
+- 아직 안 한 것: `DISPLAY_TERMS.md` 의 나머지(이름 통일·약어 풀이·날짜 표기·안내문·공통 메뉴)를 전 페이지에 적용하는 일, "결론 줄 + 그 뒤 성적 줄" 나눠 적기.

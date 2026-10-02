@@ -78,7 +78,7 @@
   <h2>② 확신 — 판정 진행 <span class="track">(현역만 · h=20d 주지표 · 데이터: leaderboard.json)</span></h2>
   <div class="warn" id="rulebox"><b>§11 판정 규칙</b> — OOS 40거래일 미만은 숫자가 좋아 보여도 무조건 <b>노이즈</b>(표본 부족 기본값). 트랙 간 IC 절대값 비교 금지(유니버스가 다름). 판정 정본은 VERDICT 문서 — 이 페이지는 자동 계산 라벨(유의/기움/노이즈/역작동)을 보이지 않고 IC·95% 구간 숫자만 보인다(2026-09-22). '상태'·'정본 판정' 칸이 결론.</div>
   <div class="card"><table class="easy" id="active"><thead><tr><th>모델</th><th>트랙</th><th>판정까지</th><th class="num">20일 뒤 시장보다</th><th class="num">IC 양수 비율</th><th class="num">순위 정확도 IC</th><th>확신</th><th>상태</th><th>한 줄 번역</th></tr></thead><tbody><tr><td colspan="9" class="err">로딩 중…</td></tr></tbody></table>
-  <div class="foot">확신(자동·숫자 해석만): ●●● = 95% 구간이 0 위 또는 0 아래 · ●● = 평균 양(+)인데 구간이 0을 걸침 · ● = 40일 미만 또는 구분 안 됨. 'IC 양수 비율' = 앵커 거래일별 IC 가 양수였던 날의 비율(시장을 이긴 비율이 아님). ★ = 화면 표시 기준 모델. 상태의 '정본'은 VERDICT 문서에서 봉인한 판정 — 이후 표본이 더 쌓여 지금 IC·라벨이 달라져도 결정은 정본으로.</div>
+  <div class="foot">확신(자동·숫자 해석만): ●●● = 95% 구간이 0 위 또는 0 아래 · ●● = 평균 양(+)인데 구간이 0을 걸침 · ● = 40일 미만 또는 구분 안 됨. 'IC 양수 비율' = 앵커 거래일별 IC 가 양수였던 날의 비율(시장을 이긴 비율이 아님). ★ = 검증 결론이 '유의'인 모델. 상태의 '정본'은 VERDICT 문서에서 봉인한 판정 — 이후 표본이 더 쌓여 지금 IC·라벨이 달라져도 결정은 정본으로.</div>
   <details class="sec"><summary>판정 끝난 모델 (노이즈·역작동 — 적재는 유지, 가중 0) 펼치기</summary><table class="easy" id="done"><thead><tr><th>모델</th><th>트랙</th><th class="num">20일 뒤 시장보다</th><th class="num">IC</th><th>정본 판정</th><th>한 줄</th></tr></thead><tbody></tbody></table></details>
   <details class="sec"><summary id="retsum">은퇴 모델 (적재 중지·행 보존) 펼치기</summary><table class="easy" id="retired"><thead><tr><th>모델</th><th>트랙</th><th class="num">20일 뒤 시장보다</th><th class="num">IC</th><th>비고</th></tr></thead><tbody></tbody></table></details>
   <div class="foot" id="gates"></div></div>
@@ -188,13 +188,13 @@
     sm_a:'초소형 sm_a',sv_a:'공매도비중 sv_a',le_a:'저점탈출 le_a',qs_a:'조용한강자 qs_a',px_a:'가격4팩터 px_a',ls_t1:'대형밸류 ls_t1'};
   const nm=(m)=>NAME[m]?NAME[m].replace(m,'').trim()+' '+mlink(m):mlink(m);
   const TRACK={v3:'과매도',lowvol:'저변동',wu:'전체종목',large:'대형가치'};
-  const STAR=new Set(['v30','lv_b']);   // 화면 표시 기준 모델(§27-3)
+  const STAR=new Set(['v30']);   // [2026-10-03] ★ = 검증 결론이 '유의'인 모델만(lv_b 는 9/30 부터 운용 안 함 — '표시 기준' 표기 삭제)
 
   // ---- 정본 판정(VERDICT 문서에서 봉인) — 판정·은퇴 시 갱신. 표시 전용(json 무변경) ----
   //   자동 라벨(json.verdict)은 표본이 계속 쌓여 흔들리므로, 결정은 정본으로 읽는다(2026-09-04 사용자 피드백).
   let SEALED={
     v30:{v:'유의',t:'유의 — 챔피언 유지(8/09 정본, 급락→반등 창)',cls:'b-sig',doc:'VERDICT_20260809.md'},
-    lv_b:{v:'기움',t:'기움 — 표시 기준 유지(8/29 정본)',cls:'b-lean',doc:'VERDICT_20260829_lowvol.md'},
+    lv_b:{v:'기움',t:'기움(8/29 정본)',cls:'b-lean',doc:'VERDICT_20260829_lowvol.md'},
     lv_a:{v:'노이즈',t:'노이즈(8/29 정본)',cls:'b-noise'}, mom_a:{v:'노이즈',t:'노이즈(8/29 정본)',cls:'b-noise'},
     sm_a:{v:'노이즈',t:'노이즈(9/01 정본)',cls:'b-noise'},
     lv_a3:{v:'노이즈',t:'노이즈(8/29)',cls:'b-noise'}, lv_short:{v:'노이즈',t:'노이즈(8/29)',cls:'b-noise'},
@@ -298,7 +298,7 @@
       const v30=all.find(m=>m.model==='v30');
       const champ='🏆 <b>지금 기준</b> — 챔피언 <b>v30</b> <span class="badge b-sig">유의(8/09 정본)</span>'
         +(v30?' <span class="ci">(OOS '+v30.oos_days+'일 · 지금 누적 h20 IC '+(v30.h20&&v30.h20.ic!=null?(v30.h20.ic>0?'+':'')+v30.h20.ic.toFixed(3):'-')+')</span>':'')
-        +' · 저변동 표시 기준 <b>lv_b</b> <span class="badge b-lean">기움(8/29 정본)</span>';
+        +' · 저변동 <b>lv_b</b> <span class="badge b-lean">기움(8/29 정본)</span>';
       const wait=act.filter(m=>(m.oos_days||0)<need(m)).map(m=>({m:m.model,t:m.track,d:need(m)-(m.oos_days||0)})).sort((a,b)=>a.d-b.d);
       const cal='📅 <b>판정 캘린더</b> — '+(wait.map(x=>'<b>'+x.m+'</b> D-'+x.d+(x.t==='large'?'<span class="ci">(h60)</span>':'')).join(' · ')||'대기 중인 모델 없음');
       document.getElementById('summary').innerHTML=champ+'<br>'+cal; document.getElementById('summary').style.display='block';
