@@ -1,4 +1,4 @@
-# MODELS_LEDGER — 전 트랙 모델 원장 (2026-09-04 기준)
+# MODELS_LEDGER — 전 트랙 모델 원장 (2026-09-24 기준 · 10/02 문구 정리)
 
 > 용도: 세션 시작용 한눈 인덱스(프로젝트 지식 업로드용). **정본은 각 PREREGISTER_*.md(골대)와
 > VERDICT_*.md(판정), 등록일 단일소스는 checkup.py REG_DATE.** 이 문서와 정본이 어긋나면 정본이 이긴다.
@@ -63,6 +63,7 @@
 | lv_c | −0.0962 | [−0.1268, −0.0637] | **역작동(Bonferroni CI까지 음수)** |
 | sm_a / mom_b | — | — | 판정 보류(OOS 39 / 27) |
 
+- 9/13 종목코드 교정 후 값(VERDICT_20260829_lowvol.md 각주 ④ 정본): lv_c −0.0929 [−0.123, −0.061] · lv_d −0.0673 · mom_a +0.0151 — 라벨은 전부 불변.
 - 짝비교: **lv_b > lv_a는 '우위 기움'**(iid CI<0이나 주블록 감도에서 CI 0 걸침 — VERDICT 각주 ③).
   주블록에서도 생존하는 lv_b 우위는 mom_a·lv_d·lv_c 3건. 본문 CI는 iid 부트스트랩(각주 ③ 명시).
 - 확정 처분(8/29): 표시 lv_b 유지·가중 0, 역작동 3종 **적재 유지**(분모 축소 부작용 고려),
@@ -97,4 +98,4 @@
 ## 관측 팩터 레이어 (점수 미반영 — 국면 전환 감시)
 stage3: smartmoney·roe·buyback·vol비율·realized_vol 등(§11 E1 수확 대기).
 신규 후보(§28 스캔): va_ep(1/PER)·fl_inst20n(기관수급)·sh_credit_rate — 등록은 별도 결정.
-데이터 갭: consensus_daily 2일치(적재 점검 필요), valuation_daily 7/6~.
+데이터 갭: consensus_daily 주간 스냅샷 10개(7/27~9/28, 10/02 실측 — 9/17부터 새 API), valuation_daily 7/6~.
