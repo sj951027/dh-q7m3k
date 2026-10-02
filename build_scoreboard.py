@@ -48,7 +48,9 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
     N = len(dates); S = load_scores(con, m); reg = m["reg_date"]; is_large = m["track"] == "large"
     keep = lb.dedupe_by_anchor(S, didx, excl, reg=reg)
     rows = []
-    for rid in keep:
+    # [2026-10-02] keep 은 집합이라 도는 순서가 실행마다 달랐다 → 평균은 같아도 참고 구간(부트스트랩)이 매번 조금씩 달라졌다.
+    #   날짜순으로 고정해 같은 자료면 같은 값이 나오게 한다(평균·이긴 날 등 다른 값은 순서와 무관 — 불변).
+    for rid in sorted(keep):
         t = lb.anchor(rid, didx)
         if t is None or t + 1 >= N: continue
         e = close.iloc[t + 1]; done = t + 1 + H < N
@@ -56,6 +58,7 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
         r_now = close.iloc[-1] / e - 1
         g = S[S.run_id == rid].dropna(subset=["score"])
         fx, bf, nw, bn = [], [], [], []
+        pm = {}   # [2026-10-02] 시장별 초과(%p) — 상세 줄 표시용(첫 줄 숫자·검증 결론은 종전대로 두 시장 평균)
         for mkt, gm in g.groupby("market"):
             top = gm.nlargest(TOP, "score").ticker
             uni = gm.ticker if is_large else mk.index[mk == mkt]
@@ -63,10 +66,12 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
             if len(a) >= MIN_BASKET: nw.append(a.mean() * 100); bn.append(b.mean() * 100)
             if done:
                 a = r_fix.reindex(top).dropna(); b = r_fix.reindex(uni).dropna()
-                if len(a) >= MIN_BASKET: fx.append(a.mean() * 100); bf.append(b.mean() * 100)
+                if len(a) >= MIN_BASKET:
+                    fx.append(a.mean() * 100); bf.append(b.mean() * 100)
+                    pm[str(mkt)] = float(a.mean() * 100 - b.mean() * 100)
         rows.append({"date": dates[t], "done": bool(done and fx), "ret40": np.mean(fx) if fx else None, "bench40": np.mean(bf) if bf else None,
-                     "ret_now": np.mean(nw) if nw else None, "bench_now": np.mean(bn) if bn else None})
-    df = pd.DataFrame(rows, columns=["date", "done", "ret40", "bench40", "ret_now", "bench_now"])   # 앵커 0개(등록 직후)여도 컬럼 보장
+                     "ret_now": np.mean(nw) if nw else None, "bench_now": np.mean(bn) if bn else None, "pm": pm})
+    df = pd.DataFrame(rows, columns=["date", "done", "ret40", "bench40", "ret_now", "bench_now", "pm"])   # 앵커 0개(등록 직후)여도 컬럼 보장
     out = {"model": m["model"], "name": NAME.get(m["model"], m["model"]), "track": m["track"], "reg_date": reg, "n_anchors": int(len(df))}
     d = df[df.done.astype(bool)]
     if len(d):
@@ -74,6 +79,13 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
         out["fix"] = {"n": int(len(d)), "blocks": round(len(d) / H, 1), "ret_mean": float(d.ret40.mean()), "ret_median": float(d.ret40.median()), "bench_mean": float(d.bench40.mean()),
                       "exc_mean": float(ex.mean()), "exc_median": float(np.median(ex)), "win": float((ex > 0).mean()), "first": d.date.min(), "last": d.date.max(),
                       "ci_ref": boot(ex) if len(d) >= 4 else None, "worst": float(ex.min()), "best": float(ex.max())}
+        # [2026-10-02] 시장별 분해(참고) — 그 시장 바스켓이 성립한 매수일만. 4일 미만이면 싣지 않는다. 판정은 나누지 않는다.
+        bm = {}
+        for mkt in ("kospi", "kosdaq"):
+            v = np.array([p[mkt] for p in d.pm if isinstance(p, dict) and mkt in p], float)
+            if len(v) >= 4:
+                bm[mkt] = {"n": int(len(v)), "exc_mean": float(v.mean()), "win": float((v > 0).mean())}
+        out["fix"]["by_market"] = bm
     else:
         out["fix"] = None
     t_reg = next((i for i, dd in enumerate(dates) if dd >= reg), None)

@@ -92,7 +92,10 @@ function det(m){
   const a=s?`검증 결론은 ${m.verdict_window||''} 창을 20일 보유 기준으로 본 것(원래 용어 '${s.v}').`:`검증 창 ${m.verdict_window||''} 진행 중.`;
   const o=l.ic20!=null?`지금 흐름(참고): 20일 뒤 순서 맞춤 ${f1(l.ic20*100,'')}/100, ${l.n}일치${l.ic5!=null?' · 5일 뒤 '+f1(l.ic5*100,''):''}.`:'지금 흐름: 아직 20일 지난 자료 없음.';
   const b=f&&f.ci_ref?` 참고 구간 ${f1(f.ci_ref[0],'')}~${f1(f.ci_ref[1],'%p')}, 가장 나빴던 날 ${f1(f.worst,'%p')}, 가장 좋았던 날 ${f1(f.best,'%p')} (${fd(f.first)}~${fd(f.last)} 매수).`:'';
-  return `${a} ${o}${b} 시작 ${fd(m.reg_date)}.`;
+  // [2026-10-02] 시장별 분해(참고) — 첫 줄 숫자와 검증 결론은 두 시장을 합친 기준 그대로.
+  const bm=f&&f.by_market?f.by_market:{}, mk=[['kospi','KOSPI'],['kosdaq','KOSDAQ']].filter(x=>bm[x[0]]);
+  const c=mk.length?`<br>시장별(참고 · 결론은 나누지 않음): ${mk.map(x=>`${x[1]} ${f1(bm[x[0]].exc_mean,'%p')} · 이긴 날 ${Math.round(bm[x[0]].win*100)}% · ${bm[x[0]].n}일`).join(' / ')}`:'';
+  return `${a} ${o}${b} 시작 ${fd(m.reg_date)}.${c}`;
 }
 function nameCell(m){
   const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model];
