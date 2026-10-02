@@ -61,10 +61,12 @@ def build_message():
         _ret_fb = {"v31a", "v31b", "v31c", "v31d", "v31f", "v31g",
                    "lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "wu_a", "wu_b"}
         # [2026-09-06] docs/models_registry.json(단일 소스)이 있으면 그 은퇴 목록으로 대체(비치명).
+        _sealed = set()   # [2026-10-02] 정본 판정이 있는 모델(자동 라벨 변화 줄에서 제외)
         try:
             _reg = json.loads((HERE / "docs" / "models_registry.json").read_text(encoding="utf-8"))
             if _reg.get("retired"):
                 _ret_fb = set(_reg["retired"].keys())
+            _sealed = set((_reg.get("sealed") or {}).keys())
         except Exception:
             pass
         for m in lb.get("models", []):
@@ -130,8 +132,10 @@ def build_message():
                     nd = 60 if x.get("t") == "large" else min_oos
                     if (q.get("o") or 0) < nd <= (x.get("o") or 0):
                         ev.append(f"{mid} 판정 표본 {nd}일 도달")
-                    elif q.get("v") != x.get("v"):
-                        ev.append(f"{mid} 자동 라벨 {q.get('v')}→{x.get('v')}(참고)")
+                    elif q.get("v") != x.get("v") and mid not in _sealed:
+                        # [2026-10-02] 정본 판정이 끝난 모델의 '자동 라벨' 변화는 싣지 않는다(일간 알림과 같은 규칙) —
+                        #   "v30 자동 라벨 기움→노이즈"가 정본(유의)과 반대로 읽혔다. 자동 라벨은 매일 바뀌는 참고치.
+                        ev.append(f"{mid} 지금 흐름 {q.get('v')}→{x.get('v')}(참고·판정 아님)")
             lines.append("")
             lines.append("🔔 <b>이번 주 달라진 것</b>: " + (" · ".join(ev) if ev else "없음"))
         except Exception:

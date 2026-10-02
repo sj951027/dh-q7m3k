@@ -30,8 +30,10 @@
   .foot{color:var(--sub);font-size:12px;margin-top:10px;line-height:1.6} .foot a{color:var(--blue)}
   .links{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0} .links a{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--txt);text-decoration:none;font-size:13px}
   .loading{color:var(--sub);text-align:center;padding:20px}
-  .vmini{display:none}
-  @media(max-width:700px){.vmini{display:block;font-size:11px;color:var(--sub);font-weight:400;margin-top:2px} .wrap{padding:12px 10px} th,td{padding:7px 5px;font-size:12px} .mid{font-size:14px} h1{font-size:19px}}
+  .vmini{display:none} .hmnote{display:none}
+  /* [2026-10-02] 폰: 성적표 두 표는 4열만(모델·더 번 수익·이긴 날·매수한 날) — 나머지 열은 숨기고 결론은 이름 아래 한 줄. 행을 누르면 상세가 나온다. */
+  @media(max-width:700px){#tblA,#tblB{min-width:0} #tblA .hm,#tblB .hm{display:none} #tblA td.wrap,#tblB td.wrap{min-width:0} #tblA td[colspan],#tblB td[colspan]{white-space:normal} .hmnote{display:block;font-size:11px;color:var(--sub);margin:6px 0 0}
+    .vmini{display:block;font-size:11px;color:var(--sub);font-weight:400;margin-top:2px} .wrap{padding:12px 10px} th,td{padding:7px 5px;font-size:12px} .mid{font-size:14px} h1{font-size:19px}}
 </style>
 </head>
 <body><div class="wrap">
@@ -45,14 +47,15 @@
     <h2>트랙 A · 과매도 / 저변동 / 전체종목</h2>
     <div class="h"><span>수익은 평균(%) · 더 번 수익은 %p · 이긴 날은 매수일 중 비율 · 매수한 날 괄호는 40일 묶음 수 · 행을 누르면 검증 창과 지금 흐름</span><span>정렬: 시장보다 더 번 수익</span></div>
     <table id="tblA"><thead><tr>
-      <th class="l">모델</th><th>40일 수익</th><th>시장 평균</th><th>시장보다<br>더 번 수익</th><th>중앙값</th><th>시장을<br>이긴 날</th><th>매수한<br>날</th><th class="l">검증 결론</th>
+      <th class="l">모델</th><th class="hm">40일 수익</th><th class="hm">시장 평균</th><th>시장보다<br>더 번 수익</th><th class="hm">중앙값</th><th>시장을<br>이긴 날</th><th>매수한<br>날</th><th class="l hm">검증 결론</th>
     </tr></thead><tbody></tbody></table>
+    <p class="hmnote">폰에서는 40일 수익·시장 평균·중앙값 열을 숨기고 검증 결론을 모델 이름 아래에 적었어요. 화면을 가로로 돌리면 전부 보여요.</p>
   </div>
   <div class="card">
     <h2>트랙 B · 대형 가치 (별도 유니버스 — 트랙 A 와 숫자 비교 금지)</h2>
     <div class="h"><span>비교 = 그날 대형 후보군(large_final 전체) 평균</span></div>
     <table id="tblB"><thead><tr>
-      <th class="l">모델</th><th>40일 수익</th><th>후보군 평균</th><th>후보군보다<br>더 번 수익</th><th>중앙값</th><th>이긴 날</th><th>매수한<br>날</th><th class="l">검증 결론</th>
+      <th class="l">모델</th><th class="hm">40일 수익</th><th class="hm">후보군 평균</th><th>후보군보다<br>더 번 수익</th><th class="hm">중앙값</th><th>이긴 날</th><th>매수한<br>날</th><th class="l hm">검증 결론</th>
     </tr></thead><tbody></tbody></table>
   </div>
 
@@ -99,8 +102,8 @@ function nameCell(m){
 }
 function row(m){
   const f=m.fix, nm=nameCell(m), dr=`<tr class="det" hidden><td colspan="8">${det(m)}</td></tr>`;
-  if(!f||f.n<4) return `<tr class="main">${nm}<td colspan="6" class="l">${m.retired?`<span class="small">새 리스트 중단 · 기록용 (40일 끝난 매수일 ${f?f.n:0}일)</span>`:`<span class="wait">결과 기다리는 중</span> <span class="small">첫 결과 ${m.first_done_eta?'~'+m.first_done_eta:'곧'}</span>`}</td><td class="l">${lab(m)}</td></tr>`+dr;
-  return `<tr class="main">${nm}<td>${f1(f.ret_mean)}</td><td class="muted">${f1(f.bench_mean)}</td><td class="mid ${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td class="${cls(f.exc_median)}">${f1(f.exc_median,'%p')}</td><td>${Math.round(f.win*100)}%</td><td>${f.n} <span class="small">(${f.blocks})</span></td><td class="l">${lab(m)}</td></tr>`+dr;
+  if(!f||f.n<4) return `<tr class="main">${nm}<td colspan="6" class="l">${m.retired?`<span class="small">새 리스트 중단 · 기록용 (40일 끝난 매수일 ${f?f.n:0}일)</span>`:`<span class="wait">결과 기다리는 중</span> <span class="small">첫 결과 ${m.first_done_eta?'~'+m.first_done_eta:'곧'}</span>`}</td><td class="l hm">${lab(m)}</td></tr>`+dr;
+  return `<tr class="main">${nm}<td class="hm">${f1(f.ret_mean)}</td><td class="muted hm">${f1(f.bench_mean)}</td><td class="mid ${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td class="${cls(f.exc_median)} hm">${f1(f.exc_median,'%p')}</td><td>${Math.round(f.win*100)}%</td><td>${f.n} <span class="small">(${f.blocks})</span></td><td class="l hm">${lab(m)}</td></tr>`+dr;
 }
 function render(D){
   document.getElementById('asof').textContent='실제 저장 자료 · '+fd(D.asof)+' 종가 기준 · 참고 성적(검증 결론 아님)';
