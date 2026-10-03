@@ -44,6 +44,20 @@ def load_scores(con, m):
     return S
 
 
+def _eta(last_ymd, n_days):
+    """last_ymd 에서 n_days 거래일 뒤 날짜(M/D). 주말과 skip_dates.txt(휴장일)만 뺀다 — 공휴일 달력이 없으니 근사."""
+    skips = set()
+    try:
+        skips = {l.strip() for l in (HERE / "skip_dates.txt").read_text(encoding="utf-8").splitlines() if l.strip()}
+    except Exception:
+        pass
+    d = datetime.strptime(last_ymd, "%Y%m%d"); k = 0
+    while k < n_days:
+        d += pd.Timedelta(days=1)
+        if d.weekday() < 5 and d.strftime("%Y%m%d") not in skips: k += 1
+    return d.strftime("%m/%d")
+
+
 def observe(con, m, close, mk, dates, didx, excl, reg_json):
     N = len(dates); S = load_scores(con, m); reg = m["reg_date"]; is_large = m["track"] == "large"
     keep = lb.dedupe_by_anchor(S, didx, excl, reg=reg)
@@ -69,9 +83,11 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
                 if len(a) >= MIN_BASKET:
                     fx.append(a.mean() * 100); bf.append(b.mean() * 100)
                     pm[str(mkt)] = float(a.mean() * 100 - b.mean() * 100)
+                    pm["_" + str(mkt)] = (float(a.mean() * 100), float(b.mean() * 100))   # [2026-10-03] 시장별 바스켓·시장 수익(표시용)
         rows.append({"date": dates[t], "done": bool(done and fx), "ret40": np.mean(fx) if fx else None, "bench40": np.mean(bf) if bf else None,
-                     "ret_now": np.mean(nw) if nw else None, "bench_now": np.mean(bn) if bn else None, "pm": pm})
-    df = pd.DataFrame(rows, columns=["date", "done", "ret40", "bench40", "ret_now", "bench_now", "pm"])   # 앵커 0개(등록 직후)여도 컬럼 보장
+                     "ret_now": np.mean(nw) if nw else None, "bench_now": np.mean(bn) if bn else None, "pm": pm,
+                     "t": t, "tops": {str(mkt): list(gm.nlargest(TOP, "score").ticker) for mkt, gm in g.groupby("market")}})   # [2026-10-03] 꾸준함 계산용
+    df = pd.DataFrame(rows, columns=["date", "done", "ret40", "bench40", "ret_now", "bench_now", "pm", "t", "tops"])   # 앵커 0개(등록 직후)여도 컬럼 보장
     out = {"model": m["model"], "name": NAME.get(m["model"], m["model"]), "track": m["track"], "reg_date": reg, "n_anchors": int(len(df))}
     d = df[df.done.astype(bool)]
     if len(d):
@@ -85,13 +101,15 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
             v = np.array([p[mkt] for p in d.pm if isinstance(p, dict) and mkt in p], float)
             if len(v) >= 4:
                 bm[mkt] = {"n": int(len(v)), "exc_mean": float(v.mean()), "win": float((v > 0).mean())}
+                rb = np.array([p["_" + mkt] for p in d.pm if isinstance(p, dict) and ("_" + mkt) in p], float)
+                if len(rb): bm[mkt]["ret_mean"] = float(rb[:, 0].mean()); bm[mkt]["bench_mean"] = float(rb[:, 1].mean())
         out["fix"]["by_market"] = bm
     else:
         out["fix"] = None
     t_reg = next((i for i, dd in enumerate(dates) if dd >= reg), None)
     if t_reg is not None:
         need = (t_reg + 1 + H) - (N - 1)
-        out["first_done_eta"] = (datetime.strptime(dates[-1], "%Y%m%d") + pd.Timedelta(days=int(round(max(need, 0) * 1.45)))).strftime("%m/%d") if need > 0 else None
+        out["first_done_eta"] = _eta(dates[-1], need) if need > 0 else None   # [2026-10-03] 거래일 달력(주말·skip_dates 제외)으로
         w_end = dates[min(t_reg + H, N - 1)]
         out["verdict_window"] = f"{reg[4:6]}/{reg[6:]}~{w_end[4:6]}/{w_end[6:]}"
     dn = df.dropna(subset=["ret_now"])
@@ -105,8 +123,13 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
     #   그 뒤 매수분은 40일이 안 찬 것이 대부분이라 '오늘 가격 기준'(now)으로 잰다 — 참고값, 결론을 바꾸지 않는다.
     if s:
         _md = re.search(r"(\d{1,2})/(\d{1,2})", str(s.get("short") or s.get("t") or ""))
-        if _md:
+        if s.get("date"):            # [2026-10-03] registry 에 적힌 판정일(YYYYMMDD)이 정본 — 문구에서 M/D 를 뽑아 올해를 붙이는 건 폴백
+            _vd = str(s["date"])
+        elif _md:
             _vd = f"{dates[-1][:4]}{int(_md.group(1)):02d}{int(_md.group(2)):02d}"
+        else:
+            _vd = None
+        if _vd:
             out["sealed"]["date"] = _vd
             _da = dn[dn.date > _vd]
             if len(_da) >= 4:
@@ -116,6 +139,8 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
     out["_df"] = df   # [2026-10-03] 묶음·지금 형세 계산용(JSON 직전에 뺀다)
     h20 = m.get("h20") or {}; h5 = m.get("h5") or {}
     out["live"] = {"ic20": h20.get("ic"), "n": h20.get("n"), "ci": h20.get("ci"), "ic5": h5.get("ic"), "oos_days": m.get("oos_days")}
+    _oos = m.get("oos_days")   # [2026-10-03] 순위 판정(40거래일) 예정일 — 거래일 달력 근사. 판정 끝난 모델은 없음
+    out["verdict_eta"] = _eta(dates[-1], 40 - _oos) if (_oos is not None and _oos < 40 and not s and m["track"] != "large") else None
     out["retired"] = bool(m.get("retired")) or m["model"] in reg_json.get("retired", {})
     return out
 
@@ -142,8 +167,51 @@ def recent_form(df, dates, didx):
     ex = (d.ret40 - d.bench40).values
     wk = pd.to_datetime(d.date, format="%Y%m%d").dt.isocalendar().week.astype(str) + "-" + pd.to_datetime(d.date, format="%Y%m%d").dt.isocalendar().year.astype(str)
     w = pd.Series(ex, index=d.index).groupby(wk.values).mean()
+    bm = {}   # 시장별(참고) — 그 시장 바스켓이 성립한 매수일만, 4일 미만이면 비움
+    for mkt in ("kospi", "kosdaq"):
+        v = np.array([pm[mkt] for pm in d.pm if isinstance(pm, dict) and mkt in pm], float)
+        if len(v) >= 4:
+            bm[mkt] = {"n": int(len(v)), "exc_mean": float(v.mean()), "win": float((v > 0).mean())}
+            rb = np.array([pm["_" + mkt] for pm in d.pm if isinstance(pm, dict) and ("_" + mkt) in pm], float)
+            if len(rb): bm[mkt]["ret_mean"] = float(rb[:, 0].mean()); bm[mkt]["bench_mean"] = float(rb[:, 1].mean())
     return {"n": int(len(d)), "exc_mean": float(ex.mean()), "win": float((ex > 0).mean()), "ci_ref": boot(ex),
-            "weeks_pos": int((w > 0).sum()), "weeks": int(len(w)), "first": d.date.min(), "last": d.date.max()}
+            "weeks_pos": int((w > 0).sum()), "weeks": int(len(w)), "first": d.date.min(), "last": d.date.max(), "by_market": bm}
+
+
+def steadiness(df, close, mk, dates, is_large=False):
+    """[2026-10-03] 꾸준함 두 숫자: ① 매수일 양수 비율(= fix.win) ② "매일 같은 금액으로 사서 계속 들고 간 계좌"가 시장보다 앞선 날의 비율.
+    계좌(d) = d 까지 들어온 매수분 각각의 d 시점 수익 평균 · 시장 = 같은 날 같은 금액 전종목 동일가중(대형은 그날 후보군). 표시 전용."""
+    N = len(dates); d0 = df.dropna(subset=["t"])
+    if not len(d0): return None
+    uni = {m: mk.index[mk == m] for m in ("kospi", "kosdaq")}
+    ent = [(int(r.t) + 1, r.tops) for r in d0.itertuples() if int(r.t) + 1 < N]
+    if not ent: return None
+    first = min(e for e, _ in ent); exc = []
+    for d in range(first, N):
+        pa, pb = [], []
+        for e, tops in ent:
+            if e > d: continue
+            r = close.iloc[d] / close.iloc[e] - 1; a = []; b = []
+            for mkt, tk in tops.items():
+                x = r.reindex(tk).dropna(); y = r.reindex(tk if is_large else uni[mkt]).dropna() if not is_large else x
+                if len(x) >= MIN_BASKET and len(y): a.append(x.mean() * 100); b.append(y.mean() * 100)
+            if a: pa.append(np.mean(a)); pb.append(np.mean(b))
+        if pa: exc.append(np.mean(pa) - np.mean(pb))
+    if len(exc) < 5: return None
+    ex = np.array(exc)
+    return {"days": int(len(ex)), "days_above": float((ex > 0).mean()), "last": float(ex[-1]), "min": float(ex.min()), "max": float(ex.max())}
+
+
+def regime_money(df, regime):
+    """[2026-10-03] 국면별 40일 초과(돈 단위, %p): 목록 기준일의 국면(코스닥 20일선 위=상승/아래=약세)으로 나눠 평균·양수 비율. 4일 미만 국면은 비움."""
+    if regime is None: return None
+    d = df[df.done.astype(bool)].copy()
+    if not len(d): return None
+    d["rg"] = d.date.map(lambda x: regime.loc[x] if x in regime.index else None); d["exc"] = d.ret40 - d.bench40
+    out = {}
+    for rg, g in d.groupby("rg"):
+        if len(g) >= 4: out[rg] = {"n": int(len(g)), "exc_mean": float(g.exc.mean()), "win": float((g.exc > 0).mean()), "first": g.date.min(), "last": g.date.max()}
+    return out
 
 
 def load_regime(dates):
@@ -175,13 +243,13 @@ def regime_split(S, reg, close, dates, didx, excl, regime):
             s = gm.set_index("ticker")["score"].astype(float); bb = r.reindex(s.index); mm = s.notna() & bb.notna()
             if mm.sum() < lb.MIN_GROUP or s[mm].nunique() < 3 or bb[mm].nunique() < 3: continue
             ics.append(float(np.corrcoef(s[mm].rank(), bb[mm].rank())[0, 1]))
-        if ics and regime.iloc[t]: rows.append((regime.iloc[t], float(np.mean(ics))))
+        if ics and regime.iloc[t]: rows.append((regime.iloc[t], float(np.mean(ics)), dates[t]))
     if not rows: return {}
     out = {}
     for rg in ("상승", "약세"):
-        v = np.array([x for g, x in rows if g == rg], float)
-        if len(v) >= REGIME_MIN:
-            out[rg] = {"n": int(len(v)), "ic": float(v.mean()), "ci": boot(v), "pos": float((v > 0).mean())}
+        v = np.array([x for g, x, _ in rows if g == rg], float); ds = [d for g, _, d in rows if g == rg]
+        if len(v) >= REGIME_MIN:   # first/last: 국면이 특정 시기와 겹치는지 화면에서 보이게(지금 자료는 약세=6~7월·상승=8~9월)
+            out[rg] = {"n": int(len(v)), "ic": float(v.mean()), "ci": boot(v), "pos": float((v > 0).mean()), "first": min(ds), "last": max(ds)}
     return out
 
 
@@ -217,14 +285,25 @@ def main():
     partial, dbl, didx = lb.build_gates(con, dates); excl = partial | dbl
     lbj = json.loads((HERE / "docs/leaderboard.json").read_text(encoding="utf-8"))
     reg_json = json.loads((HERE / "docs/models_registry.json").read_text(encoding="utf-8"))
-    res = [observe(con, m, close, mk, dates, didx, excl, reg_json) for m in lbj["models"] if m["model"] in NAME]
+    # [2026-10-03 Codex 검토 반영] 대형(ls_t1)만 보충 시세(daily_ohlcv_extra)를 합친 close 로 — 리더보드 ls_t1 블록과 같은 경로. 트랙 A 는 본 표 그대로(0-diff).
+    close_lg = close
+    try:
+        import extra_ohlcv
+        ex = extra_ohlcv.load_extra_close(lb.OHLCV_DB, exclude=set(close.columns))
+        if len(ex): close_lg = close.join(ex.reindex(close.index), how="left")
+    except Exception as e:
+        print(f"   ⚠ 대형 보충 시세 생략(비치명): {e}")
+    res = [observe(con, m, (close_lg if m["track"] == "large" else close), mk, dates, didx, excl, reg_json) for m in lbj["models"] if m["model"] in NAME]
     regime = load_regime(dates)
     for r, m in zip(res, [m for m in lbj["models"] if m["model"] in NAME]):
         try:
             r["recent"] = recent_form(r["_df"], dates, didx)
+            r["steady"] = steadiness(r["_df"], close, mk, dates) if m["track"] != "large" else None   # 대형은 후보군(large_final) 비교라 여기선 생략
+            if r.get("fix") and r["steady"]: r["steady"]["pos_share"] = r["fix"]["win"]
+            r["regime_money"] = regime_money(r["_df"], regime)
             r["regime"] = regime_split(load_scores(con, m), m["reg_date"], close, dates, didx, excl, regime) if m["track"] != "large" else None
         except Exception as e:
-            r["recent"] = None; r["regime"] = None; print(f"   ⚠ {m['model']} 지금 형세/국면 생략(비치명): {e}")
+            r["recent"] = None; r["regime"] = None; r["steady"] = None; r["regime_money"] = None; print(f"   ⚠ {m['model']} 지금 형세/국면 생략(비치명): {e}")
     con.close()
     try:
         ens = ensemble(res)

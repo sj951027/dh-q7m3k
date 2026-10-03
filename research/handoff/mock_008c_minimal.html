@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[설계안 C — 최소 글자] 성적표 (2026-10-03, 정적 샘플)</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--line:#e3e6ee;--txt:#1d2333;--sub:#6b7386;--blue:#2f5fd8;--good:#1a8f5a;--bad:#c9403a}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:15px;line-height:1.45}
+  .wrap{max-width:760px;margin:0 auto;padding:16px}
+  .mockbar{background:#1d2333;color:#fff;font-size:12px;padding:6px 12px;border-radius:6px;margin-bottom:12px}
+  h1{font-size:20px;margin:0;display:flex;align-items:baseline;gap:10px} h1 small{font-size:13px;color:var(--sub);font-weight:400}
+  .one{font-size:13px;color:var(--sub);margin:4px 0 12px} .one a{color:var(--blue);text-decoration:none;border:1px solid var(--line);border-radius:50%;padding:0 6px;margin-left:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-bottom:12px}
+  table{border-collapse:collapse;width:100%} th,td{padding:11px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  th{color:var(--sub);font-weight:500;font-size:12px} td.l,th.l{text-align:left}
+  td.l a{color:var(--txt);text-decoration:none;font-weight:600} td.l span{color:var(--sub);font-weight:400;font-size:12px;margin-left:4px}
+  .d{font-weight:700;font-size:16px} .pos{color:var(--good)} .neg{color:var(--bad)} .m{color:var(--sub)}
+  .per{font-size:12px;color:var(--sub)}
+  tr.det td{white-space:normal;text-align:left;color:var(--sub);font-size:13px;background:#fafbfe;padding:8px 10px}
+  .next{font-size:13px;color:var(--sub);margin:0 0 10px}
+  .more{font-size:13px;display:flex;gap:14px;flex-wrap:wrap} .more a{color:var(--blue);text-decoration:none}
+  .help{display:none;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--sub);margin-bottom:12px;line-height:1.6} .help.on{display:block}
+  @media(max-width:600px){ th.hm,td.hm{display:none} .wrap{padding:12px 10px} td,th{padding:10px 4px} }
+</style>
+</head>
+<body><div class="wrap">
+<div class="mockbar">설계안 C(최소 글자) — 10/2 실제 숫자. 첫 화면은 이름·숫자만, 설명은 ? 하나. 행을 누르면 한 줄 상세.</div>
+
+<h1>모델 성적표 <small>10/2 종가</small></h1>
+<div class="one">상위 10을 다음날 사서 40일 보유 · 시장 평균과 비교 · 참고용 <a href="#" onclick="document.getElementById('help').classList.toggle('on');return false">?</a></div>
+<div class="help" id="help">모델이 고른 시장별 상위 10 종목을 다음 거래일 종가에 같은 금액씩 사서 40거래일 뒤 판 결과. <b>시장</b> = 같은 시장 전 종목을 같은 방식으로 산 평균. <b>차이</b> = 모델 − 시장(%p). 기간 = 결과가 확정된 목록 기준일(모델마다 시작이 다름 — 같은 기간 비교 아님). 순위 검증(시험 기록)은 다른 잣대라 '순위 검증' 페이지에 따로. 성적이 좋아도 채택은 아님.</div>
+
+<div class="card"><table>
+<thead><tr><th class="l">모델</th><th class="hm">모델</th><th class="hm">시장</th><th>차이</th><th class="per">기간 · 개수</th></tr></thead>
+<tbody>
+<tr><td class="l"><a href="#">저점탈출</a><span>le_a</span></td><td class="hm m">+20.5%</td><td class="hm m">+9.7%</td><td class="d pos">+10.7%p</td><td class="per">7/15~8/3 · 13</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 85% · 참고 구간 +5.2~+17.0 · KOSPI +5.8 / KOSDAQ +15.7 · 순위 검증 9/13: 확인 못 함</td></tr>
+<tr><td class="l"><a href="#">과매도</a><span>v30</span></td><td class="hm m">+7.1%</td><td class="hm m">+3.2%</td><td class="d pos">+3.8%p</td><td class="per">6/5~8/3 · 38</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 76% · 참고 구간 +2.0~+5.6 · KOSPI +3.1 / KOSDAQ +4.5 · 순위 검증 8/9: 통과 · 재판정 10/07</td></tr>
+<tr><td class="l"><a href="#">모멘텀</a><span>mom_a</span></td><td class="hm m">+8.4%</td><td class="hm m">+7.1%</td><td class="d pos">+1.3%p</td><td class="per">6/26~8/3 · 24</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 46% · 참고 구간 −1.3~+3.8 · 순위 검증 8/29: 확인 못 함</td></tr>
+<tr><td class="l"><a href="#">저변동+반전</a><span>lv_a</span></td><td class="hm m">+7.7%</td><td class="hm m">+7.1%</td><td class="d pos">+0.7%p</td><td class="per">6/25~8/3 · 25</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 60% · KOSPI −1.0 / KOSDAQ +2.3 · 순위 검증 8/29: 확인 못 함</td></tr>
+<tr><td class="l">초소형<span>sm_a</span></td><td class="hm m">+5.9%</td><td class="hm m">+7.1%</td><td class="d neg">−1.2%p</td><td class="per">6/26~8/3 · 24</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 29% · 순위 검증 9/1: 확인 못 함</td></tr>
+<tr><td class="l"><a href="#">저변동</a><span>lv_b</span></td><td class="hm m">+5.4%</td><td class="hm m">+7.1%</td><td class="d neg">−1.7%p</td><td class="per">6/25~8/3 · 25</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 40% · 참고 구간 −3.8~+0.3 · KOSPI −2.9 / KOSDAQ −0.6 · 순위 검증 8/29: 확정 못 함</td></tr>
+<tr><td class="l"><a href="#">공매도비중</a><span>sv_a</span></td><td class="hm m">+6.0%</td><td class="hm m">+9.7%</td><td class="d neg">−3.8%p</td><td class="per">7/15~8/3 · 13</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 8% · 순위 검증 9/13: 확정 못 함</td></tr>
+<tr><td class="l"><a href="#">조용한강자</a><span>qs_a</span></td><td class="hm m">+4.1%</td><td class="hm m">+11.5%</td><td class="d neg">−7.4%p</td><td class="per">7/23~8/3 · 8</td></tr>
+<tr class="det" hidden><td colspan="5">이긴 날 0% · 순위 검증 9/17: 확인 못 함</td></tr>
+<tr><td class="l"><a href="#">가격4팩터</a><span>px_a</span></td><td class="hm m">—</td><td class="hm m">—</td><td class="m">첫 결과 10/13</td><td class="per"></td></tr>
+<tr><td class="l">저변동+저회전<span>lv_e</span></td><td class="hm m">—</td><td class="hm m">—</td><td class="m">첫 결과 11/03</td><td class="per"></td></tr>
+<tr><td class="l">공매도+신용<span>sv_b</span></td><td class="hm m">—</td><td class="hm m">—</td><td class="m">첫 결과 11/16</td><td class="per"></td></tr>
+</table></div>
+
+<div class="next">다음: 10/07 px_a·v30 판정 · 11월 초 대형 ls_t1 첫 창</div>
+<div class="more"><a href="#">순위 검증(시험 기록)</a><a href="#">시장별</a><a href="#">국면별</a><a href="#">묶음</a><a href="#">대형 가치</a><a href="#">주도주</a><a href="#">검증 자료 전체</a></div>
+</div>
+<script>document.querySelectorAll('tbody tr:not(.det)').forEach(tr=>tr.onclick=e=>{if(e.target.closest('a'))return;const d=tr.nextElementSibling;if(d&&d.classList.contains('det'))d.hidden=!d.hidden;});</script>
+</body></html>

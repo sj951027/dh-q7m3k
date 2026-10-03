@@ -21,6 +21,29 @@
 8. 사용자 질문 "시험 기록을 월간으로 다시 하거나, 지금 앞서는 모델을 보여 줄 방법" → 월간 재시험 제안 → 사용자 "한 달 좋다고 다음 달 좋진 않다, 기준을 찾아보자" → **신호 후보 10개 실측**(`research/form_signals_20261003/`, `RESEARCH_form_signals_20261003.md`): 독립 20일 구간 약 3개뿐이라 어떤 신호도 다음 20거래일을 말해 주지 못함(순위상관 전부 ±0.15 안, 1등 따라가기 승률 31~57%). 아이디어 9개를 근거 상태와 함께 적음. 도전 카드(판정문 틀 스크립트)는 사용자 지시로 **중단**(파일 변경 없음).
 9. 사용자 결정 **1·2·3 진행 + 더 알아볼 것 고려** → 성적표에 묶음 줄·지금 형세 칸·국면별 기록(2026.10.12, `build_scoreboard.py`·`docs/leaderboard.html`, 기존 JSON 키 0-diff). 추가 조사: 종목 단위 합의(`consensus_picks.py`) — 효과 없음. 첫 실측에서 **국면별 기록이 눈에 띔**: v30·lv_b·sv_a 전부 약세 국면에서만 효과, lv_b 는 상승 국면 IC −0.156 [−0.227, −0.082]. 지금 국면 '상승'.
 
+10. 도전 카드(국면 운용 규칙 사전등록) → 같은 가설이 9/5 에 3년 자료로 조사돼 있었음(`RESEARCH_overlay_entry_20260905.md`: 코스닥<20일선 → 신규 50% 가 샤프·낙폭 개선, 변형 선택 관측). 오늘 자료로 돈 잣대에 얹어 보니(`research/regime_gate_20261003/gate_eval.py`) 참고창 매수일 100%가 20일선 아래라 게이트는 **손해**였을 것(v30 +7.06→+3.53%). 또 성적표 국면별 기록은 **약세=6~7월·상승=8~9월과 같아 시기와 구분 불가**. → `PREREGISTER_regime_gate.md` **초안(미등록)** 작성: "3년 관측과 2026 창이 반대로 말하니 앞으로 자료로 정한다" 구조, ★ 항목은 사용자 결정.
+11. 사용자 질문·요청 중간 처리: 형세 표에 모델 링크·시장별 열·매수 기간, 머리글 쉬운 말 · 검증 자료 ① 돈 표에 빠져 있던 le_a·sm_a 추가(`build_cross_sim.py`) · 새 접힘 표 "시장별로 보면"(바스켓·시장 평균·차이, KOSPI/KOSDAQ) + 샘플 캡처 전달.
+
+12. Codex 독립 검토(`research/handoff/REPLY_20261003_three_projects_review.md`) 확인 → 코드로 맞는 것 6건 수정(2026.10.13, `patch_note/20261003_codex_review_fixes.md`): 대형 판정 부족 표본 보수화 · 성적표 대형에 보충 시세 · 보충 수집 전부 실패 종료코드 · 묶음 문구 · 등록부 판정일 `date` · 예정일 거래일 달력 · 낡은 문구. 나머지(PTW 완료 표식·Neon 백업·용어 재검토·첫 화면 재배치)는 결정 대기.
+
+13. 사용자 질문 "시험 기록을 성적표에 보이는 게 맞나"(lv_b '기움'인데 돈 −, le_a '노이즈'인데 돈 +) → 두 잣대가 다른 질문이라 생기는 어긋남. 설계안 샘플 `research/handoff/mock_008_scoreboard_v2.html`(첫 화면 재배치+용어) 작성 → `REQUEST_006` 로 Codex 의견 요청 → `REPLY_006`: 첫 표에서 순위 시험 기록 빼기 찬성, 수익·시장·차이 한 묶음, 목록 기준일(실제 매수는 다음 거래일) 표기, 두 모델 공통 표본 비교, 용어 더 명시적으로, **국면 게이트 초안 §2 논리 오류**(CI 가 허용선을 '포함' → 채택은 틀림, '하단 > 허용선'이어야) + 도구 불일치 → 초안 **보류** 로 고침. 샘플에 반영(폰 접힘 오류 수정 포함).
+
+14. 사용자 "글자가 너무 많다" → C안(`mock_008c_minimal.html`, 최소 글자) · "8/3이 끝인 뜻" 설명(목록 8/3 → 매수 8/4 → 매도 10/2) · "하루 평균 수익 기준" → 한 달 환산(비용 후, 기준선 +0.5%p = ops 사전등록 식) 제안 · 모의계좌 하루 수익 표 · **보유 기간 곡선**(`research/holding_curve_20261003.py`) · **매일 사서 계속 보유 계좌**(`research/accumulate_curve_20261003.py`: v30 이 가장 꾸준(0 위 89%), le_a 는 크지만 7월 말 한 묶음 덕) · **3년 실험**(`fullscan_20260903/step27_accumulate_3yr.py`, `RESEARCH_accumulate_3yr_20261003.md`): 3년 내내 시장 위는 가격4팩터(px_a)뿐(in-sample 주의), 반등 계열(저점탈출·과매도)은 시기를 탐. `panel.npz` 재생성(.gitignore 추가).
+
+15. 사용자 "C안에 꾸준함·국면별 40일 초과 넣기 + v30 3년 재현(DART 수집) 진행" → **성적표 v2(C안) 구현**(2026.10.14: `build_scoreboard.py` steadiness·regime_money·verdict_eta, `docs/leaderboard.html` 전면 재작성, 기존 JSON 키 0-diff, PC·폰 확인, 테스트 통과) → **DART 과거 재무 수집기** `research/dart_history/collect_dart_history.py`(연간 2022~25·분기 2023~26, 영업이익·OCF·자본·순이익 항목만 sqlite 저장, 접수번호로 PIT, 분당 600·평일 19:55~22:40 휴식·한도 020 대기·재개 가능) 시험 2종목 정상 → **전체 수집 분리 프로세스로 시작**(2,678종목 × 15보고서 ≈ 4~5만 호출, 며칠). `panel.npz`·`dart_hist.db`·`collect.log` .gitignore.
+
+16. 사용자 "멈춘 것 같다" → DART 일일 한도(020, 약 4만 건/일) 대기 상태였음(10/4 00:10 재개). 사용자 "시도해볼 수 없나" → 2,140종목분으로 **v30 재계산 시작**: `research/dart_history/v30_history.py`(가격 지표 벡터 재현 + DART PIT 재무 + `v3_rescore.rescore` 그대로 호출) · `--validate` 로 2026-06~10 실제 적재와 대조(가격 지표 98~99%, 재무 수집분 90%+, **상위10 겹침 2.5~3.8/10** — 수급 0·배당 0·위험등급 부분·유니버스 차이) · 분기 YoY 불일치 원인(`frmtrm_q_amount` 미저장) 찾아 유도 로직 + 수집기 필드 추가·재시작(PID 31208) · 3년 전체 재계산 실행 → `v30_accumulate_3yr.py` 로 곡선. 문서 `research/RESEARCH_v30_history_20261003.md`. **1차 3년 결과**: 수급·배당 뺀 v30 뼈대 계속보유 −4.2%p(시장 위 55%), 40일 초과 2024 +1.1 / 2025 −0.6 / 2026 −1.0%p → 뼈대만으론 시장 수준(실제 v30 과 상위10 겹침 낮아 단정 금지). DART 한도는 17시 재확인에도 020(하루 단위 초기화, 00:00) — 우회는 두 번째 API 키(사용자 발급)뿐.
+
+17. 사용자 "v30 이 다른 것보다 안 좋은 편 아닌가" → 맞되 불리한 비교(수급 제외·px_a in-sample) 설명. "시기마다 1등이 달라지면 매수 시점에 고를 수 있나" → `fullscan_20260903/step28_pick_at_entry_3yr.py`: 3년 579일 — 최근 1등 따라가기 A−C +0.65 [−0.55, +1.98](구분 안 됨), 국면 규칙은 "항상 가격4팩터"로 무너짐, 상한(그날 1등) +6.3%p vs 실행 가능 +0.7 → **고르는 정보가 없다**. 결론: 시기 덜 타는 뼈대 고정(등록 후 자료로 확인).
+
+18. 사용자 "후보를 여러 관점에서 최대한 많이 시험, 좋으면 가설이라도 알려 달라" → `step29_style_predictors_3yr.py`: 시장 변수 25개 × 방법 5가지로 "다음 40일 저변동 vs 반등 승자" 예측(`RESEARCH_style_predictors_20261003.md`). 기준선 "항상 저변동"이 3년 내내 섞기를 이김(+1.7/+0.4/+3.7%p). 변수 중 두 해 모두 기준선을 이긴 건 **코스피 20일 수익** 하나(+0.4~+0.7%p, 우연 범위). 상위3 묶음은 2026 에서 섞기보다 못함(사후 선택). 가설로 남긴 것: 코스피 20일 하락 뒤 반등 계열 · 변동성 급등 직후 반등 계열 · **지수 고점권·장기 상승 중엔 반등 계열이 크게 짐(ρ +0.5, 꼴찌 피하기 1순위 후보)**.
+
+19. 사용자 "지금 기간에 쓸 모델 고르는 방식 연구 빡세게" → `step30_selection_lab_3yr.py`: 고르는 규칙 25개(성적·시장·비중·학습 기반) 같은 walk-forward — **기준선 '항상 저변동'을 두 해 모두 CI 로 이긴 규칙 없음**(최고 '코스피 20일 부호' +0.5 [−0.14,+0.82]); 적응형 전부 손해. 사용자 요청으로 오늘 연구 전체를 Codex 독립 검토·확장용 `research/handoff/REQUEST_007_research_sweep_review.md` 로 정리.
+
+20. Codex `REPLY_007`(+`code_007_independent.py`) 확인: 핵심 숫자 전부 독립 재현. **결함 2개 정정** — ① step29·28 walk-forward 학습에 연말 미완결 40일 성적 포함 → 끝난 성적만으로 고쳐 재실행(결론 불변) ② v30 재계산의 보고서 가용일 소급(min(접수일, 마감+10)) 1,964행 → `--pit-strict`(접수일만) 옵션 추가해 민감도 확인. 과장 문장 정정(가격4팩터 "3년 내내 시장 위" ✗, "저변동 고정 입증" ✗, "2025 어떤 규칙도" ✗). Codex 추가 후보 4개 미통과, v30 수급 짝비교(40일): 수급 항 빼면 +6.1→+8.2%(관측만). 문서 §7 반영.
+
+21. Codex `REPLY_20261003_scoreboard_structure`(월 환산 대표 숫자 반대·꾸준함 두 숫자 분리·폰에서 모델 수익 유지·한 모델 카드 D안) 검토 → 사용자 "좋은 게 위로" → **최종안 구현**: 3열(모델·40거래일 성과 두 줄·기록)+상세 버튼, 차이순 기본·등록순 선택, 월환산·계좌 꾸준함은 상세, 대기·은퇴 접힘, 다음 일정 1건. PC·폰 확인. D안 본안(한 모델 카드)·두 모델 공통 표본 비교는 보류.
+
 ## 사용자 결정
 - 계획 1~4 승인 · 도전 카드 2개 승인.
 - 통일 이름: 종목 / 52주고점대비% / 1개월% (Claude 제안, 이견 없음). 변동성은 `변동성21`·`변동성63` 으로 나눠 둠 — **Claude 가 정한 것, 사용자 확인 필요**.
@@ -30,7 +53,7 @@
 
 ## 바뀐 것 (미커밋 — 사용자가 GitHub Desktop 으로)
 - 화면: `docs/filter.html` · `filter_v31g.html` · `px.html` · `qs.html` · `sv.html` · `le.html` · `lowvol.html` · `lva.html` · `_large_obs.html` · `_large_test.html`(마지막 둘은 재생성본)
-- 코드: `build_scoreboard.py`(묶음·형세·국면) · `docs/leaderboard.html` · `docs/scoreboard.json`(재생성) · `build_large_report.py` · `build_large_test.py` · **`extra_ohlcv.py`(신설)** · **`large_verdict.py`(신설)** · `leaderboard.py`(ls_t1 블록만) · `run_all_and_diversify.bat`(4줄) · `research/large_verdict_status.md`(배치가 매일 덮어씀)
+- 코드: `build_scoreboard.py`(묶음·형세·국면·시장별) · `docs/leaderboard.html` · `docs/scoreboard.json`(재생성) · `build_cross_sim.py`(le_a·sm_a) · `docs/cross_sim.json`(재생성) · `PREREGISTER_regime_gate.md`(초안) · `research/regime_gate_20261003/`(regime_split_money.py·gate_eval.py·csv) · `build_large_report.py` · `build_large_test.py` · **`extra_ohlcv.py`(신설)** · **`large_verdict.py`(신설)** · `leaderboard.py`(ls_t1 블록만) · `run_all_and_diversify.bat`(4줄) · `research/large_verdict_status.md`(배치가 매일 덮어씀)
 - 데이터(git 밖): `../dh-q7m3k-data/ohlcv.db` 에 표 `daily_ohlcv_extra` 추가(본 표 무변경)
 - 연구: `research/ohlcv_gap_large_20261003.py` · `research/RESEARCH_ohlcv_gap_large_20261003.md` · `research/form_signals_20261003/`(form_signals.py·consensus_picks.py·결과) · `research/RESEARCH_form_signals_20261003.md`
 - 문서: `DISPLAY_TERMS.md` · `MODELS_LEDGER.md`(ls_t1 행 각주) · `patch_note/20261003_table_common_columns.md`(2026.10.8) · `20261003_large_pages_flows.md`(10.9) · `20261003_large_extra_ohlcv.md`(10.10) · `20261003_large_verdict_script.md`(10.11) · `20261003_scoreboard_form_ensemble.md`(10.12) · `patch_note/README.md` · 이 기록 · `worklog/README.md`
@@ -53,9 +76,13 @@
 지난 기록(2026-10-02)의 남은 일 1~4·6·7 은 그대로. 추가·변경:
 - 시세 결손은 (a)안으로 **처리 완료**. 남은 것: 10/6 배치 로그에서 `extra_ohlcv` 단계가 돌았는지(`보충 대상 136종목`), `docs/leaderboard.json` 의 ls_t1 exc20 이 +1.7%p 근처로 바뀌는지 확인. ls_t1 h60 판정문에는 "시세 보충표 적용(10/03)" 각주. 판정 시점: h60 ≈ 12월 말(주간 앵커 8개), h120 ≈ 2027-03 말 — `research/large_verdict_status.md` 가 매일 남은 거래일을 적는다.
 - '시험 기록' 손보기는 1·2·3(묶음·지금 형세·국면별 기록)으로 **적용 완료**. 월간 재시험(라벨 갱신)은 하지 않기로. 신호 지속성 재점검은 2027-04 이후(`form_signals.py`·`consensus_picks.py` 월 1회).
-- **다음 조사 후보(사용자 확인 뒤)**: 국면별 기록이 강하게 갈려(약세 전용) "약세 국면에서만 모델을 쓰고 상승 국면엔 쉬기"가 **사전등록할 가치가 있는 가설**인지 — 단 지금 자료는 사후 분할·단일 기간이라 가설 수준. 검증 경로: 새 model_id 가 아니라 '운용 규칙' 사전등록(ops 트랙처럼) + 비겹침 창. 텔레그램에도 지금 국면 한 줄을 넣을지.
+- **결정 대기 — Codex 검토 중 안 고친 것**: ① PTW 저녁 완료 표식을 계산/기록/전송으로 분리(PTW 작업) ② Neon 복구 창 6시간뿐·스냅샷 없음 → 원장 CSV 개인 보관 주기 ③ 쉬운 말 재검토('차이 없음'→'효과를 확인하지 못함', '순서 맞춤 100점'→'순위 상관×100' 등) ④ 성적표 첫 화면 기본/상세 재배치·묶음 줄 위치·모바일 카드·목록 기본 열 ⑤ PTW '진행 중 포함' 설명(실제는 '모두 오늘까지 보유 가정') ⑥ '가장 앞섰다' 문장에 비교 기간 다름 표기.
+- **결정 대기 — `PREREGISTER_regime_gate.md` 초안의 ★ 항목**(대상에 sv_a 포함 여부 · 뺀 몫 현금 vs 지수 · 라벨 문턱 −1.0%p·σ비 0.9 · 배너 처리). 승인하면 [등록]으로 바꾸고 관찰 시작일·commit hash·원장 ops 행. 등록 안 해도 됨("관측만"도 정당). 텔레그램에 지금 국면 한 줄을 넣을지도 미결.
 - 표시 남은 것: 본문 문단 쉬운 말 · 문서 파일 이름을 링크로 · 날짜 표기 통일 · 검증 자료 화면 첫 절 정리 · PTW '모델 성적'에 시험 기록·시장별 줄.
 - `docs/_large_obs.html` 꼬리의 `</body>` 줄바꿈이 생성 스크립트와 게시본이 달랐다(지난 세션에 게시본만 직접 고친 흔적) — 이번 재생성으로 스크립트 쪽으로 통일됨. 다음 배치가 같은 결과를 내는지 10/6 에 확인.
+
+- **DART 과거 재무 수집 진행 중**(2026-10-03 14:3x 시작, 분리 프로세스): `python research/dart_history/collect_dart_history.py --status` 로 진행 확인, 죽어 있으면 같은 명령(인자 없이)으로 재개. 끝나면 ① PIT 재구성 스크립트(날짜 d 에 접수된 보고서만으로 연간·분기 지표) ② v30 식에서 수급 항 뺀 점수 재계산 → 2026-06~10 실제 적재와 (수급 제외) 0-diff ③ 3년 "매일 사서 계속 보유" 그림. PBR/PER 는 DART 자본·순이익 + 가격·주식수로 근사(valuation_daily 는 7/6~).
+- v30 3년 재현의 한계(미리 적어 둠): 수급(KIS 2026-04-28~) 없음 · 재무 PIT 는 접수일 기준 · 상폐 종목은 패널에 있는 만큼만.
 
 ## 다음 세션 시작점
 - `git status` 로 위 미커밋분이 올라갔는지 확인.

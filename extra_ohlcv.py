@@ -118,13 +118,16 @@ def collect(backfill=False, years=3, window=INCREMENTAL_WINDOW, db=None):
     con.commit()
     status(con)
     con.close()
-    return n_skip
+    return n_skip, len(targets)
 
 
 def status(con=None, db=None):
     own = con is None
-    if own:
-        con = _connect(db)
+    if own:   # [2026-10-03] --status 는 읽기 전용(표를 만들지 않는다)
+        p = db or U.DB_PATH
+        con = sqlite3.connect(f"file:{p}?mode=ro", uri=True)
+        if not con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (TABLE,)).fetchone():
+            print(f"• {TABLE}: 아직 없음(백필 전)"); con.close(); return
     n, nt, d0, d1 = con.execute(f"SELECT COUNT(*), COUNT(DISTINCT ticker), MIN(date), MAX(date) FROM {TABLE}").fetchone()
     dup = con.execute(f"SELECT COUNT(DISTINCT e.ticker) FROM {TABLE} e WHERE e.ticker IN (SELECT DISTINCT ticker FROM daily_ohlcv)").fetchone()[0]
     print(f"• {TABLE}: {nt}종목 {n:,}행 {d0}~{d1} · 본 표와 겹치는 종목 {dup}(겹치면 읽는 쪽이 본 표 우선)")
@@ -162,7 +165,10 @@ def main():
     a = ap.parse_args()
     if a.status:
         status(db=a.db); return 0
-    n_skip = collect(backfill=a.backfill, years=a.years, db=a.db)
+    n_skip, n_targets = collect(backfill=a.backfill, years=a.years, db=a.db)
+    if n_targets and n_skip >= n_targets:   # [2026-10-03] 전부 실패 → 배치 FAILED 에 잡히게. 일부 실패는 로그만(한 종목 때문에 전체를 세우지 않음)
+        print(f"❌ 보충 수집 전부 실패({n_skip}/{n_targets})"); return 2
+    if n_skip: print(f"⚠ 보충 수집 일부 실패 {n_skip}/{n_targets} — 다음 증분에서 재시도")
     return 0
 
 

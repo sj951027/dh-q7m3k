@@ -13,7 +13,9 @@ large_verdict.py — 대형 트랙 ls_t1 의 §9 판정(h=60·120거래일) 준�
   - 주간 리밸런스: 등록일 이후 게이트 통과·중복 제거된 일간 앵커 중 **ISO 주마다 첫 앵커 1개**만 쓴다(정본).
     일간 앵커 값은 참고로 같이 적는다.
   - 판정 라벨: leaderboard.verdict (§11 과 같은 규칙, Bonferroni 분모 1) 를 h60 주간 통계에 적용. 단 추가 게이트:
-    h 창이 닫힌 주간 앵커 **8개 미만이면 '대기'**(아직 판정 안 함). h120 은 같은 방식으로 병기(정본은 둘 다).
+    h 창이 닫힌 주간 앵커 **8개 미만이면 '대기'**(날짜상 닫힌 수와 IC 계산된 수 둘 다). h120 은 같은 방식으로 병기(정본은 둘 다).
+  - ⚠ 이 세부 규칙(주간 앵커·8개·비겹침 보수화)은 PREREGISTER_ls_t1 에 없던 구현자 결정(2026-10-03)이다. 첫 창이 닫히기 전(11월 초)
+    사용자 확정이 필요하며, leaderboard.verdict 재사용은 판정문의 검증 전체(주블록 감도·짝비교·국면 각주)를 대체하지 않는다.
   - 창이 서로 겹치는(h60 이면 12주 겹침) 앵커들의 iid 부트스트랩 CI 는 너무 좁다 → **비겹침 앵커**(앞 앵커에서 h거래일
     이상 떨어진 것만) 통계를 같이 적고, 둘이 어긋나면 '기움' 이상으로 올리지 않는다(보수).
 
@@ -125,13 +127,17 @@ def run(check=False):
             nclosed = closed_count(rids, didx, N, h)
             ic = st["ic"]; ci = st["ci"]; pos = st["pos"]
             if tag.startswith("주간") and h in (60, 120):
-                if nclosed < MIN_WEEKLY:
-                    lab, why = "대기", f"창 닫힌 주간 앵커 {nclosed}/{MIN_WEEKLY}"
+                # [2026-10-03 Codex 검토 반영] 날짜상 닫힌 수(nclosed)와 실제 IC 계산된 수(st['n'])가 다를 수 있다(시세 결손) → 둘 다 8 이상이어야 판정.
+                #   비겹침 앵커가 0·1개면 '유의'를 줄 근거가 없다 → 비겹침 계산분 ≥2 이고 그 CI 하단 > 0 일 때만 '유의' 유지, 아니면 '기움'.
+                if min(nclosed, st["n"]) < MIN_WEEKLY:
+                    lab, why = "대기", f"창 닫힌 주간 앵커 {nclosed}/{MIN_WEEKLY} · IC 계산분 {st['n']}"
                 else:
                     lab, why = L.verdict(st, 1, daily["oos_days"])
                     no_st, no_n = nonov[h]
-                    if no_st["ic"] is not None and lab == "유의" and not (no_st["ci"][0] is not None and no_st["ci"][0] > 0):
-                        lab, why = "기움", why + f" · 비겹침 {no_n}앵커 CI 0 걸침 → 기움으로 보수화"
+                    if lab == "유의":
+                        ok = no_st["ic"] is not None and no_st["n"] >= 2 and no_st["ci"][0] is not None and no_st["ci"][0] > 0
+                        if not ok:
+                            lab, why = "기움", why + f" · 비겹침 앵커 계산분 {no_st['n']}개(CI {no_st['ci']}) — 2개 이상·하단>0 아니면 유의 안 줌"
                 verdicts[h] = (lab, why, nclosed)
             else:
                 lab = "참고" if h == 20 else ("대기" if nclosed < MIN_WEEKLY else "참고")

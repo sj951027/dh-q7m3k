@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[설계안 A — Claude 원안] 성적표 v2 (2026-10-03, 정적 샘플)</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--line:#e3e6ee;--txt:#1d2333;--sub:#6b7386;--blue:#2f5fd8;--soft:#eef3ff;--good:#1a8f5a;--bad:#c9403a;--warn:#8a6d1a;--warnbg:#fff7dc}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:14px 16px 40px}
+  .mockbar{background:#1d2333;color:#fff;font-size:12px;padding:6px 12px;border-radius:6px;margin-bottom:10px}
+  .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--sub)}
+  .top a{color:var(--blue);text-decoration:none}
+  h1{font-size:20px;margin:6px 0 2px}
+  .status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;margin:4px 0 10px}
+  .pill{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:2px 10px}
+  .pill.ok{border-color:#bfe3cf;background:#eefaf3;color:var(--good)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .tab{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--sub);cursor:pointer}
+  .tab.on{background:var(--soft);color:var(--blue);border-color:#c9d6f5;font-weight:600}
+  .tabs.sub .tab{font-size:12px;padding:4px 10px}
+  .cond{font-size:12.5px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:8px 0 12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .cond b{color:var(--txt)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px;overflow-x:auto}
+  table{border-collapse:collapse;width:100%} th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:top}
+  th{color:var(--sub);font-weight:500;font-size:12px} td.l,th.l{text-align:left}
+  .mid{font-weight:700;font-size:15px} .pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--sub)} .small{font-size:11.5px;color:var(--sub)}
+  .lab{font-size:12.5px} .lab b{font-weight:600}
+  .btn{display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:3px 9px;font-size:12px;color:var(--blue);text-decoration:none;cursor:pointer}
+  .btn.ghost{color:var(--sub)}
+  tr.det td{white-space:normal;text-align:left;background:#fafbfe;color:var(--sub);font-size:12px;padding:8px 10px 10px}
+  .det .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 14px;margin:4px 0}
+  .det .kv div b{color:var(--txt)}
+  .note{font-size:12px;color:var(--sub);margin:6px 0 0;line-height:1.6}
+  .next{background:var(--warnbg);border:1px solid #efe1a8;border-radius:8px;padding:8px 12px;font-size:12.5px;margin:0 0 12px}
+  details{margin:8px 0} summary{cursor:pointer;color:var(--blue);font-size:13px}
+  .foot{color:var(--sub);font-size:12px;margin-top:8px;line-height:1.6}
+  .limit{font-size:11.5px;color:var(--warn);background:var(--warnbg);border-radius:4px;padding:0 5px;margin-left:4px}
+  .cmp{display:none} .cmp.on{display:block}
+  .pb{display:inline-block;width:150px;height:10px;background:#eef0f5;border-radius:3px;position:relative;vertical-align:middle;margin:0 6px 0 0}
+  .pb i{position:absolute;top:0;bottom:0;background:#9fb4ea;border-radius:3px} .pb i.ov{background:transparent;border-left:1px dashed #c9403a;border-right:1px dashed #c9403a}
+  .axis{font-size:11px;color:var(--sub);margin:0 0 4px} .axis .pb{height:6px;background:transparent;border-bottom:1px solid #ccd} .axis .pb i{background:#f6d4d2}
+  /* ---- 폰: 표 → 카드 ---- */
+  @media(max-width:700px){
+    .wrap{padding:10px 10px} h1{font-size:18px}
+    table.main thead{display:none} table.main,table.main tbody,table.main tr,table.main td{display:block;width:100%} table.main tr[hidden]{display:none}
+    table.main tr.row{border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:8px 10px;background:var(--card)}
+    table.main td{border:0;padding:2px 0;text-align:left;white-space:normal}
+    table.main td.l{font-size:15px}
+    table.main td.v::before{content:attr(data-k) " ";color:var(--sub);font-size:12px}
+    table.main td.v{display:inline-block;width:49%}
+    table.main tr.det{margin:-6px 0 8px;border:1px dashed var(--line);border-radius:0 0 10px 10px}
+    .tabs .tab{padding:5px 9px;font-size:12px}
+    .pb{display:none} .cmpnote{display:block}
+  }
+</style>
+</head>
+<body><div class="wrap">
+<div class="mockbar">설계안 A(Claude 원안) — 10/2 자료의 실제 숫자. 구현 화면이 아니며 숫자·판정은 바뀌지 않음. 폰 폭(≤700px)에서는 표가 카드로 바뀜. 행을 누르면 상세.</div>
+
+<div class="top"><span>성적표 · <a href="#">검증 자료 전체 →</a></span><span>자료 <b>10/2 종가</b> · 생성 10/3 11:43</span></div>
+<h1>모델 성적표</h1>
+<div class="status">
+  <span class="pill ok">자료 상태: 정상</span>
+  <span class="pill">비교 기간: 모델마다 다름</span>
+  <span class="pill">결론은 '시험 기록'으로만 · 성적이 좋아도 바로 채택 아님</span>
+</div>
+
+<div class="tabs"><span class="tab on">과매도 · 저변동 · 전체종목</span><span class="tab">대형 가치</span><span class="tab">주도주 관측</span></div>
+<div class="tabs sub"><span class="tab on">끝난 40일 기록</span><span class="tab">20일 순위 검증</span><span class="tab">국면별 참고</span><span class="tab">시장별 보기</span></div>
+
+<div class="cond"><span><b>비교 조건</b> 시장별 상위 10 · 다음날 종가 매수 · 40거래일 보유 · 비용 0(왕복 0.35% 빼면 각 −0.35%p)</span><span><b>정렬</b> 시장보다 더 번 수익 · <a class="btn" href="#" onclick="document.getElementById('cmp').classList.toggle('on');return false">같은 기간으로 비교</a></span></div>
+
+<div id="cmp" class="cmp"><div class="card" style="border-color:#c9d6f5"><b>[가상 예시 — 재계산 전] 두 모델 공통 표본 비교</b> — 고른 모델: v30 vs le_a · 같은 목록 기준일 × 같은 시장만 · 기준일 7/23~8/3 · 8회 · 제외 0 · v30 +?.?%p / le_a +?.?%p<span class="limit">관측 수 부족 · 창 겹침</span>
+<div class="note">모델마다 시작일이 달라 '등록 후 전체'는 공정한 순위가 아니다. 이 칸은 사용자가 고른 두 모델이 둘 다 계산 가능한 같은 날짜·같은 시장만 남겨 본 것(화면 비교용, 판정·우승 라벨 없음). 0개면 '공통 완료 자료 없음'.</div></div></div>
+
+<div class="card">
+<table class="main" id="tblA">
+<thead><tr><th class="l">모델</th><th>시장보다<br>더 번 수익</th><th class="l">잰 기간 <span class="small">· 매수 횟수</span><br><span class="axis"><span class="pb"><i class="ov" style="left:81%;right:0"></i></span>6/5 ─ 8/3</span></th><th class="l">시험 기록<br><span class="small">(판정일 · 당시 결론)</span></th><th class="l">목록</th></tr></thead>
+<tbody>
+<tr class="row"><td class="l"><b>저점탈출</b> le_a <span class="small">▾ 상세</span></td><td class="v mid pos" data-k="시장보다">+10.7%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:68%;right:0"></i></span><span class="small">7/15~8/3 · 13회</span></td><td class="v l lab" data-k="시험 기록"><b>9/13 시험: 효과 확인 못 함 <span class="small">(원래 용어 '노이즈')</span></b></td><td class="v l" data-k="목록"><a class="btn" href="#">le.html</a></td></tr>
+<tr class="det"><td colspan="5">
+  <div class="kv"><div>40일 수익 <b>+20.5%</b></div><div>시장 평균 <b>+9.7%</b></div><div>중앙값 <b>+7.3%p</b></div><div>시장을 이긴 날 <b>85%</b></div><div>참고 구간 <b>+5.2~+17.0%p</b></div><div>시장별 <b>KOSPI +5.8 / KOSDAQ +15.7%p</b></div><div>그 뒤 매수 12일 <b>시장보다 +7.3%p</b></div><div>20일 순위 상관 <b>+0.4</b> <span class="small">(−100~+100 환산, 33일)</span></div></div>
+  순위 시험은 7/15~9/11 자료(평가 기준일 7/15~8/12)를 20일 보유 기준으로 한 번 본 것. 그 뒤 성적이 좋아도 결론은 새 창을 미리 정해 다시 봐야 바뀐다.<span class="limit">비교 기간 다름</span>
+</td></tr>
+<tr class="row"><td class="l"><b>과매도</b> v30 <span class="small">▾ 상세</span></td><td class="v mid pos" data-k="시장보다">+3.8%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:0%;right:0"></i></span><span class="small">6/5~8/3 · 38회</span></td><td class="v l lab" data-k="시험 기록"><b>8/9 시험: 효과 확인됨 <span class="small">(그때 기준 · '유의')</span></b></td><td class="v l" data-k="목록"><a class="btn" href="#">filter.html</a></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+7.1%</b></div><div>시장 평균 <b>+3.2%</b></div><div>중앙값 <b>+4.3%p</b></div><div>시장을 이긴 날 <b>76%</b></div><div>참고 구간 <b>+2.0~+5.6%p</b></div><div>시장별 <b>KOSPI +3.1 / KOSDAQ +4.5%p</b></div><div>그 뒤 매수 33일 <b>시장보다 +0.4%p</b></div><div>20일 순위 상관 <b>+2.9</b> <span class="small">(56일)</span></div></div>2차 창(W2b) 재판정 ~10/07.</td></tr>
+<tr class="row"><td class="l"><b>모멘텀</b> mom_a <span class="small">▾ 상세</span></td><td class="v mid pos" data-k="시장보다">+1.3%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:37%;right:0"></i></span><span class="small">6/26~8/3 · 24회</span></td><td class="v l lab" data-k="시험 기록"><b>8/29 시험: 효과 확인 못 함</b></td><td class="v l" data-k="목록"><a class="btn" href="#">mom.html</a></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+8.4%</b></div><div>시장 평균 <b>+7.1%</b></div><div>이긴 날 <b>46%</b></div><div>참고 구간 <b>−1.3~+3.8%p</b></div></div></td></tr>
+<tr class="row"><td class="l"><b>저변동+반전</b> lv_a <span class="small">▾ 상세</span></td><td class="v mid pos" data-k="시장보다">+0.7%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:34%;right:0"></i></span><span class="small">6/25~8/3 · 25회</span></td><td class="v l lab" data-k="시험 기록"><b>8/29 시험: 효과 확인 못 함</b></td><td class="v l" data-k="목록"><a class="btn" href="#">lva.html</a></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+7.7%</b></div><div>시장 평균 <b>+7.1%</b></div><div>이긴 날 <b>60%</b></div><div>시장별 <b>KOSPI −1.0 / KOSDAQ +2.3%p</b></div></div></td></tr>
+<tr class="row"><td class="l"><b>초소형</b> sm_a <span class="small">▾ 상세</span></td><td class="v mid neg" data-k="시장보다">−1.2%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:37%;right:0"></i></span><span class="small">6/26~8/3 · 24회</span></td><td class="v l lab" data-k="시험 기록"><b>9/1 시험: 효과 확인 못 함</b></td><td class="v l" data-k="목록"><span class="muted small">페이지 없음</span></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+5.9%</b></div><div>시장 평균 <b>+7.1%</b></div><div>이긴 날 <b>29%</b></div></div></td></tr>
+<tr class="row"><td class="l"><b>저변동</b> lv_b <span class="small">▾ 상세</span></td><td class="v mid neg" data-k="시장보다">−1.7%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:34%;right:0"></i></span><span class="small">6/25~8/3 · 25회</span></td><td class="v l lab" data-k="시험 기록"><b>8/29 시험: 확정 못 함 <span class="small">('기움')</span></b></td><td class="v l" data-k="목록"><a class="btn" href="#">lowvol.html</a></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+5.4%</b></div><div>시장 평균 <b>+7.1%</b></div><div>이긴 날 <b>40%</b></div><div>참고 구간 <b>−3.8~+0.3%p</b></div><div>시장별 <b>KOSPI −2.9 / KOSDAQ −0.6%p</b></div><div>그 뒤 매수 21일 <b>시장보다 −0.6%p</b></div></div></td></tr>
+<tr class="row"><td class="l"><b>공매도비중</b> sv_a <span class="small">▾ 상세</span></td><td class="v mid neg" data-k="시장보다">−3.8%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:68%;right:0"></i></span><span class="small">7/15~8/3 · 13회</span></td><td class="v l lab" data-k="시험 기록"><b>9/13 시험: 확정 못 함 <span class="small">('기움')</span></b></td><td class="v l" data-k="목록"><a class="btn" href="#">sv.html</a></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+6.0%</b></div><div>시장 평균 <b>+9.7%</b></div><div>이긴 날 <b>8%</b></div></div></td></tr>
+<tr class="row"><td class="l"><b>조용한강자</b> qs_a <span class="small">▾ 상세</span></td><td class="v mid neg" data-k="시장보다">−7.4%p</td><td class="v l" data-k="목록 기준일"><span class="pb"><i style="left:81%;right:0"></i></span><span class="small">7/23~8/3 · 8회</span></td><td class="v l lab" data-k="시험 기록"><b>9/17 시험: 효과 확인 못 함</b></td><td class="v l" data-k="목록"><a class="btn" href="#">qs.html</a></td></tr>
+<tr class="det"><td colspan="5"><div class="kv"><div>40일 수익 <b>+4.1%</b></div><div>시장 평균 <b>+11.5%</b></div><div>이긴 날 <b>0%</b></div></div></td></tr>
+<tr class="row"><td class="l"><b>가격4팩터</b> px_a</td><td class="v" data-k="40일 결과"><span class="muted">아직 없음</span></td><td class="v l" data-k="목록 기준일"><span class="small muted">첫 완료 기록 ~10/13</span></td><td class="v l" data-k="자료 상태"><span class="small">아직 없음 · 검증 37/40일 · 순위 판정 ~10/07</span></td><td class="v l" data-k="목록"><a class="btn" href="#">px.html</a></td></tr>
+<tr class="row"><td class="l"><b>저변동+저회전</b> lv_e</td><td class="v" data-k="40일 결과"><span class="muted">아직 없음</span></td><td class="v l" data-k="목록 기준일"><span class="small muted">첫 완료 기록 ~11/03</span></td><td class="v l" data-k="자료 상태"><span class="small">아직 없음 · 검증 21/40일</span></td><td class="v l" data-k="목록"><span class="muted small">페이지 없음</span></td></tr>
+<tr class="row"><td class="l"><b>공매도+신용</b> sv_b</td><td class="v" data-k="40일 결과"><span class="muted">아직 없음</span></td><td class="v l" data-k="목록 기준일"><span class="small muted">첫 완료 기록 ~11/16</span></td><td class="v l" data-k="자료 상태"><span class="small">아직 없음 · 검증 13/40일</span></td><td class="v l" data-k="목록"><span class="muted small">페이지 없음</span></td></tr>
+</tbody></table>
+<p class="note"><span class="cmpnote" style="display:none">모든 모델이 겹치는 기준일: 7/23~8/3(8개). </span><b>평가한 목록 기준일</b> = 그날 목록을 <b>다음 거래일</b>에 사서 40거래일 들고 간 결과가 확정된 날들(막대). 개수는 독립 실험 횟수가 아니다(창이 겹침). 모델마다 등록일이 달라 시작이 다르고, 끝은 전부 8/3(10/2 자료로 40거래일이 찬 마지막 매수일). 붉은 점선 사이(7/23~8/3)가 모든 모델이 겹치는 기간 — "같은 기간으로 비교" 버튼이 그 구간만 본다. 매수 횟수가 많아도 창이 겹쳐 독립 표본은 훨씬 적다(상세에 설명).</p>
+</div>
+
+<div class="next"><b>다음 확인</b> · 10/07 px_a 판정 · 10/07 v30 2차 창(W2b) 재판정 · 10/13 px_a 첫 40일 결과 · 11/03 lv_e 첫 결과 · ls_t1 h60 첫 창 ≈11월 초(판정 ≈12월 말)</div>
+
+<details><summary>묶음 — 과거 재구성 참고 기록 (v30·sv_a·lv_b 같은 날 같은 금액)</summary><div class="card">시장보다 <b class="neg">−0.2%p</b> · 25일(6/25~8/3) · 멤버는 지금 시험 기록 기준으로 골랐고 기록은 그 시험 전 기간 — 미리 정해 두고 관찰한 전략의 성과가 아님. 앞으로 관찰하려면 시작일을 미리 정한 별도 등록 필요.</div></details>
+<details><summary>지금 형세 · 국면별 참고 (지난 일을 적은 것 — 앞으로를 말하지 않음)</summary><div class="card">지금 국면: <b>상승</b>(코스닥 20일선 위) · 최근 40거래일 안에 끝난 매수분: v30 +3.7%p(7/9주) · le_a +10.7(4/4) · lv_b −1.7(3/7) · sv_a −3.8(0/4)<br><span class="small">국면별 기록은 '20일 순위 상관' 단위(돈 단위 아님)라 별도 표. 지금 자료에선 아래=6~7월·위=8~9월과 같아 국면과 시기를 구분 못 함. 이 칸이 다음 달을 맞힌 기록: 자료 부족(2027-04 재점검).</span></div></details>
+<details><summary>"모두 오늘까지 보유했다고 가정하면" · 은퇴 모델 · 계산 조건</summary><div class="card small">어제 산 것과 두 달 전 산 것이 한 평균에 섞이는 값(종전 '진행 중 포함'은 이 뜻이 아니라 이름을 바꿈). mom_b(은퇴 9/17): −1.1%p · 11일. 참고 구간은 겹치는 창을 따로따로인 것처럼 뽑아 실제보다 좁음. 정식 결론은 미리 정한 절차(PREREGISTER_ops_adoption)에서만.</div></details>
+
+<div class="foot"><b>용어(3번 제안 반영)</b> 유의 → <b>효과 확인됨(그때 기준)</b> · 기움 → <b>확정 못 함</b> · 노이즈 → <b>효과 확인 못 함</b>(종전 '차이 없음') · 역작동 → <b>반대로 감</b> · IC×100 → <b>20일 순위 상관(−100~+100)</b>(종전 '순서 맞춤 100점 만점') · "38 (0.9)" → <b>잰 기간 막대 + 매수 38회</b>(겹침은 상세에서 설명). 원래 용어는 괄호로 병기.</div>
+</div>
+<script>document.querySelectorAll('tr.row').forEach(tr=>tr.onclick=e=>{if(e.target.closest('a'))return;const d=tr.nextElementSibling;if(d&&d.classList.contains('det'))d.hidden=!d.hidden;});document.querySelectorAll('tr.det').forEach(d=>d.hidden=true);document.querySelector('tr.det').hidden=false;</script>
+</body></html>

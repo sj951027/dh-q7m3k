@@ -41,6 +41,8 @@ MODELS = [
     ("lv_a",  "lowvol_scores", "lowvol_score",   "lv_a",  "20260625"),
     ("mom_a", "lowvol_scores", "lowvol_score",   "mom_a", "20260627"),
     ("sv_a",  "wu_scores",     "wu_score",       "sv_a",  "20260715"),
+    ("le_a",  "wu_scores",     "wu_score",       "le_a",  "20260715"),   # [2026-10-03] 빠져 있던 현역 모델(표시 모델 — #저점탈출)
+    ("sm_a",  "lowvol_scores", "lowvol_score",   "sm_a",  "20260627"),   # [2026-10-03] 빠져 있던 현역 모델
     ("qs_a",  "wu_scores",     "wu_score",       "qs_a",  "20260723"),
     ("px_a",  "wu_scores",     "wu_score",       "px_a",  "20260810"),
     # [2026-09-15] 리더보드 ① 돈 표에 빠져 있던 현역 모델 추가(관측 전용). ls_t1 은 점수 테이블이 없어 아래에서 large_final 로 합성.

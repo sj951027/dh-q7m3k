@@ -4,7 +4,7 @@ build_large_test.py — 대형 트랙 '테스트 모델 ls_t1' 점수 페이지 
 ==============================================================================
 ★ 테스트·관측 전용 — 매수신호 아님. 산출물은 docs/_large_test.html —
   _large_obs.html 과 같은 '메인/필터 미링크 비공개 경로' 컨벤션(텔레그램에서만 링크).
-  정식 판정은 h=60/120d(§9, 9월~) — leaderboard(large 트랙)가 정본.
+  정식 판정은 h=60/120d(§9 — 첫 창 2026-11 초, 판정 ≈12월 말, large_verdict.py) — leaderboard 의 h20 은 참고.
 
 ls_t1 스펙(동결 — PREREGISTER_ls_t1.md):
   run 내 ep(1/PER)·bp(1/PBR)·rim_spread·div_yield 의 백분위 랭크 **동일가중 평균**
@@ -169,7 +169,7 @@ def render(g, rid, ts, ic):
  .dtab.active{{border-color:#7db3ff;color:#7db3ff}} .dtab.more{{opacity:.8}}
  .dnote{{font-size:12px;color:#8b93a7;margin:0 0 8px}} #histPanel td.nm{{text-align:left}}
 </style>
-<div class=warn>⚠️ <b>ls_t1 — 테스트 모델(관측·검증 전)</b> · 매수신호 아님 · 정식 판정 h=60/120d(9월~) ·
+<div class=warn>⚠️ <b>ls_t1 — 테스트 모델(관측·검증 전)</b> · 매수신호 아님 · 정식 판정 h=60/120d(첫 창 2026-11 초 · 판정 ≈12월 말) ·
 동일가중 랭크 스펙 동결(PREREGISTER_ls_t1.md) · 관측 전용 페이지(목록에 연결돼 있고 주소로 열립니다)</div>
 <div class=meta>run {rid} ({ts}) · in-sample 참고 IC(백필 포함 — <b>증거 아님</b>): {ic_txt}
 · OOS 판정 정본: leaderboard(large 트랙, 등록 20260806)</div>
