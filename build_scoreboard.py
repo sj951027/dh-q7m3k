@@ -113,10 +113,101 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
                 _ex = (_da.ret_now - _da.bench_now).values
                 out["after"] = {"n": int(len(_da)), "exc_mean": float(_ex.mean()), "win": float((_ex > 0).mean()),
                                 "first": _da.date.min(), "last": _da.date.max()}
+    out["_df"] = df   # [2026-10-03] 묶음·지금 형세 계산용(JSON 직전에 뺀다)
     h20 = m.get("h20") or {}; h5 = m.get("h5") or {}
     out["live"] = {"ic20": h20.get("ic"), "n": h20.get("n"), "ci": h20.get("ci"), "ic5": h5.get("ic"), "oos_days": m.get("oos_days")}
     out["retired"] = bool(m.get("retired")) or m["model"] in reg_json.get("retired", {})
     return out
+
+
+# ---------------------------------------------------------------------------------------------
+# [2026-10-03] 사용자 결정 1·2·3 (research/RESEARCH_form_signals_20261003.md §4):
+#   ① 묶음 = 시험 기록이 '유의'·'기움'인 현역 트랙A 모델을 같은 날짜에 동일가중으로 섞은 줄(예측 불필요)
+#   ② 지금 형세 = 최근 40거래일 안에 끝난 매수분의 성적(서술 전용 — "다음 달을 맞힌 기록: 자료 부족" 각주 고정)
+#   ③ 국면별 기록 = 등록 후 앵커의 20일 IC 를 KOSDAQ 20일선 위/아래로 나눠 적고 지금 국면을 표시
+#   전부 표시 전용 · 점수·판정 무관 · 기존 JSON 키는 그대로.
+RECENT_DAYS = 40; REGIME_MIN = 5; ENSEMBLE_LABELS = ("유의", "기움")
+PERSISTENCE_NOTE = ("이 칸의 숫자가 다음 달 성적을 맞힌 기록: 자료 부족(독립 20일 구간 3개) — 2027-04 재점검. "
+                    "신호 후보 10개 전부 다음 20일과 관계 없음(2026-10-03 실측).")
+
+
+def recent_form(df, dates, didx):
+    """최근 RECENT_DAYS 거래일 안에 40일 창이 끝난 매수분. n<4 면 None."""
+    N = len(dates)
+    d = df[df.done.astype(bool)].copy()
+    if not len(d): return None
+    d["t_end"] = d.date.map(lambda x: didx.get(x, -10**6)) + 1 + H
+    d = d[d.t_end >= N - RECENT_DAYS]
+    if len(d) < 4: return None
+    ex = (d.ret40 - d.bench40).values
+    wk = pd.to_datetime(d.date, format="%Y%m%d").dt.isocalendar().week.astype(str) + "-" + pd.to_datetime(d.date, format="%Y%m%d").dt.isocalendar().year.astype(str)
+    w = pd.Series(ex, index=d.index).groupby(wk.values).mean()
+    return {"n": int(len(d)), "exc_mean": float(ex.mean()), "win": float((ex > 0).mean()), "ci_ref": boot(ex),
+            "weeks_pos": int((w > 0).sum()), "weeks": int(len(w)), "first": d.date.min(), "last": d.date.max()}
+
+
+def load_regime(dates):
+    """KOSDAQ 종가 > 20일선 → '상승', 아니면 '약세'. market_daily 없으면 None."""
+    try:
+        oc = sqlite3.connect(f"file:{lb.OHLCV_DB}?mode=ro", uri=True)
+        kq = pd.read_sql("SELECT date, close FROM market_daily WHERE series='KOSDAQ' ORDER BY date", oc); oc.close()
+        kq["date"] = kq.date.astype(str).str.replace("-", ""); kq = kq.set_index("date")["close"].astype(float)
+        above = (kq > kq.rolling(20).mean()).reindex(dates)
+        return above.map(lambda v: None if pd.isna(v) else ("상승" if v else "약세"))
+    except Exception:
+        return None
+
+
+def regime_split(S, reg, close, dates, didx, excl, regime):
+    """등록 후 앵커별 20일 IC(시장별 스피어만 평균, leaderboard 규약)를 국면별로. 각 n<REGIME_MIN 이면 그 국면은 없음."""
+    if regime is None: return None
+    N = len(dates); h = 20
+    keep = lb.dedupe_by_anchor(S, didx, excl, reg=reg)
+    rows = []
+    for rid in sorted(keep):
+        t = lb.anchor(rid, didx)
+        if t is None or t + 1 + h >= N: continue
+        r = close.iloc[t + 1 + h] / close.iloc[t + 1] - 1
+        jump = close.pct_change(fill_method=None).abs().iloc[t + 2:t + 2 + h].max()
+        r = r.where(jump <= lb.JUMP_CAP)
+        ics = []
+        for mkt, gm in S[S.run_id == rid].groupby("market"):
+            s = gm.set_index("ticker")["score"].astype(float); bb = r.reindex(s.index); mm = s.notna() & bb.notna()
+            if mm.sum() < lb.MIN_GROUP or s[mm].nunique() < 3 or bb[mm].nunique() < 3: continue
+            ics.append(float(np.corrcoef(s[mm].rank(), bb[mm].rank())[0, 1]))
+        if ics and regime.iloc[t]: rows.append((regime.iloc[t], float(np.mean(ics))))
+    if not rows: return {}
+    out = {}
+    for rg in ("상승", "약세"):
+        v = np.array([x for g, x in rows if g == rg], float)
+        if len(v) >= REGIME_MIN:
+            out[rg] = {"n": int(len(v)), "ic": float(v.mean()), "ci": boot(v), "pos": float((v > 0).mean())}
+    return out
+
+
+def ensemble(res):
+    """묶음: 같은 매수일에 끝난 멤버 모델 초과(%p)의 평균(모델 동일가중). 멤버 2개 이상인 날만. 짝비교(묶음−멤버)도 적는다."""
+    mem = [r for r in res if r["track"] != "large" and not r["retired"] and r.get("sealed") and r["sealed"]["v"] in ENSEMBLE_LABELS]
+    if len(mem) < 2: return None
+    per = {}
+    for r in mem:
+        d = r["_df"]; d = d[d.done.astype(bool)]
+        per[r["model"]] = pd.Series((d.ret40 - d.bench40).values, index=d.date.values)
+    tab = pd.DataFrame(per)
+    tab = tab[tab.notna().sum(axis=1) >= 2].sort_index()
+    if len(tab) < 4: return None
+    mix = tab.mean(axis=1)
+    pairs = {}
+    for mname in tab.columns:
+        c = tab[mname].dropna(); dd = (mix.reindex(c.index) - c).values
+        if len(dd) >= 4: pairs[mname] = {"n": int(len(dd)), "diff_mean": float(dd.mean()), "ci_ref": boot(dd)}
+    ex = mix.values
+    return {"members": [m["model"] for m in mem], "names": [m["name"] for m in mem],
+            "fix": {"n": int(len(ex)), "blocks": round(len(ex) / H, 1), "exc_mean": float(ex.mean()), "exc_median": float(np.median(ex)),
+                    "win": float((ex > 0).mean()), "ci_ref": boot(ex), "first": str(tab.index.min()), "last": str(tab.index.max()),
+                    "worst": float(ex.min()), "best": float(ex.max())},
+            "pairs": pairs,
+            "rule": "시험 기록이 '효과 확인됨'·'확정 못 함'인 현역 트랙A 모델을 같은 매수일에 같은 금액씩 — 어느 모델이 앞설지 고르지 않는다"}
 
 
 def main():
@@ -127,10 +218,24 @@ def main():
     lbj = json.loads((HERE / "docs/leaderboard.json").read_text(encoding="utf-8"))
     reg_json = json.loads((HERE / "docs/models_registry.json").read_text(encoding="utf-8"))
     res = [observe(con, m, close, mk, dates, didx, excl, reg_json) for m in lbj["models"] if m["model"] in NAME]
+    regime = load_regime(dates)
+    for r, m in zip(res, [m for m in lbj["models"] if m["model"] in NAME]):
+        try:
+            r["recent"] = recent_form(r["_df"], dates, didx)
+            r["regime"] = regime_split(load_scores(con, m), m["reg_date"], close, dates, didx, excl, regime) if m["track"] != "large" else None
+        except Exception as e:
+            r["recent"] = None; r["regime"] = None; print(f"   ⚠ {m['model']} 지금 형세/국면 생략(비치명): {e}")
     con.close()
+    try:
+        ens = ensemble(res)
+    except Exception as e:
+        ens = None; print(f"   ⚠ 묶음 생략(비치명): {e}")
+    for r in res: r.pop("_df", None)
     res.sort(key=lambda r: (r["track"] == "large", r["retired"], -(r["fix"]["exc_mean"] if r["fix"] and r["fix"]["n"] >= 4 else -99)))   # 은퇴는 트랙 맨 아래
     payload = {"asof": dates[-1], "generated": datetime.now().isoformat(timespec="seconds"), "H": H, "TOP": TOP, "COST": COST,
-               "note": "참고 성적 · 검증 결론 아님 · 사전등록 v5 와 뼈대 동일하나 희석 제외·PIT·블록 CI 미적용", "models": res}
+               "note": "참고 성적 · 검증 결론 아님 · 사전등록 v5 와 뼈대 동일하나 희석 제외·PIT·블록 CI 미적용", "models": res,
+               "ensemble": ens, "regime_now": (regime.iloc[-1] if regime is not None else None), "recent_days": RECENT_DAYS,
+               "persistence_note": PERSISTENCE_NOTE}
     (HERE / "docs" / "scoreboard.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     done = sum(1 for r in res if r["fix"] and r["fix"]["n"] >= 4)
     print(f"  ✓ docs/scoreboard.json — {len(res)}모델 (40일 완결 4일↑ {done}개) · {dates[-1]} 기준")

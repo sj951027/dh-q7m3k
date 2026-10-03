@@ -79,6 +79,13 @@ def insample_ic(lg, horizons=(10, 20)):
     px = pd.read_sql("SELECT ticker,date,close FROM daily_ohlcv", con)
     con.close()
     close = px.pivot_table(index="date", columns="ticker", values="close", aggfunc="last").sort_index()
+    try:   # [2026-10-03] 대형 전용 시세 보충(daily_ohlcv_extra) — 본 표 우선, 없으면 종전과 동일
+        import extra_ohlcv
+        ex = extra_ohlcv.load_extra_close(str(ohlcv), exclude=set(close.columns))
+        if len(ex):
+            close = close.join(ex.reindex(close.index), how="left")
+    except Exception:
+        pass
     dates = list(close.index)
     didx = {d: i for i, d in enumerate(dates)}
     out = {}

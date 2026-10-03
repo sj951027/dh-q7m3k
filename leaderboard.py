@@ -316,7 +316,18 @@ def main():
             lg["score"] = rk.mean(axis=1).where(rk.notna().sum(axis=1) >= 2)
             s = lg.dropna(subset=["score"])[["run_id", "market", "ticker", "score"]]
             reg = REG_DATE.get("ls_t1")
-            stat = model_ic(s, close, N, didx, excl, reg=reg)
+            # [2026-10-03] 대형 전용 시세 보충(daily_ohlcv_extra — 코스닥 글로벌·영문코드 종목, extra_ohlcv.py).
+            #   본 표 우선·본 표에 없는 종목만 덧붙이며 **이 블록에서만** 쓴다 → v3·lowvol·wu 의 close 는 불변(0-diff).
+            #   없으면 그대로(종전과 동일). 사용자 결정 (a)안 — research/RESEARCH_ohlcv_gap_large_20261003.md.
+            close_lg = close
+            try:
+                import extra_ohlcv
+                ex = extra_ohlcv.load_extra_close(OHLCV_DB, exclude=set(close.columns))
+                if len(ex):
+                    close_lg = close.join(ex.reindex(close.index), how="left")
+            except Exception as e:
+                print(f"   ⚠️ ls_t1 시세 보충 생략(비치명): {e}")
+            stat = model_ic(s, close_lg, N, didx, excl, reg=reg)
             vd, why = verdict(stat[H_PRIMARY], 1, stat["oos_days"])
             why += " · ⚠대형 설계 판정 h=60~120d — h20 라벨은 참고"
             results.append(dict(track="large", model="ls_t1", reg_date=reg,

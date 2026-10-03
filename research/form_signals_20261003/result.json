@@ -1,0 +1,192 @@
+[
+ {
+  "F": "F1",
+  "name": "끝난20일초과 최근20",
+  "n_days": 28,
+  "n_pairs": 173,
+  "rho": 0.064,
+  "rho_ci": [
+   -0.118,
+   0.201
+  ],
+  "leader_minus_mix": -0.0,
+  "leader_ci": [
+   -0.93,
+   0.19
+  ],
+  "leader_pos": 0.39,
+  "daily_rank_corr": -0.096,
+  "daily_rank_n": 28
+ },
+ {
+  "F": "F2",
+  "name": "끝난5일초과 최근10",
+  "n_days": 48,
+  "n_pairs": 345,
+  "rho": -0.024,
+  "rho_ci": [
+   -0.149,
+   0.013
+  ],
+  "leader_minus_mix": 0.19,
+  "leader_ci": [
+   -1.04,
+   0.99
+  ],
+  "leader_pos": 0.42,
+  "daily_rank_corr": -0.087,
+  "daily_rank_n": 48
+ },
+ {
+  "F": "F3",
+  "name": "열린포지션 시가평가",
+  "n_days": 53,
+  "n_pairs": 395,
+  "rho": 0.006,
+  "rho_ci": [
+   -0.241,
+   0.093
+  ],
+  "leader_minus_mix": 0.28,
+  "leader_ci": [
+   -1.31,
+   0.38
+  ],
+  "leader_pos": 0.53,
+  "daily_rank_corr": 0.03,
+  "daily_rank_n": 53
+ },
+ {
+  "F": "F4",
+  "name": "20일초과 양수비율",
+  "n_days": 28,
+  "n_pairs": 173,
+  "rho": 0.069,
+  "rho_ci": [
+   -0.043,
+   0.197
+  ],
+  "leader_minus_mix": -0.05,
+  "leader_ci": [
+   -0.8,
+   0.72
+  ],
+  "leader_pos": 0.43,
+  "daily_rank_corr": -0.064,
+  "daily_rank_n": 28
+ },
+ {
+  "F": "F5",
+  "name": "IC20 최근20",
+  "n_days": 28,
+  "n_pairs": 173,
+  "rho": 0.015,
+  "rho_ci": [
+   -0.127,
+   0.045
+  ],
+  "leader_minus_mix": -0.48,
+  "leader_ci": [
+   -0.9,
+   -0.35
+  ],
+  "leader_pos": 0.36,
+  "daily_rank_corr": -0.164,
+  "daily_rank_n": 28
+ },
+ {
+  "F": "F6",
+  "name": "IC20 양수비율",
+  "n_days": 28,
+  "n_pairs": 173,
+  "rho": 0.107,
+  "rho_ci": [
+   -0.017,
+   0.112
+  ],
+  "leader_minus_mix": 0.52,
+  "leader_ci": [
+   0.06,
+   0.95
+  ],
+  "leader_pos": 0.54,
+  "daily_rank_corr": -0.105,
+  "daily_rank_n": 27
+ },
+ {
+  "F": "F7",
+  "name": "같은국면 IC",
+  "n_days": 16,
+  "n_pairs": 99,
+  "rho": -0.043,
+  "rho_ci": [
+   -0.043,
+   -0.043
+  ],
+  "leader_minus_mix": -0.74,
+  "leader_ci": [
+   -0.74,
+   -0.74
+  ],
+  "leader_pos": 0.31,
+  "daily_rank_corr": 0.019,
+  "daily_rank_n": 16
+ },
+ {
+  "F": "F8",
+  "name": "모델간 합의(겹침)",
+  "n_days": 58,
+  "n_pairs": 445,
+  "rho": -0.031,
+  "rho_ci": [
+   -0.098,
+   0.131
+  ],
+  "leader_minus_mix": 0.09,
+  "leader_ci": [
+   -0.69,
+   1.3
+  ],
+  "leader_pos": 0.5,
+  "daily_rank_corr": 0.008,
+  "daily_rank_n": 58
+ },
+ {
+  "F": "F9",
+  "name": "누적초과 낙폭",
+  "n_days": 28,
+  "n_pairs": 173,
+  "rho": 0.137,
+  "rho_ci": [
+   -0.043,
+   0.21
+  ],
+  "leader_minus_mix": 0.98,
+  "leader_ci": [
+   -0.3,
+   0.98
+  ],
+  "leader_pos": 0.57,
+  "daily_rank_corr": 0.064,
+  "daily_rank_n": 22
+ },
+ {
+  "F": "F10",
+  "name": "개선(F3−F1)",
+  "n_days": 28,
+  "n_pairs": 173,
+  "rho": -0.042,
+  "rho_ci": [
+   -0.172,
+   0.002
+  ],
+  "leader_minus_mix": -0.65,
+  "leader_ci": [
+   -0.97,
+   -0.29
+  ],
+  "leader_pos": 0.43,
+  "daily_rank_corr": 0.113,
+  "daily_rank_n": 28
+ }
+]

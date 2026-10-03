@@ -15,23 +15,33 @@
    - 대형 화면: 생성 스크립트 2개를 고쳐 이름·순서 통일, 필터를 열 이름 방식으로. 수정 전후 생성본을 칸 단위로 대조(값 동일), 브라우저 필터 결과 수 대조(동일).
    - 그때 관측 리포트 수급이 전부 '·'인 것을 발견 → 원인: `daily_flows` 가 ohlcv.db 로 옮겨져 TEMP VIEW 로 붙는데 "표가 있나" 검사가 `sqlite_master` 만 봄 → 한 줄 고침 → 300/300 커버.
    - 시세 결손 조사 스크립트 `research/ohlcv_gap_large_20261003.py`(읽기 전용) → `research/RESEARCH_ohlcv_gap_large_20261003.md`.
+6. 사용자 결정 **(a)안** → `extra_ohlcv.py` 신설, `daily_ohlcv_extra` 136종목 3년치 백필(63,087행), 배치에 한 줄, 리더보드 ls_t1 블록·테스트 화면만 보충 표 읽기. 리더보드 전후를 임시 폴더로 대조해 다른 25개 모델 0-diff 확인(2026.10.10).
+7. 도전 카드 승인 → `large_verdict.py` 신설(2026.10.11): §9 판정(h60·120, 주간 앵커)을 리더보드 함수 그대로 매일 계산해 `research/large_verdict_status.md` 에 씀. `--check` 로 h20 일간 값이 리더보드와 일치 확인. 배치에 연결. 지금 라벨은 둘 다 '대기'(h60 첫 창 23거래일 뒤).
+
+8. 사용자 질문 "시험 기록을 월간으로 다시 하거나, 지금 앞서는 모델을 보여 줄 방법" → 월간 재시험 제안 → 사용자 "한 달 좋다고 다음 달 좋진 않다, 기준을 찾아보자" → **신호 후보 10개 실측**(`research/form_signals_20261003/`, `RESEARCH_form_signals_20261003.md`): 독립 20일 구간 약 3개뿐이라 어떤 신호도 다음 20거래일을 말해 주지 못함(순위상관 전부 ±0.15 안, 1등 따라가기 승률 31~57%). 아이디어 9개를 근거 상태와 함께 적음. 도전 카드(판정문 틀 스크립트)는 사용자 지시로 **중단**(파일 변경 없음).
+9. 사용자 결정 **1·2·3 진행 + 더 알아볼 것 고려** → 성적표에 묶음 줄·지금 형세 칸·국면별 기록(2026.10.12, `build_scoreboard.py`·`docs/leaderboard.html`, 기존 JSON 키 0-diff). 추가 조사: 종목 단위 합의(`consensus_picks.py`) — 효과 없음. 첫 실측에서 **국면별 기록이 눈에 띔**: v30·lv_b·sv_a 전부 약세 국면에서만 효과, lv_b 는 상승 국면 IC −0.156 [−0.227, −0.082]. 지금 국면 '상승'.
 
 ## 사용자 결정
 - 계획 1~4 승인 · 도전 카드 2개 승인.
 - 통일 이름: 종목 / 52주고점대비% / 1개월% (Claude 제안, 이견 없음). 변동성은 `변동성21`·`변동성63` 으로 나눠 둠 — **Claude 가 정한 것, 사용자 확인 필요**.
 - 대형 화면의 수급 열 **순서까지** 바꾼 것(카드는 이름만 말했음)과 수급 빈 칸 버그 수정은 Claude 판단 — 표시 전용이라 진행.
+- 시세 결손 처리 = **(a) 별도 표로 받아 대형 판정에만 쓴다**(사용자). 본 표·lowvol·wu 유니버스 불변. `PREREGISTER_ls_t1.md` 는 안 건드리고 원장에 각주(Claude 판단).
+- `large_verdict.py` 의 세부 규칙(주간 앵커 = ISO 주 첫 앵커 · 창 닫힌 주간 앵커 8개 미만 '대기' · 비겹침 CI 로 '유의'→'기움' 보수화)은 **Claude 가 정해 고정한 것** — 11월 초 첫 창이 닫히기 전까지 사용자가 바꿀 수 있고, 그 뒤엔 결과를 보고 바꾸지 않는다.
 
 ## 바뀐 것 (미커밋 — 사용자가 GitHub Desktop 으로)
 - 화면: `docs/filter.html` · `filter_v31g.html` · `px.html` · `qs.html` · `sv.html` · `le.html` · `lowvol.html` · `lva.html` · `_large_obs.html` · `_large_test.html`(마지막 둘은 재생성본)
-- 코드: `build_large_report.py` · `build_large_test.py`
-- 연구: `research/ohlcv_gap_large_20261003.py` · `research/RESEARCH_ohlcv_gap_large_20261003.md`
-- 문서: `DISPLAY_TERMS.md` · `patch_note/20261003_table_common_columns.md`(2026.10.8) · `patch_note/20261003_large_pages_flows.md`(2026.10.9) · `patch_note/README.md` · 이 기록 · `worklog/README.md`
+- 코드: `build_scoreboard.py`(묶음·형세·국면) · `docs/leaderboard.html` · `docs/scoreboard.json`(재생성) · `build_large_report.py` · `build_large_test.py` · **`extra_ohlcv.py`(신설)** · **`large_verdict.py`(신설)** · `leaderboard.py`(ls_t1 블록만) · `run_all_and_diversify.bat`(4줄) · `research/large_verdict_status.md`(배치가 매일 덮어씀)
+- 데이터(git 밖): `../dh-q7m3k-data/ohlcv.db` 에 표 `daily_ohlcv_extra` 추가(본 표 무변경)
+- 연구: `research/ohlcv_gap_large_20261003.py` · `research/RESEARCH_ohlcv_gap_large_20261003.md` · `research/form_signals_20261003/`(form_signals.py·consensus_picks.py·결과) · `research/RESEARCH_form_signals_20261003.md`
+- 문서: `DISPLAY_TERMS.md` · `MODELS_LEDGER.md`(ls_t1 행 각주) · `patch_note/20261003_table_common_columns.md`(2026.10.8) · `20261003_large_pages_flows.md`(10.9) · `20261003_large_extra_ohlcv.md`(10.10) · `20261003_large_verdict_script.md`(10.11) · `20261003_scoreboard_form_ensemble.md`(10.12) · `patch_note/README.md` · 이 기록 · `worklog/README.md`
 
 ## 검증
 - 화면 8개: 로컬 서버 + 내장 브라우저로 머리글 확인, 정렬 동작, 콘솔 오류 0. 치환 전후 줄 수·줄바꿈 불변.
 - 대형 화면: 전후 생성본 칸 값 대조(500행·478행 동일), 필터 결과 수 7종 동일, 수급 체크 4종은 HTML 직접 계산 기대값과 일치, 정렬 정상.
-- `python tests/run_tests.py` 통과(두 번).
-- 못 본 것: 폰 화면 폭에서의 모양.
+- 보충 표: 리더보드를 임시 폴더로 전후 생성(`L.OUT` 바꿔치기, docs 미갱신) → 다른 25개 모델 JSON 항목 동일, ls_t1 h20 IC +0.0614→+0.0612 · 상위20 초과 +0.76→+1.75%p. 조사 스크립트 재실행: 시세 없음 48→0. 증분 모드 1회 정상.
+- `python tests/run_tests.py` 통과(세 번).
+- `large_verdict.py --check`: 일간 h20 = 리더보드 ls_t1 h20(IC +0.0612 · n 16 · CI 동일). `python tests/run_tests.py` 통과(네 번).
+- 못 본 것: 폰 화면 폭에서의 모양 · 배치 안에서 `extra_ohlcv.py`·`large_verdict.py` 가 실제로 도는 것(10/6 로그에서 "보충 대상 136종목"·"§9 판정 상태" 줄 확인).
 
 ## 시세 결손 조사 결과 (실측, `RESEARCH_ohlcv_gap_large_20261003.md`)
 - 등록일(8/6) 이후 ls_t1 점수가 있던 542종목 중 **48종목이 시세 DB에 아예 없음**(코스닥 47 · 코스피 1). 매 앵커 코스닥 ~46/175~183 종목(26%), **시총 비중 40%**(알테오젠·에코프로·에코프로비엠·주성엔지니어링 …)가 빠짐. 코스피는 1종목(삼성에피스홀딩스 `0126Z0`).
@@ -41,14 +51,16 @@
 
 ## 남은 일
 지난 기록(2026-10-02)의 남은 일 1~4·6·7 은 그대로. 추가·변경:
-- **결정 대기(판정 전)**: 대형 트랙 시세 결손 처리. 선택지 — (a) 결손 종목만 별도 표(또는 별도 DB)로 시세를 받아 **대형 판정에만** 쓴다(lowvol·wu 유니버스 불변) · (b) `daily_ohlcv` 에 합쳐 넣는다(lowvol·wu 유니버스가 바뀜 — 현역 모델 spec 동결과 충돌, 비권장) · (c) 그대로 두고 판정문에 "코스닥 시총 40% 제외" 각주. Claude 권고는 (a).
+- 시세 결손은 (a)안으로 **처리 완료**. 남은 것: 10/6 배치 로그에서 `extra_ohlcv` 단계가 돌았는지(`보충 대상 136종목`), `docs/leaderboard.json` 의 ls_t1 exc20 이 +1.7%p 근처로 바뀌는지 확인. ls_t1 h60 판정문에는 "시세 보충표 적용(10/03)" 각주. 판정 시점: h60 ≈ 12월 말(주간 앵커 8개), h120 ≈ 2027-03 말 — `research/large_verdict_status.md` 가 매일 남은 거래일을 적는다.
+- '시험 기록' 손보기는 1·2·3(묶음·지금 형세·국면별 기록)으로 **적용 완료**. 월간 재시험(라벨 갱신)은 하지 않기로. 신호 지속성 재점검은 2027-04 이후(`form_signals.py`·`consensus_picks.py` 월 1회).
+- **다음 조사 후보(사용자 확인 뒤)**: 국면별 기록이 강하게 갈려(약세 전용) "약세 국면에서만 모델을 쓰고 상승 국면엔 쉬기"가 **사전등록할 가치가 있는 가설**인지 — 단 지금 자료는 사후 분할·단일 기간이라 가설 수준. 검증 경로: 새 model_id 가 아니라 '운용 규칙' 사전등록(ops 트랙처럼) + 비겹침 창. 텔레그램에도 지금 국면 한 줄을 넣을지.
 - 표시 남은 것: 본문 문단 쉬운 말 · 문서 파일 이름을 링크로 · 날짜 표기 통일 · 검증 자료 화면 첫 절 정리 · PTW '모델 성적'에 시험 기록·시장별 줄.
 - `docs/_large_obs.html` 꼬리의 `</body>` 줄바꿈이 생성 스크립트와 게시본이 달랐다(지난 세션에 게시본만 직접 고친 흔적) — 이번 재생성으로 스크립트 쪽으로 통일됨. 다음 배치가 같은 결과를 내는지 10/6 에 확인.
 
 ## 다음 세션 시작점
 - `git status` 로 위 미커밋분이 올라갔는지 확인.
 - 날짜에 따라: 10/4 이후 주간 리캡 새 형식, 10/5·10/9 `_SKIPPED.log`, 10/6 이후 `logs/auto_run_20261006_2010.log`(DART 상한 본 검증 — KOSDAQ 2단계 분당 600 이하·3단계 1~2분·연결오류 0) 와 `docs/_large_obs.html` 수급 칸이 채워져 나오는지.
-- 그 뒤 판정(px_a, v30 W2b ~10/07) → 정기 재시험 규칙 설계 초안. 대형 시세 결손은 위 결정 대기.
+- 그 뒤 판정(px_a, v30 W2b ~10/07) → 정기 재시험 규칙 설계 초안.
 
 ## 작업 요령
 - 로컬 서버는 Bash 백그라운드로 `python -m http.server 8765 --bind 127.0.0.1`(docs 에서), 끝나면 TaskStop. 내장 브라우저 `javascript_tool` 로 머리글 글자를 읽으면 스크린샷 없이 확인된다.
@@ -57,3 +69,4 @@
 - Bash 의 `cd` 는 다음 호출에도 남는다 — 명령마다 저장소 절대 경로로 시작할 것.
 - 치환 스크립트는 `--apply` 없이 먼저 돌려 개수·줄 수를 본 뒤 적용.
 - 파이썬에서 `(x or -1) >= 0` 식은 0 을 놓친다(0 이 거짓) — 기대값 계산에서 한 번 틀렸음.
+- 리더보드 0-diff 확인은 `import leaderboard as L; L.OUT=Path(임시)/'leaderboard.json'; L.main()` 으로 docs 를 안 건드리고 할 수 있다(history 파일도 같은 폴더에 생김).

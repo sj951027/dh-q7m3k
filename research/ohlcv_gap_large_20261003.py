@@ -129,6 +129,30 @@ def main():
               "", "## 5. 이 조사가 말하지 않는 것",
               "- 결손 종목을 채웠을 때 IC가 어떻게 바뀔지는 모른다(가격이 없으니). 판정문에는 '시세 없음 n종목 제외'를 각주로 적는 용도.",
               "- 결손 원인(상장 코드 형식·수집기 범위)은 여기서 다루지 않는다."]
+    # [2026-10-03 (a)안 적용 후] 보충 표 daily_ohlcv_extra 를 본 표 우선으로 합쳤을 때 같은 수를 다시 센다.
+    try:
+        sys.path.insert(0, str(HERE))
+        import extra_ohlcv
+        ex = extra_ohlcv.load_extra_close(str(OHLCV), exclude=set(close.columns))
+    except Exception as e:
+        ex = None; lines += ["", f"## 6. 보충 후 — 보충 표 읽기 실패: {e}"]
+    if ex is not None and len(ex):
+        close2 = close.join(ex.reindex(close.index), how="left")
+        have2 = set(close2.columns)
+        miss2 = allt[~allt["ticker"].isin(have2)]
+        rows2 = []
+        for rid, g in s.groupby("run_id"):
+            t = anchor(rid)
+            if t is None or t + ENTRY_LAG + 20 >= N: continue
+            for mk, gm in g.groupby("market"):
+                b = (close2.iloc[t + ENTRY_LAG + 20] / close2.iloc[t + ENTRY_LAG] - 1).reindex(gm["ticker"].values)
+                rows2.append((rid, mk, int(b.isna().sum()), len(gm)))
+        df2 = pd.DataFrame(rows2, columns=["rid", "mk", "drop", "n"])
+        lines += ["", "## 6. 보충 후 (daily_ohlcv_extra 를 본 표 우선으로 합침 — extra_ohlcv.py, 사용자 결정 (a)안)",
+                  f"- 보충 표: {ex.shape[1]}종목 {ex.index.min()}~{ex.index.max()}. 시세가 아예 없는 종목 {len(miss)} → **{len(miss2)}**."]
+        for mk, d in df2.groupby("mk"):
+            lines.append(f"- h20 {mk}: 평균 빠짐 {d['drop'].mean():.1f}/{d['n'].mean():.0f} ({d['drop'].sum()/d['n'].sum()*100:.1f}%) — 남은 빠짐은 가격 결측·점프컷.")
+        lines += ["- 리더보드 ls_t1 참고값(h20, 앵커 16일) 전후: IC +0.0614 → +0.0612 · 상위20 시장초과 +0.76%p → +1.75%p (실측 2026-10-03, 다른 25개 모델 0-diff)."]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT}")
     print("\n".join(lines[:8]))
