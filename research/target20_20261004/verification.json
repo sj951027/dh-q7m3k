@@ -1,0 +1,8 @@
+{
+  "start": "20250102",
+  "end": "20260825",
+  "dates": 400,
+  "hold_replication_rows": 11952,
+  "max_error": 0.0,
+  "no_negative_cash": true
+}

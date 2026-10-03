@@ -107,3 +107,9 @@ large_report.html
 research/fullscan_20260903/panel.npz
 research/dart_history/dart_hist.db
 research/dart_history/collect.log
+# [2026-10-04] big research caches (regenerable) - keep out of repo
+research/dart_history/*.parquet
+research/dart_history/*.log
+research/target20_*/*.npz
+research/target20_*/*.parquet
+research/target20_*/daily_*.csv
