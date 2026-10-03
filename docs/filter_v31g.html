@@ -571,7 +571,7 @@ let sortDesc = true;
 
 // ===== 컬럼 정의 (보여줄 컬럼과 순서) =====
 const COLUMN_DEFS = [
-  { key: 'name', label: '종목명', type: 'name' },
+  { key: 'name', label: '종목', type: 'name' },
   { key: 'ticker', label: '코드', type: 'string' },
   { key: 'grade', label: '등급', type: 'string' },                    // V3
   { key: 'final_score_v3', label: 'V3점수', type: 'score' },          // V3
@@ -598,15 +598,15 @@ const COLUMN_DEFS = [
   { key: 'risk_level', label: '위험', type: 'risk' },
   { key: 'price', label: '현재가', type: 'price' },
   { key: 'RSI', label: 'RSI', type: 'number' },
-  { key: 'drawdown_52w_high_%', label: '52주高', type: 'pct' },
-  { key: 'return_1w_%', label: '1주', type: 'pct' },
-  { key: 'return_1m_%', label: '1개월', type: 'pct' },
+  { key: 'drawdown_52w_high_%', label: '52주고점대비%', type: 'pct' },
+  { key: 'return_1w_%', label: '1주%', type: 'pct' },
+  { key: 'return_1m_%', label: '1개월%', type: 'pct' },
   { key: 'foreign_5d_억', label: '외인5일', type: 'amount_signed' },
-  { key: 'inst_5d_억', label: '기관5일', type: 'amount_signed' },
   { key: 'foreign_20d_억', label: '외인20일', type: 'amount_signed' },
+  { key: 'inst_5d_억', label: '기관5일', type: 'amount_signed' },
   { key: 'inst_20d_억', label: '기관20일', type: 'amount_signed' },
-  { key: 'annual_yoy_%', label: '연YoY', type: 'pct' },
-  { key: 'quarterly_yoy_%', label: '분기YoY', type: 'pct' },
+  { key: 'annual_yoy_%', label: '연YoY%', type: 'pct' },
+  { key: 'quarterly_yoy_%', label: '분기YoY%', type: 'pct' },
   { key: 'q_basis', label: '분기기준', type: 'string' },
   { key: 'q_period', label: '분기기간', type: 'string' },
   { key: 'q_source_api', label: '분기API', type: 'string' },
@@ -650,7 +650,7 @@ const COLUMN_GROUPS = [
   { name: '분류',         keys: ['earnings_pattern', 'ocf_pattern', 'risk_level'] },
   { name: '기술적',       keys: ['RSI', 'drawdown_52w_high_%'] },
   { name: '수익률',       keys: ['return_1w_%', 'return_1m_%'] },
-  { name: '수급',         keys: ['foreign_5d_억', 'inst_5d_억', 'foreign_20d_억', 'inst_20d_억'] },
+  { name: '수급',         keys: ['foreign_5d_억', 'foreign_20d_억', 'inst_5d_억', 'inst_20d_억'] },
   { name: '실적/OCF',     keys: ['annual_yoy_%', 'quarterly_yoy_%', 'q_basis', 'q_period', 'annual_latest_억', 'ocf_latest_억', 'ocf_to_op_ratio', 'sector', 'ocf_threshold_group'] },
   { name: 'DART 진단',    keys: ['annual_fs_div', 'q_fs_div', 'q_source_api', 'q_latest_key', 'q_prev_key', 'annual_op_account_nm', 'q_op_account_nm', 'ocf_account_nm', 'dart_annual_status', 'dart_q_status', 'dart_ocf_status'] },
   { name: '레짐 세부',    keys: ['market_regime', 'regime_kospi_score', 'regime_fx_score', 'regime_flow_score', 'kospi_vs_sma200_%'] },

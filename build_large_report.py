@@ -39,7 +39,9 @@ def load_flow_windows(con, rid, short=5, long=20):
     net_val 단위는 백만원(KIS frgn/orgn_ntby_tr_pbmn) → ÷100 으로 '억' 환산.
     점수 아님·읽기 전용·관측. 반환: (DataFrame[ticker,f5,i5,f20,i20], (short_n,long_n,from,to)) 또는 (None,None).
     PIT: date<=run_id 만 사용(미래 미참조). 종목 윈도 결손은 NaN→'·'."""
-    if not con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='daily_flows'").fetchone():
+    # [2026-10-03] ohlcv.db 로 옮긴 뒤엔 daily_flows 가 TEMP VIEW(sqlite_temp_master)라 sqlite_master 만 보면 항상 '없음'이었다.
+    if not con.execute("SELECT name FROM sqlite_master WHERE name='daily_flows' "
+                       "UNION ALL SELECT name FROM sqlite_temp_master WHERE name='daily_flows'").fetchone():
         return None, None
     dates = [r[0] for r in con.execute(
         "SELECT DISTINCT date FROM daily_flows WHERE date<=? ORDER BY date DESC LIMIT ?",
@@ -155,10 +157,10 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
     # 5/20일 수급 칼럼 커버리지(rank≤N) + 사용한 윈도 표기 (관측·점수 무관)
     if fwin and ("f20" in u.columns):
         cf = int(u["f20"].notna().sum())
-        flow_cov_txt = (f" · 5/20d 외인·기관: rank≤{UNIVERSE_N} 중 {cf}개 커버"
+        flow_cov_txt = (f" · 5·20일 외인·기관: rank≤{UNIVERSE_N} 중 {cf}개 커버"
                         f"({fwin[2]}~{fwin[3]} 기준 {fwin[0]}/{fwin[1]}거래일)")
     else:
-        flow_cov_txt = " · 5/20d 외인·기관: daily_flows 비어 있음('·')"
+        flow_cov_txt = " · 5·20일 외인·기관: daily_flows 비어 있음('·')"
     q = u["rim_spread"].quantile([0.25, 0.5, 0.75])
 
     # ── 타임라인 레일 (시그니처: '아직 판정 전'을 시각화) ──────────
@@ -264,8 +266,8 @@ def build_html(rid, df, n_runs, runs, flows, prev_run=None, fwin=None):
             f"<td class='num'>{mc_cell}</td>"
             f"<td class='num'>{rk_cell}</td>"
             f"{ftd(r.get('f5'))}"
-            f"{ftd(r.get('i5'))}"
             f"{ftd(r.get('f20'))}"
+            f"{ftd(r.get('i5'))}"
             f"{ftd(r.get('i20'))}</tr>")
     table_rows = "\n".join(rows)
 
@@ -400,8 +402,8 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
  {QUALITY_OCF_LO}~{QUALITY_OCF_HI}배가 건전(통과). <b>탈락↓({QUALITY_OCF_LO} 미만)이 특히 경계</b> — 장부이익이 현금으로 안 들어오는
  밸류트랩·분식 패턴. 탈락↑({QUALITY_OCF_HI} 초과)는 일회성·회계 왜곡 가능.
  <span class="g-ok">통과</span>(초록)·<span class="g-bad">탈락↓</span>(빨강)·<span class="g-warn">탈락↑</span>(주황). 표에선 칸이 좁아 둘 다 '탈락'으로만 쓰고 <b>색으로 방향 구분</b>(빨강=하한미만, 주황=상한초과) — 셀에 마우스를 올리면 ↓/↑ 표시.</td></tr>
-<tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다. <b>→ 우측 '외인/기관 5·20d'(daily_flows)가 동일 개념의 상위호환(커버리지 ~100%)이며, 그쪽으로 점진 대체 예정.</b></td></tr>
-<tr><td>외인/기관<br>5·20d</td><td>daily_flows(KIS 일별 투자자)에서 <b>최근 5거래일·20거래일</b> 외국인·기관 <b>순매수 누적(억)</b>을 각각 분리 표시. <b>+ 순매수 / − 순매도</b>, <b>+ 초록 / − 빨강</b>(v3 동일 — 자금 방향 표시일 뿐, 매수·매도 신호 아님). 일별 적재라 <b>커버리지 ~100%</b> — stage3 운반 '수급20'(~2/3)의 상위호환. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b>: 리버설은 "장기(60거래일) 소외 → 단기(20거래일) 전환"인데 60거래일이 아직 안 쌓였다(8월 말 예정). 지금은 단기·중기 누적의 <b>부호·크기</b>만 보는 거친 관측치다. 머리글 클릭으로 정렬 가능.</td></tr>
+<tr><td>수급20</td><td>최근 20일 외국인+기관 합산 순매수(억). <b>▲ 순매수 · ▽ 순매도</b>. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b> — 리버설은 "장기(60일) 소외 → 단기(20일) 전환"인데 60일 데이터가 아직 없어, 지금은 20일 부호만 보는 거친 신호다(daily_flows 60거래일 적재 후 8월 말 진짜 리버설로 교체). 대형주는 자료없음('·')이 ~1/3. 색을 안 칠한 이유다. <b>→ 우측 '외인/기관 5·20일'(daily_flows)가 동일 개념의 상위호환(커버리지 ~100%)이며, 그쪽으로 점진 대체 예정.</b></td></tr>
+<tr><td>외인/기관<br>5·20일</td><td>daily_flows(KIS 일별 투자자)에서 <b>최근 5거래일·20거래일</b> 외국인·기관 <b>순매수 누적(억)</b>을 각각 분리 표시. <b>+ 순매수 / − 순매도</b>, <b>+ 초록 / − 빨강</b>(v3 동일 — 자금 방향 표시일 뿐, 매수·매도 신호 아님). 일별 적재라 <b>커버리지 ~100%</b> — stage3 운반 '수급20'(~2/3)의 상위호환. <b>⚠️ 설계 §4의 '수급 리버설'이 아니다</b>: 리버설은 "장기(60거래일) 소외 → 단기(20거래일) 전환"인데 60거래일이 아직 안 쌓였다(8월 말 예정). 지금은 단기·중기 누적의 <b>부호·크기</b>만 보는 거친 관측치다. 머리글 클릭으로 정렬 가능.</td></tr>
 <tr><td>시총 추세</td><td>직전 run 대비 <b>시총 변화율(시총Δ%)</b>·<b>순위 변화(순위Δ, ▲=상승)</b>. <b>⚠️ 사실 표시일 뿐 "오를 종목" 신호가 아니다</b> — "오르는 중"인지 "이미 다 올라 과열"인지는 지난 데이터로 구분 못 한다(모멘텀의 본질적 함정). 현재 누적 4거래일이라 추세라 부를 수도 없는 노이즈 구간. 색을 안 칠한 이유다. 수급 결합 정식 관측은 daily_flows 60일 적재 후(8월 말).</td></tr>
 <tr><td>플래그</td><td>종목명 옆 배지(감점 아님): 우선주 / 금융 / 지주 / 리츠 / 시클리컬 — 구조적 특성 표시.</td></tr>
 <tr><td><span style="color:#B4231F">경고행</span></td><td><b>자본잠식</b>(BPS≤0)만 표시 — 지표 신뢰 불가라는 <b>사실</b>(나쁜 종목이라는 주장 아님). 종목명 왼쪽 붉은 띠 + ROE 칸 적색. 단순 EPS 무자료(우선주·일부 지주 등)는 경고가 아니라 '·'.</td></tr>
@@ -424,8 +426,8 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
   </span>
   <span class="ckgrp" title="외국인·기관 5·20거래일 누적 순매수(daily_flows). 체크=해당 칸 ≥0인 종목만. 여러 개 체크는 AND(다 체크하면 전부 순매수). v3 대시보드와 동일.">수급≥0
     <label class="ck"><input type="checkbox" data-ck="f5" onchange="ckf(this)">외인5일</label>
-    <label class="ck"><input type="checkbox" data-ck="i5" onchange="ckf(this)">기관5일</label>
     <label class="ck"><input type="checkbox" data-ck="f20" onchange="ckf(this)">외인20일</label>
+    <label class="ck"><input type="checkbox" data-ck="i5" onchange="ckf(this)">기관5일</label>
     <label class="ck"><input type="checkbox" data-ck="i20" onchange="ckf(this)">기관20일</label>
   </span>
   <label><input type="checkbox" id="ext" onchange="document.getElementById('tb').classList.toggle('show-ext',this.checked); filt()"> 상위 500 모두</label>
@@ -437,12 +439,12 @@ footer {{ margin-top:46px; font-size:12.5px; color:var(--mut);
 <tr class="grp"><th colspan="4">식별 · 플래그</th><th colspan="4">밸류 · RIM (관측)</th>
 <th colspan="2">주주환원 (관측)</th><th colspan="3">품질 · 수급 (관측)</th><th colspan="2">시총 추세 (직전 run 대비)</th><th colspan="4">수급 5/20일 (daily_flows · 관측)</th></tr>
 <tr>
-<th>#</th><th>종목</th><th>업종</th><th>시총(조)</th><th>PBR</th><th>ROE%</th>
-<th>정당PBR</th><th>RIM스프레드</th><th>배당%</th><th>소각</th><th>OCF/OP</th><th>게이트</th><th title="최근 20일 외인+기관 순매수(억). ▲순매수 ▽순매도. 리버설 아님">수급20</th><th title="직전 run 대비 시총 변화율(%)">시총Δ%</th><th title="직전 run 대비 순위 변화(▲=상승)">순위Δ</th>
-<th title="최근 5거래일 외국인 순매수 누적(억). +순매수/−순매도. daily_flows(KIS 일별).">외인5d</th>
-<th title="최근 5거래일 기관 순매수 누적(억). +순매수/−순매도.">기관5d</th>
-<th title="최근 20거래일 외국인 순매수 누적(억). 좌측 '수급20'(stage3 운반)과 동일 개념이나 커버리지 100%.">외인20d</th>
-<th title="최근 20거래일 기관 순매수 누적(억). +순매수/−순매도.">기관20d</th>
+<th data-c="rank">#</th><th data-c="name" data-t="s">종목</th><th data-c="sector" data-t="s">업종</th><th data-c="mcap">시총(조)</th><th data-c="pbr">PBR</th><th data-c="roe">ROE%</th>
+<th data-c="fair">정당PBR</th><th data-c="rim">RIM스프레드</th><th data-c="div">배당%</th><th data-c="bb" data-t="s">소각</th><th data-c="ocf">OCF/OP</th><th data-c="gate" data-t="s">게이트</th><th data-c="sup" title="최근 20일 외인+기관 순매수(억). ▲순매수 ▽순매도. 리버설 아님">수급20</th><th data-c="mcd" title="직전 run 대비 시총 변화율(%)">시총Δ%</th><th data-c="rkd" title="직전 run 대비 순위 변화(▲=상승)">순위Δ</th>
+<th data-c="f5" title="최근 5거래일 외국인 순매수 누적(억). +순매수/−순매도. daily_flows(KIS 일별).">외인5일</th>
+<th data-c="f20" title="최근 20거래일 외국인 순매수 누적(억). 좌측 '수급20'(stage3 운반)과 동일 개념이나 커버리지 100%.">외인20일</th>
+<th data-c="i5" title="최근 5거래일 기관 순매수 누적(억). +순매수/−순매도.">기관5일</th>
+<th data-c="i20" title="최근 20거래일 기관 순매수 누적(억). +순매수/−순매도.">기관20일</th>
 </tr></thead><tbody>
 {table_rows}
 </tbody></table>
@@ -458,28 +460,29 @@ const chipsOn={{}};
 function chip(b){{b.classList.toggle('on');chipsOn[b.dataset.k]=b.classList.contains('on');filt();}}
 const ckOn={{}};
 function ckf(b){{ckOn[b.dataset.ck]=b.checked; b.parentElement.classList.toggle('on',b.checked); filt();}}
+// [2026-10-03] 열을 위치(cells[n])가 아니라 머리글의 data-c 이름으로 찾는다 — 열 순서를 바꿔도 필터·정렬이 안 깨진다.
+const COL={{}};
+tb.tHead.rows[1].querySelectorAll('th').forEach((th,i)=>{{COL[th.dataset.c]=i;}});
+const cell=(tr,k)=>tr.cells[COL[k]].innerText;
 function pass(tr){{
- if(chipsOn.quad && !tr.cells[7].innerText.includes('◆'))return false;
- if(chipsOn.gate && tr.cells[11].innerText!=='통과')return false;
- if(chipsOn.bb   && tr.cells[9].innerText!=='소각')return false;
- if(chipsOn.div){{const d=parseFloat(tr.cells[8].innerText);if(!(d>0))return false;}}
- if(chipsOn.sup && !tr.cells[12].innerText.includes('▲'))return false;
- if(chipsOn.mcup && !tr.cells[13].innerText.includes('▲'))return false;
- if(ckOn.f5 ){{const v=parseFloat(tr.cells[15].innerText);if(!(v>=0))return false;}}
- if(ckOn.i5 ){{const v=parseFloat(tr.cells[16].innerText);if(!(v>=0))return false;}}
- if(ckOn.f20){{const v=parseFloat(tr.cells[17].innerText);if(!(v>=0))return false;}}
- if(ckOn.i20){{const v=parseFloat(tr.cells[18].innerText);if(!(v>=0))return false;}}
+ if(chipsOn.quad && !cell(tr,'rim').includes('◆'))return false;
+ if(chipsOn.gate && cell(tr,'gate')!=='통과')return false;
+ if(chipsOn.bb   && cell(tr,'bb')!=='소각')return false;
+ if(chipsOn.div){{const d=parseFloat(cell(tr,'div'));if(!(d>0))return false;}}
+ if(chipsOn.sup && !cell(tr,'sup').includes('▲'))return false;
+ if(chipsOn.mcup && !cell(tr,'mcd').includes('▲'))return false;
+ for(const k of ['f5','f20','i5','i20']){{ if(ckOn[k]){{const v=parseFloat(cell(tr,k));if(!(v>=0))return false;}} }}
  return true;}}
 function filt(){{const q=document.getElementById('q').value.trim().toLowerCase();
  const s=document.getElementById('sec').value;const ext=document.getElementById('ext').checked;
  for(const tr of tb.tBodies[0].rows){{
    const isExt=tr.classList.contains('ext');
-   const name=tr.cells[1].innerText.toLowerCase(), sec=tr.cells[2].innerText;
+   const name=cell(tr,'name').toLowerCase(), sec=cell(tr,'sector');
    const ok=(!q||name.includes(q))&&(!s||sec===s)&&(ext||!isExt)&&pass(tr);
    tr.style.display=ok?'':'none';}}}}
 let asc={{}};
 tb.tHead.rows[1].querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{{
- const num=![1,2,9,11].includes(i); asc[i]=!asc[i];
+ const num=th.dataset.t!=='s'; asc[i]=!asc[i];
  const rows=[...tb.tBodies[0].rows];
  rows.sort((a,b)=>{{let x=a.cells[i].innerText.split(' 상위')[0].replace('◆','').replace('·','').trim(),
    y=b.cells[i].innerText.split(' 상위')[0].replace('◆','').replace('·','').trim();

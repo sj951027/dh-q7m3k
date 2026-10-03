@@ -134,8 +134,8 @@ def render(g, rid, ts, ic):
             f"<td>{pct(x['r_ep'])}</td><td>{pct(x['r_bp'])}</td>"
             f"<td>{pct(x['r_rim'])}</td><td>{pct(x['r_dv'])}</td>"
             f"<td>{gate}</td><td>{flags or '·'}</td>"
-            + flow(x.get("foreign_5d", float("nan"))) + flow(x.get("inst_5d", float("nan")))
-            + flow(x["foreign_20d"]) + flow(x["inst_20d"])
+            + flow(x.get("foreign_5d", float("nan"))) + flow(x["foreign_20d"])
+            + flow(x.get("inst_5d", float("nan"))) + flow(x["inst_20d"])
             + f"<td class=sec>{_h.escape(str(x['sector'] or '·'))}</td></tr>")
     ic_txt = "산출 불가(ohlcv.db 없음)"
     if ic:
@@ -173,7 +173,7 @@ def render(g, rid, ts, ic):
 <div class=fbar id=fbar><b>관측용 필터</b> <span class=note>— 매수신호 아님 · 근거 research/RESEARCH_ls_t1_selection_rules_20260914.md (참고 기간, 판정 아님)</span><br>정렬 <select id=fsort><option value=ls>합성 ls_t1</option><option value=ep>1/PER 단독</option><option value=rim>RIM 단독</option></select> <label><input type=checkbox id=fgate> 품질게이트 통과만</label> <label><input type=checkbox id=fmr> 시총 101~500위만</label> <label><input type=checkbox id=frq> RIM 사분면 1만</label> <label><input type=checkbox id=ffin> 금융·지주 제외</label> 상위 <input type=number id=ftop value=50 min=1 max=500 style="width:56px"> 개 <span id=fcount class=note></span></div>
 <div id=mainWrap><table><tr><th>#</th><th>종목</th><th>시장</th><th>시총</th><th>ls_t1</th>
 <th>1/PER%</th><th>1/PBR%</th><th>RIM%</th><th>배당%</th>
-<th>품질게이트</th><th>플래그</th><th>외인5d(억)</th><th>기관5d(억)</th><th>외인20d(억)</th><th>기관20d(억)</th><th>업종</th></tr>
+<th>품질게이트</th><th>플래그</th><th title="최근 5거래일 외국인 순매수 누적(억)">외인5일</th><th title="최근 20거래일 외국인 순매수 누적(억)">외인20일</th><th title="최근 5거래일 기관 순매수 누적(억)">기관5일</th><th title="최근 20거래일 기관 순매수 누적(억)">기관20일</th><th>업종</th></tr>
 {''.join(rows)}</table></div>
 <div id=histPanel hidden><table><thead id=histHead></thead><tbody id=histBody></tbody></table></div>
 <script>
