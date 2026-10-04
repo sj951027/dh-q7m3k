@@ -287,6 +287,13 @@ def main():
         if _nd: print(f"  ⚠️ {args.model}: 희석 공시 60거래일 내 {_nd}종목(배지)")
     except Exception as _e:
         print(f"  ⚠️ 희석 배지 생략(비치명): {_e}")
+    # [2026-10-04] 실적 악화 60거래일 배지(표시 전용, 점수·순위 무반영) — earnings_flag.py
+    try:
+        import earnings_flag as _ern
+        g, _ne = _ern.attach(g, asof=rid)
+        if _ne: print(f"  📉 실적 악화 60거래일 내 {_ne}종목(배지)")
+    except Exception as _e:
+        print(f"  ⚠️ 실적 배지 생략(비치명): {_e}")
 
     docs = Path(args.docs); docs.mkdir(parents=True, exist_ok=True)
     for path in (docs / args.out, HERE / args.out):

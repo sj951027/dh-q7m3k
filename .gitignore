@@ -113,3 +113,12 @@ research/dart_history/*.log
 research/target20_*/*.npz
 research/target20_*/*.parquet
 research/target20_*/daily_*.csv
+# [2026-10-04] condition sweep: huge grid outputs (regenerable, over GitHub 100MB limit)
+research/target20_conditions_*/fullgrid/
+research/target20_conditions_*/pairs_*.csv
+# [2026-10-04] research: big intermediate formats are never committed (regenerable; keep md/py/png/small csv only)
+research/**/*.npz
+research/**/*.parquet
+research/**/*.db
+research/**/*.db.gz
+research/**/fullgrid/

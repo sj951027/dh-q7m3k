@@ -1,0 +1,6 @@
+{
+  "pair_checks": 160,
+  "price_checks": 300,
+  "max_return_error": 7.62939453125e-06,
+  "annual_availability_checks": 9575
+}

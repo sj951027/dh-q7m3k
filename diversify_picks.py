@@ -350,6 +350,13 @@ def main():
         if _nd: print(f"   ⚠️ 희석 공시 60거래일 내 {_nd}종목(배지, dilution_60d)")
     except Exception as _e:
         print(f"   ⚠️ 희석 배지 생략(비치명): {_e}")
+    # [2026-10-04] 실적 악화 60거래일 배지(표시 전용, 점수·순위 무반영) — earnings_flag.py
+    try:
+        import earnings_flag as _ern
+        raw, _ne = _ern.attach(raw, asof=(str(raw["run_id"].max()) if "run_id" in raw.columns else None))
+        if _ne: print(f"  📉 실적 악화 60거래일 내 {_ne}종목(배지)")
+    except Exception as _e:
+        print(f"  ⚠️ 실적 배지 생략(비치명): {_e}")
     # v3 점수가 있으면 그걸로 정렬/표시. 단 final_score(옛 점수)는 '보존'한다
     # (docs/enriched 를 filter.html 이 읽으므로 옛 점수를 덮어쓰면 '옛최종'이 오염됨).
     raw["final_score"] = pd.to_numeric(raw["final_score"], errors="coerce")
