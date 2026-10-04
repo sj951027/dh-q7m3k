@@ -1096,6 +1096,14 @@ function loadColumnPrefs() {
             localStorage.setItem('csv_filter_visible_cols_v2', JSON.stringify([...visibleColumns]));
           }
         } catch (e) { /* 무시 */ }
+        // [2026-10-04] 실적 악화 열도 저장된 설정 위에 한 번만 켜 준다(이후 끄면 그 설정을 따름)
+        try {
+          if (!localStorage.getItem('csv_filter_earn_col_20261004')) {
+            visibleColumns.add('earn_drop_60d');
+            localStorage.setItem('csv_filter_earn_col_20261004', '1');
+            localStorage.setItem('csv_filter_visible_cols_v2', JSON.stringify([...visibleColumns]));
+          }
+        } catch (e) { /* 무시 */ }
         return;
       }
     }
