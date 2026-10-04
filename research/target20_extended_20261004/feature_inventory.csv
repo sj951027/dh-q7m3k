@@ -1,0 +1,150 @@
+﻿feature,family,source,timing,n,n_dates,first,last
+rs20,price,panel,signal close,854276,644,20240102,20260825
+rs60,price,panel,signal close,854276,644,20240102,20260825
+ret5,price,panel,signal close,854276,644,20240102,20260825
+ret20,price,panel,signal close,854276,644,20240102,20260825
+ret60,price,panel,signal close,854276,644,20240102,20260825
+ret120,price,panel,signal close,854076,644,20240102,20260825
+nh252,price,panel,signal close,854276,644,20240102,20260825
+lv20,price,panel,signal close,854276,644,20240102,20260825
+lv60,price,panel,signal close,854276,644,20240102,20260825
+volume_ratio,price,panel,signal close,854276,644,20240102,20260825
+amount_ratio,price,panel,signal close,854276,644,20240102,20260825
+clv,price,panel,signal close,854102,644,20240102,20260825
+beta,price,panel,signal close,854276,644,20240102,20260825
+downside,price,panel,signal close,854276,644,20240102,20260825
+up_fraction,price,panel,signal close,854276,644,20240102,20260825
+ma20gap,price,panel,signal close,854276,644,20240102,20260825
+contraction,price,panel,signal close,854276,644,20240102,20260825
+acceleration,price,panel,signal close,854276,644,20240102,20260825
+log_amount,price,panel,signal close,854276,644,20240102,20260825
+rsi6,price,panel,signal close,854276,644,20240102,20260825
+rsi14,price,panel,signal close,854276,644,20240102,20260825
+rsi28,price,panel,signal close,854276,644,20240102,20260825
+ma_gap5,price,panel,signal close,854276,644,20240102,20260825
+ma_gap20,price,panel,signal close,854276,644,20240102,20260825
+ma_gap60,price,panel,signal close,854276,644,20240102,20260825
+ma_gap120,price,panel,signal close,854276,644,20240102,20260825
+ma_gap200,price,panel,signal close,801821,612,20240219,20260825
+return1,price,panel,signal close,854276,644,20240102,20260825
+return10,price,panel,signal close,854276,644,20240102,20260825
+return120,price,panel,signal close,854076,644,20240102,20260825
+return252,price,panel,signal close,665170,519,20240705,20260825
+efficiency20,price,panel,signal close,854276,644,20240102,20260825
+amihud20,price,panel,signal close,853268,644,20240102,20260825
+turnover20,price,panel,signal close,854276,644,20240102,20260825
+vwap_gap20,price,panel,signal close,854276,644,20240102,20260825
+efficiency60,price,panel,signal close,854276,644,20240102,20260825
+amihud60,price,panel,signal close,854276,644,20240102,20260825
+turnover60,price,panel,signal close,854276,644,20240102,20260825
+vwap_gap60,price,panel,signal close,854276,644,20240102,20260825
+market_cap,size,price * panel shares (historical shares approximate),signal close,854276,644,20240102,20260825
+price,size,panel,signal close,854276,644,20240102,20260825
+low252_distance,price,panel,signal close,854276,644,20240102,20260825
+low20_distance,price,panel,signal close,854276,644,20240102,20260825
+high20_distance,price,panel,signal close,854276,644,20240102,20260825
+atr14_pct,price,panel,signal close,854276,644,20240102,20260825
+range_pct,price,panel,signal close,854276,644,20240102,20260825
+body_pct,price,panel,signal close,854275,644,20240102,20260825
+gap,price,panel,signal close,854276,644,20240102,20260825
+bollinger_position,price,panel,signal close,854276,644,20240102,20260825
+bollinger_width,price,panel,signal close,854276,644,20240102,20260825
+stochastic14,price,panel,signal close,854276,644,20240102,20260825
+macd_pct,price,panel,signal close,854276,644,20240102,20260825
+amount5_20,price,panel,signal close,854276,644,20240102,20260825
+volume20_60,price,panel,signal close,854276,644,20240102,20260825
+upside_vol60,price,panel,signal close,854276,644,20240102,20260825
+skew60,price,panel,signal close,854276,644,20240102,20260825
+obv_pressure20,price,panel,signal close,854276,644,20240102,20260825
+limitups60,price,panel,signal close,854276,644,20240102,20260825
+max_return20,price,panel,signal close,854276,644,20240102,20260825
+min_return20,price,panel,signal close,854276,644,20240102,20260825
+gap_mean20,price,panel,signal close,854276,644,20240102,20260825
+index_ma_gap20,regime,panel,signal close,854276,644,20240102,20260825
+index_return20,regime,panel,signal close,854276,644,20240102,20260825
+index_ma_gap60,regime,panel,signal close,854276,644,20240102,20260825
+index_return60,regime,panel,signal close,854276,644,20240102,20260825
+index_ma_gap120,regime,panel,signal close,854276,644,20240102,20260825
+index_return120,regime,panel,signal close,854276,644,20240102,20260825
+index_vol20,regime,panel,signal close,854276,644,20240102,20260825
+fx_return20,regime,panel,signal close,690811,520,20240102,20260825
+daily_per,valuation,valuation_daily,"previous trading day, no carry",23615,32,20260707,20260825
+daily_pbr,valuation,valuation_daily,"previous trading day, no carry",34908,32,20260707,20260825
+daily_div,valuation,valuation_daily,"previous trading day, no carry",35583,32,20260707,20260825
+daily_eps,valuation,valuation_daily,"previous trading day, no carry",35583,32,20260707,20260825
+daily_bps,valuation,valuation_daily,"previous trading day, no carry",35583,32,20260707,20260825
+foreign_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",86606,75,20260507,20260825
+foreign_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",63199,60,20260529,20260825
+inst_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",86606,75,20260507,20260825
+inst_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",63199,60,20260529,20260825
+person_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",86606,75,20260507,20260825
+person_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",63199,60,20260529,20260825
+pension_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",82109,66,20260520,20260825
+pension_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",58698,51,20260612,20260825
+trust_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",82109,66,20260520,20260825
+trust_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",58698,51,20260612,20260825
+secfirm_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",82109,66,20260520,20260825
+secfirm_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",58698,51,20260612,20260825
+prveq_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",82109,66,20260520,20260825
+prveq_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",58698,51,20260612,20260825
+insu_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",82109,66,20260520,20260825
+insu_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",58698,51,20260612,20260825
+bank_flow5,flow,daily_flows,"lag1, complete window, amount20 normalized",82109,66,20260520,20260825
+bank_flow20,flow,daily_flows,"lag1, complete window, amount20 normalized",58698,51,20260612,20260825
+foreign_inst_flow5,flow,daily_flows,lag1,86606,75,20260507,20260825
+short_vol_ratio,short_credit,short_flows,"lag1, no carry",135164,100,20260331,20260825
+short_vol_ratio_mean5,short_credit,short_flows,"lag1, >=3/5 observations",132275,98,20260402,20260825
+credit_bal_rate,short_credit,short_flows,"lag1, no carry",7494,379,20240621,20260825
+credit_bal_rate_mean5,short_credit,short_flows,"lag1, >=3/5 observations",5291,375,20240621,20260825
+loan_chg,short_credit,short_flows,"lag1, no carry",105905,80,20260331,20260825
+loan_chg_mean5,short_credit,short_flows,"lag1, >=3/5 observations",102235,77,20260504,20260825
+analyst_coverage,analyst,consensus_daily,"lag1, no carry",4378,4,20260728,20260825
+analyst_opinion_score,analyst,consensus_daily,"lag1, no carry",1790,4,20260728,20260825
+analyst_target_gap,analyst,consensus_daily,lagged target / signal close,4028,4,20260728,20260825
+annual_pe_approx,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,545736,644,20240102,20260825
+annual_pb_approx,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,814427,644,20240102,20260825
+annual_roe,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,812756,644,20240102,20260825
+earnings_yield,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,815401,644,20240102,20260825
+operating_yield,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,816302,644,20240102,20260825
+cashflow_yield,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,811371,644,20240102,20260825
+operating_margin,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,784267,644,20240102,20260825
+liability_ratio,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,814121,644,20240102,20260825
+op_yoy,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,813323,644,20240102,20260825
+cf_to_op,annual_pit,DART annual + panel approximate market cap,max receipt +1 trading day; <=550 calendar days old,810954,644,20240102,20260825
+model_v30,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,18578,39,20260623,20260825
+model_v31a,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,17903,31,20260623,20260807
+model_v31b,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,17903,31,20260623,20260807
+model_v31c,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,17903,31,20260623,20260807
+model_v31d,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,17903,31,20260623,20260807
+model_v31f,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,17903,31,20260623,20260807
+model_v31g,model_v3_scores,v3_scores,frozen_at <= next panel trading day 09:00 KST; no carry,17903,31,20260623,20260807
+model_hv_a,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8042,31,20260629,20260825
+model_lv_a,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8042,31,20260629,20260825
+model_lv_a3,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,5113,31,20260629,20260825
+model_lv_b,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8042,31,20260629,20260825
+model_lv_c,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8688,31,20260629,20260825
+model_lv_d,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8688,31,20260629,20260825
+model_lv_e,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,0,0,,
+model_lv_short,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8042,31,20260629,20260825
+model_mom_a,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,8688,31,20260629,20260825
+model_mom_b,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,4255,19,20260716,20260825
+model_sm_a,model_lowvol_scores,lowvol_scores,frozen_at <= next panel trading day 09:00 KST; no carry,13,9,20260707,20260821
+model_le_a,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,26847,25,20260715,20260825
+model_px_a,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,9627,9,20260810,20260825
+model_qs_a,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,22378,21,20260723,20260825
+model_sv_a,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,26845,25,20260715,20260825
+model_sv_b,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,0,0,,
+model_wu_a,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,36264,33,20260703,20260825
+model_wu_b,model_wu_scores,wu_scores,frozen_at <= next panel trading day 09:00 KST; no carry,36264,33,20260703,20260825
+snapshot_oversold_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_trend_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_supply_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_fundamental_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_ocf_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_momentum_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_smartmoney_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34596,59,20260526,20260825
+snapshot_roe_value,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,28554,54,20260602,20260825
+snapshot_catalyst_score,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,25523,51,20260608,20260825
+snapshot_ocf_to_op_ratio,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,22997,59,20260526,20260825
+snapshot_annual_yoy_pct,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34514,59,20260526,20260825
+snapshot_quarterly_yoy_pct,snapshot,stage3_final,run_timestamp before entry; historical rewrite cannot be excluded,34542,59,20260526,20260825

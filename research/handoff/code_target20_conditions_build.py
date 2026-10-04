@@ -6,7 +6,11 @@ import json,sqlite3,hashlib,warnings
 import numpy as np,pandas as pd
 from code_target20_20261003 import Study,ROOT,rolling,lag,returns
 warnings.filterwarnings('ignore',category=RuntimeWarning)
-P=ROOT/'research/target20_conditions_20261004';P.mkdir(exist_ok=True)
+P=ROOT/'research/target20_conditions_20261004'
+if '--output' in sys.argv:
+ P=(ROOT/sys.argv[sys.argv.index('--output')+1]).resolve()
+ if not P.is_relative_to((ROOT/'research').resolve()):raise ValueError('Output must be under research/')
+P.mkdir(exist_ok=True)
 s=Study();s.features();F={k:v.astype('float32') for k,v in s.feats.items()};meta={k:dict(family='price',source='panel',timing='signal close') for k in F}
 def add(k,a,family='price',source='panel',timing='signal close'):
  F[k]=np.asarray(a,dtype='float32');meta[k]=dict(family=family,source=source,timing=timing)

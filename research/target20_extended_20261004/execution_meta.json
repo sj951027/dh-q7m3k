@@ -1,0 +1,11 @@
+{
+  "rows": 6720,
+  "top10_rows": 192,
+  "signals": 813495,
+  "dates": 608,
+  "first": "20240102",
+  "last": "20260702",
+  "price_checks": 100,
+  "max_error": 0.0,
+  "note": "Common original20-day-fillable pool; end t+62<T; close entry skips entry close, requires t+61; limits wait max3; no intraday queue evidence. Index excess aligns both returns entry close to exit close."
+}

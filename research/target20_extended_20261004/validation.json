@@ -1,0 +1,8 @@
+{
+  "triple_random_checks": 120,
+  "max_triple_excess_rounding_error": 5.105984279829556e-07,
+  "share_jump_tickers": 152,
+  "share_jump_note": "Ex post sensitivity only; full-panel adjacent shares ratio >1.5 or <1/1.5, not a tradable filter",
+  "portfolio_mean_checks": 1728,
+  "bootstrap": "20-day moving blocks, 2000 draws; exploratory, not multiplicity adjusted"
+}

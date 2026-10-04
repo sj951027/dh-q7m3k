@@ -1,0 +1,8 @@
+{
+  "cases": 432,
+  "rows": 1728,
+  "first": "20240103",
+  "last": "20260826",
+  "signals": "Prior condition-study eligible pool; no new outcomes or universe reconstruction",
+  "execution": "next close; cash slots for missing signals; no borrowed capital; blocked sells carried; no dividends; fee charged on traded notional each way"
+}

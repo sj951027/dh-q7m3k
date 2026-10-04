@@ -1,0 +1,27 @@
+{
+  "features": [
+    "rs20",
+    "rs60",
+    "rsi14",
+    "nh252",
+    "lv20",
+    "lv60",
+    "log_amount",
+    "market_cap",
+    "turnover20",
+    "amihud60",
+    "up_fraction",
+    "annual_roe",
+    "op_yoy",
+    "annual_pe_approx",
+    "operating_yield",
+    "cashflow_yield",
+    "liability_ratio",
+    "volume_ratio"
+  ],
+  "triple_cases": 204000,
+  "triple_period_rows": 816000,
+  "sector_rows": 0,
+  "sector_dates": 0,
+  "sector_groups": 0
+}

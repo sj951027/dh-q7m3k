@@ -21,11 +21,11 @@ for market,color,offset in [('kospi','#2867aa',-.13),('kosdaq','#dc7932',.13)]:
         ax.set_yticks(range(7),['All eligible','RSI <= 20','20 < RSI <= 30','30 < RSI <= 50','50 < RSI <= 70','70 < RSI <= 80','RSI > 80'])
 axs[0].axvline(50,color='gray',ls=':',lw=1)
 axs[2].axvline(0,color='gray',ls=':',lw=1)
-axs[0].legend(loc='lower left')
+axs[0].legend(loc='lower right')
 fig.suptitle('RSI14 by market | 2024-01-02 to 2026-08-25 signals\nPoints: stock-date means; lines: exploratory 95% moving-block intervals, not multiple-test adjusted',fontsize=11)
 fig.savefig(P/'rsi_market_comparison.png',dpi=160)
 plt.close(fig)
-singles=pd.concat([pd.read_parquet(P/'fullgrid'/f'single_{m}.parquet') for m in ['kospi','kosdaq']],ignore_index=True)
+singles=pd.concat([pd.read_csv(P/f'single_{m}.csv') for m in ['kospi','kosdaq']],ignore_index=True)
 singles.to_csv(P/'all_single_results.csv',index=False,encoding='utf-8-sig')
 key=d[d.a.isin(labels+['market_cap__q5','annual_pe_approx__abs(0,5]'])&d.b.isna()]
 key.to_csv(P/'key_results.csv',index=False,encoding='utf-8-sig')
