@@ -1,0 +1,19 @@
+{
+  "folds": 14,
+  "selected_day_checks": 7200,
+  "raw_price_checks": 200,
+  "max_price_error": 3.5923158208106543e-06,
+  "dates": 400,
+  "selected_rows": 72000,
+  "methods": [
+    "learn_hit",
+    "learn_first",
+    "learn_joint",
+    "learn_ret",
+    "learn_balanced",
+    "cluster_shape",
+    "control_amount",
+    "control_fundamental",
+    "control_rsi"
+  ]
+}

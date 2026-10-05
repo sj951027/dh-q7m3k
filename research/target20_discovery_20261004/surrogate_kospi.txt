@@ -1,0 +1,22 @@
+|--- low252_distance <= 0.5506
+|   |--- upside_vol60 <= 0.0150
+|   |   |--- index_return20 <= -0.0463
+|   |   |   |--- value: [0.0331]
+|   |   |--- index_return20 >  -0.0463
+|   |   |   |--- value: [0.0174]
+|   |--- upside_vol60 >  0.0150
+|   |   |--- index_ma_gap20 <= -0.0237
+|   |   |   |--- value: [0.0513]
+|   |   |--- index_ma_gap20 >  -0.0237
+|   |   |   |--- value: [0.0311]
+|--- low252_distance >  0.5506
+|   |--- amihud60 <= 0.0028
+|   |   |--- index_return120 <= 0.6393
+|   |   |   |--- value: [0.0819]
+|   |   |--- index_return120 >  0.6393
+|   |   |   |--- value: [0.0419]
+|   |--- amihud60 >  0.0028
+|   |   |--- index_return60 <= 0.2901
+|   |   |   |--- value: [0.0496]
+|   |   |--- index_return60 >  0.2901
+|   |   |   |--- value: [0.0306]

@@ -146,6 +146,8 @@ for k,a in F.items():
  x=a[valid];coverage.append(dict(feature=k,**meta[k],n=int(np.isfinite(x).sum()),n_dates=int(np.unique(tt[np.isfinite(x)]).size),first=str(s.d[tt[np.isfinite(x)].min()]) if np.isfinite(x).any() else '',last=str(s.d[tt[np.isfinite(x)].max()]) if np.isfinite(x).any() else ''))
  if k in ['rsi6','rsi14','rsi28','daily_per','daily_pbr','annual_pe_approx','annual_pb_approx','annual_roe','op_yoy','index_ma_gap20','index_ma_gap60','index_ma_gap120']:absolutes[k]=raw_a[valid]
 flat.to_parquet(P/'outcomes.parquet',index=False);pd.DataFrame(bins).to_parquet(P/'feature_quintiles.parquet',index=False);pd.DataFrame(absolutes).to_parquet(P/'absolute_values.parquet',index=False)
+if '--raw' in sys.argv:
+ pd.DataFrame({k:np.where(np.isfinite(a[valid]),a[valid],np.nan) for k,a in F.items()}).to_parquet(P/'raw_features.parquet',index=False)
 pd.DataFrame(coverage).to_csv(P/'feature_inventory.csv',index=False,encoding='utf-8-sig')
 info=dict(n_features=len(F),n_rows=len(flat),n_dates=flat.date.nunique(),first=flat.date.min(),last=flat.date.max(),panel_sha256=hashlib.file_digest((ROOT/'research/fullscan_20260903/panel.npz').open('rb'),'sha256').hexdigest())
 (P/'build_info.json').write_text(json.dumps(info,indent=2),encoding='utf-8');print('BUILD_DONE',info,flush=True)
