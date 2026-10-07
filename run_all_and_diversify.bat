@@ -52,6 +52,9 @@ python universe_ohlcv.py
 if errorlevel 1 set "FAILED=%FAILED% universe_ohlcv"
 python extra_ohlcv.py
 if errorlevel 1 set "FAILED=%FAILED% extra_ohlcv"
+rem [2026-10-07] earnings badge: fetch newly filed periodic reports (DART, non-fatal) - before run_and_diversify so today badges show today
+python earnings_incr.py
+if errorlevel 1 set "FAILED=%FAILED% earnings_incr"
 
 echo.
 echo ========================================================================

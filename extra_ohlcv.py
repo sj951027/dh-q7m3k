@@ -54,13 +54,27 @@ def _connect(path=None):
 
 
 def target_tickers(con):
-    """상장목록 캐시(KOSPI/KOSDAQ)에 있고 daily_ohlcv 에 한 번도 없는 종목. 반환 list of dict."""
+    """보충 대상 = ① 상장목록 캐시(KOSPI/KOSDAQ)에 있고 daily_ohlcv 에 한 번도 없는 종목
+                 + ② 이미 이 표에 있는 종목(본 표에 아직 없는 것). 반환 (list of dict, 캐시 시각).
+    [2026-10-07] ②를 더했다 — 상장목록 캐시의 출처가 FDR 로 바뀌면서 코스닥 글로벌·영문코드 136종목이 목록에서
+    빠져 ①이 0 이 됐고, 그 결과 이 표가 10/02 에서 조용히 멈춰 있었다(10/06·10/07 배치 로그 '보충 대상 0종목').
+    이 표에 한 번 들어온 종목은 목록 출처와 무관하게 계속 받는다. 본 표에 생기면 그때 빠진다(읽는 쪽은 본 표 우선)."""
     import listing_cache
     rows, at = listing_cache.load("KRX")
-    if not rows:
-        raise SystemExit("listing_cache 비어 있음 — 배치가 한 번 돌아 캐시가 있어야 한다")
     have = {r[0] for r in con.execute("SELECT DISTINCT ticker FROM daily_ohlcv")}
-    out = [r for r in rows if r.get("market") in ("KOSPI", "KOSDAQ") and r.get("code") and r["code"] not in have]
+    out = [r for r in (rows or []) if r.get("market") in ("KOSPI", "KOSDAQ") and r.get("code") and r["code"] not in have]
+    seen = {r["code"] for r in out}
+    n_list = len(out)
+    for code, market, shares in con.execute(
+            f"SELECT t.ticker, t.market, t.shares FROM {TABLE} t "
+            f"WHERE t.date = (SELECT MAX(date) FROM {TABLE} WHERE ticker = t.ticker) ORDER BY t.ticker"):
+        if code in have or code in seen:
+            continue
+        out.append({"code": code, "market": market or "", "shares": shares, "name": ""})
+        seen.add(code)
+    if not out and not rows:
+        raise SystemExit("listing_cache 비어 있음 — 배치가 한 번 돌아 캐시가 있어야 한다")
+    print(f"  대상 구성: 상장목록 기준 {n_list}종목 + 보충표 기존 {len(out) - n_list}종목")
     return out, at
 
 
@@ -91,7 +105,7 @@ def collect(backfill=False, years=3, window=INCREMENTAL_WINDOW, db=None):
     end = today.strftime("%Y-%m-%d")
     fetched_at = today.strftime("%Y%m%d_%H%M")
     global_start = (today - timedelta(days=365 * years)).strftime("%Y-%m-%d")
-    print(f"• 보충 대상 {len(targets)}종목 (상장목록 캐시 {at}, daily_ohlcv 에 없는 종목) · "
+    print(f"• 보충 대상 {len(targets)}종목 (상장목록 캐시 {at}, daily_ohlcv 에 없는 종목 + 보충표 기존 종목) · "
           f"{'백필 ' + global_start + '~' if backfill else '증분 최근 ' + str(window) + '일'}")
     n_ok = n_skip = n_rows = 0
     for i, t in enumerate(targets, 1):
