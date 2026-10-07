@@ -86,7 +86,8 @@
     "20260930",
     "20261001",
     "20261002",
-    "20261006"
+    "20261006",
+    "20261007"
   ],
   "dropped_runs": [
     "20260530",
@@ -104,95 +105,95 @@
   "old_final_score": [
     {
       "horizon": 1,
-      "n_groups": 169,
-      "mean_IC": -0.007,
+      "n_groups": 171,
+      "mean_IC": -0.0077,
       "median_IC": -0.0178,
-      "IC>0_ratio": 0.467,
-      "top-bot_spread%": 0.044,
-      "top_hit_rate": 0.496,
-      "avg_n": 459
+      "IC>0_ratio": 0.468,
+      "top-bot_spread%": 0.033,
+      "top_hit_rate": 0.497,
+      "avg_n": 456
     },
     {
       "horizon": 2,
-      "n_groups": 168,
-      "mean_IC": -0.0105,
+      "n_groups": 170,
+      "mean_IC": -0.0104,
       "median_IC": -0.0064,
-      "IC>0_ratio": 0.446,
-      "top-bot_spread%": -0.051,
+      "IC>0_ratio": 0.447,
+      "top-bot_spread%": -0.052,
       "top_hit_rate": 0.496,
-      "avg_n": 458
+      "avg_n": 456
     },
     {
       "horizon": 3,
-      "n_groups": 166,
-      "mean_IC": -0.011,
-      "median_IC": -0.0085,
+      "n_groups": 168,
+      "mean_IC": -0.0106,
+      "median_IC": -0.0055,
       "IC>0_ratio": 0.482,
-      "top-bot_spread%": -0.075,
+      "top-bot_spread%": -0.072,
       "top_hit_rate": 0.494,
-      "avg_n": 460
+      "avg_n": 458
     }
   ],
   "new_final_score_v3": [
     {
       "horizon": 1,
-      "n_groups": 169,
+      "n_groups": 171,
       "mean_IC": 0.0184,
-      "median_IC": 0.016,
-      "IC>0_ratio": 0.592,
-      "top-bot_spread%": 0.083,
-      "top_hit_rate": 0.51,
-      "avg_n": 459
+      "median_IC": 0.0162,
+      "IC>0_ratio": 0.596,
+      "top-bot_spread%": 0.079,
+      "top_hit_rate": 0.512,
+      "avg_n": 456
     },
     {
       "horizon": 2,
-      "n_groups": 168,
+      "n_groups": 170,
       "mean_IC": 0.0196,
-      "median_IC": 0.0128,
-      "IC>0_ratio": 0.542,
+      "median_IC": 0.0139,
+      "IC>0_ratio": 0.547,
       "top-bot_spread%": 0.021,
-      "top_hit_rate": 0.502,
-      "avg_n": 458
+      "top_hit_rate": 0.501,
+      "avg_n": 456
     },
     {
       "horizon": 3,
-      "n_groups": 166,
-      "mean_IC": 0.0216,
+      "n_groups": 168,
+      "mean_IC": 0.022,
       "median_IC": 0.0134,
-      "IC>0_ratio": 0.602,
-      "top-bot_spread%": 0.002,
-      "top_hit_rate": 0.505,
-      "avg_n": 460
+      "IC>0_ratio": 0.607,
+      "top-bot_spread%": 0.008,
+      "top_hit_rate": 0.506,
+      "avg_n": 458
     }
   ],
   "main_only_final_score_v3": [
     {
       "horizon": 1,
-      "n_groups": 169,
-      "mean_IC": -0.009,
+      "n_groups": 171,
+      "mean_IC": -0.0092,
       "median_IC": -0.0127,
       "IC>0_ratio": 0.462,
-      "top-bot_spread%": -0.072,
-      "top_hit_rate": 0.506,
-      "avg_n": 224
+      "top-bot_spread%": -0.073,
+      "top_hit_rate": 0.507,
+      "avg_n": 223
     },
     {
       "horizon": 2,
-      "n_groups": 168,
-      "mean_IC": -0.0215,
+      "n_groups": 170,
+      "mean_IC": -0.0227,
       "median_IC": -0.0231,
-      "IC>0_ratio": 0.411,
-      "top-bot_spread%": -0.294,
+      "IC>0_ratio": 0.4,
+      "top-bot_spread%": -0.303,
       "top_hit_rate": 0.504,
-      "avg_n": 224
+      "avg_n": 223
     },
     {
       "horizon": 3,
-      "n_groups": 166,
-      "mean_IC": -0.0253,
-      "median_IC": -0.0273,
-      "IC>0_ratio": 0.404,
-      "top-bot_spread%": -0.381,
+      "n_groups": 168,
+      "mean_IC": -0.0243,
+      "median_IC": -0.0256,
+      "IC>0_ratio": 0.411,
+      "top-bot_spread%": -0.374,
       "top_hit_rate": 0.512,
       "avg_n": 224
     }
@@ -200,31 +201,31 @@
   "main_only_entry_score": [
     {
       "horizon": 1,
-      "n_groups": 169,
+      "n_groups": 171,
       "mean_IC": -0.012,
       "median_IC": -0.0245,
-      "IC>0_ratio": 0.473,
-      "top-bot_spread%": -0.14,
-      "top_hit_rate": 0.508,
-      "avg_n": 224
+      "IC>0_ratio": 0.474,
+      "top-bot_spread%": -0.142,
+      "top_hit_rate": 0.509,
+      "avg_n": 223
     },
     {
       "horizon": 2,
-      "n_groups": 168,
-      "mean_IC": -0.023,
-      "median_IC": -0.0244,
-      "IC>0_ratio": 0.405,
-      "top-bot_spread%": -0.299,
+      "n_groups": 170,
+      "mean_IC": -0.0237,
+      "median_IC": -0.0265,
+      "IC>0_ratio": 0.4,
+      "top-bot_spread%": -0.294,
       "top_hit_rate": 0.506,
-      "avg_n": 224
+      "avg_n": 223
     },
     {
       "horizon": 3,
-      "n_groups": 166,
-      "mean_IC": -0.0291,
-      "median_IC": -0.0293,
-      "IC>0_ratio": 0.404,
-      "top-bot_spread%": -0.472,
+      "n_groups": 168,
+      "mean_IC": -0.0282,
+      "median_IC": -0.0287,
+      "IC>0_ratio": 0.411,
+      "top-bot_spread%": -0.454,
       "top_hit_rate": 0.506,
       "avg_n": 224
     }
