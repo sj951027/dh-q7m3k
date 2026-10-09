@@ -12,6 +12,16 @@ earnings_incr.py — 실적 악화 배지용 정기보고서 **증분 수집** (
       분기값 계산식은 earnings_flag.quarter_values 그대로(원자료는 earnings_raw 표에 보관 — 누적 차분·전년 동기에 필요).
 안전: DART 호출 속도 상한 dart_rate 공유 · 실패는 경고만(배치 계속, 종료코드 0) · DART_API_KEY 없으면 건너뜀 ·
       운영 캐시(dart_cache)·history.db·ohlcv.db 는 읽기만 · 마지막 조회일을 기록해 다음 실행이 이어받는다(겹침 3일).
+[2026-10-09 보강 — Codex 독립 검토(research/handoff/REPLY_20261009_earnings_incr_review.md) 반영]
+  · 완료 표지 분리: 원자료(earnings_raw)를 받았다는 것과 배지 자료(earnings_q)에 넣었다는 것은 다르다. raw.state 가 ok(넣음)·extreme(극단값 — 최종)일 때만
+    '이미 처리'로 본다. 시세 없음·값 없음·재무 조회 실패는 **재시도 큐(earnings_pending)**에 남겨 다음 실행이 조회 창과 무관하게 다시 본다(45일·20회까지).
+  · 한 번에 쓰는 DART 호출·시간에 상한(EARN_INCR_MAX_CALLS 기본 4000 · EARN_INCR_MAX_SECONDS 기본 600) — 넘치면 남은 보고서는 큐로 미뤄 다음 날 이어서.
+    (11/14 하루에 정기보고서가 2,000건 가까이 몰린다. 이 단계는 스크리너 앞에서 돌므로 배치를 붙잡지 않게 한다.)
+  · 전년 동기·누적 차분용 보고서는 **필요할 때만** 받는다(보고서 안에 전년 3개월 값이 있으면 안 받음) — 호출이 보고서당 1~2회로 준다.
+  · 재무 응답의 실제 접수번호를 원자료에 적는다(목록의 원본을 처리하는 사이 정정본 값이 왔을 수 있다).
+한계(고치지 않음 — 쓰는 쪽이 알아야 할 것)
+  · 이 표는 **지금 화면의 배지용**이다. 정정이 오면 값을 덮어쓰고 접수일은 원본 것을 둔다 → '그날 알 수 있던 값'을 재현하는 과거 시점 연구에 그대로 쓰면 안 된다.
+  · 12월 결산 여부는 제목의 월(12·06·03·09)로만 가린다. 결산월이 다른 회사가 같은 달에 낸 보고서는 재무 조회에서 값이 안 나와 빠지는 것이 보통이나 보장은 아니다.
 사용:
   python earnings_incr.py                      # 증분(마지막 조회일 −3일 ~ 오늘). 배치: extra_ohlcv 다음·run_and_diversify 앞
   python earnings_incr.py --dry-run            # 받을 목록만 보고 저장 안 함(재무 API 도 안 부름)
@@ -45,11 +55,17 @@ DEFAULT_START = "20260901"       # 연구 수집본의 마지막 접수일 다�
 FILING_WINDOW_DAYS = 130         # 결산 종료일 뒤 이 날수 안의 접수만(연구와 같음)
 PAGE = 100
 SOURCE = "incr"
+PENDING_MAX_DAYS = 45            # 재시도 큐에 남겨 두는 최대 날수(처음 본 날부터)
+PENDING_MAX_TRIES = 20           # 재시도 최대 횟수(예산 때문에 미룬 것은 세지 않는다)
+MAX_CALLS = int(os.environ.get("EARN_INCR_MAX_CALLS", "4000"))          # 한 번 실행의 재무 API 호출 상한
+MAX_SECONDS = float(os.environ.get("EARN_INCR_MAX_SECONDS", "600"))     # 한 번 실행의 처리 시간 상한(초)
+DONE_STATES = ("ok", "extreme")  # 이 상태면 같은(또는 더 옛) 접수번호를 다시 처리하지 않는다
 
 RAW_SCHEMA = """
 CREATE TABLE IF NOT EXISTS earnings_raw(ticker TEXT, year INTEGER, reprt TEXT, fs TEXT, rcept_no TEXT,
-    th REAL, th_add REAL, fr REAL, fr_q REAL, fr_add REAL, fetched_at TEXT, PRIMARY KEY(ticker, year, reprt));
+    th REAL, th_add REAL, fr REAL, fr_q REAL, fr_add REAL, fetched_at TEXT, state TEXT, PRIMARY KEY(ticker, year, reprt));
 CREATE TABLE IF NOT EXISTS earnings_meta(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS earnings_pending(rcept_no TEXT PRIMARY KEY, filing TEXT, reason TEXT, first_seen TEXT, tries INTEGER, last_try TEXT);
 """
 
 
@@ -97,7 +113,7 @@ def raw_from_items(items, fs, rcept_no):
     it = op_item(items or [])
     if it is None:
         return None
-    return dict(fs=fs, rcept_no=rcept_no, th=num(it.get("thstrm_amount")), th_add=num(it.get("thstrm_add_amount")), fr=num(it.get("frmtrm_amount")),
+    return dict(fs=fs, rcept_no=str(it.get("rcept_no") or rcept_no or ""), th=num(it.get("thstrm_amount")), th_add=num(it.get("thstrm_add_amount")), fr=num(it.get("frmtrm_amount")),
                 fr_q=num(it.get("frmtrm_q_amount")), fr_add=num(it.get("frmtrm_add_amount")))
 
 
@@ -113,11 +129,14 @@ def mcap_at(ocon, ticker, d8, max_age=EF.PRICE_MAX_AGE):
     tabs = ["daily_ohlcv"]
     if ocon.execute("SELECT 1 FROM sqlite_master WHERE name='daily_ohlcv_extra'").fetchone():
         tabs.append("daily_ohlcv_extra")
-    for tab in tabs:
+    best = None
+    for tab in tabs:                    # 두 표에 다 있으면 더 최근 날짜(같으면 본 표)
         r = ocon.execute(f"SELECT close, shares, date FROM {tab} WHERE ticker=? AND date<? AND date>=? AND close>0 AND shares>0 ORDER BY date DESC LIMIT 1",
                          (ticker, d8, lo)).fetchone()
-        if r:
-            return float(r[0]) * float(r[1]), float(r[1]), str(r[2])
+        if r and (best is None or str(r[2]) > str(best[2])):
+            best = r
+    if best:
+        return float(best[0]) * float(best[1]), float(best[1]), str(best[2])
     return None, None, None
 
 
@@ -195,6 +214,10 @@ def open_db(path=EF.EARN_DB):
     for col, typ in (("shares_at", "REAL"), ("px_dt", "TEXT")):      # [2026-10-07] 시총 고정 저장의 근거(주식수·시세 날짜) — 기존 행은 NULL
         if col not in cols:
             con.execute(f"ALTER TABLE earnings_q ADD COLUMN {col} {typ}")
+    if "state" not in {r[1] for r in con.execute("PRAGMA table_info(earnings_raw)")}:   # [2026-10-09] 완료 표지 분리 — 이미 배지 자료에 들어간 것만 ok
+        con.execute("ALTER TABLE earnings_raw ADD COLUMN state TEXT")
+        con.execute("UPDATE earnings_raw SET state='ok' WHERE EXISTS (SELECT 1 FROM earnings_q q WHERE q.ticker=earnings_raw.ticker "
+                    "AND q.year=earnings_raw.year AND q.reprt=earnings_raw.reprt AND q.source LIKE 'incr%')")
     con.commit()
     return con
 
@@ -218,11 +241,41 @@ def load_rep(con, ticker):
 
 
 def save_raw(con, ticker, year, reprt, raw, fetched_at):
-    con.execute("INSERT OR REPLACE INTO earnings_raw VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+    con.execute("INSERT OR REPLACE INTO earnings_raw(ticker, year, reprt, fs, rcept_no, th, th_add, fr, fr_q, fr_add, fetched_at, state) VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL)",
                 (ticker, year, reprt, raw["fs"], raw["rcept_no"], raw["th"], raw["th_add"], raw["fr"], raw["fr_q"], raw["fr_add"], fetched_at))
 
 
-def ensure_raw(con, api_key, f, year, reprt, fetch, counts, fetched_at, force=False):
+def set_state(con, ticker, year, reprt, state):
+    con.execute("UPDATE earnings_raw SET state=? WHERE ticker=? AND year=? AND reprt=?", (state, ticker, year, reprt))
+
+
+def pend(con, f, reason, now_s, count_try=True):
+    """재시도 큐에 넣는다(이미 있으면 사유·횟수 갱신). 예산 때문에 미룬 것은 횟수를 세지 않는다."""
+    row = con.execute("SELECT first_seen, tries FROM earnings_pending WHERE rcept_no=?", (f["rcept_no"],)).fetchone()
+    first, tries = (row[0], row[1] or 0) if row else (now_s, 0)
+    con.execute("INSERT OR REPLACE INTO earnings_pending(rcept_no, filing, reason, first_seen, tries, last_try) VALUES(?,?,?,?,?,?)",
+                (f["rcept_no"], json.dumps(f, ensure_ascii=False), reason, first, tries + (1 if count_try else 0), now_s))
+
+
+def unpend(con, rcept_no):
+    con.execute("DELETE FROM earnings_pending WHERE rcept_no=?", (rcept_no,))
+
+
+def load_pending(con, now):
+    """재시도 큐 → (다시 볼 보고서 목록, 기한·횟수가 지나 버린 수). 버린 것은 큐에서 지운다."""
+    lo = (now - timedelta(days=PENDING_MAX_DAYS)).strftime("%Y%m%d")
+    out, dropped = [], 0
+    for rc, js, first, tries in con.execute("SELECT rcept_no, filing, first_seen, tries FROM earnings_pending ORDER BY rcept_no").fetchall():
+        if str(first)[:8] < lo or (tries or 0) >= PENDING_MAX_TRIES:
+            unpend(con, rc); dropped += 1; continue
+        try:
+            out.append(json.loads(js))
+        except Exception:
+            unpend(con, rc); dropped += 1
+    return out, dropped
+
+
+def ensure_raw(con, api_key, f, year, reprt, fetch, counts, fetched_at, force=False, count_fail=True):
     """(ticker, year, reprt) 원자료를 raw 표에서 읽거나 받아 둔다. force 면 다시 받는다(정정). 반환 raw|None."""
     cur = con.execute("SELECT fs, rcept_no, th, th_add, fr, fr_q, fr_add FROM earnings_raw WHERE ticker=? AND year=? AND reprt=?", (f["ticker"], year, reprt)).fetchone()
     if cur and not force:
@@ -230,37 +283,55 @@ def ensure_raw(con, api_key, f, year, reprt, fetch, counts, fetched_at, force=Fa
     raw, calls, st = fetch_report(api_key, f["corp_code"], year, reprt, f["rcept_no"] if (year, reprt) == (f["year"], f["reprt"]) else "", fetch)
     counts["calls"] += calls
     if raw is None:
-        counts["no_values"] += 1
+        if count_fail:
+            counts["no_values"] += 1
         return None
     save_raw(con, f["ticker"], year, reprt, raw, fetched_at)
     return raw
 
 
-def process(con, ocon, filings, api_key, fetch=fetch_json, dry=False, now=None):
-    """공시 목록(parse_filing 결과들)을 차례로 처리. 반환 counts dict. dry=True 면 DART 재무 호출·저장 없이 분류만."""
+def process(con, ocon, filings, api_key, fetch=fetch_json, dry=False, now=None, max_calls=None, max_seconds=None):
+    """공시 목록(parse_filing 결과들) + 재시도 큐를 차례로 처리. 반환 counts dict. dry=True 면 DART 재무 호출·저장 없이 분류만.
+    max_calls·max_seconds 를 넘으면 남은 보고서는 재시도 큐로 미룬다(다음 실행이 이어받음)."""
     now = now or datetime.now()
-    fetched_at = now.strftime("%Y%m%d_%H%M")
-    counts = dict(filings=len(filings), new=0, updated=0, done=0, amend_no_orig=0, window=0, no_values=0, no_price=0, extreme=0, calls=0, dry=0)
-    for f in filings:
+    fetched_at = now.strftime("%Y%m%d_%H%M"); now_s = now.strftime("%Y%m%d_%H%M")
+    counts = dict(filings=len(filings), new=0, updated=0, done=0, amend_no_orig=0, window=0, no_values=0, no_price=0, extreme=0, calls=0, dry=0,
+                  retry=0, deferred=0, pending_dropped=0)
+    pending, counts["pending_dropped"] = load_pending(con, now)
+    seen = {f["rcept_no"] for f in filings}
+    extra = [p for p in pending if p.get("rcept_no") not in seen]
+    counts["retry"] = len(extra)
+    t0 = time.time()
+    for f in list(filings) + extra:
         t, y, r = f["ticker"], f["year"], f["reprt"]
         if not in_filing_window(f["ym"], f["rcept_dt"]):
             counts["window"] += 1; continue
         exist = con.execute("SELECT rcept_dt, mcap_prev, shares_at, px_dt, source FROM earnings_q WHERE ticker=? AND year=? AND reprt=?", (t, y, r)).fetchone()
-        raw_rc = con.execute("SELECT rcept_no FROM earnings_raw WHERE ticker=? AND year=? AND reprt=?", (t, y, r)).fetchone()
-        if raw_rc and raw_rc[0] == f["rcept_no"]:
-            counts["done"] += 1; continue                 # 이 접수번호는 이미 처리함
+        rawrow = con.execute("SELECT rcept_no, state FROM earnings_raw WHERE ticker=? AND year=? AND reprt=?", (t, y, r)).fetchone()
+        have_raw = bool(rawrow and rawrow[0] and rawrow[0] >= f["rcept_no"])       # 이 접수번호(또는 더 뒤 정정본)의 원자료가 이미 있다
+        if have_raw and rawrow[1] in DONE_STATES:
+            counts["done"] += 1                             # 배지 자료까지 들어간 것만 '이미 처리'
+            if not dry: unpend(con, f["rcept_no"])
+            continue
         if f["amend"] and not exist:
-            counts["amend_no_orig"] += 1; continue         # 원본을 모르는 정정본 — 접수일을 정할 수 없어 건너뜀(원본은 보통 이미 표에 있다)
+            counts["amend_no_orig"] += 1                    # 원본을 모르는 정정본 — 접수일을 정할 수 없어 건너뜀(원본은 보통 이미 표에 있다)
+            if not dry: unpend(con, f["rcept_no"])
+            continue
         if dry:
             counts["dry"] += 1; continue
-        raw = ensure_raw(con, api_key, f, y, r, fetch, counts, fetched_at, force=True)
-        if raw is None:
-            continue
-        for dep_r, dy in DEPS[r]:                          # 전년 동기·누적 차분에 필요한 보고서(없을 때만 받는다)
-            ensure_raw(con, api_key, f, y + dy, dep_r, fetch, counts, fetched_at)
+        if (max_calls is not None and counts["calls"] >= max_calls) or (max_seconds is not None and time.time() - t0 >= max_seconds):
+            pend(con, f, "budget", now_s, count_try=False); counts["deferred"] += 1; con.commit(); continue
+        raw = ensure_raw(con, api_key, f, y, r, fetch, counts, fetched_at, force=not have_raw)
+        if raw is None:                                     # 재무 조회 실패·영업이익 행 없음 — 다음에 다시
+            pend(con, f, "no_raw", now_s); con.commit(); continue
         q_this, q_prev = EF.quarter_values(load_rep(con, t), t, y, r)
+        cumulative = r != "Q1" and raw.get("th") is not None and raw.get("th") == raw.get("th_add")   # 3개월 칸에 누적을 적은 보고서일 수 있다
+        if q_this is None or cumulative:                    # 전년 동기·누적 차분에 필요한 보고서는 이때만 받는다(없는 것만)
+            for dep_r, dy in DEPS[r]:
+                ensure_raw(con, api_key, f, y + dy, dep_r, fetch, counts, fetched_at, count_fail=False)
+            q_this, q_prev = EF.quarter_values(load_rep(con, t), t, y, r)
         if q_this is None:
-            counts["no_values"] += 1; con.commit(); continue
+            counts["no_values"] += 1; set_state(con, t, y, r, "no_values"); pend(con, f, "no_values", now_s); con.commit(); continue
         if exist:                                          # 접수일·시총은 원본 것을 유지(배지 시작일이 밀리지 않게 · 시총 고정)
             rcept_dt, mcap, shares, px_dt, source = exist[0], exist[1], exist[2], exist[3], (exist[4] or "")
             if not mcap:
@@ -271,14 +342,16 @@ def process(con, ocon, filings, api_key, fetch=fetch_json, dry=False, now=None):
             mcap, shares, px_dt = mcap_at(ocon, t, rcept_dt)
             source = SOURCE
         if not mcap:
-            counts["no_price"] += 1; con.commit(); continue
+            counts["no_price"] += 1; set_state(con, t, y, r, "no_price"); pend(con, f, "no_price", now_s); con.commit(); continue
         sue = (q_this - q_prev) / mcap
         if abs(sue) > EF.SUE_CAP:
-            counts["extreme"] += 1; con.commit(); continue
+            counts["extreme"] += 1; set_state(con, t, y, r, "extreme"); unpend(con, f["rcept_no"]); con.commit(); continue
         con.execute("INSERT OR REPLACE INTO earnings_q(ticker, year, reprt, reprt_ord, rcept_dt, q_op, q_op_prev, mcap_prev, sue, source, shares_at, px_dt) "
                     "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (t, y, r, EF._ORD[r], rcept_dt, q_this, q_prev, mcap, sue, source, shares, px_dt))
+        set_state(con, t, y, r, "ok"); unpend(con, f["rcept_no"])
         counts["updated" if exist else "new"] += 1
         con.commit()
+    con.commit()
     return counts
 
 
@@ -317,7 +390,15 @@ def verify(con, ocon, api_key, n, fetch=fetch_json, year=2026, reprt="H1"):
 def status(con):
     r = con.execute("SELECT source, COUNT(*), MAX(rcept_dt) FROM earnings_q GROUP BY source").fetchall()
     print("• earnings_q:", ", ".join(f"{s or '-'} {n}건(~{d})" for s, n, d in r))
-    print("• earnings_raw:", con.execute("SELECT COUNT(*) FROM earnings_raw").fetchone()[0], "행 · 마지막 조회일", meta_get(con, "last_end", "-"))
+    try:
+        n_raw = con.execute("SELECT COUNT(*) FROM earnings_raw").fetchone()[0]; last = meta_get(con, "last_end", "-")
+    except sqlite3.Error:
+        n_raw, last = 0, "-"
+    try:
+        pen = con.execute("SELECT reason, COUNT(*) FROM earnings_pending GROUP BY reason").fetchall()
+    except sqlite3.Error:
+        pen = []
+    print("• earnings_raw:", n_raw, "행 · 마지막 조회일", last, "· 재시도 대기", (", ".join(f"{k} {n}" for k, n in pen) or "없음"))
 
 
 def main():
@@ -325,9 +406,17 @@ def main():
     ap.add_argument("--start"); ap.add_argument("--end"); ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--verify", type=int, default=0); ap.add_argument("--status", action="store_true"); ap.add_argument("--db", default=None)
     a = ap.parse_args()
+    if a.status:                        # 상태 확인은 읽기 전용(스키마를 만들거나 바꾸지 않는다)
+        p = a.db or EF.EARN_DB
+        if not os.path.exists(p):
+            print("• earnings.db 없음"); return 0
+        rcon = sqlite3.connect(f"file:{p}?mode=ro", uri=True)
+        try:
+            status(rcon)
+        finally:
+            rcon.close()
+        return 0
     con = open_db(a.db or EF.EARN_DB)
-    if a.status:
-        status(con); return 0
     try:
         from run_and_diversify import load_dotenv
         load_dotenv()
@@ -345,13 +434,14 @@ def main():
         start = a.start or ((datetime.strptime(last_end, "%Y%m%d") - timedelta(days=OVERLAP_DAYS)).strftime("%Y%m%d") if last_end else DEFAULT_START)
         end = a.end or today
         counts = {}
-        filings, calls = fetch_filings(api_key, start, end, counts=counts)
         t0 = time.time()
-        c = process(con, ocon, filings, api_key, dry=a.dry_run)
+        filings, calls = fetch_filings(api_key, start, end, counts=counts)
+        c = process(con, ocon, filings, api_key, dry=a.dry_run, max_calls=MAX_CALLS, max_seconds=MAX_SECONDS)
         c["calls"] += calls
         print(f"• 실적 증분 {start}~{end}: 목록 {counts.get('list_rows', 0)}행 → 정기보고서(12월 결산) {c['filings']}건 · "
               f"신규 {c['new']} · 갱신(정정) {c['updated']} · 이미 처리 {c['done']} · 건너뜀(창 밖 {c['window']} · 원본 없는 정정 {c['amend_no_orig']} · "
-              f"값 없음 {c['no_values']} · 시세 없음 {c['no_price']} · 극단값 {c['extreme']}) · DART 호출 {c['calls']} · {time.time() - t0:.0f}s"
+              f"값 없음 {c['no_values']} · 시세 없음 {c['no_price']} · 극단값 {c['extreme']}) · 재시도 {c['retry']} · 다음으로 미룸 {c['deferred']}"
+              f"{(' · 재시도 포기 ' + str(c['pending_dropped'])) if c['pending_dropped'] else ''} · DART 호출 {c['calls']} · {time.time() - t0:.0f}s"
               + (f" · dry-run(처리 예정 {c['dry']}건)" if a.dry_run else ""))
         if not a.dry_run and not counts.get("list_error"):
             meta_set(con, "last_end", end); con.commit()

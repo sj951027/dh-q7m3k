@@ -170,4 +170,92 @@ bat = open(REPO / "run_all_and_diversify.bat", encoding="utf-8", errors="replace
 check("배치: extra_ohlcv 다음 · run_and_diversify 앞", bat.index("python extra_ohlcv.py") < bat.index("python earnings_incr.py") < bat.index("python run_and_diversify.py"))
 src = open(REPO / "earnings_incr.py", encoding="utf-8").read()
 check("실패는 비치명(종료코드 0) · 분당 상한 공유 · 분기값은 earnings_flag 그대로", "sys.exit(0)" in src and "_drate.wait()" in src and "EF.quarter_values(" in src)
+print("[G] 2026-10-09 보강 — 실패 건 재시도 · 완료 표지 · 예산 · 접수번호 · 읽기 전용 상태")
+td2 = tempfile.mkdtemp(); odb2 = os.path.join(td2, "ohlcv.db"); edb2 = os.path.join(td2, "earn.db")
+oc2 = sqlite3.connect(odb2)
+oc2.executescript("CREATE TABLE daily_ohlcv(ticker TEXT, date TEXT, close INTEGER, shares INTEGER); CREATE TABLE daily_ohlcv_extra(ticker TEXT, date TEXT, close INTEGER, shares INTEGER);")
+oc2.commit()
+c2 = X.open_db(edb2)
+FIN.clear(); CALLS.clear(); LIMIT["on"] = False
+npend = lambda: c2.execute("SELECT COUNT(*) FROM earnings_pending").fetchone()[0]
+nq = lambda t: c2.execute("SELECT COUNT(*) FROM earnings_q WHERE ticker=?", (t,)).fetchone()[0]
+# G1 시세 없음 → 나중에 시세가 생기면 다음 실행이 다시 넣는다(목록에 없어도)
+FIN[("C1", "2026", "11014", "CFS")] = op(1200, 3000, fr_q=1000, fr_add=2500)
+f1 = X.parse_filing(row(stock_code="111111", corp_code="C1", rcept_no="20261114100001"))
+c = X.process(c2, oc2, [f1], "k", fetch=fake, now=now)
+check("시세 없음: 저장 안 함 · 재시도 큐에 남음 · 원자료 상태 no_price", c["no_price"] == 1 and nq("111111") == 0 and npend() == 1
+      and c2.execute("SELECT state FROM earnings_raw WHERE ticker='111111'").fetchone()[0] == "no_price")
+check("전년 3개월 값이 보고서 안에 있으면 의존 보고서를 받지 않는다(호출 1회)", c["calls"] == 1, str(c["calls"]))
+oc2.execute("INSERT INTO daily_ohlcv VALUES('111111','20261113',100,1000)"); oc2.commit()
+CALLS.clear()
+c = X.process(c2, oc2, [], "k", fetch=fake, now=now)          # 목록이 비어도 큐에서 다시 본다
+check("시세가 생긴 뒤 다음 실행: 큐에서 꺼내 저장 · 재무는 다시 안 받음 · 큐 비움", c["retry"] == 1 and c["new"] == 1 and nq("111111") == 1 and npend() == 0 and not CALLS, str(c))
+c = X.process(c2, oc2, [f1], "k", fetch=fake, now=now)
+check("저장까지 끝난 접수번호만 '이미 처리'", c["done"] == 1 and c["calls"] == 0)
+# G2 사업보고서: 3분기 원자료가 없어 값 못 구함 → 나중에 생기면 회복
+FIN[("C2", "2025", "11011", "CFS")] = op(5000, fr=4000)
+fy = X.parse_filing(row(stock_code="222222", corp_code="C2", report_nm="사업보고서 (2025.12)", rcept_no="20260310100001", rcept_dt="20260310"))
+oc2.execute("INSERT INTO daily_ohlcv VALUES('222222','20260309',100,100000)"); oc2.commit()
+c = X.process(c2, oc2, [fy], "k", fetch=fake, now=datetime(2026, 3, 10, 20, 15))
+check("사업보고서: 3분기 누적이 없으면 값 없음(0 으로 채우지 않음) · 큐에 남음", c["no_values"] == 1 and nq("222222") == 0 and npend() == 1, str(c))
+FIN[("C2", "2025", "11014", "CFS")] = op(1500, 3500, fr_q=1100, fr_add=3000)
+c = X.process(c2, oc2, [], "k", fetch=fake, now=datetime(2026, 3, 11, 20, 15))
+r2 = c2.execute("SELECT q_op, q_op_prev, rcept_dt FROM earnings_q WHERE ticker='222222'").fetchone()
+check("3분기 원자료가 생기면 4분기 = 연간 − 3분기 누적(5000−3500, 전년 4000−3000) · 접수일은 원래 날", c["new"] == 1 and r2 == (1500.0, 1000.0, "20260310") and npend() == 0, str(r2))
+# G3 예산: 호출 상한을 넘으면 남은 보고서는 큐로 미루고 다음 실행이 이어받는다
+fs3 = []
+for i, (t, cc) in enumerate((("333331", "D1"), ("333332", "D2"), ("333333", "D3"))):
+    FIN[(cc, "2026", "11014", "CFS")] = op(100 + i, 300, fr_q=90, fr_add=250)
+    oc2.execute("INSERT INTO daily_ohlcv VALUES(?,?,?,?)", (t, "20261113", 100, 1000))
+    fs3.append(X.parse_filing(row(stock_code=t, corp_code=cc, rcept_no=f"2026111420000{i}")))
+oc2.commit()
+c = X.process(c2, oc2, fs3, "k", fetch=fake, now=now, max_calls=1)
+check("호출 상한 1: 1건만 처리 · 2건은 미룸(큐, 횟수 0)", c["new"] == 1 and c["deferred"] == 2 and npend() == 2
+      and c2.execute("SELECT MAX(tries) FROM earnings_pending").fetchone()[0] == 0, str(c))
+c = X.process(c2, oc2, [], "k", fetch=fake, now=now)
+check("다음 실행이 미룬 2건을 이어서 처리", c["retry"] == 2 and c["new"] == 2 and npend() == 0)
+c = X.process(c2, oc2, fs3, "k", fetch=fake, now=now, max_seconds=0)
+check("시간 상한을 넘겨도 이미 끝난 것은 '이미 처리'로만 센다(큐에 다시 안 넣음)", c["done"] == 3 and c["deferred"] == 0 and npend() == 0)
+# G4 재무 응답의 실제 접수번호: 원본을 처리하는 사이 정정본 값이 왔으면 그 번호로 적고, 정정본이 목록에 떠도 다시 받지 않는다
+it = op(700, 900, fr_q=600, fr_add=800); it[0]["rcept_no"] = "20261120300009"
+FIN[("E1", "2026", "11014", "CFS")] = it
+oc2.execute("INSERT INTO daily_ohlcv VALUES('444444','20261113',100,1000)"); oc2.commit()
+f4 = X.parse_filing(row(stock_code="444444", corp_code="E1", rcept_no="20261114300001"))
+c = X.process(c2, oc2, [f4], "k", fetch=fake, now=now)
+check("원자료에 응답의 접수번호를 적는다", c["new"] == 1 and c2.execute("SELECT rcept_no FROM earnings_raw WHERE ticker='444444'").fetchone()[0] == "20261120300009")
+CALLS.clear()
+f4a = X.parse_filing(row(stock_code="444444", corp_code="E1", report_nm="[기재정정]분기보고서 (2026.09)", rcept_no="20261120300009", rcept_dt="20261120"))
+c = X.process(c2, oc2, [f4, f4a], "k", fetch=fake, now=now)
+check("원본·정정본 모두 '이미 처리'(재호출 없음)", c["done"] == 2 and not CALLS)
+# G5 큐 기한
+c2.execute("INSERT INTO earnings_pending VALUES('20260101999999', ?, 'no_price', '20260101_2015', 3, '20260102_2015')", (__import__("json").dumps(f1),)); c2.commit()
+lst, dropped = X.load_pending(c2, now)
+check(f"큐에 {X.PENDING_MAX_DAYS}일 넘게 있던 것은 버린다", dropped == 1 and npend() == 0)
+# G6 시총: 두 표에 다 있으면 더 최근 날짜
+oc2.execute("INSERT INTO daily_ohlcv VALUES('555555','20261110',100,10)"); oc2.execute("INSERT INTO daily_ohlcv_extra VALUES('555555','20261113',200,10)"); oc2.commit()
+check("본 표(11/10)보다 보충표(11/13)가 최근이면 보충표 값", X.mcap_at(oc2, "555555", "20261114") == (2000.0, 10.0, "20261113"))
+c2.close(); oc2.close()
+# G7 옛 구조에서 올리기: state 열이 없던 표 → 이미 배지 자료에 들어간 것만 ok
+edb3 = os.path.join(td2, "old.db"); w3 = sqlite3.connect(edb3)
+w3.executescript("""CREATE TABLE earnings_raw(ticker TEXT, year INTEGER, reprt TEXT, fs TEXT, rcept_no TEXT, th REAL, th_add REAL, fr REAL, fr_q REAL, fr_add REAL, fetched_at TEXT, PRIMARY KEY(ticker, year, reprt));
+CREATE TABLE earnings_q(ticker TEXT, year INTEGER, reprt TEXT, reprt_ord INTEGER, rcept_dt TEXT, q_op REAL, q_op_prev REAL, mcap_prev REAL, sue REAL, source TEXT, PRIMARY KEY(ticker, year, reprt));
+INSERT INTO earnings_raw VALUES('000001',2026,'H1','CFS','r1',1,1,1,1,1,'x');
+INSERT INTO earnings_raw VALUES('000002',2026,'H1','CFS','r2',1,1,1,1,1,'x');
+INSERT INTO earnings_q VALUES('000001',2026,'H1',2,'20260814',1,1,1,0.0,'incr|was:research_backfill');""")
+w3.commit(); w3.close()
+c3 = X.open_db(edb3)
+check("옛 표에 state 열 추가 · 저장까지 된 것만 ok(나머지는 다시 볼 수 있게 빈 값)",
+      dict(c3.execute("SELECT ticker, state FROM earnings_raw").fetchall()) == {"000001": "ok", "000002": None})
+c3.close()
+# G8 상태 확인은 읽기 전용(표가 없어도 죽지 않고, 파일을 바꾸지 않는다)
+edb4 = os.path.join(td2, "ro.db"); w4 = sqlite3.connect(edb4)
+w4.execute("CREATE TABLE earnings_q(ticker TEXT, year INTEGER, reprt TEXT, reprt_ord INTEGER, rcept_dt TEXT, q_op REAL, q_op_prev REAL, mcap_prev REAL, sue REAL, source TEXT)"); w4.commit(); w4.close()
+import io as _io, contextlib as _ctx   # noqa: E402
+_argv = sys.argv; sys.argv = ["earnings_incr.py", "--status", "--db", edb4]
+with _ctx.redirect_stdout(_io.StringIO()) as _buf:
+    rc = X.main()
+sys.argv = _argv
+r4 = sqlite3.connect(edb4); tabs = [x[0] for x in r4.execute("SELECT name FROM sqlite_master WHERE type='table'")]; r4.close()
+check("--status: 종료코드 0 · 표를 새로 만들지 않는다", rc == 0 and tabs == ["earnings_q"] and "earnings_q" in _buf.getvalue(), str(tabs))
+
 print(f"\n{P}개 통과")
