@@ -322,6 +322,26 @@ def load_all_tickers(ohlcv_path=OHLCV_DB, include_extras=True):
         pass
     except Exception as e:
         print(f"   ⚠️  상장목록 보충 실패(비치명): {str(e)[:60]}")
+    # [2026-10-11] 시세 보충표(daily_ohlcv_extra)에 있는 종목도 수급 대상에 넣는다.
+    #   배치에서 universe_ohlcv 가 '걸러낸 목록'을 상장목록 캐시에 덮어쓴 직후 이 단계가 돌기 때문에
+    #   위 상장목록 보충에는 코스닥 글로벌·영문코드 종목이 나오지 않는다(스크리너가 나중에 캐시를 되돌림).
+    #   그 결과 136종목의 daily_flows 가 9/11 에서 조용히 멈춰 있었다(10/7 extra_ohlcv 수정과 같은 뿌리).
+    #   보충표에 한 번 들어온 종목은 목록 출처와 무관하게 계속 받는다. 공매도 전용 호출(--no-daily)은 종전 그대로.
+    if include_extras:
+        try:
+            have = {t for t, _ in tickers}
+            with sqlite3.connect(ohlcv_path) as con:
+                if con.execute("SELECT 1 FROM sqlite_master WHERE name='daily_ohlcv_extra'").fetchone():
+                    more = [(r[0], r[0]) for r in con.execute(
+                        """SELECT ticker FROM daily_ohlcv_extra
+                           WHERE date=(SELECT MAX(date) FROM daily_ohlcv_extra)
+                             AND is_suspended=0 AND close IS NOT NULL
+                           ORDER BY close*COALESCE(shares,0) DESC""") if r[0] not in have]
+                    if more:
+                        tickers += more
+                        print(f"   + 시세 보충표 {len(more)}종목 — 상장목록 보충에 안 잡힌 것")
+        except Exception as e:
+            print(f"   ⚠️  시세 보충표 종목 보충 실패(비치명): {str(e)[:60]}")
     return f"all_ohlcv_{latest}", tickers
 
 
