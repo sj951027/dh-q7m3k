@@ -12,10 +12,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sqlite3
 import sys
+import time
 
 REG = "20260901"
 MODEL, BASE = "lv_e", "lv_b"
 BOOT, SEED, DENOM = 4000, 7, 11
+PLACEBO_REPS, PLACEBO_SEED = 2000, 20261012
 MIN_GROUP, MIN_OOS, LAG, JUMP = 8, 40, 1, 0.32
 ROOT = Path(__file__).resolve().parents[2]
 PRICE_TABLES = ("daily_ohlcv", "daily_ohlcv_extra")
@@ -146,6 +148,11 @@ def read_inputs(hc, pc, as_of=None):
     px["ratio"] = px.volume / px.shares.replace(0, np.nan)
     turnover = px.pivot(index="date", columns="ticker", values="ratio").reindex(full_grid)
     to20 = turnover.rolling(20, min_periods=1).mean()
+    cap_rows = px.loc[px.date.between(REG, cutoff)].copy()
+    cap_rows["cap"] = cap_rows.close * cap_rows.shares
+    cap_rows = cap_rows.loc[(cap_rows.close > 0) & (cap_rows.shares > 0)
+                            & np.isfinite(cap_rows.cap)].sort_values("date").drop_duplicates("ticker")
+    first_caps = cap_rows.set_index("ticker")["cap"]
     stage3 = pd.read_sql_query(
         "SELECT run_id,market,ticker,oversold_score FROM stage3_final WHERE run_id>=? AND run_id<=?",
         hc, params=(REG, cutoff))
@@ -153,7 +160,7 @@ def read_inputs(hc, pc, as_of=None):
         stage3[col] = stage3[col].astype(str)
     if stage3.duplicated(["run_id", "market", "ticker"]).any():
         raise ValueError("확인 못 함: stage3 키 중복")
-    return dict(scores=s, close=close, to20=to20, cutoff=cutoff, stage3=stage3,
+    return dict(scores=s, close=close, to20=to20, cutoff=cutoff, stage3=stage3, first_caps=first_caps,
                 dates={d: i for i, d in enumerate(calendar)}, median_stage1=median,
                 gates={"판정30": partial30 | doubles,
                        "적재50감도": partial50 | missing_stage1 | doubles,
@@ -598,6 +605,255 @@ def analyze(data):
     return out
 
 
+def placebo_prepare(data):
+    """본 표·판정30 전용. 두 모델 합집합의 시장별 공통 이름표 공간을 만든다."""
+    s, close, dates = data["scores"], data["close"], data["dates"]
+    keep = {m: choose_runs(s[s.model_id == m], dates, data["gates"]["판정30"])
+            for m in (MODEL, BASE)}
+    positions = sorted(set(keep[MODEL]) | set(keep[BASE]))
+    jump = close.pct_change(fill_method=None).abs()
+    returns = {}
+    for h in (20, 10):
+        returns[h] = pd.DataFrame(
+            [forward(close,t,h,jump)[0] if t+LAG+h<len(close) else
+             pd.Series(np.nan,index=close.columns) for t in positions],
+            index=positions, columns=close.columns)
+    panels = []
+    for market, g in s.groupby("market", sort=True):
+        # 판정 창의 모든 출현을 포함: 미완결·게이트 제외 run도 이름표 모집단에는 남긴다.
+        tickers = sorted(g.ticker.unique())
+        scores = {}
+        for m in (MODEL,BASE):
+            z = g[g.model_id == m].pivot(index="run_id", columns="ticker", values="score")
+            z = z.reindex(index=[keep[m].get(t, "") for t in positions], columns=tickers)
+            scores[m] = z.to_numpy(dtype=float)
+        caps = data["first_caps"].reindex(tickers)
+        bins = np.full(len(tickers), 5, dtype=int)
+        ok = caps.notna().to_numpy()
+        bins[ok] = np.clip(np.ceil(caps[ok].rank(method="average",pct=True).to_numpy()*5).astype(int)-1,0,4)
+        panels.append(dict(market=market,tickers=tickers,scores=scores,cap_bins=bins,
+                           cap_known=int(ok.sum()),
+                           returns={h:r.reindex(columns=tickers).to_numpy(float) for h,r in returns.items()}))
+    return dict(panels=panels, positions=positions,
+                days=[close.index[t] for t in positions],
+                run_dates=[keep[MODEL].get(t,keep[BASE].get(t)) for t in positions], keep=keep)
+
+
+def placebo_correlations(x, y):
+    """행별 pairwise 결측 제거 후 평균 동점 재순위. 주 계산의 8쌍/3고유값 상속."""
+    mask = ~np.isnan(x) & ~np.isnan(y)
+    xx, yy = np.where(mask,x,np.nan), np.where(mask,y,np.nan)
+    n = mask.sum(axis=1)
+    def centered(a):
+        rank = pd.DataFrame(a).rank(axis=1,method="average").to_numpy()
+        return np.where(mask,rank-(n[:,None]+1)/2,0.)
+    rx, ry = centered(xx), centered(yy)
+    den = np.sqrt(np.sum(rx*rx,axis=1)*np.sum(ry*ry,axis=1))
+    corr = np.divide(np.sum(rx*ry,axis=1),den,out=np.full(len(n),np.nan),where=den>0)
+    def unique_count(a):
+        a = np.sort(a,axis=1)
+        return (~np.isnan(a[:,0])).astype(int) + ((a[:,1:]!=a[:,:-1]) & ~np.isnan(a[:,1:])).sum(axis=1)
+    unique_x, unique_y = unique_count(xx), unique_count(yy)
+    corr[(n<MIN_GROUP)|(unique_x<3)|(unique_y<3)] = np.nan
+    return corr
+
+
+def placebo_batch(prepared, maps):
+    """maps[시장][시도,source]=recipient. 같은 표를 전 날짜·두 모델에 함께 쓴다."""
+    batch = len(maps[0]) if maps else 1
+    nt = len(prepared["positions"])
+    output = {}
+    for h in (20,10):
+        sums = np.zeros((4,batch,nt))
+        counts = np.zeros((4,batch,nt),dtype=int)
+        for panel, mapping in zip(prepared["panels"], maps):
+            width = len(panel["tickers"])
+            # 원 점수 열은 source, 수익 열만 recipient로 연결한다.
+            ret = panel["returns"][h][:,mapping].transpose(1,0,2).reshape(-1,width)
+            e = np.broadcast_to(panel["scores"][MODEL],(batch,nt,width)).reshape(-1,width)
+            b = np.broadcast_to(panel["scores"][BASE],(batch,nt,width)).reshape(-1,width)
+            common = ~np.isnan(e) & ~np.isnan(b)
+            for slot, score in enumerate((e,b,np.where(common,e,np.nan),np.where(common,b,np.nan))):
+                ic = placebo_correlations(score,ret).reshape(batch,nt)
+                good = ~np.isnan(ic)
+                sums[slot] += np.where(good,ic,0.)
+                counts[slot] += good
+        avg = np.divide(sums,counts,out=np.full_like(sums,np.nan),where=counts>0)
+        output[h,MODEL,"각자"] = avg[0]
+        output[h,BASE,"각자"] = avg[1]
+        output[h,"차이","각자"] = avg[0]-avg[1]
+        output[h,"차이","교집합"] = avg[2]-avg[3]
+    return output
+
+
+def placebo_draws(prepared, method, reps=PLACEBO_REPS, seed=PLACEBO_SEED, progress=None):
+    rng = np.random.default_rng(seed)
+    output = {}
+    fixed, population, strata = 0, sum(len(p["tickers"]) for p in prepared["panels"]), []
+    groups = []
+    for p in prepared["panels"]:
+        labels = p["cap_bins"] if method=="시총5분위" else np.zeros(len(p["tickers"]),int)
+        ids = [np.flatnonzero(labels==k) for k in np.unique(labels)]
+        groups.append(ids)
+        strata.append(dict(market=p["market"],pool=len(labels),cap_known=p["cap_known"],
+                           cap_missing=len(labels)-p["cap_known"],sizes=[len(i) for i in ids],
+                           singleton_tickers=sum(len(i)==1 for i in ids)))
+    for start in range(0,reps,32):
+        time_guard()
+        stop = min(reps,start+32)
+        maps = []
+        for panel, group in zip(prepared["panels"],groups):
+            n = len(panel["tickers"])
+            mapping = np.tile(np.arange(n),(stop-start,1))
+            for ids in group:
+                # 일반 순열: 자기 자신으로 가는 이름표도 허용한다.
+                mapping[:,ids] = rng.permuted(np.tile(ids,(stop-start,1)),axis=1)
+            assert np.all(np.sort(mapping,axis=1)==np.arange(n))
+            fixed += int((mapping==np.arange(n)).sum())
+            maps.append(mapping)
+        for key, values in placebo_batch(prepared,maps).items():
+            output.setdefault(key,np.full((reps,len(prepared["positions"])),np.nan))[start:stop] = values
+        if progress:
+            progress(f"{method} 자리바꿈 {stop}/{reps}")
+    return output,dict(strata=strata,fixed_fraction=fixed/(reps*population) if population else None)
+
+
+def placebo_distribution(values, actual, minimum=1):
+    n = np.sum(~np.isnan(values),axis=1)
+    means = np.divide(np.nansum(values,axis=1),n,out=np.full(len(n),np.nan),where=n>=minimum)
+    good = means[~np.isnan(means)]
+    result = dict(attempts=len(n),valid_attempts=len(good),invalid_attempts=len(n)-len(good),
+                  anchor_n_min=int(n.min()) if len(n) else 0,anchor_n_max=int(n.max()) if len(n) else 0,
+                  quantiles=None,actual_mean=actual,percentile_le=None,percentile_midrank=None,
+                  lower_tail=None,upper_tail=None,two_sided_tail=None,
+                  lower_tail_plus1=None,upper_tail_plus1=None)
+    if len(good):
+        result["quantiles"] = tuple(float(x) for x in np.percentile(good,[2.5,50,97.5]))
+        if actual is not None:
+            below, equal, above = int((good<actual).sum()),int((good==actual).sum()),int((good>actual).sum())
+            low, high = (below+equal)/len(good),(above+equal)/len(good)
+            result.update(percentile_le=100*low,percentile_midrank=100*(below+.5*equal)/len(good),
+                          lower_tail=low,upper_tail=high,two_sided_tail=min(1.,2*min(low,high)),
+                          lower_tail_plus1=(1+below+equal)/(len(good)+1),
+                          upper_tail_plus1=(1+above+equal)/(len(good)+1))
+    return result
+
+
+def placebo_weights(n, week_labels):
+    """series_stats와 동일 seed·복원추출 순서. 재표집 가중치만 한 번 만든다."""
+    def counts(picks, width):
+        out = np.zeros((len(picks),width))
+        np.add.at(out,(np.arange(len(picks))[:,None],picks),1)
+        return out
+    idx = np.random.default_rng(SEED).integers(0,n,(BOOT,n))
+    iid = counts(idx,n)/n
+    weeks = int(week_labels.max())+1
+    picks = np.random.default_rng(SEED).integers(0,weeks,(BOOT,weeks))
+    wc = counts(picks,weeks)
+    sizes = np.bincount(week_labels,minlength=weeks)
+    week = wc[:,week_labels]/(wc@sizes)[:,None]
+    return iid,week
+
+
+def placebo_rates(values, run_dates, eligible, progress=None):
+    """각주용 양(+) 통계 조건 비율. 최종 채택·coverage·h10·짝우위 라벨 아님."""
+    if not eligible:
+        return dict(status="중간 관측: 40일 미달, 유의 비율 칸 비움",rates=None)
+    total = len(values)
+    flags = {k:np.zeros(total,bool) for k in ("iid95","week95","bonf11_iid","bonf11_week")}
+    directions = {k:np.zeros(total,bool) for k in ("앵커60%","주60%")}
+    patterns, inverse = np.unique(~np.isnan(values),axis=0,return_inverse=True)
+    all_weeks = pd.to_datetime(run_dates,format="%Y%m%d").to_period("W")
+    for group, mask in enumerate(patterns):
+        rows = np.flatnonzero(inverse==group)
+        n = int(mask.sum())
+        if not n:
+            continue
+        labs = pd.factorize(all_weeks[mask],sort=True)[0]
+        v = values[np.ix_(rows,mask)]
+        directions["앵커60%"][rows] = (v>0).mean(axis=1)>=.6
+        directions["주60%"][rows] = np.column_stack([v[:,labs==w].mean(axis=1)>0
+                                                    for w in np.unique(labs)]).mean(axis=1)>=.6
+        banks = placebo_weights(n,labs)
+        for start in range(0,len(rows),128):
+            time_guard()
+            ids = rows[start:start+128]
+            for bank,name in zip(banks,("iid","week")):
+                samples = np.einsum("ij,kj->ik",v[start:start+128],bank,optimize=False)
+                lower = np.percentile(samples,[2.5,2.5/DENOM],axis=1)
+                flags[name+"95"][ids] = lower[0]>0
+                flags["bonf11_"+name][ids] = lower[1]>0
+            if progress:
+                progress(f"구간 검사 패턴 {group+1}/{len(patterns)}, 시도 {min(start+128,len(rows))}/{len(rows)}")
+    flags["both95"] = flags["iid95"] & flags["week95"]
+    flags["bonf11_both"] = flags["bonf11_iid"] & flags["bonf11_week"]
+    return dict(status="각주용 통계 조건",attempts=total,
+                no_ic_attempts=int(np.isnan(values).all(axis=1).sum()),
+                rates={d:{k:dict(passes=int((v&direction).sum()),fraction=float((v&direction).mean()))
+                          for k,v in flags.items()} for d,direction in directions.items()})
+
+
+def placebo_reference(data, main_result, reps=PLACEBO_REPS, seed=PLACEBO_SEED,
+                      methods=("시장내","시총5분위"), progress=None, include_rates=True):
+    prepared = placebo_prepare(data)
+    result = dict(seed=seed,repetitions=reps,bootstrap=BOOT,bootstrap_seed=SEED,
+                  source="본 표·시장 평균·판정30만",methods={})
+    identity = [np.arange(len(p["tickers"]))[None,:] for p in prepared["panels"]]
+    observed = placebo_batch(prepared,identity)
+    # 새 batch 구현과 기존 주 계산을 같은 자료·같은 앵커에서 연결 검증한다.
+    for key, arr in observed.items():
+        h,m,pop = key
+        target = main_result["series"].get((h,m,pop,"시장평균"),{})
+        expected = np.array([target.get(d,np.nan) for d in prepared["days"]])
+        if not np.allclose(arr[0],expected,rtol=0,atol=1e-12,equal_nan=True):
+            raise ValueError("확인 못 함: 자리바꿈 identity와 주 계산 불일치 " + str(key))
+    for method in methods:
+        draws, metadata = placebo_draws(prepared,method,reps,seed,progress)
+        summaries = {}
+        for key, values in draws.items():
+            h,m,pop = key
+            actual_stat = main_result["stats"][h,m,pop,"시장평균"]
+            actual = actual_stat["mean"]
+            summaries[key] = placebo_distribution(values,actual,10 if m=="차이" else 1)
+            summaries[key].update(actual_anchor_n=actual_stat["n"],actual_iid95=actual_stat["iid95"])
+        c = main_result["condition"]
+        rates = placebo_rates(draws[20,MODEL,"각자"],prepared["run_dates"],
+                              c["anchors40"] and c["price40"],progress) if include_rates else None
+        result["methods"][method] = dict(distributions=summaries,rates=rates,**metadata)
+    return result
+
+
+def render_placebo(reference):
+    lines = ["\n각주 ④ 참고값 ③ 자리바꿈 백분위 — 라벨·해석에 사용하지 않음",
+             f"{reference['source']} / {reference['repetitions']}회 seed={reference['seed']}",
+             f"각 시도 구간 {reference['bootstrap']}회 seed={reference['bootstrap_seed']}",
+             "시장별 두 모델 출현 합집합 안 1:1 순열; 출현/결측을 포함한 전체 점수 흐름 이동; 두 모델에 같은 순열",
+             "시총=창 안 첫 양수 close×shares; 시장별 평균 동점 백분위 5층, 시총 결측은 별도 6번째 층",
+             "quantiles 순서=뒤섞은 평균의 2.5·50·97.5 백분위; actual_anchor_n/actual_iid95는 주 계산의 표본수/구간",
+             "백분위: <= 경험누적(0~100), 동점 중간값도 병기. 꼬리 비율은 동점 포함; +1 보정 별도",
+             "음수 실제값은 lower_tail을 읽음. 양측 꼬리=min(1,2*min(아래,위)). 0회 초과는 확률0의 증명 아님.",
+             "유의 비율: 40일 조건 + 구간 하단>0 + 방향60%(앵커/주 병기). 최종 채택 라벨 재현 아님.",
+             "비율 분모=전체 시도; 상관 없는 시도는 통과하지 않으며 따로 셈. 분포 백분위는 유효 시도만."]
+    for method,row in reference["methods"].items():
+        lines += ["["+method+"]", "층="+f(row["strata"]),"이름표 고정 비율="+f(row["fixed_fraction"])]
+        for key,value in row["distributions"].items():
+            if key[1]==BASE or (key[0]==10 and key[1]==MODEL):
+                continue
+            lines.append(" | ".join(map(str,key)) + " | " + f(value))
+        lines.append("h20 lv_e 유의 통계 조건 비율="+f(row["rates"]))
+    return "\n".join(lines)
+
+
+def placebo_progress():
+    start, last = time.monotonic(), [0.]
+    def report(message):
+        now = time.monotonic()
+        if now-last[0]>=5:
+            print(f"[자리바꿈 {now-start:.0f}초] {message}",file=sys.stderr,flush=True)
+            last[0]=now
+    return report
+
+
 def fixture(case="perfect", count=45):
     """모든 값은 직접 만든 자료. DB는 둘 다 :memory:뿐."""
     hc, pc = sqlite3.connect(":memory:"), sqlite3.connect(":memory:")
@@ -759,6 +1015,7 @@ def _self_test():
         print(" | ".join(map(str,row)))
     print("추가 PASS: 원 선행 루프와 iid/주블록/Bonf 일치·반올림 경계·30/50 게이트·stage1 없음·이중run·종목차이·차이2·시세결손·9/10 없음·9/11 유지·중복앵커·최소표본·점프컷·to20 격자/min1/미래미사용·창미완결")
     revision_tests()
+    placebo_tests()
 
 
 def revision_tests():
@@ -851,6 +1108,128 @@ def revision_tests():
     print("보완 PASS: 본표 종목우선·가격/거래량 구멍 미보충·날짜격자/마감 불변·지속성 수익독립·라벨/해석 미연결·교체율 앞run분모·상수순위 결측")
 
 
+def placebo_tests():
+    import copy
+    hc,pc=fixture()
+    try:
+        # 시총 층을 실제로 나누되 수익/점수는 기존 정답 자료 유지.
+        pc.execute("UPDATE daily_ohlcv SET shares=100000*(CAST(ticker AS INTEGER)+1)")
+        data=read_inputs(hc,pc)
+        main=analyze(data)["판정30"]
+        progress=placebo_progress()
+        first=placebo_reference(data,main,progress=progress)
+        second=placebo_reference(data,main,progress=progress)
+        assert first==second
+        for method, row in first["methods"].items():
+            q=row["distributions"][20,MODEL,"각자"]
+            assert q["valid_attempts"]==2000 and q["percentile_le"]==100
+            for h in (20,10):
+                for pop in ("각자","교집합"):
+                    assert row["distributions"][h,"차이",pop]["quantiles"]==(0.,0.,0.)
+                    assert row["distributions"][h,"차이",pop]["percentile_midrank"]==50.
+        prepared=placebo_prepare(data)
+        draws,meta=placebo_draws(prepared,"시장내",progress=progress)
+        for h in (20,10):
+            for pop in ("각자","교집합"):
+                assert np.all(draws[h,"차이",pop]==0)
+        # 미리 만든 순열은 두 시장 각각 Spearman 정확히0. 일별로 동일한 가짜 점수.
+        zero_perms={8:[4,6,0,5,3,2,1,7],
+                    24:[18,2,1,21,13,15,23,22,7,5,3,19,0,9,11,8,6,14,12,20,4,16,10,17]}
+        for p in prepared["panels"]:
+            for source_index,tick in enumerate(p["tickers"]):
+                hc.execute("UPDATE lowvol_scores SET lowvol_score=? WHERE market=? AND ticker=?",
+                           (zero_perms[len(p["tickers"])][source_index],p["market"],tick))
+        zero_data=read_inputs(hc,pc)
+        zero_main=analyze(zero_data)["판정30"]
+        assert abs(zero_main["stats"][20,MODEL,"각자","시장평균"]["mean"])<1e-14
+        zero=placebo_reference(zero_data,zero_main,methods=("시장내",),progress=progress)
+        center=zero["methods"]["시장내"]["distributions"][20,MODEL,"각자"]["percentile_le"]
+        assert 40<=center<=60
+        # seed만 바꾸어 같은 관측값을 재평가하면 위치가 안정적이어야 한다.
+        alternate=placebo_reference(zero_data,zero_main,seed=PLACEBO_SEED+1,
+                                    methods=("시장내",),include_rates=False,progress=progress)
+        other_center=alternate["methods"]["시장내"]["distributions"][20,MODEL,"각자"]["percentile_le"]
+        assert abs(other_center-center)<5
+        # 고르게 퍼져야 하는 것은 독립 가짜 '관측 점수'를 새로 뽑았을 때의 위치다.
+        # 40개의 사전 고정 생성 seed. 동일 순위 멀티셋이라 공유 null 2000회를 사용 가능.
+        percentiles=[]
+        for seed in range(1000,1040):
+            rng=np.random.default_rng(seed)
+            maps=[rng.permutation(len(p["tickers"]))[None,:] for p in prepared["panels"]]
+            actual=float(np.mean(placebo_batch(prepared,maps)[20,MODEL,"각자"][0]))
+            percentiles.append(placebo_distribution(draws[20,MODEL,"각자"],actual)["percentile_le"])
+        bins=np.histogram(percentiles,bins=[0,20,40,60,80,100])[0]
+        assert 35<=np.mean(percentiles)<=65 and np.all(bins>0)
+        assert min(percentiles)<15 and max(percentiles)>85
+        # 음수 아래 꼬리와 동점 규약.
+        negative=placebo_distribution(draws[20,MODEL,"각자"],-1.)
+        assert negative["lower_tail"]==0 and negative["upper_tail"]==1
+        # 시총 결측은6번째층, 이후 값 대신 첫 유효 close*shares를 사용.
+        pc.execute("UPDATE daily_ohlcv SET shares=NULL WHERE ticker='000000'")
+        pc.execute("UPDATE daily_ohlcv SET shares=0 WHERE ticker='000001' AND date=?",(REG,))
+        capped=read_inputs(hc,pc)
+        cp=placebo_prepare(capped)
+        for panel in cp["panels"]:
+            if "000000" in panel["tickers"]:
+                assert panel["cap_bins"][panel["tickers"].index("000000")]==5
+        raw=pc.execute("SELECT close*shares FROM daily_ohlcv WHERE ticker='000001' AND shares>0 ORDER BY date LIMIT 1").fetchone()[0]
+        assert capped["first_caps"].loc["000001"]==raw
+        # 층별 제한·전체 흐름·희소 종목·서로 다른 유니버스와 scalar 주 계산 대조.
+        sparse=copy.deepcopy(prepared)
+        for panel in sparse["panels"]:
+            panel["scores"][MODEL][1,0]=np.nan
+            panel["scores"][BASE][2,1]=np.nan
+            panel["returns"][20][3,2]=np.nan
+        rng=np.random.default_rng(9)
+        maps=[rng.permutation(len(p["tickers"]))[None,:] for p in sparse["panels"]]
+        batched=placebo_batch(sparse,maps)
+        for h in (20,10):
+            for t in range(len(sparse["positions"])):
+                gm={m:[] for m in (MODEL,BASE)}
+                cm={m:[] for m in (MODEL,BASE)}
+                for panel,mapping in zip(sparse["panels"],maps):
+                    common=(~np.isnan(panel["scores"][MODEL][t]) & ~np.isnan(panel["scores"][BASE][t]))
+                    for m in (MODEL,BASE):
+                        g=pd.DataFrame(dict(score=panel["scores"][m][t],ret=panel["returns"][h][t,mapping[0]]))
+                        v=rank_ic(g); w=rank_ic(g[common])
+                        if v is not None: gm[m].append(v)
+                        if w is not None: cm[m].append(w)
+                means={m:np.mean(gm[m]) if gm[m] else np.nan for m in gm}
+                inter={m:np.mean(cm[m]) if cm[m] else np.nan for m in cm}
+                for key,expected in (((h,MODEL,"각자"),means[MODEL]),((h,BASE,"각자"),means[BASE]),
+                                     ((h,"차이","각자"),means[MODEL]-means[BASE]),
+                                     ((h,"차이","교집합"),inter[MODEL]-inter[BASE])):
+                    assert np.allclose(batched[key][0,t],expected,rtol=0,atol=1e-12,equal_nan=True)
+        # 구간 재표집 가중치가 기존 함수와 같은 결과인지 결측 패턴도 대조.
+        days=["20260907","20260908","20260909","20260914","20260921"]
+        values=np.array([[.4,.1,-.2,-.8,.3],[.2,np.nan,.1,.3,.4],[-.2,-.4,np.nan,-.1,-.3]])
+        rates=placebo_rates(values,days,True)
+        for direction,col in (("앵커60%","anchor_pos"),("주60%","week_pos")):
+            checks={k:0 for k in rates["rates"][direction]}
+            for row in values:
+                st=series_stats(dict(zip(days,row)))
+                passed=st[col]>=.6
+                flags={"iid95":st["iid95"][0]>0,"week95":st["week95"][0]>0,
+                       "bonf11_iid":st["iid_bonf"][0]>0,"bonf11_week":st["week_bonf"][0]>0}
+                flags["both95"]=flags["iid95"] and flags["week95"]
+                flags["bonf11_both"]=flags["bonf11_iid"] and flags["bonf11_week"]
+                for k,v in flags.items(): checks[k]+=int(passed and v)
+            assert checks=={k:v["passes"] for k,v in rates["rates"][direction].items()}
+        st=series_stats(dict(zip(days,values[0])))
+        labs=pd.factorize(pd.to_datetime(days).to_period("W"),sort=True)[0]
+        for bank,ci_key,bf_key in zip(placebo_weights(5,labs),("iid95","week95"),("iid_bonf","week_bonf")):
+            sample=bank@values[0]
+            assert np.allclose(np.percentile(sample,[2.5,97.5]),st[ci_key],atol=1e-15,rtol=0)
+            assert np.allclose(np.percentile(sample,[2.5/DENOM,100-2.5/DENOM]),st[bf_key],atol=1e-15,rtol=0)
+        assert placebo_rates(values,days,False)["rates"] is None
+        assert "라벨·해석에 사용하지 않음" in render_placebo(first)
+        print("자리바꿈 PASS: 2000회·seed20261012, 완전일치 백분위100, 동일모델 짝차이 h20/h10 전부0, 동일seed 재실행 일치")
+        print(f"자리바꿈 PASS: 상관0 정답의 백분위={center:.3f}, 다른 순열seed={other_center:.3f}; 가짜점수 생성40seed 백분위평균={np.mean(percentiles):.3f}, 5구간 빈도={bins.tolist()}")
+        print("자리바꿈 PASS: 음수꼬리·시총 첫유효/결측층·희소 종목 scalar 대조·구간/방향 규약·40미만 비율비움")
+    finally:
+        hc.close();pc.close()
+
+
 def self_test():
     original = sqlite3.connect
     def memory_only(database, *args, **kwargs):
@@ -898,7 +1277,10 @@ def main():
         variants=read_price_variants(hc,pc,args.as_of)
     time_guard()
     results={name:analyze(data) for name,data in variants.items()}
-    print(render_price_variants(variants,results))
+    print(render_price_variants(variants,results),flush=True)
+    reference=placebo_reference(variants[PRIMARY_PRICE],results[PRIMARY_PRICE]["판정30"],
+                                progress=placebo_progress())
+    print(render_placebo(reference))
 
 
 if __name__=="__main__":
