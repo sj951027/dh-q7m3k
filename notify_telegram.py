@@ -358,12 +358,50 @@ def _apply_show(reg):
 _apply_registry()
 
 
+def _missed_run_days(hcon, ocon, skip=()):
+    """[2026-10-15] 직전 run 과 이번 run 사이에 배치가 안 돈 거래일 목록(YYYYMMDD). 표시 전용.
+    사건: 10/14 새벽 Windows 업데이트 재시작 뒤 로그인이 안 된 채라 20:10 배치가 통째로 건너뛰어졌는데(예약 = 로그인 시에만 실행),
+    아무 알림이 없어 다음 날에야 알았다. 거래일 = 시세(daily_ohlcv)·코스피 지수(market_daily) 날짜의 합집합
+    (배치가 돌면 그 사이 빠진 날 시세도 증분으로 채워진다). skip_dates.txt 에 적어 둔 날은 일부러 건너뛴 날이라 뺀다.
+    직전 run 다음 날부터만 보므로 같은 빠진 날은 그다음 배치 한 번에만 알린다."""
+    runs = [str(r[0]) for r in hcon.execute("SELECT DISTINCT run_id FROM runs ORDER BY run_id DESC LIMIT 2")]
+    if len(runs) < 2:
+        return []
+    cur, prev = runs[0], runs[1]
+    days = {str(r[0]) for r in ocon.execute("SELECT DISTINCT date FROM daily_ohlcv WHERE date>? AND date<?", (prev, cur))}
+    try:
+        days |= {str(r[0]) for r in ocon.execute(
+            "SELECT DISTINCT date FROM market_daily WHERE series='KOSPI' AND date>? AND date<?", (prev, cur))}
+    except Exception:
+        pass
+    return sorted(d for d in days if d not in set(skip))
+
+
+def _skip_dates():
+    p = HERE / "skip_dates.txt"
+    try:
+        return {ln.strip() for ln in p.read_text(encoding="utf-8-sig").splitlines() if ln.strip()} if p.exists() else set()
+    except Exception:
+        return set()
+
+
 def _freshness_warnings():
     """[2026-09-09] 지수(market_daily KOSPI/KOSDAQ)·상장목록 캐시(listing_cache)가 시세(daily_ohlcv) 마지막 날짜보다
     뒤처지면 경고 문자열 목록. 실패 시 빈 목록(비치명). 판정·점수 무관, 텔레그램 표시 전용."""
     import sqlite3, json
     out = []
     px_last = None
+    try:
+        # [2026-10-15] 배치가 안 돈 거래일(직전 run ~ 이번 run 사이) — 그날 점수·판정 앵커가 영영 빈다
+        hc = sqlite3.connect(f"file:{HERE / 'history.db'}?mode=ro", uri=True)
+        oc = sqlite3.connect(f"file:{HERE / '..' / 'dh-q7m3k-data' / 'ohlcv.db'}?mode=ro", uri=True)
+        missed = _missed_run_days(hc, oc, _skip_dates())
+        hc.close(); oc.close()
+        if missed:
+            out.append(f"⚠️ 배치가 안 돈 거래일: {' · '.join(f'{d[4:6]}/{d[6:]}' for d in missed)} — 그날 점수·판정 앵커 없음"
+                       f"(PC 재시작 뒤 로그인 안 됨 등 · 일부러 건너뛴 날이면 skip_dates.txt 에 적기)")
+    except Exception:
+        pass
     try:
         odb = HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"
         con = sqlite3.connect(f"file:{odb}?mode=ro", uri=True)
