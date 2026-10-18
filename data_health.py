@@ -42,6 +42,8 @@ BRANCHES = [
     ("ohlcv",      "시세 본표",        0, True),
     ("extra",      "보충표(대형 136)", 0, True),
     ("flows",      "수급(KIS)",        0, True),
+    # [2026-10-18 추가] 보충표(대형 136) 종목만의 수급 — 전체 건수로는 136종목이 빠져도 '절반 미만'이 아니라 못 잡는다(9/14~10/08 사고 · Codex 점검 F6)
+    ("flows_extra", "수급(보충표 종목)", 0, True),
     ("short",      "공매도",           0, True),
     ("loan",       "대차잔고",         0, True),
     ("credit",     "신용잔고",         4, True),
@@ -165,6 +167,16 @@ def collect(ohlcv_db=OHLCV_DB, history_db=HISTORY_DB, earnings_db=EARNINGS_DB, a
             fp = (lower, asof) if asof else (lower,)
             out["extra"] = _hist(con, f"SELECT date, COUNT(*) FROM daily_ohlcv_extra WHERE date >= ?{fa} GROUP BY date ORDER BY date DESC", fp)
             out["flows"] = _hist(con, f"SELECT date, COUNT(*) FROM daily_flows WHERE date >= ?{fa} GROUP BY date ORDER BY date DESC", fp)
+            # 보충표 종목만(최신 보충표 날짜의 종목 집합) — 그 종목들의 수급 마지막 날짜·건수
+            try:
+                ex_sql = "SELECT DISTINCT ticker FROM daily_ohlcv_extra WHERE date = (SELECT MAX(date) FROM daily_ohlcv_extra" + (" WHERE fetched_at <= ?" if asof else "") + ")" + (" AND fetched_at <= ?" if asof else "")
+                ex = [str(r[0]) for r in con.execute(ex_sql, ((asof, asof) if asof else ()))]
+                if ex:
+                    q = ",".join("?" * len(ex))
+                    out["flows_extra"] = _hist(con, f"SELECT date, COUNT(*) FROM daily_flows WHERE ticker IN ({q}) AND date >= ?{fa} GROUP BY date ORDER BY date DESC",
+                                               tuple(ex) + fp)
+            except Exception:
+                pass
             out["short"] = _hist(con, f"SELECT date, COUNT(short_qty) FROM short_flows WHERE date >= ?{fa} GROUP BY date HAVING COUNT(short_qty) > 0 ORDER BY date DESC", fp)
             out["loan"] = _hist(con, f"SELECT date, COUNT(loan_bal_qty) FROM short_flows WHERE date >= ?{fa} GROUP BY date HAVING COUNT(loan_bal_qty) > 0 ORDER BY date DESC", fp)
             out["credit"] = _hist(con, f"SELECT date, COUNT(credit_bal_rate) FROM short_flows WHERE date >= ?{fa} GROUP BY date HAVING COUNT(credit_bal_rate) > 0 ORDER BY date DESC", fp)

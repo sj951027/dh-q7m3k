@@ -75,9 +75,13 @@ if os.path.exists(dh.OHLCV_DB):
     rows_b, ref_b, w_b = dh.run(asof="20260911_2359")
     fb = {r["key"]: r for r in rows_b}
     check("수급 9/11 시점: 뒤처짐 경고(실측 마지막 9/09)", fb.get("flows", {}).get("status") == "lag")
+    rows_d, ref_d, w_d = dh.run(asof="20261010_2359")
+    fd = {r["key"]: r for r in rows_d}
+    check("보충표 종목 수급 10/10 시점: 전체 수급은 ok 인데 보충표 종목만 뒤처짐 ⚠️(실측 마지막 8/25 — Codex F6)",
+          fd.get("flows", {}).get("status") == "ok" and fd.get("flows_extra", {}).get("status") == "lag")
     rows_c, ref_c, w_c = dh.run()
     fc = {r["key"]: r for r in rows_c}
-    check("현재: 보충표·수급은 ok(고쳐진 상태)", fc.get("extra", {}).get("status") == "ok" and fc.get("flows", {}).get("status") == "ok")
+    check("현재: 보충표·수급·보충표 종목 수급 전부 ok(고쳐진 상태)", fc.get("extra", {}).get("status") == "ok" and fc.get("flows", {}).get("status") == "ok" and fc.get("flows_extra", {}).get("status") == "ok")
     check("현재: 신용잔고 지연이 허용 안(3≤4)", fc.get("credit", {}).get("status") == "ok" and (fc["credit"]["lag"] or 0) <= 4)
     print("   현재 경고:", w_c or "없음")
 else:

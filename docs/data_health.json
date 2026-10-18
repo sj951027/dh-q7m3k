@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-18 20:14",
+ "generated": "2026-10-18 20:52",
  "ref_date": "20261016",
  "rows": [
   {
@@ -32,6 +32,17 @@
    "allowed": 0,
    "n_last": 2649,
    "n_med": 2767,
+   "status": "ok",
+   "note": ""
+  },
+  {
+   "key": "flows_extra",
+   "name": "수급(보충표 종목)",
+   "last": "20261016",
+   "lag": 0,
+   "allowed": 0,
+   "n_last": 136,
+   "n_med": 136,
    "status": "ok",
    "note": ""
   },
