@@ -1,0 +1,80 @@
+# 배치 밖 미실행 감지 (2026-10-18 도입)
+# ----------------------------------------------------------------------
+# 이 워크플로는 스크리너를 "돌리지 않는다". 평일 밤, 이 저장소의 main 에
+# '오늘(KST) 날짜의 docs/ 자동 push'가 있었는지만 본다. 없으면 텔레그램으로 한 줄.
+#
+# 왜 PC 밖에서 보나: 10/14 처럼 PC 가 재시작돼 배치가 통째로 안 돌면, PC 안의 어떤
+# 알림도 같이 멈춘다. 배치가 성공할 때마다 docs/ 를 push 하므로(run_all_and_diversify.bat
+# → run_and_diversify.git_push) 그 push 가 '오늘 완료 표식' 역할을 한다. 배치 코드 변경 없음.
+#
+# 건너뛰는 날: 토·일(KST) · skip_dates.txt 에 적힌 날(YYYYMMDD 한 줄에 하나 — 공휴일 등).
+# 시각: 평일 23:10 KST = 14:10 UTC (배치는 20:10 시작·보통 21:30 전 push, 예약 지연 여유 포함).
+#   GitHub 예약은 몇 분~수십 분 늦을 수 있고, 매우 드물게 건너뛴다(그날은 알림도 없음 — 알림 없음 ≠ 정상).
+#
+# 준비(사용자가 한 번): 저장소 Settings → Secrets and variables → Actions 에
+#   TELEGRAM_BOT_TOKEN · TELEGRAM_CHAT_ID 두 개를 등록(notify_telegram.py 가 쓰는 것과 같은 값).
+#   토큰은 이 파일·로그에 찍히지 않는다(secrets 는 로그에서 가려짐).
+# 수동 확인: Actions 탭 → 이 워크플로 → Run workflow (주말·skip 날이면 '건너뜀'만 찍고 끝).
+# ----------------------------------------------------------------------
+name: Batch watch (missed-run alert)
+
+on:
+  schedule:
+    - cron: '10 14 * * 1-5'   # 월~금 14:10 UTC = 23:10 KST (UTC 기준 요일 — KST 23:10 은 같은 날이라 일치)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (history for commit dates)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Decide (KST today, weekend, skip_dates, last docs push)
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY=$(TZ=Asia/Seoul date +%Y%m%d)
+          DOW=$(TZ=Asia/Seoul date +%u)          # 1=월 … 7=일
+          echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+          if [ "$DOW" -ge 6 ]; then
+            echo "verdict=skip_weekend" >> "$GITHUB_OUTPUT"; echo "weekend ($TODAY) - skip"; exit 0
+          fi
+          if [ -f skip_dates.txt ] && grep -qx "$TODAY" skip_dates.txt; then
+            echo "verdict=skip_listed" >> "$GITHUB_OUTPUT"; echo "$TODAY is in skip_dates.txt - skip"; exit 0
+          fi
+          # 오늘(KST) 날짜의 docs/ 변경 커밋이 있나 — 배치의 자동 push 는 'Auto update YYYY-MM-DD HH:MM' 메시지로 docs/ 를 바꾼다.
+          export TZ=Asia/Seoul
+          LAST_KST=$(git log -1 --format='%ad' --date=format-local:'%Y%m%d %H:%M' -- docs/ || true)
+          echo "last docs commit (KST): ${LAST_KST:-none}"
+          echo "last=${LAST_KST:-none}" >> "$GITHUB_OUTPUT"
+          if [ "${LAST_KST:0:8}" = "$TODAY" ]; then
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"; echo "docs pushed today - OK"
+          else
+            echo "verdict=missed" >> "$GITHUB_OUTPUT"; echo "no docs push today - MISSED"
+          fi
+
+      - name: Telegram alert (only when missed)
+        if: steps.decide.outputs.verdict == 'missed'
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TODAY: ${{ steps.decide.outputs.today }}
+          LAST: ${{ steps.decide.outputs.last }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ] || [ -z "${CHAT:-}" ]; then
+            echo "::warning::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID secret 이 없어 알림을 못 보냄 (감지 결과: MISSED $TODAY)"; exit 0
+          fi
+          D="${TODAY:4:2}/${TODAY:6:2}"
+          MSG="⚠️ 스크리너 배치 미실행 감지(PC 밖 확인): $D 자료 push 가 없어요. 마지막 docs push: ${LAST}. PC 가 꺼졌거나 재시작 뒤 로그인 안 된 상태일 수 있어요. 일부러 건너뛴 날이면 skip_dates.txt 에 ${TODAY} 를 적어 두세요."
+          curl -sS -o /dev/null -w "telegram http %{http_code}\n" \
+            --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" \
+            "https://api.telegram.org/bot${TOKEN}/sendMessage"
