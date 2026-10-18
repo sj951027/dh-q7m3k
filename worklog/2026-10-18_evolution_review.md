@@ -18,7 +18,8 @@
 
 ## ★ 다음 세션 시작점
 1. 사용자에게 추천 다섯 중 승인 받은 것부터(PTW 작업은 PTW 저장소에서 — 두 프로젝트 독립 원칙).
-2. v30 2차 창 Astra 답(`REPLY_20261012_v30_w2_blind.md`) — 아직 없음. 오면 대조 → 판정문(각주 ④ 포함).
+2. v30 2차 창: 요청은 `research/handoff/REQUEST_20261018_v30_w2_blind.md`(사용자가 Astra 에 "이 파일 읽고 해" 한 줄) → 답 `research/handoff/REPLY_20261018_v30_w2_blind.md`. 오면 내 계산으로 대조 → 판정문 초안(각주 ④ 포함). `CODEX_NEXT_20261011.md` 의 A 는 이 파일로 대체됨.
+   - Codex 는 플랜 한도가 적다 — 판정 날 독립 계산·위험한 변경 검토·월 1회 두 번째 의견만, 요청은 REQUEST 파일 한 줄로(메모리 feedback-codex-budget).
 3. 10/15 기록의 남은 일(Windows Hello 설정 · 종가 정정 건수 추이)은 그대로.
 
 ## 작업 요령
