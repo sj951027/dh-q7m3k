@@ -184,11 +184,13 @@ def _load_dotenv_backup_keys():
         pass
 
 
-def backup_db(keep=4, min_gap_days=7):
+def backup_db(keep=4, min_gap_days=7, ohlcv_gap_days=7):
     """history.db gzip 백업 + ohlcv 재생성불가 테이블 덤프. 매일 호출해도 안전 —
     최신 백업이 min_gap_days 이내면 건너뜀(주 1회 유지). keep=4 → 약 한 달치 보존.
     (2026-07-11: .bat 매일 호출용 가드 + BACKUP_DIR 환경변수 지원 — .env 에
-     BACKUP_DIR=OneDrive 등 동기화 폴더를 지정하면 오프사이트 백업이 자동화됨.)"""
+     BACKUP_DIR=OneDrive 등 동기화 폴더를 지정하면 오프사이트 백업이 자동화됨.)
+    [2026-10-18] 배치가 --backup-gap 1 --backup-keep 10 으로 불러 history.db 는 **매일**(최대 하루 손실), ohlcv 전체 사본은
+    ohlcv_gap_days(7)로 **주 1회 그대로**(수백 MB 라 매일은 과함 — 시세는 다시 받을 수 있다)."""
     _load_dotenv_backup_keys()
     src = HERE / "history.db"
     if not src.exists():
@@ -214,6 +216,16 @@ def backup_db(keep=4, min_gap_days=7):
         p.unlink()
         print(f"   🗑  오래된 백업 삭제: {p.name}")
     mode = os.environ.get("BACKUP_OHLCV", "full").strip().lower()
+    # [2026-10-18] ohlcv 전체 사본은 따로 주 1회 가드(history 가 매일이 돼도 여기는 그대로)
+    olds_o = sorted(bdir.glob("ohlcv_full_*.db.gz"))
+    if mode == "full" and olds_o:
+        try:
+            last_o = dt.datetime.strptime(olds_o[-1].stem.split("_")[2].split(".")[0], "%Y%m%d").date()
+            if (dt.date.today() - last_o).days < ohlcv_gap_days:
+                print(f"   ⏭  ohlcv 전체 백업 건너뜀 — 최신 {last_o} ({ohlcv_gap_days}일 이내)")
+                mode = "skip"
+        except Exception:
+            pass
     if mode == "full":
         backup_ohlcv_full(bdir, keep=2)   # 전체 사본(주 1회, ~수백MB) — 복원 최단
     elif mode == "core":
@@ -333,6 +345,8 @@ def main():
     ap.add_argument("--dart-days", type=int, default=30, help="DART fin 캐시 보관일 (기본 30)")
     ap.add_argument("--no-dart", action="store_true", help="DART 캐시 정리 건너뜀")
     ap.add_argument("--backup-db", action="store_true", help="history.db gzip 백업 (최근 4개 유지)")
+    ap.add_argument("--backup-gap", type=int, default=7, help="[2026-10-18] history.db 백업 최소 간격(일), 배치는 1")
+    ap.add_argument("--backup-keep", type=int, default=4, help="[2026-10-18] history.db 백업 보존 개수, 배치는 10")
     ap.add_argument("--yes", action="store_true", help="확인 없이 바로 실행")
     ap.add_argument("--dry-run", action="store_true", help="미리보기만")
     ap.add_argument("--empty-trash", action="store_true", help="_trash/ 영구 삭제")
@@ -343,7 +357,7 @@ def main():
         return
 
     if args.backup_db and not args.dry_run:
-        backup_db()
+        backup_db(keep=args.backup_keep, min_gap_days=args.backup_gap)
 
     runs = db_run_ids()
     root_t = collect_root(args)

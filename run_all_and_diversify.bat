@@ -171,9 +171,9 @@ python dart_backfill.py
 
 echo.
 echo ========================================================================
-echo   [Cleanup] rotate old outputs + weekly DB backup (7d guard inside)
+echo   [Cleanup] rotate old outputs + daily history.db backup (ohlcv weekly)
 echo ========================================================================
-python cleanup.py --yes --backup-db
+python cleanup.py --yes --backup-db --backup-gap 1 --backup-keep 10
 if exist deploy_ok.flag del deploy_ok.flag
 
 echo.

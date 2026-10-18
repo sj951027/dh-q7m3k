@@ -53,7 +53,12 @@ BRANCHES = [
     ("uni_events", "상장 변화",        1, False),
     ("earn_fetch", "실적 증분 수집",   1, False),
     ("runs",       "점수 run",         0, False),
+    # [2026-10-18 추가] 업종 분류(sector_cache.json, DART 산업코드 → 업종 버킷 · diversify_picks 가 씀). 파일 날짜는 새 종목이 있을 때만 바뀌어
+    #   지연 허용 30. 대신 '최신 run 종목 중 업종 있는 비율'(cover)이 90% 밑이면 ⚠️ — 조용히 비는 것을 잡는다.
+    ("sector",     "업종 분류",       30, False),
 ]
+SECTOR_CACHE = HERE / "sector_cache.json"
+COVER_MIN = 0.9
 ALLOWED = {k: a for k, _, a, _ in BRANCHES}
 NAMES = {k: n for k, n, _, _ in BRANCHES}
 CHECK_COUNT = {k: c for k, _, _, c in BRANCHES}
@@ -88,6 +93,8 @@ def assess(branches, ref_date, calendar):
             status, note = "lag", f"{lag}거래일 뒤처짐(허용 {allowed})"
         elif check_count and n_last is not None and n_med and n_last < COUNT_DROP * n_med:
             status, note = "count", f"마지막 날 건수 {n_last} — 평소 {n_med}의 절반 미만"
+        elif b.get("cover") is not None and float(b["cover"]) < COVER_MIN:
+            status, note = "count", f"최신 run 종목 중 {float(b['cover']):.0%}만 값 있음(기준 {COVER_MIN:.0%})"
         rows.append({"key": key, "name": name, "last": last, "lag": lag, "allowed": allowed,
                      "n_last": n_last, "n_med": n_med, "status": status, "note": note})
     return rows
@@ -180,6 +187,18 @@ def collect(ohlcv_db=OHLCV_DB, history_db=HISTORY_DB, earnings_db=EARNINGS_DB, a
         try:
             sql = "SELECT run_id, COUNT(*) FROM stage1_oversold WHERE run_id >= ?" + (" AND run_id <= ?" if asof_d else "") + " GROUP BY run_id ORDER BY run_id DESC"
             out["runs"] = _hist(con, sql, (lower, asof_d) if asof_d else (lower,))
+            # 업종 분류 — 파일 날짜 + 최신 run 종목의 커버 비율
+            try:
+                last_run = (out.get("runs") or {}).get("last")
+                if SECTOR_CACHE.exists() and last_run:
+                    sec = json.loads(SECTOR_CACHE.read_text(encoding="utf-8"))
+                    have = {str(k).zfill(6) for k, v in (sec or {}).items() if v and v != "미분류"}
+                    ticks = {str(r[0]).zfill(6) for r in con.execute("SELECT DISTINCT ticker FROM stage1_oversold WHERE run_id = ?", (last_run,))}
+                    mdate = datetime.fromtimestamp(SECTOR_CACHE.stat().st_mtime).strftime("%Y%m%d")
+                    cov = (len(ticks & have) / len(ticks)) if ticks else None
+                    out["sector"] = {"last": mdate, "n_last": len(have), "n_hist": [], "cover": cov}
+            except Exception:
+                pass
         finally:
             con.close()
     except Exception:
