@@ -122,6 +122,7 @@ if errorlevel 1 set "FAILED=%FAILED% build_daily_lists"
 rem [2026-09-18] model scoreboard (docs/scoreboard.json, display only, non-fatal)
 python build_scoreboard.py
 if errorlevel 1 set "FAILED=%FAILED% build_scoreboard"
+python data_health.py
 rem [2026-09-24] lead track ld_a: monthly observation picks (first trading day only, gate inside, non-fatal)
 python lead_observe.py
 if errorlevel 1 set "FAILED=%FAILED% lead_observe"

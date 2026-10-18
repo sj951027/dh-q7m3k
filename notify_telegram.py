@@ -402,6 +402,15 @@ def _freshness_warnings():
                        f"(PC 재시작 뒤 로그인 안 됨 등 · 일부러 건너뛴 날이면 skip_dates.txt 에 적기)")
     except Exception:
         pass
+    # [2026-10-18] 자료 건강 점검표(data_health.py) — 14갈래(시세·보충표·수급·공매도·대차·신용·PER/PBR·지수·컨센서스·공시·상장 변화·
+    #   실적 수집·run)의 뒤처짐·건수 급감을 한 번에. 정상이면 줄 없음. 종전의 지수·수급 두 검사는 이 안에 포함된다(아래 폴백만 남김).
+    covered = False
+    try:
+        import data_health
+        out += data_health.telegram_lines()
+        covered = True
+    except Exception:
+        covered = False
     try:
         odb = HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"
         con = sqlite3.connect(f"file:{odb}?mode=ro", uri=True)
@@ -409,16 +418,16 @@ def _freshness_warnings():
         idx = dict(con.execute("SELECT series, MAX(date) FROM market_daily GROUP BY series").fetchall())
         con.close()
         stale = [f"{k} {v[4:6]}/{v[6:]}" for k, v in idx.items() if k in ("KOSPI", "KOSDAQ") and v and px_last and v < px_last]
-        if stale:
+        if stale and not covered:
             out.append(f"⚠️ 지수 시계열 정지: {' · '.join(stale)} (시세 {px_last[4:6]}/{px_last[6:]}) — 돈 표 코스피선 참고만")
     except Exception:
         pass
     try:
-        # [2026-09-11] 수급 소스가 KIS daily_flows 로 바뀜 — 시세보다 뒤처지면 그날 수급 점수는 그날치 빠진 창
+        # [2026-09-11] 수급 소스가 KIS daily_flows 로 바뀜 — 시세보다 뒤처지면 그날 수급 점수는 그날치 빠진 창 (점검표 폴백)
         con = sqlite3.connect(f"file:{HERE / '..' / 'dh-q7m3k-data' / 'ohlcv.db'}?mode=ro", uri=True)
         fl_last = con.execute("SELECT MAX(date) FROM daily_flows").fetchone()[0]
         con.close()
-        if px_last and fl_last and fl_last < px_last:
+        if px_last and fl_last and fl_last < px_last and not covered:
             out.append(f"⚠️ KIS 수급 정지: {fl_last[4:6]}/{fl_last[6:]} (시세 {px_last[4:6]}/{px_last[6:]}) — 수급 점수는 그날치 빠진 창")
     except Exception:
         pass
