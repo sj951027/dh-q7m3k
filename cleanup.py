@@ -217,12 +217,12 @@ def backup_db(keep=4, min_gap_days=7, ohlcv_gap_days=7):
         print(f"   🗑  오래된 백업 삭제: {p.name}")
     mode = os.environ.get("BACKUP_OHLCV", "full").strip().lower()
     # [2026-10-18] ohlcv 전체 사본은 따로 주 1회 가드(history 가 매일이 돼도 여기는 그대로)
-    olds_o = sorted(bdir.glob("ohlcv_full_*.db.gz"))
-    if mode == "full" and olds_o:
+    olds_o = sorted(bdir.glob(f"ohlcv_{mode}_*.db.gz")) if mode in ("full", "core") else []
+    if olds_o:   # full·core 둘 다 주 1회 가드(검토 9)
         try:
             last_o = dt.datetime.strptime(olds_o[-1].stem.split("_")[2].split(".")[0], "%Y%m%d").date()
             if (dt.date.today() - last_o).days < ohlcv_gap_days:
-                print(f"   ⏭  ohlcv 전체 백업 건너뜀 — 최신 {last_o} ({ohlcv_gap_days}일 이내)")
+                print(f"   ⏭  ohlcv {mode} 백업 건너뜀 — 최신 {last_o} ({ohlcv_gap_days}일 이내)")
                 mode = "skip"
         except Exception:
             pass

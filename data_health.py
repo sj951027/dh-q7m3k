@@ -138,8 +138,11 @@ def _ro(path):
 
 
 def _hist(con, sql, params=()):
-    """[(date, n), ...] 최신이 앞 → (last, n_last, n_hist)."""
-    rows = con.execute(sql, params).fetchall()
+    """[(date, n), ...] 최신이 앞 → (last, n_last, n_hist). 표가 없거나 조회가 실패하면 그 갈래만 '자료 없음'(다른 갈래에 번지지 않게 — 검토 8)."""
+    try:
+        rows = con.execute(sql, params).fetchall()
+    except Exception:
+        return {"last": None, "n_last": None, "n_hist": []}
     if not rows:
         return {"last": None, "n_last": None, "n_hist": []}
     return {"last": str(rows[0][0]), "n_last": int(rows[0][1]), "n_hist": [int(r[1]) for r in rows[1:1 + HIST_DAYS]]}
