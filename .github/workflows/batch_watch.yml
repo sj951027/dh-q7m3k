@@ -8,7 +8,7 @@
 # → run_and_diversify.git_push) 그 push 가 '오늘 완료 표식' 역할을 한다. 배치 코드 변경 없음.
 #
 # 건너뛰는 날: 토·일(KST) · skip_dates.txt 에 적힌 날(YYYYMMDD 한 줄에 하나 — 공휴일 등).
-# 시각: 평일 23:10 KST = 14:10 UTC (배치는 20:10 시작·보통 21:30 전 push, 예약 지연 여유 포함).
+# 시각: 평일 23:27 KST = 14:27 UTC (배치는 20:10 시작·보통 21:30 전 push). 예약이 몇 시간 늦어도 '14시간 안 자동 push' 규칙이라 판단은 같다.
 #   GitHub 예약은 몇 분~수십 분 늦을 수 있고, 매우 드물게 건너뛴다(그날은 알림도 없음 — 알림 없음 ≠ 정상).
 #
 # 준비(사용자가 한 번): 저장소 Settings → Secrets and variables → Actions 에
@@ -20,7 +20,7 @@ name: Batch watch (missed-run alert)
 
 on:
   schedule:
-    - cron: '10 14 * * 1-5'   # 월~금 14:10 UTC = 23:10 KST (UTC 기준 요일 — KST 23:10 은 같은 날이라 일치)
+    - cron: '27 14 * * 1-5'   # 월~금 14:27 UTC = 23:27 KST (:10 처럼 붐비는 분을 피함 — 10/19 첫 실행이 5시간 43분 늦게 발화한 실측)
   workflow_dispatch:
 
 permissions:
@@ -35,30 +35,35 @@ jobs:
         with:
           fetch-depth: 50
 
-      - name: Decide (KST today, weekend, skip_dates, last docs push)
+      - name: Decide (batch day, weekend, skip_dates, last auto push within 14h)
         id: decide
         shell: bash
         run: |
           set -euo pipefail
-          TODAY=$(TZ=Asia/Seoul date +%Y%m%d)
-          DOW=$(TZ=Asia/Seoul date +%u)          # 1=월 … 7=일
-          echo "today=$TODAY" >> "$GITHUB_OUTPUT"
-          if [ "$DOW" -ge 6 ]; then
-            echo "verdict=skip_weekend" >> "$GITHUB_OUTPUT"; echo "weekend ($TODAY) - skip"; exit 0
-          fi
-          if [ -f skip_dates.txt ] && grep -qx "$TODAY" skip_dates.txt; then
-            echo "verdict=skip_listed" >> "$GITHUB_OUTPUT"; echo "$TODAY is in skip_dates.txt - skip"; exit 0
-          fi
-          # 오늘(KST) 날짜의 **배치 자동 커밋**('Auto update YYYY-MM-DD HH:MM' 메시지, docs/ 변경)이 있나.
-          #   [2026-10-18 수정] 메시지로 거른다 — 낮에 사용자가 docs/ 를 손으로 커밋해도 배치 성공으로 보지 않게(Codex 점검 F5).
           export TZ=Asia/Seoul
+          # [2026-10-20 수정] GitHub 예약은 몇 시간 늦게 발화할 수 있다(10/19 첫 실행: 23:10 예약 → 04:53 발화 → '오늘' 기준 판단이 가짜 ⚠️).
+          #   그래서 ① 배치 날짜 = (지금 − 6시간)의 KST 날짜(새벽 발화도 전날 배치로 봄) ② 판정 = '지금부터 14시간 안에' 배치 자동 커밋이 있었나.
+          BATCH_DAY=$(date -d '-6 hours' +%Y%m%d)
+          DOW=$(date -d '-6 hours' +%u)          # 1=월 … 7=일
+          NOW_EPOCH=$(date +%s)
+          echo "today=$BATCH_DAY" >> "$GITHUB_OUTPUT"
+          if [ "$DOW" -ge 6 ]; then
+            echo "verdict=skip_weekend" >> "$GITHUB_OUTPUT"; echo "weekend ($BATCH_DAY) - skip"; exit 0
+          fi
+          if [ -f skip_dates.txt ] && grep -qx "$BATCH_DAY" skip_dates.txt; then
+            echo "verdict=skip_listed" >> "$GITHUB_OUTPUT"; echo "$BATCH_DAY is in skip_dates.txt - skip"; exit 0
+          fi
+          # 배치 자동 커밋('Auto update YYYY-MM-DD HH:MM', docs/ 변경)의 마지막 시각 — 사용자의 수동 docs 커밋은 메시지로 거른다.
+          LAST_EPOCH=$(git log -1 --grep='^Auto update' --format='%at' -- docs/ || true)
           LAST_KST=$(git log -1 --grep='^Auto update' --format='%ad' --date=format-local:'%Y%m%d %H:%M' -- docs/ || true)
-          echo "last docs commit (KST): ${LAST_KST:-none}"
+          echo "last auto push (KST): ${LAST_KST:-none}"
           echo "last=${LAST_KST:-none}" >> "$GITHUB_OUTPUT"
-          if [ "${LAST_KST:0:8}" = "$TODAY" ]; then
-            echo "verdict=ok" >> "$GITHUB_OUTPUT"; echo "docs pushed today - OK"
+          AGE_H=$(( (NOW_EPOCH - ${LAST_EPOCH:-0}) / 3600 ))
+          echo "age of last auto push: ${AGE_H}h (limit 14h) · batch day $BATCH_DAY"
+          if [ -n "${LAST_EPOCH:-}" ] && [ "$AGE_H" -lt 14 ]; then
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"; echo "auto push within 14h - OK"
           else
-            echo "verdict=missed" >> "$GITHUB_OUTPUT"; echo "no docs push today - MISSED"
+            echo "verdict=missed" >> "$GITHUB_OUTPUT"; echo "no auto push within 14h - MISSED"
           fi
 
       - name: Telegram alert (only when missed)
@@ -75,7 +80,7 @@ jobs:
             echo "::warning::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID secret 이 없어 알림을 못 보냄 (감지 결과: MISSED $TODAY)"; exit 0
           fi
           D="${TODAY:4:2}/${TODAY:6:2}"
-          MSG="⚠️ 스크리너 배치 미실행 감지(PC 밖 확인): $D 자료 push 가 없어요. 마지막 docs push: ${LAST}. PC 가 꺼졌거나 재시작 뒤 로그인 안 된 상태일 수 있어요. 일부러 건너뛴 날이면 skip_dates.txt 에 ${TODAY} 를 적어 두세요."
+          MSG="⚠️ 스크리너 배치 미실행 감지(PC 밖 확인): $D 배치의 자동 push 가 14시간 안에 없어요. 마지막 자동 push: ${LAST}. PC 가 꺼졌거나 재시작 뒤 로그인 안 된 상태일 수 있어요. 일부러 건너뛴 날이면 skip_dates.txt 에 ${TODAY} 를 적어 두세요."
           curl -sS -o /dev/null -w "telegram http %{http_code}\n" \
             --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" \
             "https://api.telegram.org/bot${TOKEN}/sendMessage"
