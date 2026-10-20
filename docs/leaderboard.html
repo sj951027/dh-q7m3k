@@ -115,10 +115,11 @@ function render(D){
   const CL={A2:'3년 중 가장 많이 빠진 축',A1:'크게 빠진 편',B:'보통 수준의 약세',C:'보통 수준의 강세',D1:'많이 오른 편',D2:'3년 중 가장 많이 오른 축'};
   const sg=x=>(x>=0?'+':'')+(Math.abs(x)>=0.95?x.toFixed(0):x.toFixed(1))+'%';
   const PARENT={A2:'A',A1:'A',D1:'D',D2:'D'}, PWHEN={A:'5% 넘게 빠졌던 때',D:'5% 넘게 올랐던 때'};
-  const bcLines=(mk,nm)=>{const v=NOW[mk]; if(!BC||!v||v.r20_pct==null) return ''; const x=Number(v.r20_pct), k=cell6(x), yrs=BC.years||'3년', lab=(BC.cells&&BC.cells[k])||CL[k];
+  const bcLines=(mk,nm)=>{const v=NOW[mk]; if(!BC||!v||v.r20_pct==null||!isFinite(Number(v.r20_pct))) return ''; const x=Number(v.r20_pct), k=cell6(x), yrs=BC.years||'3년', lab=(BC.cells&&BC.cells[k])||CL[k]||'';
     let st=(BC[mk]||{})[k], used=k; if(!st||st.events_n<5){const pk=PARENT[k], pst=pk?(BC[mk]||{})[pk]:null; if(pst&&pst.events_n>=5){st=pst; used=pk;}}   // 사건 5개 미만이면 부모 칸(≤−5% / >+5%)으로 — buy_context.pick 과 같은 규칙
-    const h=`🧭 <b>${nm} ${x>=0?'+':''}${x.toFixed(1)}%</b> (${lab} · 시장 전체 기준)`;
-    if(!st||st.events_n<5) return h+`<br>&nbsp;&nbsp;&nbsp;비슷했던 때가 ${yrs}간 ${st?st.events_n:0}번뿐 → 과거 성적은 표본 부족`;
+    const sc10=(v.pos10!=null&&isFinite(Number(v.pos10)))?`${Number(v.pos10).toFixed(1)}/10 · `:'';   // 텔레그램 첫 줄과 같게
+    const h=`🧭 <b>${nm} ${sc10}${x>=0?'+':''}${x.toFixed(1)}%</b> (${lab} · 시장 전체 기준)`;
+    if(!st) return h+'<br>&nbsp;&nbsp;&nbsp;과거 기록 아직 없음'; if(st.events_n<5) return h+`<br>&nbsp;&nbsp;&nbsp;비슷했던 때가 ${yrs}간 ${st.events_n}번뿐 → 과거 성적은 표본 부족`;
     const when=PWHEN[used]||((k==='A2'||k==='A1')?'이만큼 빠졌던 때':((k==='D1'||k==='D2')?'이만큼 올랐던 때':'이 정도일 때'));
     let l2=`&nbsp;&nbsp;&nbsp;${when} ${yrs}간 ${st.events_n}번 → 다음날 사서 40일 뒤 평균 ${sg(st.mean)}, ${st.events_n}번 중 ${st.events_pos}번 플러스`; if(st.events_pos/st.events_n<0.5) l2+=' → 과거엔 좋은 자리 아니었음';   // 과반이 손해일 때만
     let l3=''; if(st.further_n){l3=(st.further_then_up===st.further_n)?`<br>&nbsp;&nbsp;&nbsp;단 ${st.events_n}번 중 ${st.further_n}번은 사고 나서 더 떨어진 뒤 올랐음`:`<br>&nbsp;&nbsp;&nbsp;단 ${st.events_n}번 중 ${st.further_n}번은 사고 나서 더 떨어졌고 그중 ${st.further_then_up}번만 40일 뒤 플러스`;}
@@ -129,13 +130,13 @@ function render(D){
     const legend=ks.map(k=>`${RANGE[k]} = ${(BC.cells&&BC.cells[k])||CL[k]}`).join(' · ');
     return `<div class="small" style="margin-top:8px">${legend}</div><table style="margin-top:4px"><thead><tr><th class="l">지수</th>${ks.map(k=>`<th>${RANGE[k]}</th>`).join('')}</tr></thead><tbody>${row('kospi','코스피')}${row('kosdaq','코스닥')}</tbody></table><div class="small" style="margin-top:4px">칸 = 그 지수의 20거래일 수익(≤−10 / −10~−5 / −5~0 / 0~+5 / +5~+10 / >+10). 값 = 그 칸이었던 날 다음날 <b>전 종목</b>을 똑같이 나눠 사서 40일 뒤 평균 · 사건(40거래일 간격) 중 플러스 수 · 사고 나서 20일 안에 지수가 5% 더 빠진 사건 수. <b>시장 전체 기준</b> — v30이 시장보다 얼마나 더 벌었나는 위 성적표. 과거 기록이지 매수 신호가 아니다. <a href="https://github.com/sj951027/dh-q7m3k/blob/main/research/RESEARCH_buy_score_prelim_20261020.md">근거</a></div>`;};
   // 맨 위 '오늘 자리' 카드 — 점수(0~10 = 3년 중 얼마나 빠진 자리) → 한 줄 근거 → 자세히(여섯 칸 표·뜻) 접힘. [사용자 요청 10/20 밤: 요점만]
-  const bcShort=(mk,nm)=>{const v=NOW[mk]; if(!v||v.r20_pct==null) return ''; const x=Number(v.r20_pct), k=cell6(x), lab=(BC&&BC.cells&&BC.cells[k])||CL[k], sc=(v.pos10!=null&&isFinite(Number(v.pos10)))?Number(v.pos10).toFixed(1):'—';
+  const bcShort=(mk,nm)=>{const v=NOW[mk]; if(!v||v.r20_pct==null||!isFinite(Number(v.r20_pct))) return ''; const x=Number(v.r20_pct), k=cell6(x), lab=(BC&&BC.cells&&BC.cells[k])||CL[k]||'', sc=(v.pos10!=null&&isFinite(Number(v.pos10)))?Number(v.pos10).toFixed(1):'—';
     let st=BC?(BC[mk]||{})[k]:null, used=k; if(BC&&(!st||st.events_n<5)){const pk=PARENT[k], pst=pk?(BC[mk]||{})[pk]:null; if(pst&&pst.events_n>=5){st=pst; used=pk;}}
-    let why; if(!st||st.events_n<5) why=`비슷했던 때가 ${st?st.events_n:0}번뿐 — 표본 부족`;
+    let why; if(!st) why='과거 기록 아직 없음'; else if(st.events_n<5) why=`비슷했던 때가 ${st.events_n}번뿐 — 표본 부족`;
     else { const n=st.events_n, pz=st.events_pos, w=(used==='A')?'5% 넘게 빠졌던':(used==='D'?'5% 넘게 올랐던':'비슷했던'); why=(pz===n)?`${w} ${n}번 모두 40일 뒤 플러스(평균 ${sg(st.mean)})`:`${w} ${n}번 중 ${pz}번 플러스(평균 ${sg(st.mean)})`; if(pz/n<0.5) why+=' — 과거엔 좋은 자리 아니었음'; if(st.further_n) why+=(st.further_then_up===st.further_n)?` · ${n}번 중 ${st.further_n}번은 더 떨어진 뒤 회복`:` · ${n}번 중 ${st.further_n}번은 더 떨어졌고 ${st.further_then_up}번만 회복`; }
     return `<div style="margin:4px 0"><span style="font-size:1.25em"><b>${nm} ${sc}</b><span class="small">/10</span></span> &nbsp;<span class="${cls(x)}">${x>=0?'+':''}${x.toFixed(1)}%</span> <span class="small">· ${lab}</span><br><span class="small">${why}</span></div>`;};
   try{const box=document.getElementById('todayBox'); const k1=bcShort('kospi','코스피'), q1=bcShort('kosdaq','코스닥');
-    box.innerHTML=(k1||q1)?`<div class="small" style="margin-bottom:2px">🧭 <b>오늘 자리</b> · 시장 전체 기준 · ${D.asof&&D.asof.length===8?D.asof.slice(0,4)+'-'+D.asof.slice(4,6)+'-'+D.asof.slice(6,8)+' 종가':fd(D.asof)} · <b>10에 가까울수록 3년 중 많이 빠진 자리</b></div>${k1}${q1}<details style="margin-top:6px"><summary class="small">자세히 — 칸별 3년 기록 · 뜻</summary><div class="small" style="margin-top:6px">${bcLines('kospi','코스피')}${bcLines('kosdaq','코스닥')?'<br>'+bcLines('kosdaq','코스닥'):''}</div>${bcTable()}</details>`:'';}catch(e){try{document.getElementById('todayBox').innerHTML='';}catch(_){}}
+    box.innerHTML=(k1||q1)?`<div class="small" style="margin-bottom:2px">🧭 <b>오늘 자리</b> · 시장 전체 기준 · ${D.asof&&D.asof.length===8?D.asof.slice(0,4)+'-'+D.asof.slice(4,6)+'-'+D.asof.slice(6,8)+' 종가':fd(D.asof)} · <b>10에 가까울수록 3년 중 많이 빠진 자리</b></div>${k1}${q1}${BC?`<details style="margin-top:6px"><summary class="small">자세히 — 칸별 3년 기록 · 뜻</summary><div class="small" style="margin-top:6px">${bcLines('kospi','코스피')}${bcLines('kosdaq','코스닥')?'<br>'+bcLines('kosdaq','코스닥'):''}</div>${bcTable()}</details>`:''}`:'';}catch(e){try{document.getElementById('todayBox').innerHTML='';}catch(_){}}
   // 국면별 · 지금 형세
   const rgc=(g,k)=>{if(!g||!g[k]) return '<span class="m">—</span>'; const v=g[k]; return `<span class="${cls(v.exc_mean)}">${f1(v.exc_mean,'%p')}</span> <span class="small">${pct(v.win)} · ${v.n}일</span>`;};
   const icc=(g)=>{if(!g) return '—'; const f=k=>g[k]?`${(g[k].ic*100).toFixed(1)}<span class="small">(${g[k].n})</span>`:'—'; return `${f('약세')} / ${f('상승')}`;};

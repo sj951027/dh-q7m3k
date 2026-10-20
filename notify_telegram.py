@@ -793,25 +793,9 @@ def _regime_ad_text(info):
     return f"🧭 시장국면: {s}" if s else None
 
 
-def _regime_ad_line():
-    """docs/data.json 의 regime_ad(build_dashboard 가 같은 배치에서 먼저 적음)를 읽고, 없으면 ohlcv.db(읽기 전용)로 계산. 실패하면 None."""
-    info = None
-    try:
-        info = (json.loads((HERE / "docs" / "data.json").read_text(encoding="utf-8")) or {}).get("regime_ad")
-    except Exception:
-        info = None
-    if not info:
-        try:
-            import regime_ad
-            info = regime_ad.now()
-        except Exception:
-            info = None
-    return _regime_ad_text(info)
-
-
 def _regime_block():
     """[2026-10-20 밤] 🧭 블록 — docs/scoreboard.json 의 buy_context(칸별 과거 성적)가 있으면 사용자 확정 3줄 형식
-    (buy_context.block), 없으면 종전 한 줄(_regime_ad_line). 실패하면 None. 과거형·숫자만 — 매수 신호 아님."""
+    (buy_context.block), 없으면 종전 한 줄(_regime_ad_text). 실패하면 None. 과거형·숫자만 — 매수 신호 아님."""
     info = None
     try:
         info = (json.loads((HERE / "docs" / "data.json").read_text(encoding="utf-8")) or {}).get("regime_ad")

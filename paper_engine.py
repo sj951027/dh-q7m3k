@@ -14,6 +14,7 @@ paper_account.db 적재, docs/paper_account.json)은 `paper_account.py` 가 맡�
   - 게이트 계좌 = 같은 규칙에 new_ratio(날짜 → 0~1)만 다름. 상시 비중 축소 계좌 = new_ratio 가 상수 q.
 """
 import math
+import numbers
 
 import numpy as np
 import pandas as pd
@@ -76,7 +77,7 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
     def ratio_of(d):
         if new_ratio is None:
             return 1.0
-        if isinstance(new_ratio, (int, float)):
+        if isinstance(new_ratio, numbers.Real):      # np.float64·np.int64 포함
             return float(new_ratio)
         return float(new_ratio.get(d, 1.0))
 

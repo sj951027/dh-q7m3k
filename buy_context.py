@@ -69,7 +69,9 @@ def stats(dates, r20_pct, basket_r40, idx_close):
                 further += 1
                 if b40.iloc[i] > 0:
                     further_up += 1
-        out[k] = dict(n_days=int(len(days)), n_events=int(len(ev)), mean=float(np.nanmean(rets_all)),
+        out[k] = dict(n_days=int(len(days)), n_events=int(len(ev)),
+                      mean=float(np.nanmean(ev_rets)) if len(ev_rets) else None,    # [검토 P2-2] 문장의 "N번 → 평균"과 같은 모수(사건 평균)
+                      mean_days=float(np.nanmean(rets_all)),                          # 참고: 겹치는 전 날짜 평균
                       events_pos=int((ev_rets > 0).sum()), events_n=int(len(ev_rets)),
                       further_n=int(further), further_then_up=int(further_up),
                       worst_event=float(np.nanmin(ev_rets)) if len(ev_rets) else None,
@@ -110,13 +112,15 @@ def lines(mkt, r20_pct, st, years="3년", used=None, pos10=None):
     nm = NAMES.get(mkt, mkt)
     score = ""
     try:
-        if pos10 is not None:
+        if pos10 is not None and math.isfinite(float(pos10)):
             score = f"{float(pos10):.1f}/10 · "          # 0~10 자리 점수(10 = 3년 중 가장 많이 빠진 쪽) — 좋다/나쁘다가 아니라 위치
     except (TypeError, ValueError):
         score = ""
     head = f"🧭 {nm} {score}{float(r20_pct):+.1f}% ({LABEL6[k]} · 시장 전체 기준)"   # [사용자 결정 10/20] v30 아님을 분명히
-    if not st or st.get("events_n", 0) < MIN_EVENTS:
-        n = (st or {}).get("events_n", 0)
+    if not st:
+        return [head, "   과거 기록 아직 없음"]                      # 통계 자체가 없을 때(배선 전·계산 실패)
+    if st.get("events_n", 0) < MIN_EVENTS:
+        n = st.get("events_n", 0)
         return [head, f"   비슷했던 때가 {years}간 {n}번뿐 → 과거 성적은 표본 부족"]
     n, pos, mean = st["events_n"], st["events_pos"], st["mean"]
     if used in PARENT_WHEN:                                   # 부모 칸으로 대체된 경우 말도 넓힌다

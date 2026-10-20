@@ -71,6 +71,11 @@
 - "국면별이 위에 나오면 좋은데 난잡하다 · 결국 오늘 몇 점이냐를 간단히" → 성적표 페이지 **맨 위 '오늘 자리' 카드**(코스피 9.8/10 · −17.3% · 한 줄 근거 · '자세히' 접힘) + **0~10 자리 점수** `regime_ad.pos10_of`(3년 중 위치, 좋다/나쁘다 아님 명시) → 텔레그램 첫 줄에도 "9.8/10". 샘플 확인 때 좁은 화면에서 표 머리글(.small)이 숨겨지는 것 발견 → 구간 숫자 머리글 + 범례 줄로 수정. 렌더 확인(콘솔 오류 0). `build_dashboard.py` 로컬 재생성(data.json 에 pos10).
 - 내일 확인: 텔레그램 들여쓰기 · 점수 줄이 폰에서 한 줄에 들어가는지.
 
+## 검토(밤 늦게, 사용자 요청 "버그·결함 꼼꼼히") — 커밋·푸시 뒤
+- 내 경계 검사 7종 통과 + 독립 검토(서브에이전트) → P1 없음 · P2 2건(무한대 JSON 가드 · 평균/횟수 모수 혼용 → 사건 평균으로 통일) · P3 8건 전부 반영(패치노트 2026.10.32 끝 절). 눈에 띄는 변화: 코스닥 −5~0 칸 "평균 −0.7%" → "+0.9%"(사건 16개 평균 — 11번 플러스와 맞음). `tests/run_tests.py` UTF-8 환경 전달(사용자 콘솔에서 ✓ 때문에 실패하던 기존 문제).
+- 사용자 문구 결정: "(v30 아님)" 삭제 · "(좋다/나쁘다가 아니라 위치)" 삭제 · 날짜는 연도 포함 "2026-10-20 종가" · 페이지 줄 "9번 중 4번은 더 떨어진 뒤 회복"으로 분모 명시.
+- **추가 커밋 필요(사용자)**: `buy_context.py` · `build_scoreboard.py` · `notify_telegram.py` · `paper_engine.py` · `docs/leaderboard.html` · `tests/run_tests.py` · `tests/test_buy_context.py` · `patch_note/20261020_buy_context_telegram.md` · 이 기록 (+ PTW `app/static/index.html` 툴팁 글자).
+
 ## 남은 일 · ★ 다음 세션 시작점
 1. 커밋(사용자) → 10/21 배치 뒤 텔레그램 3줄·성적표 페이지·PTW 칩 확인(들여쓰기 깨지면 `buy_context.lines` 의 앞 공백 3칸을 '└ ' 로).
 2. **④ 모의 계좌 배선** `paper_account.py`: `paper_engine.simulate` 에 history.db 점수(`build_scoreboard.load_scores`·`dilution_flag`) → 바구니, 비교군 B0~B3, 계좌 3장(기본 · 급등 뒤 신규 0 · 고정 비율 축소 q₀) + 되감기 20260810~ + `../dh-q7m3k-data/paper_account.db` + 배치 1줄 + `docs/paper_account.json`. 설계 §2~§5·§8 + 게이트 초안 3차 §1.

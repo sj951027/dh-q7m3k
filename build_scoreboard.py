@@ -293,7 +293,8 @@ def build_buy_context(close, dates):
     """[2026-10-20 밤] 두 지수 R20 여섯 칸별로 '그 칸이었던 날 다음날 사서 40일' 전 종목 동일가중 바구니 수익 통계(40일 끝난 날만).
     텔레그램 🧭 3줄·성적표가 읽는다. 규칙 아님 · 숫자만. 실패하면 None(비치명)."""
     try:
-        b40 = ((close.shift(-1 - H) / close.shift(-1) - 1).mean(axis=1, skipna=True) * 100)
+        c = close.where(close > 0)                                   # [검토 P2-1] 0·음수 종가 → 결측(inf 방지)
+        b40 = ((c.shift(-1 - H) / c.shift(-1) - 1).mean(axis=1, skipna=True) * 100).replace([np.inf, -np.inf], np.nan)
         out = {"years": f"{round(int(b40.notna().sum()) / 250)}년", "H": H, "cells": {k: v for k, _, v in bc.CELLS6}}
         for k, s in regime_ad.SERIES.items():
             idx = regime_ad.load_index(s, lb.OHLCV_DB)
