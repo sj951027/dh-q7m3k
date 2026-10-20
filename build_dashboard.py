@@ -197,6 +197,14 @@ def build_data_payload() -> dict:
         payload["regime_history"][market] = df_regime.to_dict(orient="records")
 
     conn.close()
+
+    # [2026-10-20] A~D 진입 국면(표시 전용) — 코스피·코스닥 20거래일 수익 칸·며칠째(regime_ad.py).
+    #   텔레그램 시장국면 줄·PTW 상단 칩이 이 키를 읽는다. 점수·판정 무관. 실패하면 키가 없을 뿐(비치명).
+    try:
+        import regime_ad
+        payload["regime_ad"] = regime_ad.now()
+    except Exception as e:
+        print(f"  ⚠ regime_ad 생략(비치명): {e}")
     return payload
 
 

@@ -594,6 +594,13 @@ def _status_lines_v3():
                     line += f" · {SEALED_V2[mid]}"
                 out.append(line)
 
+        # ①-b [2026-10-20] 시장국면 A~D 한 줄(표시 전용) — "코스피 -13.0% 급락 뒤 7일째 · 코스닥 -0.4% 약세 2일째".
+        #   근거: research/RESEARCH_entry_regime_deep_20261020.md(+Codex 독립 재현 일치). 관측이지 매수 신호가 아니다.
+        rl = _regime_ad_line()
+        if rl:
+            out.append("")
+            out.append(rl)
+
         # ③ 판정 캘린더(먼저 계산 — ②의 '판정 임박' 모델에 필요)
         wait = sorted([m for m in act if (m.get("oos_days") or 0) < need(m)],
                       key=lambda m: need(m) - (m.get("oos_days") or 0))
@@ -765,6 +772,32 @@ def _change_events_v3(act, min_oos, need):
     except Exception:
         pass
     return ev
+
+
+def _regime_ad_text(info):
+    """[2026-10-20] A~D 국면 dict → '🧭 시장국면: 코스피 -13.0% 급락 뒤 7일째 · 코스닥 …'. 비거나 깨지면 None. 순수 함수(tests/test_regime_ad.py)."""
+    try:
+        import regime_ad
+        s = regime_ad.line(info)
+    except Exception:
+        return None
+    return f"🧭 시장국면: {s}" if s else None
+
+
+def _regime_ad_line():
+    """docs/data.json 의 regime_ad(build_dashboard 가 같은 배치에서 먼저 적음)를 읽고, 없으면 ohlcv.db(읽기 전용)로 계산. 실패하면 None."""
+    info = None
+    try:
+        info = (json.loads((HERE / "docs" / "data.json").read_text(encoding="utf-8")) or {}).get("regime_ad")
+    except Exception:
+        info = None
+    if not info:
+        try:
+            import regime_ad
+            info = regime_ad.now()
+        except Exception:
+            info = None
+    return _regime_ad_text(info)
 
 
 def build_message():

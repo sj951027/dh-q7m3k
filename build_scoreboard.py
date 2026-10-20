@@ -17,6 +17,7 @@ import numpy as np, pandas as pd
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE)); import leaderboard as lb
+import regime_ad   # [2026-10-20] A~D 진입 국면(표시 전용)
 
 H = 40; TOP = 10; COST = 0.35; MIN_BASKET = 5
 NAME = {"v30": "과매도 v3", "lv_b": "저변동 lv_b", "lv_a": "저변동+반전 lv_a", "lv_e": "저변동+저회전 lv_e", "mom_a": "모멘텀 mom_a",
@@ -226,6 +227,15 @@ def load_regime(dates):
         return None
 
 
+def load_regime_ad(dates):
+    """[2026-10-20] A~D 칸(지수 20거래일 수익: A 급락 뒤 ≤−5% · B 약세 · C 강세 · D 급등 뒤 >+5%) — 코스피·코스닥 각각.
+    종전 '상승/약세'(코스닥 20일선) 기록은 그대로 두고 병기만. 표시 전용 · 실패하면 {}."""
+    try:
+        return regime_ad.cell_series(dates, lb.OHLCV_DB)
+    except Exception:
+        return {}
+
+
 def regime_split(S, reg, close, dates, didx, excl, regime):
     """등록 후 앵커별 20일 IC(시장별 스피어만 평균, leaderboard 규약)를 국면별로. 각 n<REGIME_MIN 이면 그 국면은 없음."""
     if regime is None: return None
@@ -278,6 +288,14 @@ def ensemble(res):
             "rule": "시험 기록이 '효과 확인됨'·'확정 못 함'인 현역 트랙A 모델을 같은 매수일에 같은 금액씩 — 어느 모델이 앞설지 고르지 않는다"}
 
 
+def _regime_ad_now(asof):
+    """[2026-10-20] 기준일의 A~D 칸(두 지수) — 실패하면 None."""
+    try:
+        return regime_ad.now(lb.OHLCV_DB, asof=asof) or None
+    except Exception:
+        return None
+
+
 def main():
     close, mktmap = lb.load_ohlcv(); dates = list(close.index)
     mk = pd.Series(mktmap).str.lower()
@@ -295,15 +313,17 @@ def main():
         print(f"   ⚠ 대형 보충 시세 생략(비치명): {e}")
     res = [observe(con, m, (close_lg if m["track"] == "large" else close), mk, dates, didx, excl, reg_json) for m in lbj["models"] if m["model"] in NAME]
     regime = load_regime(dates)
+    rad = load_regime_ad(dates)
     for r, m in zip(res, [m for m in lbj["models"] if m["model"] in NAME]):
         try:
             r["recent"] = recent_form(r["_df"], dates, didx)
             r["steady"] = steadiness(r["_df"], close, mk, dates) if m["track"] != "large" else None   # 대형은 후보군(large_final) 비교라 여기선 생략
             if r.get("fix") and r["steady"]: r["steady"]["pos_share"] = r["fix"]["win"]
             r["regime_money"] = regime_money(r["_df"], regime)
+            r["regime_ad_money"] = {k: regime_money(r["_df"], s) for k, s in rad.items()} if rad else None   # [2026-10-20] 칸 'A'~'D' 키
             r["regime"] = regime_split(load_scores(con, m), m["reg_date"], close, dates, didx, excl, regime) if m["track"] != "large" else None
         except Exception as e:
-            r["recent"] = None; r["regime"] = None; r["steady"] = None; r["regime_money"] = None; print(f"   ⚠ {m['model']} 지금 형세/국면 생략(비치명): {e}")
+            r["recent"] = None; r["regime"] = None; r["steady"] = None; r["regime_money"] = None; r["regime_ad_money"] = None; print(f"   ⚠ {m['model']} 지금 형세/국면 생략(비치명): {e}")
     con.close()
     try:
         ens = ensemble(res)
@@ -314,6 +334,7 @@ def main():
     payload = {"asof": dates[-1], "generated": datetime.now().isoformat(timespec="seconds"), "H": H, "TOP": TOP, "COST": COST,
                "note": "참고 성적 · 검증 결론 아님 · 사전등록 v5 와 뼈대 동일하나 희석 제외·PIT·블록 CI 미적용", "models": res,
                "ensemble": ens, "regime_now": (regime.iloc[-1] if regime is not None else None), "recent_days": RECENT_DAYS,
+               "regime_ad_now": _regime_ad_now(dates[-1]), "regime_ad_cells": regime_ad.CELLS,
                "persistence_note": PERSISTENCE_NOTE}
     (HERE / "docs" / "scoreboard.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     done = sum(1 for r in res if r["fix"] and r["fix"]["n"] >= 4)
