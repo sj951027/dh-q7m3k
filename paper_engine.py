@@ -62,15 +62,16 @@ def ratio_by_cell(cells, zero_cells=("D",), half_cells=()):
     return out
 
 
-def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new_ratio=None, entry_lag=ENTRY_LAG, start_nav=1.0):
+def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new_ratio=None, entry_lag=ENTRY_LAG, start_nav=1.0, tradable=None):
     """dates: 거래일 목록(오름차순, str) · close: DataFrame(index=dates, columns=ticker) · picks: {추천일: [ticker]} ·
-    new_ratio: {추천일: 0~1} 또는 None(=1) 또는 float(상수).
+    new_ratio: {추천일: 0~1} 또는 None(=1) 또는 float(상수). tradable: DataFrame(bool, index=dates, columns=ticker) — False 면 그날 진입 불가(정지·상한가) → 현금.
     반환: (nav DataFrame[date, nav, cash, n_pos, invested, ret_1d, entries, exits], slots list[dict])."""
     dates = [str(d) for d in dates]
     didx = {d: i for i, d in enumerate(dates)}
     close = close.reindex(dates)
     cols = {t: k for k, t in enumerate(close.columns)}
     arr = close.to_numpy(dtype=float)
+    trd = tradable.reindex(index=dates, columns=close.columns).fillna(True).to_numpy(dtype=bool) if tradable is not None else None
     N = len(dates)
     half = cost / 2.0
 
@@ -126,6 +127,8 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
                 px = arr[i, c]
                 if not (px == px and px > 0):
                     continue                                # 진입일 가격 없음 → 현금(대체 없음)
+                if trd is not None and not trd[i, c]:
+                    continue                                # 거래정지·상한가 → 현금(대체 없음)
                 shares = per * (1.0 - half) / px
                 cash -= per
                 open_pos.append(dict(ticker=tk, col=c, shares=shares, entry_i=i, entry_date=dates[i], exit_i=i + hold,

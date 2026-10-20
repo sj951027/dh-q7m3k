@@ -45,6 +45,11 @@ close3 = close.copy(); close3.loc[D[1], "BBB"] = np.nan
 nav3, led3 = pe.simulate(D, close3, picks, cost=0.0)
 check("포지션 1개 · 현금 1 − 0.0125", nav3.loc[1, "n_pos"] == 1 and math.isclose(nav3.loc[1, "cash"], 1 - 0.0125, rel_tol=1e-12))
 
+print("C-2. 거래 불가(정지·상한가) → 현금")
+trd = pd.DataFrame(True, index=D, columns=["AAA", "BBB"]); trd.loc[D[1], "AAA"] = False
+nav3b, _ = pe.simulate(D, close, picks, cost=0.0, tradable=trd)
+check("AAA 진입 불가 → 포지션 1 · 현금 1 − 0.0125", nav3b.loc[1, "n_pos"] == 1 and math.isclose(nav3b.loc[1, "cash"], 1 - 0.0125, rel_tol=1e-12))
+
 print("D. 보유 중 가격 끊기면 마지막 가격으로 평가·청산")
 close4 = close.copy(); close4.loc[D[30]:, "AAA"] = np.nan
 nav4, led4 = pe.simulate(D, close4, picks, cost=0.0)
@@ -63,6 +68,17 @@ nav6, _ = pe.simulate(D, close, picks5, cost=0.0, new_ratio=ratio)
 check("짝수 날 추천은 진입 0", nav6.loc[1, "entries"] == 0 and nav6.loc[2, "entries"] == 1)
 nav7, _ = pe.simulate(D, close, picks5, cost=0.0, new_ratio=0.5)
 check("q=0.5 → 투입 절반", math.isclose(nav7.loc[1, "invested"], 0.0125, rel_tol=1e-12))
+
+print("G-0. paper_account.q0_fixed(순수 함수)")
+REPO = Path(__file__).resolve().parent.parent
+src = (REPO / "paper_account.py").read_text(encoding="utf-8")
+import ast, types
+mod = types.ModuleType("pa_q0"); mod.Q0_FROM = "20230630"
+fn = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "q0_fixed"][0]
+exec(compile(ast.Module(body=[fn], type_ignores=[]), "pa_q0", "exec"), mod.__dict__)
+ks = pd.Series([0.10] * 25 + [0.00] * 75, index=[f"2024{(i//28)+1:02d}{(i%28)+1:02d}" for i in range(100)])
+check("q₀ = 1 − D 비율(25/100 → 0.75)", math.isclose(mod.q0_fixed(ks, "20250101"), 0.75, rel_tol=1e-12))
+check("구간 밖(start 이전 자료 없음) → 1.0", mod.q0_fixed(ks, "20230101") == 1.0)
 
 print("G. 도우미")
 cells = pd.Series(["A", "B", "D", None], index=D[:4])
