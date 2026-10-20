@@ -4,7 +4,7 @@
 계약:
   A. _scoreboard_row: 40일 끝난 매수분이 있으면 '모델 +x.x%p · n일 · 쉬운 결론', 없으면 '결과 대기 · 결론'.
      결론 말은 리더보드 첫 화면과 같은 뜻(유의=효과 확인됨·기움=확정 못 함·노이즈=차이 없음·역작동=반대로 감·없음=결론 전).
-  B. 본문: 성적표 블록이 나오고, '최근 1개월'(시장 대비 %p) 블록은 매일 알림에 없다.
+  B. 본문: [2026-10-20 밤] 매일 알림 기본은 성적표 블록 없음(SCOREBOARD_DAILY_V3=False, 링크로 대체) · 스위치를 켜면 종전대로 나온다 · '최근 1개월' 블록은 없다.
   C. 맨 아래 링크는 성적표가 먼저이고, 표시 모델의 목록 페이지가 뒤따른다.
   D. 깨진 입력에도 예외 없이 None/폴백.
 실행: python tests/test_telegram_scoreboard.py
@@ -41,11 +41,14 @@ check("깨진 행은 None(예외 없음)", R("v30", {"fix": {"n": "x", "exc_mean
 print("B·C. 본문")
 body = nt._status_lines_v3()
 txt = "\n".join(body)
-check("성적표 블록", any(x.startswith("📊 <b>성적표</b>") for x in body))
+check("매일 알림 기본은 성적표 블록 없음(스위치 off)", nt.SCOREBOARD_DAILY_V3 is False and not any(x.startswith("📊 <b>성적표</b>") for x in body))
+nt.SCOREBOARD_DAILY_V3 = True; _body_on = nt._status_lines_v3(); nt.SCOREBOARD_DAILY_V3 = False; txt_on = "\n".join(_body_on)
+check("스위치 켜면 성적표 블록 나옴", any(x.startswith("📊 <b>성적표</b>") for x in _body_on))
+check("판정 일정은 임박(≤3거래일)·판정 가능만", nt.CALENDAR_NEAR_DAYS == 3)
 check("매일 알림에 '최근 1개월' 없음", "최근 1개월" not in txt and nt.MONEY_DAILY_V3 is False)
-check("표시 모델이 <pre> 안에 순서대로", all(m in txt for m in nt.SHOW_V3)
-      and [txt.index(f"\n{m}") if f"\n{m}" in txt else txt.index(m) for m in nt.SHOW_V3] == sorted(
-          [txt.index(f"\n{m}") if f"\n{m}" in txt else txt.index(m) for m in nt.SHOW_V3]))
+check("표시 모델이 <pre> 안에 순서대로", all(m in txt_on for m in nt.SHOW_V3)
+      and [txt_on.index(f"\n{m}") if f"\n{m}" in txt_on else txt_on.index(m) for m in nt.SHOW_V3] == sorted(
+          [txt_on.index(f"\n{m}") if f"\n{m}" in txt_on else txt_on.index(m) for m in nt.SHOW_V3]))
 msg = nt.build_message()
 link = [x for x in msg.split("\n") if x.startswith("🔎")]
 check("링크 줄 하나", len(link) == 1)

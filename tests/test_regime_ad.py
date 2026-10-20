@@ -55,6 +55,15 @@ check("칸 바뀌면 1부터(B 1,2)", list(df["cell"].iloc[23:25]) == ["B", "B"]
 check("급등 D 1일째", df["cell"].iloc[25] == "D" and df["days"].iloc[25] == 1)
 check("r20 값(-15%)", math.isclose(df["r20"].iloc[20], -0.15, abs_tol=1e-9))
 
+print("B-2. 0~10 자리 점수")
+import numpy as np
+seq = list(np.linspace(-0.2, 0.2, 299))
+check("오늘이 가장 많이 빠진 날 → 10", ra.pos10_of(seq + [-0.5]) == 10.0)
+check("오늘이 가장 많이 오른 날 → 0", ra.pos10_of(seq + [0.9]) == 0.0)
+check("한가운데 → 5 근처", abs(ra.pos10_of(seq + [0.0]) - 5.0) < 0.3)
+check("250일 미만 → None", ra.pos10_of(seq[:100]) is None)
+check("NaN 섞여도 유효값만", ra.pos10_of(seq + [float("nan")] * 10 + [-0.5]) == 10.0)
+
 print("C. 한 줄 말")
 info = {"kospi": {"r20_pct": -13.0, "cell": "A", "label": "급락 뒤", "days": 8},
         "kosdaq": {"r20_pct": -0.4, "cell": "B", "label": "약세", "days": 3}}

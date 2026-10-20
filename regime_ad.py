@@ -66,6 +66,24 @@ def classify(close):
     return pd.DataFrame({"r20": r20.values, "cell": cell, "days": days}, index=c.index)
 
 
+POS_WINDOW = 750     # 거래일(≈3년)
+POS_MIN = 250        # 이보다 짧으면 점수 없음
+
+
+def pos10_of(r20_values):
+    """R20 수열(오름차순 날짜, 마지막이 오늘) → 0~10 '자리 점수'. 지난 POS_WINDOW 안에서 오늘보다 큰 날의 비율 × 10
+    (가장 많이 빠진 날 = 10, 가장 많이 오른 날 = 0). 유효값이 POS_MIN 미만이면 None. 좋다/나쁘다가 아니라 위치다."""
+    try:
+        v = [float(x) for x in list(r20_values)[-POS_WINDOW:]]
+    except Exception:
+        return None
+    v = [x for x in v if x == x]
+    if len(v) < POS_MIN or v[-1] != v[-1]:
+        return None
+    today = v[-1]
+    return round(10.0 * sum(1 for x in v if x > today) / len(v), 1)
+
+
 def load_index(series, ohlcv_db=DEFAULT_DB, asof=None):
     """market_daily 에서 지수 종가(index 'YYYYMMDD' 문자열, 오름차순). 읽기 전용."""
     con = sqlite3.connect(f"file:{ohlcv_db}?mode=ro", uri=True)
@@ -91,7 +109,8 @@ def now(ohlcv_db=DEFAULT_DB, asof=None):
                 continue
             last = df.iloc[-1]
             out[k] = {"date": str(df.index[-1]), "r20_pct": round(float(last["r20"]) * 100, 1),
-                      "cell": str(last["cell"]), "label": CELLS[str(last["cell"])], "days": int(last["days"])}
+                      "cell": str(last["cell"]), "label": CELLS[str(last["cell"])], "days": int(last["days"]),
+                      "pos10": pos10_of(df["r20"].values)}   # [2026-10-20 밤] 0~10 자리 점수(표시 전용)
         except Exception:
             continue
     return out

@@ -554,6 +554,12 @@ def _model_status_lines_v2():
         return ["📊 모델 현황: 리더보드 데이터 없음(비치명)"]
 
 
+# [2026-10-20 밤 사용자 결정] 매일 알림은 짧게 — 성적표 블록은 링크(성적표 페이지·주간 리캡)로 대체하고, 판정 일정은 '판정 가능'이거나
+#   CALENDAR_NEAR_DAYS 거래일 안으로 다가온 모델만 적는다(Astra 요청 시점을 놓치지 않게). 되돌리기: SCOREBOARD_DAILY_V3=True · CALENDAR_NEAR_DAYS=None.
+SCOREBOARD_DAILY_V3 = False
+CALENDAR_NEAR_DAYS = 3
+
+
 def _status_lines_v3():
     """[2026-09-12] 섹션형 본문. 모델 줄(SHOW_V3 순서, 운용 모델 있으면 첫 줄) → 돈 → 판정 일정 → (있을 때만) 달라진 것.
     한 줄에 정보를 몰아넣지 않는다 — 폰에서 줄바꿈으로 접히던 것을 없애려는 것. 표시 전용."""
@@ -573,8 +579,10 @@ def _status_lines_v3():
         #   '💰 최근 1개월(상위20·20일, 시장 대비 %p)'을 대체한다. 바꾼 이유: ① %p 가 '떨어졌다'로 읽혔다(실제론 시장보다 덜 오른 것)
         #   ② 첫 화면(상위10·40일)과 잣대가 달랐다 ③ 20일 성적은 다음 성적을 알려 주지 못했다(RESEARCH_model_rotation_20261002).
         #   유니버스 급감은 아래 ④의 ⚠️ 경고가 계속 본다. 성적표를 못 읽으면 종전 모델 줄로 폴백.
-        sb_ok = False
+        sb_ok = not SCOREBOARD_DAILY_V3   # 꺼져 있으면 종전 모델 줄 폴백도 내지 않는다
         try:
+            if not SCOREBOARD_DAILY_V3:
+                raise LookupError("daily scoreboard block off")
             sb = json.loads((HERE / "docs" / "scoreboard.json").read_text(encoding="utf-8"))
             by = {r.get("model"): r for r in sb.get("models", [])}
             body = [x for x in (_scoreboard_row(mid, by.get(mid)) for mid in SHOW_V3) if x]
@@ -596,10 +604,10 @@ def _status_lines_v3():
 
         # ①-b [2026-10-20] 시장국면 A~D 한 줄(표시 전용) — "코스피 -13.0% 급락 뒤 7일째 · 코스닥 -0.4% 약세 2일째".
         #   근거: research/RESEARCH_entry_regime_deep_20261020.md(+Codex 독립 재현 일치). 관측이지 매수 신호가 아니다.
-        rl = _regime_ad_line()
-        if rl:
+        rb = _regime_block()
+        if rb:
             out.append("")
-            out.append(rl)
+            out += rb
 
         # ③ 판정 캘린더(먼저 계산 — ②의 '판정 임박' 모델에 필요)
         wait = sorted([m for m in act if (m.get("oos_days") or 0) < need(m)],
@@ -642,7 +650,8 @@ def _status_lines_v3():
         grp = {}
         for m in wait:
             grp.setdefault(need(m) - (m.get("oos_days") or 0), []).append(m["model"])
-        for dd in sorted(grp)[:(2 if reached else 3)]:   # 판정 가능 줄이 있으면 합쳐 3줄
+        near = [x for x in sorted(grp) if CALENDAR_NEAR_DAYS is None or x <= CALENDAR_NEAR_DAYS]   # [2026-10-20 밤] 임박한 것만
+        for dd in near[:(2 if reached else 3)]:   # 판정 가능 줄이 있으면 합쳐 3줄
             cal.append(f"· {' · '.join(_nm.get(x, x) for x in grp[dd])} → {dd}거래일 뒤")
         if cal:
             out.append("")
@@ -800,6 +809,34 @@ def _regime_ad_line():
     return _regime_ad_text(info)
 
 
+def _regime_block():
+    """[2026-10-20 밤] 🧭 블록 — docs/scoreboard.json 의 buy_context(칸별 과거 성적)가 있으면 사용자 확정 3줄 형식
+    (buy_context.block), 없으면 종전 한 줄(_regime_ad_line). 실패하면 None. 과거형·숫자만 — 매수 신호 아님."""
+    info = None
+    try:
+        info = (json.loads((HERE / "docs" / "data.json").read_text(encoding="utf-8")) or {}).get("regime_ad")
+    except Exception:
+        info = None
+    if not info:
+        try:
+            import regime_ad
+            info = regime_ad.now()
+        except Exception:
+            info = None
+    try:
+        import buy_context as bc
+        sb = json.loads((HERE / "docs" / "scoreboard.json").read_text(encoding="utf-8"))
+        ctx = sb.get("buy_context") or {}
+        if info and ctx:
+            ls = bc.block(info, ctx, years=ctx.get("years", "3년"))
+            if ls:
+                return ls
+    except Exception:
+        pass
+    one = _regime_ad_text(info)
+    return [one] if one else None
+
+
 def build_message():
     # [2026-09-12] v3 레이아웃. 종전 v2(제목+리더보드 링크+한 줄 요약 4개+링크 3줄)는
     #   _model_status_lines_v2() 로 보존 — 되돌리려면 아래 lines 구성만 v2 로 바꾸면 된다.
@@ -808,6 +845,8 @@ def build_message():
     #   ⑤ '달라진 것: 없음' 줄 삭제(있을 때만 표시).
     # [2026-09-13] 첫 줄은 본문 경고(⚠️) 유무에 따른다 — 경고가 있는 날 '이상 없음'으로 나가던 것 교정.
     body = _status_lines_v3()
+    while body and body[0] == "":   # [2026-10-20 밤] 성적표 블록이 빠지면서 생기는 앞 빈 줄 제거
+        body.pop(0)
     warn = any("⚠️" in x for x in body)
     head = (f"⚠️ <b>스크리너 {_date_head_v3()}</b> · 확인 필요" if warn
             else f"✅ <b>스크리너 {_date_head_v3()}</b> · 이상 없음")

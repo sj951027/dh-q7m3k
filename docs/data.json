@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20 20:43 KST",
+  "generated_at": "2026-10-20 21:51 KST",
   "runs": {
     "kospi": [
       {
@@ -1772,14 +1772,16 @@
       "r20_pct": -17.3,
       "cell": "A",
       "label": "급락 뒤",
-      "days": 8
+      "days": 8,
+      "pos10": 9.8
     },
     "kosdaq": {
       "date": "20261020",
       "r20_pct": -4.2,
       "cell": "B",
       "label": "약세",
-      "days": 3
+      "days": 3,
+      "pos10": 7.4
     }
   }
 }

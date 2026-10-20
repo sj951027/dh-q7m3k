@@ -18,6 +18,7 @@ import numpy as np, pandas as pd
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE)); import leaderboard as lb
 import regime_ad   # [2026-10-20] A~D 진입 국면(표시 전용)
+import buy_context as bc   # [2026-10-20 밤] '이만큼 빠졌던 때 과거엔 어땠나'(표시 전용)
 
 H = 40; TOP = 10; COST = 0.35; MIN_BASKET = 5
 NAME = {"v30": "과매도 v3", "lv_b": "저변동 lv_b", "lv_a": "저변동+반전 lv_a", "lv_e": "저변동+저회전 lv_e", "mom_a": "모멘텀 mom_a",
@@ -288,6 +289,21 @@ def ensemble(res):
             "rule": "시험 기록이 '효과 확인됨'·'확정 못 함'인 현역 트랙A 모델을 같은 매수일에 같은 금액씩 — 어느 모델이 앞설지 고르지 않는다"}
 
 
+def build_buy_context(close, dates):
+    """[2026-10-20 밤] 두 지수 R20 여섯 칸별로 '그 칸이었던 날 다음날 사서 40일' 전 종목 동일가중 바구니 수익 통계(40일 끝난 날만).
+    텔레그램 🧭 3줄·성적표가 읽는다. 규칙 아님 · 숫자만. 실패하면 None(비치명)."""
+    try:
+        b40 = ((close.shift(-1 - H) / close.shift(-1) - 1).mean(axis=1, skipna=True) * 100)
+        out = {"years": f"{round(int(b40.notna().sum()) / 250)}년", "H": H, "cells": {k: v for k, _, v in bc.CELLS6}}
+        for k, s in regime_ad.SERIES.items():
+            idx = regime_ad.load_index(s, lb.OHLCV_DB)
+            r20 = (idx / idx.shift(regime_ad.LOOKBACK) - 1) * 100
+            out[k] = bc.stats(dates, r20, b40, idx)
+        return out
+    except Exception as e:
+        print(f"   ⚠ buy_context 생략(비치명): {e}"); return None
+
+
 def _regime_ad_now(asof):
     """[2026-10-20] 기준일의 A~D 칸(두 지수) — 실패하면 None."""
     try:
@@ -335,6 +351,7 @@ def main():
                "note": "참고 성적 · 검증 결론 아님 · 사전등록 v5 와 뼈대 동일하나 희석 제외·PIT·블록 CI 미적용", "models": res,
                "ensemble": ens, "regime_now": (regime.iloc[-1] if regime is not None else None), "recent_days": RECENT_DAYS,
                "regime_ad_now": _regime_ad_now(dates[-1]), "regime_ad_cells": regime_ad.CELLS,
+               "buy_context": build_buy_context(close, dates),
                "persistence_note": PERSISTENCE_NOTE}
     (HERE / "docs" / "scoreboard.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     done = sum(1 for r in res if r["fix"] and r["fix"]["n"] >= 4)
