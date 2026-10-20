@@ -5,7 +5,7 @@
 
 ## 먼저 읽을 것 (순서)
 0. `worklog/README.md` → 목록 맨 위(가장 최근) 기록 1건 — 지난 세션에 무엇을 왜 어떻게 했고 무엇이 남았는지. "다음 세션 시작점"부터 따른다.
-1. `MODELS_LEDGER.md` — 전 모델 현황·골대·판정 예정(원장). 원장과 정본(PREREGISTER_*/VERDICT_*)이 어긋나면 정본이 이긴다.
+1. `MODELS_LEDGER.md` — 전 모델 현황·골대·판정 예정(원장). 원장과 정본(PREREGISTER_*/VERDICT_*)이 어긋나면 정본이 이긴다. 판정 규약은 `VERDICT_RULES.md` 한 장(2026-10-20~; 각 모델 PREREGISTER 가 우선).
 2. 요청이 어느 트랙인지 분간한 뒤 그 설계 문서만: v3·lowvol·wu → `PROJECT_KNOWLEDGE.md`(크다 — 필요한 절만 grep), lowvol → `LOWVOL_TRACK_DESIGN.md`, 대형 → `LARGE_SCORE_DESIGN.md`.
 3. 운영 권고 `OPS_GUIDE.md`(강제 아님) · 최근 이력 `patch_note/`(최신 3~4건) · 연구 `research/`.
 - 자매 프로젝트 `../Position-Tracker-Web`(실거래 소비자)는 그쪽 `CLAUDE.md`·`PTW_PROJECT_HANDBOOK.md` 기준. us-screener·div-tracker는 별개 — 여기서 다루지 않는다.
