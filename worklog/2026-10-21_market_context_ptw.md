@@ -6,6 +6,8 @@
 - **스크리너 2026.10.34**: `regime_ad.history()` + `build_dashboard.py` 가 `docs/market_context.json`(803일·150KB, 그날까지 자료만) 매일 생성. 테스트 E 절(임시 DB). 20:10 전 완료(19:49).
 - **PTW v5.46**: `screener.market_context_asof`(전 거래일 행, ok/no_day/unavailable) · `trades.entry_mkt_json` 스냅샷 · 거래 응답 `mkt_asof`·`mkt_snap` · 매수 행 📍 한 줄 + 툴팁. `test_market_context.py` 17체크 통과, 전체 회귀 50파일 통과.
 
+- **Codex 3차 답 대조**(`REPLY_20261021_kosdaq_only_a.md`, 19:41~19:52): Q만 −0.63% 재현 · 평균을 낮춘 건 큰 코스닥 종목(구간 0 포함) · 갈라진 것은 **코스피 R20 부호 하나**(코스피 ≥ 0 인 Q만 날 −7.3%, 사건 4) · **시장 폭 85% 는 못 가름** → "급락 안에서 더 좋은 날을 고르는 기준"은 지수·종목 자료 모두에서 없음. 연구 deep §7. 등록 없음.
+
 ## 사용자 결정
 - 두 겹(재계산 조회 + 스냅샷) 모두 진행. 통계 탭 '매수 때 시장 칸별 성적' 표는 다음 판(v5.47).
 
