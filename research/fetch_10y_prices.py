@@ -3,7 +3,7 @@
 
 출처(무료·스크래핑 — 약관·차단 위험 있음, 종목당 쉬어 가며 받는다). 설치된 FinanceDataReader 0.9.202 는 `exchange=` 인자를 무시하고
 **종목 문자열 접두어**로 소스를 고른다(Codex 실측) → 반드시 접두어로 지정한다:
-  - 상장 종목: DataReader('KRX:005930', start, end)          → KRX 일별 시세(fdr_krx)
+  - 상장 종목: DataReader('NAVER:005930', start, end)        → NAVER 일별(fdr_naver). 'KRX:' 경로는 2년 제한(400)이라 못 씀(실측)
   - 폐지 종목: DataReader('NAVER:005930', start, 폐지일) → NAVER 일별(fdr_naver_delisted). KRX-DELISTING 경로는 2026-10-21 실측 전부 400.
 저장: ../dh-q7m3k-data/ohlcv_10y.db
   prices(ticker, date, open, high, low, close, volume, change_pct, source)   PRIMARY KEY(ticker, date)
@@ -84,7 +84,7 @@ def fetch_one(fdr, code, start, end, delisted, delisted_date=""):
     if delisted:
         e = min(end, delisted_date) if delisted_date else end
         return fdr.DataReader(f"NAVER:{code}", start, e)
-    return fdr.DataReader(f"KRX:{code}", start, end)
+    return fdr.DataReader(f"NAVER:{code}", start, end)      # KRX: 경로는 "Period is up to 2 years" 400(2026-10-21 실측) → 상장 종목도 NAVER
 
 
 def parse_note(note):
@@ -142,7 +142,7 @@ def main():
     log(f"대상 {len(plan)}(상장 {len(plan)-n_dl} · 폐지(시작일 이후·주권) {n_dl}) · 범위 덮인 완료 {skipped} · 이번 {len(todo)} · {a.start}~{end}")
     ok = err = empty = 0; t0 = time.time()
     for i, (code, name, market, listed, delisted, is_dl) in enumerate(todo, 1):
-        df = None; note = ""; src = "fdr_naver_delisted" if is_dl else "fdr_krx"
+        df = None; note = ""; src = "fdr_naver_delisted" if is_dl else "fdr_naver"
         for k in range(a.retries):
             try:
                 df = fetch_one(fdr, code, a.start, end, is_dl, delisted); break
