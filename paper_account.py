@@ -28,7 +28,7 @@ JSON_PATH = HERE / "docs" / "paper_account.json"
 START_DEFAULT = "20260810"
 REG_V30 = "20260606"
 Q0_FROM = "20230630"                 # 게이트 초안 3차 §1: q₀ 추정 구간 시작(지수 자료 시작)
-LIMIT_UP = 29.0                      # change_pct ≥ 이 값이면 상한가로 보고 진입 불가(현금)
+LIMIT_UP = 0.29                      # daily_ohlcv.change_pct 는 소수(0.29 = +29%) — 검토에서 29.0 으로 적어 상한가 필터가 죽어 있던 것 수정
 TOP = 10; N_DRAWS_DEFAULT = 100       # 설계는 1,000벌 — 1판은 100벌(실행 시간), --draws 로 조정
 NAMES = {"v30": "v30 기본", "v30_gateD0": "v30 · 급등 뒤 신규 0", "v30_fixq": "v30 · 고정 비율 축소",
          "B0_market": "시장 평균(전 종목)", "B1_bigcap": "큰 회사 10", "B2_quiet_big": "조용한 큰 회사 10", "B3_random": "아무 종목 10(평균)"}

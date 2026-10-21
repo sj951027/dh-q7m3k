@@ -134,7 +134,7 @@ def main():
                 continue
             plan.append((str(r[dc]).zfill(6), str(r[dn]), str(r[dm]) if dm else "", str(r[dli])[:10] if dli else "", ddate, True))
     done = {t: note for (t, note) in con.execute("SELECT ticker, note FROM meta WHERE status='done'")}
-    todo = [p for p in plan if p[0].isdigit() and not (p[0] in done and covered(done[p[0]], a.start, end))]
+    todo = [p for p in plan if p[0].isdigit() and not (p[0] in done and covered(done[p[0]], a.start, a.end))]   # --end 를 안 주면 끝날짜는 안 본다(다음날 재실행 때 전부 다시 받던 것 방지)
     skipped = len(plan) - len(todo)
     if a.smoke:
         todo = todo[:a.smoke]
