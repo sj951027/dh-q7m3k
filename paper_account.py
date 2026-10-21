@@ -13,7 +13,7 @@
 적재: ../dh-q7m3k-data/paper_account.db (paper_nav · paper_meta) + docs/paper_account.json. history.db·ohlcv.db 는 읽기 전용.
 실행: python paper_account.py [--start 20260810] [--no-write] [--draws 100]
 """
-import argparse, json, sqlite3, sys, time
+import argparse, json, math, sqlite3, sys, time
 from datetime import datetime
 from pathlib import Path
 
@@ -157,7 +157,12 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT):
         payload = {"generated": gen, "start": start, "end": dates[-1], "q0": q0, "cost": 0.005, "slots": 40, "hold": 40, "label": "사후(등록 전 되감기)",
                    "note": "현금 포함 모의 계좌 · 숫자만(앞섬/뒤짐 라벨 없음) · 설계 PAPER_ACCOUNT_DESIGN_20261018 §2~§5·§8",
                    "accounts": {aid: {"name": NAMES[aid], "summary": summary[aid], "nav": [[d, round(float(v), 6)] for d, v in zip(dates, accounts[aid][0]["nav"])]} for aid in accounts}}
-        JSON_PATH.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        def _clean(x):                                   # [Codex 검토 2] NaN/inf 는 null 로 — 브라우저 JSON.parse 가 NaN 을 거부한다
+            if isinstance(x, dict): return {k: _clean(v) for k, v in x.items()}
+            if isinstance(x, (list, tuple)): return [_clean(v) for v in x]
+            if isinstance(x, float) and not math.isfinite(x): return None
+            return x
+        JSON_PATH.write_text(json.dumps(_clean(payload), ensure_ascii=False, allow_nan=False), encoding="utf-8")
         print(f"  ✓ {DB_PATH.name} · docs/paper_account.json ({time.time()-t0:.0f}s)")
     return summary
 
