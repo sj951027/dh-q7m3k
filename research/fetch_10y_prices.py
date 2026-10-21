@@ -6,7 +6,7 @@
   - 상장 종목: DataReader('NAVER:005930', start, end)        → NAVER 일별(fdr_naver). 'KRX:' 경로는 2년 제한(400)이라 못 씀(실측)
   - 폐지 종목: DataReader('NAVER:005930', start, 폐지일) → NAVER 일별(fdr_naver_delisted). KRX-DELISTING 경로는 2026-10-21 실측 전부 400.
 저장: ../dh-q7m3k-data/ohlcv_10y.db
-  prices(ticker, date, open, high, low, close, volume, change_pct, source)   PRIMARY KEY(ticker, date)
+  prices(ticker, date, open, high, low, close, volume, change_pct(소수, 운영 DB 와 같음), source)   PRIMARY KEY(ticker, date)
   meta(ticker, name, market, listed, delisted, status, rows, fetched_at, note)   note = "start=YYYY-MM-DD;end=…;src=…"
 이어받기: meta.status='done' 이고 note 의 start 가 요청 start 이하(그리고 end 가 요청 end 이상)인 종목만 건너뛴다(Codex 4).
 유효 가격 0행이면 'empty'(완료 아님, 다음 실행 때 재시도) (Codex 3).
@@ -74,7 +74,7 @@ def to_rows(df, ticker, source):
             except Exception:
                 return None
         out.append((ticker, d, f(o) if o else None, f(h) if h else None, f(l) if l else None, close, f(v) if v else None,
-                    (f(ch) * 100 if (ch and f(ch) is not None) else None), source))
+                    (f(ch) if ch else None), source))      # 소수(0.29 = +29%) — 운영 ohlcv.db.change_pct 와 같은 단위(검토 지적: ×100 섞이면 100배 함정)
     return out
 
 
