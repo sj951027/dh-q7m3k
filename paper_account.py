@@ -106,7 +106,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT):
     picks_all = v30_picks(dates_all, didx_all)
     i0 = next((i for i, d in enumerate(dates_all) if d >= start), None)
     if i0 is None:
-        raise SystemExit("start 이후 거래일 없음")
+        print("⚠ paper_account: start 이후 거래일 없음(비치명)"); return None
     dates = dates_all[i0:]; sub = close.loc[dates]; trd = tradable.loc[dates]
     picks = {d: v for d, v in picks_all.items() if d >= start}
     ratio_gate = pe.ratio_by_cell(cells.reindex(dates))
@@ -172,5 +172,6 @@ if __name__ == "__main__":
     a = ap.parse_args()
     try:
         run(a.start, write=not a.no_write, n_draws=a.draws)
-    except Exception as e:
-        print(f"⚠ paper_account 실패(비치명): {e}"); sys.exit(0)
+    except BaseException as e:                       # SystemExit·KeyboardInterrupt 포함 — 배치를 절대 막지 않는다
+        print(f"⚠ paper_account 실패(비치명): {e!r}")
+    sys.exit(0)
