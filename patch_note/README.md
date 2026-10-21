@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.10.33** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.10.34** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -24,6 +24,7 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
+- [20261021_market_context.md](20261021_market_context.md) — **2026.10.34** 거래일별 시장 상황 이력 `docs/market_context.json`(regime_ad.history, PTW 조회용). 0-diff.
 - [20261020_paper_account_v1.md](20261020_paper_account_v1.md) — **2026.10.33** 모의 계좌 1판 `paper_account.py`(계좌 7장 되감기 적재 · 배치 미연결 · 사후 라벨). 0-diff.
 - [20261020_buy_context_telegram.md](20261020_buy_context_telegram.md) — **2026.10.32** 🧭 '이만큼 빠졌던 때 과거엔 어땠나' 3줄(시장 전체 기준, buy_context.py) · 텔레그램 매일 알림 짧게(성적표 블록 off·판정 일정 임박만) · 성적표 페이지 여섯 칸 표 · 모의 계좌 엔진 뼈대 paper_engine.py. 표시 전용, 0-diff.
 - [20261020_regime_ad_display.md](20261020_regime_ad_display.md) — **2026.10.31** A~D 진입 국면 표시(regime_ad.py · data.json `regime_ad` · 텔레그램 🧭 줄 · 성적표 A~D 병기 · PTW v5.45). 표시 전용, 0-diff.

@@ -205,6 +205,17 @@ def build_data_payload() -> dict:
         payload["regime_ad"] = regime_ad.now()
     except Exception as e:
         print(f"  ⚠ regime_ad 생략(비치명): {e}")
+    # [2026-10-21] 거래일별 시장 상황 이력 docs/market_context.json — PTW 가 매수 거래일의 전 거래일 행을 찾아 "샀을 때 시장" 을 붙인다.
+    #   원자료(market_daily)에서 매번 다시 계산(그날까지 자료만) → 기준이 바뀌면 과거 전부가 새 기준으로. 실패해도 대시보드는 그대로(비치명).
+    try:
+        import regime_ad as _ra
+        rows = _ra.history()
+        ctx = {"generated_at": payload["generated_at"], "basis": "전 거래일 종가 기준 지수 20거래일 수익 · 칸(A~D, 6칸) · 며칠째 · 0~10 자리 점수(지난 750거래일 안 위치, 250일 미만이면 없음)",
+               "cells": _ra.CELLS, "rows": rows}
+        (DOCS_DIR / "market_context.json").write_text(json.dumps(ctx, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        print(f"  ✓ docs/market_context.json ({len(rows)}일)")
+    except Exception as e:
+        print(f"  ⚠ market_context 생략(비치명): {e}")
     return payload
 
 

@@ -128,6 +128,33 @@ def cell_series(dates, ohlcv_db=DEFAULT_DB):
     return out
 
 
+def history(ohlcv_db=DEFAULT_DB):
+    """[2026-10-21] 거래일별 시장 상황 이력 — {date: {'kospi': {r20_pct, cell, cell6, label, days, pos10}, 'kosdaq': {...}}}.
+    매 날짜의 값은 **그날까지의 지수 자료만** 쓴다(pos10 은 지난 750거래일 안 위치). PTW 가 매수 거래일의 전 거래일 행을 찾아 쓴다.
+    기준이 바뀌면 이 함수만 고치면 과거 전부가 새 기준으로 다시 나온다(값을 저장하지 않고 원자료에서 매번 계산)."""
+    try:
+        import buy_context as bc
+        c6 = bc.cell6
+    except Exception:
+        c6 = lambda x: None
+    out = {}
+    for k, s in SERIES.items():
+        try:
+            df = classify(load_index(s, ohlcv_db))
+        except Exception:
+            continue
+        r = df["r20"].to_numpy(dtype=float)
+        for i, (d, row) in enumerate(df.iterrows()):
+            if row["cell"] is None:
+                continue
+            w = r[max(0, i - POS_WINDOW + 1):i + 1]; w = w[w == w]
+            pos = round(10.0 * float((w > r[i]).sum()) / len(w), 1) if (len(w) >= POS_MIN and r[i] == r[i]) else None
+            pct = round(float(r[i]) * 100, 1)
+            out.setdefault(str(d), {})[k] = {"r20_pct": pct, "cell": str(row["cell"]), "cell6": c6(pct), "label": CELLS[str(row["cell"])],
+                                             "days": int(row["days"]), "pos10": pos}
+    return out
+
+
 def describe(v):
     """한 시장 dict → '-13.0% 급락 뒤 8일째'. 깨진 입력은 None."""
     try:

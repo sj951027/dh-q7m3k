@@ -80,5 +80,24 @@ check("머리말 붙음", nt._regime_ad_text(info) == "🧭 시장국면: 코스
 check("비면 None", nt._regime_ad_text({}) is None and nt._regime_ad_text(None) is None)
 check("깨진 입력도 None(예외 없음)", nt._regime_ad_text({"kospi": "oops"}) is None)
 
+print("E. history() — 임시 DB(그날까지 자료만 · 점수는 250일부터)")
+import sqlite3, tempfile, os
+tmp = os.path.join(tempfile.gettempdir(), "regime_ad_test.db")
+if os.path.exists(tmp): os.remove(tmp)
+con = sqlite3.connect(tmp); con.execute("CREATE TABLE market_daily (series TEXT, date TEXT, close REAL)")
+days = [f"2025{(i // 28) + 1:02d}{(i % 28) + 1:02d}" for i in range(300)]
+vals = [100.0] * 280 + [85.0] * 20          # 끝 20일 급락
+con.executemany("INSERT INTO market_daily VALUES (?,?,?)", [("KOSPI", d, v) for d, v in zip(days, vals)] + [("KOSDAQ", d, 100.0) for d in days])
+con.commit(); con.close()
+h = ra.history(tmp)
+check("날짜 수 = 20일 뒤부터", len(h) == 280)
+last = h[days[-1]]
+check("마지막 날 코스피 급락(A, 20일째) · 코스닥 B", last["kospi"]["cell"] == "A" and last["kospi"]["days"] == 20 and last["kosdaq"]["cell"] == "B")
+check("점수 ≈ 9.3(같은 값인 끝 20일은 '더 큰 날'에 안 셈: 260/280)", abs(last["kospi"]["pos10"] - round(10 * 260 / 280, 1)) < 1e-9)
+check("250일 전엔 점수 없음", h[days[100]]["kospi"]["pos10"] is None)
+check("cell6 붙음", last["kospi"]["cell6"] == "A2")
+check("없는 DB → {}", ra.history("C:/nope/x.db") == {})
+os.remove(tmp)
+
 print("\n" + ("❌ 실패 %d" % fails if fails else "✅ test_regime_ad 통과"))
 sys.exit(1 if fails else 0)
