@@ -112,7 +112,7 @@ function render(D){
   // [2026-10-20 밤] 🧭 '이만큼 빠졌던 때 과거엔 어땠나'(시장 전체 기준) — 텔레그램 3줄과 같은 문장 + 여섯 칸 표. 표시 전용, 매수 신호 아님.
   const BC=D.buy_context||null, NOW=D.regime_ad_now||{};
   const cell6=x=>{if(x==null||isNaN(x)) return null; for(const [k,h] of [['A2',-10],['A1',-5],['B',0],['C',5],['D1',10]]){if(x<=h) return k;} return 'D2';};
-  const CL={A2:'3년 중 가장 많이 빠진 축',A1:'크게 빠진 편',B:'보통 수준의 약세',C:'보통 수준의 강세',D1:'많이 오른 편',D2:'3년 중 가장 많이 오른 축'};
+  const CL={A2:'가장 많이 빠진 축',A1:'크게 빠진 편',B:'보통 수준의 약세',C:'보통 수준의 강세',D1:'많이 오른 편',D2:'가장 많이 오른 축'};
   const sg=x=>(x>=0?'+':'')+(Math.abs(x)>=0.95?x.toFixed(0):x.toFixed(1))+'%';
   const PARENT={A2:'A',A1:'A',D1:'D',D2:'D'}, PWHEN={A:'5% 넘게 빠졌던 때',D:'5% 넘게 올랐던 때'};
   const bcLines=(mk,nm)=>{const v=NOW[mk]; if(!BC||!v||v.r20_pct==null||!isFinite(Number(v.r20_pct))) return ''; const x=Number(v.r20_pct), k=cell6(x), yrs=BC.years||'3년', lab=(BC.cells&&BC.cells[k])||CL[k]||'';
@@ -136,7 +136,7 @@ function render(D){
     else { const n=st.events_n, pz=st.events_pos, w=(used==='A')?'5% 넘게 빠졌던':(used==='D'?'5% 넘게 올랐던':'비슷했던'); why=(pz===n)?`${w} ${n}번 모두 40일 뒤 플러스(평균 ${sg(st.mean)})`:`${w} ${n}번 중 ${pz}번 플러스(평균 ${sg(st.mean)})`; if(pz/n<0.5) why+=' — 과거엔 좋은 자리 아니었음'; if(st.further_n) why+=(st.further_then_up===st.further_n)?` · ${n}번 중 ${st.further_n}번은 더 떨어진 뒤 회복`:` · ${n}번 중 ${st.further_n}번은 더 떨어졌고 ${st.further_then_up}번만 회복`; }
     return `<div style="margin:4px 0"><span style="font-size:1.25em"><b>${nm} ${sc}</b><span class="small">/10</span></span> &nbsp;<span class="${cls(x)}">${x>=0?'+':''}${x.toFixed(1)}%</span> <span class="small">· ${lab}</span><br><span class="small">${why}</span></div>`;};
   try{const box=document.getElementById('todayBox'); const k1=bcShort('kospi','코스피'), q1=bcShort('kosdaq','코스닥');
-    box.innerHTML=(k1||q1)?`<div class="small" style="margin-bottom:2px">🧭 <b>오늘 자리</b> · 시장 전체 기준 · ${D.asof&&D.asof.length===8?D.asof.slice(0,4)+'-'+D.asof.slice(4,6)+'-'+D.asof.slice(6,8)+' 종가':fd(D.asof)} · <b>10에 가까울수록 3년 중 많이 빠진 자리</b></div>${k1}${q1}${BC?`<details style="margin-top:6px"><summary class="small">자세히 — 칸별 3년 기록 · 뜻</summary><div class="small" style="margin-top:6px">${bcLines('kospi','코스피')}${bcLines('kosdaq','코스닥')?'<br>'+bcLines('kosdaq','코스닥'):''}</div>${bcTable()}</details>`:''}`:'';}catch(e){try{document.getElementById('todayBox').innerHTML='';}catch(_){}}
+    box.innerHTML=(k1||q1)?`<div class="small" style="margin-bottom:2px">🧭 <b>오늘 자리</b> · 시장 전체 기준 · ${D.asof&&D.asof.length===8?D.asof.slice(0,4)+'-'+D.asof.slice(4,6)+'-'+D.asof.slice(6,8)+' 종가':fd(D.asof)} · <b>10에 가까울수록 3년 중 많이 빠진 자리</b></div>${k1}${q1}${BC?`<details style="margin-top:6px"><summary class="small">자세히 — 칸별 ${BC&&BC.years?BC.years:'3년'} 기록 · 뜻${BC&&BC.source?' · 자료 '+BC.source:''}</summary><div class="small" style="margin-top:6px">${bcLines('kospi','코스피')}${bcLines('kosdaq','코스닥')?'<br>'+bcLines('kosdaq','코스닥'):''}</div>${bcTable()}</details>`:''}`:'';}catch(e){try{document.getElementById('todayBox').innerHTML='';}catch(_){}}
   // 국면별 · 지금 형세
   const rgc=(g,k)=>{if(!g||!g[k]) return '<span class="m">—</span>'; const v=g[k]; return `<span class="${cls(v.exc_mean)}">${f1(v.exc_mean,'%p')}</span> <span class="small">${pct(v.win)} · ${v.n}일</span>`;};
   const icc=(g)=>{if(!g) return '—'; const f=k=>g[k]?`${(g[k].ic*100).toFixed(1)}<span class="small">(${g[k].n})</span>`:'—'; return `${f('약세')} / ${f('상승')}`;};

@@ -55,7 +55,7 @@ print("C. 문구")
 st_k = {"events_n": 6, "events_pos": 5, "mean": 12.0, "further_n": 2, "further_then_up": 2}
 st_q = {"events_n": 10, "events_pos": 4, "mean": -1.0, "further_n": 7, "further_then_up": 3}
 out = bc.block({"kospi": {"r20_pct": -17.3}, "kosdaq": {"r20_pct": -4.2}}, {"kospi": {"A2": st_k}, "kosdaq": {"B": st_q}})
-check("코스피 1줄(시장 전체 기준 표기)", out[0] == "🧭 코스피 -17.3% (3년 중 가장 많이 빠진 축 · 시장 전체 기준)")
+check("코스피 1줄(시장 전체 기준 표기)", out[0] == "🧭 코스피 -17.3% (가장 많이 빠진 축 · 시장 전체 기준)")
 check("코스피 2줄", out[1] == "   이만큼 빠졌던 때 3년간 6번 → 다음날 사서 40일 뒤 평균 +12%, 6번 중 5번 플러스")
 check("코스피 3줄", out[2] == "   단 6번 중 2번은 사고 나서 더 떨어진 뒤 올랐음")
 check("코스닥 1줄", out[3] == "🧭 코스닥 -4.2% (보통 수준의 약세 · 시장 전체 기준)")
@@ -69,7 +69,7 @@ check("사건 4개뿐이면 부모 칸(≤−5%)으로 대체·말도 넓힘", o
 check("평균만 마이너스(과반 플러스)면 '좋은 자리 아니었음' 안 붙임", "좋은 자리" not in bc.lines("kosdaq", -4.2, {"events_n": 16, "events_pos": 11, "mean": -0.7})[1])
 check("years 인자", bc.block({"kospi": {"r20_pct": -17.3}}, {"kospi": {"A2": st_k}}, years="2년")[1].startswith("   이만큼 빠졌던 때 2년간"))
 check("빈 입력 → []", bc.block({}, {}) == [] and bc.block(None, None) == [])
-check("점수 있으면 첫 줄에 9.8/10", bc.block({"kospi": {"r20_pct": -17.3, "pos10": 9.8}}, {"kospi": {"A2": st_k}})[0] == "🧭 코스피 9.8/10 · -17.3% (3년 중 가장 많이 빠진 축 · 시장 전체 기준)")
+check("점수 있으면 첫 줄에 9.8/10", bc.block({"kospi": {"r20_pct": -17.3, "pos10": 9.8}}, {"kospi": {"A2": st_k}})[0] == "🧭 코스피 9.8/10 · -17.3% (가장 많이 빠진 축 · 시장 전체 기준)")
 check("점수 깨지면 생략", bc.block({"kospi": {"r20_pct": -17.3, "pos10": "x"}}, {"kospi": {"A2": st_k}})[0].startswith("🧭 코스피 -17.3%"))
 check("점수 NaN 도 생략", bc.block({"kospi": {"r20_pct": -17.3, "pos10": float("nan")}}, {"kospi": {"A2": st_k}})[0].startswith("🧭 코스피 -17.3%"))
 check("깨진 r20 → 건너뜀", bc.block({"kospi": {"r20_pct": "x"}}, {}) == [])

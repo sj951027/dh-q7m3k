@@ -20,6 +20,7 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 DEFAULT_DB = os.environ.get("OHLCV_DB", str(HERE / ".." / "dh-q7m3k-data" / "ohlcv.db"))
 
+HIST_DB = os.environ.get("OHLCV_10Y_DB", str(HERE / ".." / "dh-q7m3k-data" / "ohlcv_10y.db"))   # [2026-10-23] 10년 연구 DB(폐지 포함·수정주가)
 LOOKBACK = 20          # 거래일
 TH_DOWN = -0.05        # A: R20 ≤ −5%
 TH_UP = 0.05           # D: R20 > +5%
@@ -95,6 +96,24 @@ def load_index(series, ohlcv_db=DEFAULT_DB, asof=None):
     if asof:
         df = df[df["date"] <= str(asof)]
     return df.set_index("date")["close"].astype(float)
+
+
+def load_index_long(series, ohlcv_db=DEFAULT_DB, hist_db=HIST_DB):
+    """[2026-10-23] 지수 종가 긴 이력 — 10년 DB 의 index_daily(2014-11~) 뒤에 운영 market_daily 의 더 새로운 날짜를 이어 붙인다.
+    10년 DB 가 없으면 운영 것만. 읽기 전용."""
+    cur = load_index(series, ohlcv_db)
+    try:
+        con = sqlite3.connect(f"file:{hist_db}?mode=ro", uri=True)
+        try:
+            h = pd.read_sql("SELECT date, close FROM index_daily WHERE series=? ORDER BY date", con, params=(series,))
+        finally:
+            con.close()
+        h["date"] = h["date"].astype(str); h = h.set_index("date")["close"].astype(float)
+        if len(h):
+            cur = pd.concat([h[h.index < cur.index.min()], cur]) if len(cur) else h
+    except Exception:
+        pass
+    return cur[~cur.index.duplicated(keep="last")].sort_index()
 
 
 def now(ohlcv_db=DEFAULT_DB, asof=None):

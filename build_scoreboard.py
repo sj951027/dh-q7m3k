@@ -294,12 +294,25 @@ def build_buy_context(close, dates):
     텔레그램 🧭 3줄·성적표가 읽는다. 규칙 아님 · 숫자만. 실패하면 None(비치명)."""
     try:
         c = close.where(close > 0)                                   # [검토 P2-1] 0·음수 종가 → 결측(inf 방지)
+        # [2026-10-23 사용자 결정] 통계 자료 기준 = 10년 DB(2015~, 폐지 종목 포함·수정주가) + 그 뒤 날짜는 운영 DB 로 이어 붙임.
+        #   3년(사건 9)으로는 "9번 중 9번"처럼 창이 좁아 생긴 숫자가 나왔다(10년: 27번 중 20번). 10년 DB 가 없으면 종전대로 운영 DB 만.
+        src_note = "운영 DB 3년"
+        try:
+            hcon = sqlite3.connect(f"file:{regime_ad.HIST_DB}?mode=ro", uri=True)
+            hp = pd.read_sql("SELECT ticker, date, close FROM prices", hcon); hcon.close()
+            hc = hp.pivot_table(index="date", columns="ticker", values="close", aggfunc="last").sort_index(); hc = hc.where(hc > 0)
+            seam = hc.index.max()
+            c = pd.concat([hc, c[c.index > seam]]).sort_index()       # 이음새 뒤는 운영 DB(원시 종가) — 최근 41일만 영향
+            src_note = f"10년 DB(~{seam}) + 운영 DB"
+        except Exception as e:
+            print(f"   ⚠ buy_context 10년 DB 생략(운영 DB 만): {e}")
         b40 = ((c.shift(-1 - H) / c.shift(-1) - 1).mean(axis=1, skipna=True) * 100).replace([np.inf, -np.inf], np.nan)
-        out = {"years": f"{round(int(b40.notna().sum()) / 250)}년", "H": H, "cells": {k: v for k, _, v in bc.CELLS6}}
+        hdates = list(c.index)
+        out = {"years": f"{round(int(b40.notna().sum()) / 250)}년", "H": H, "cells": {k: v for k, _, v in bc.CELLS6}, "source": src_note}
         for k, s in regime_ad.SERIES.items():
-            idx = regime_ad.load_index(s, lb.OHLCV_DB)
+            idx = regime_ad.load_index_long(s, lb.OHLCV_DB)
             r20 = (idx / idx.shift(regime_ad.LOOKBACK) - 1) * 100
-            out[k] = bc.stats(dates, r20, b40, idx)
+            out[k] = bc.stats(hdates, r20, b40, idx)
         return out
     except Exception as e:
         print(f"   ⚠ buy_context 생략(비치명): {e}"); return None
