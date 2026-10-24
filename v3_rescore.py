@@ -244,6 +244,10 @@ MODELS = {
     "v31d": _spec("v31d · E5 섹터 중립화",          sector_neutralize=True),
     "v31f": _spec("v31f · F1 macd 이격도 가산(섀도우)", macd_tilt_w=MACD_TILT_W),
     "v31g": _spec("v31g · F2 거래량팽창 가산(섀도우)",   volexp_tilt_w=VOLEXP_TILT_W),
+    # [2026-10-24] v32a — PREREGISTER_v32a.md. 셀(run×market) 안 21일 평균 거래대금이 중앙값보다 큰(또는 결측) 행을
+    #   메인후보에서 빼고 점수 −999(하드 제외와 같은 처리) → 점수 순 상위 10 이 '한산한 절반'에서만 나온다. 관측용·가중 0.
+    #   키는 v32a 에만 둔다(SPEC_V30 에 넣으면 v30·v31* spec_hash 가 바뀜) — rescore 는 spec.get(..., False) 로 읽음.
+    "v32a": _spec("v32a · 한산한 절반(거래대금 중앙값 이하)", liquidity_cap_median=True),
 }
 
 # [2026-08-09] §11 첫 판정(VERDICT_20260809.md): 챌린저 6개 전원 기각 → 챔피언 v30 유지.
@@ -290,6 +294,12 @@ def rescore(df, run_id=None, market=None, oversold_cap=None, spec=None):
     if spec["liquidity_floor"] > 0:
         amt = _num(df["amt_avg_1m_억"]).fillna(0)
         main = main & (amt >= spec["liquidity_floor"])
+    # v32a: 셀 전체 행의 amt_avg_1m_억 중앙값 초과·결측 → 메인후보 제외(+아래에서 점수 −999). 꺼져 있으면(v30 등 키 없음) 건너뜀 → 동일.
+    liq_cap_out = pd.Series(False, index=df.index)
+    if spec.get("liquidity_cap_median", False):
+        _amt = _num(df["amt_avg_1m_억"])
+        liq_cap_out = ~(_amt <= _amt.median())
+        main = main & ~liq_cap_out
     df["main_candidate"] = main
 
     fs = (
@@ -342,6 +352,7 @@ def rescore(df, run_id=None, market=None, oversold_cap=None, spec=None):
 
     # 하드 제외는 점수를 완전히 바닥으로 (위험/falling_knife/이중적자 모두)
     df.loc[hard_exclude, ["final_score_v3", "entry_score"]] = -999
+    df.loc[liq_cap_out, ["final_score_v3", "entry_score"]] = -999    # v32a 만(그 밖 모델은 전부 False)
 
     df["grade"] = grade(df, spec)
     df["bucket"] = bucket(df, spec)

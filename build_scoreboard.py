@@ -23,7 +23,8 @@ import buy_context as bc   # [2026-10-20 밤] '이만큼 빠졌던 때 과거엔
 H = 40; TOP = 10; COST = 0.35; MIN_BASKET = 5
 NAME = {"v30": "과매도 v3", "lv_b": "저변동 lv_b", "lv_a": "저변동+반전 lv_a", "lv_e": "저변동+저회전 lv_e", "mom_a": "모멘텀 mom_a",
         "mom_b": "모멘텀+눌림 mom_b", "sm_a": "초소형 sm_a", "sv_a": "공매도비중 sv_a", "sv_b": "공매도+신용 sv_b", "le_a": "저점탈출 le_a",
-        "qs_a": "조용한강자 qs_a", "px_a": "가격4팩터 px_a", "ls_t1": "대형밸류 ls_t1"}
+        "qs_a": "조용한강자 qs_a", "px_a": "가격4팩터 px_a", "ls_t1": "대형밸류 ls_t1",
+        "v32a": "한산한 과매도 v32a"}
 TBL = {"v3": ("v3_scores", "final_score_v3"), "lowvol": ("lowvol_scores", "lowvol_score"), "wu": ("wu_scores", "wu_score")}
 
 

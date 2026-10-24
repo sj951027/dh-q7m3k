@@ -130,6 +130,9 @@ python lead_observe.py
 if errorlevel 1 set "FAILED=%FAILED% lead_observe"
 python build_lead_page.py
 if errorlevel 1 set "FAILED=%FAILED% build_lead_page"
+rem [2026-10-24] v3 challenger v32a observation page (docs/v32a.html, display only, non-fatal)
+python build_v32a_page.py
+if errorlevel 1 set "FAILED=%FAILED% build_v32a_page"
 
 echo.
 echo ========================================================================

@@ -51,6 +51,7 @@ ARCHIVE_MAP = {
     "v31d": ("v31d_archive", None),
     "v31f": ("v31f_archive", None),
     "v31g": ("v31g_archive", None),
+    "v32a": ("v32a_archive", None),   # [2026-10-24] PREREGISTER_v32a.md (관측용)
 }
 
 
