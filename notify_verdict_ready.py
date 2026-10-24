@@ -9,6 +9,10 @@ notify_verdict_ready.py — 판정일 도달 알림 (§11 판정 시즌 안전�
 원칙:
   * 자립형: leaderboard.json 신선도에 의존하지 않고 history.db 를 직접 계산
     (OOS = 등록일 이후 run 수, 게이트 run 제외 — leaderboard 와 동일 정의).
+  * [2026-10-24 Codex 재점검 R1] 셈은 leaderboard 의 build_gates·dedupe_by_anchor 를 그대로 쓴다
+    (등록일 run 포함 · 게이트 매일 계산 · 주말/공휴일 run 은 직전 거래일 앵커로 중복 제거 = 판정의 '유효 앵커').
+    전엔 `run_id > 등록일`·고정 GATES 라 전 모델이 하루 적게 셌다(lv_e 32↔33). 함수가 실패하면 옛 셈으로 대신.
+  * [2026-10-24 R2] 텔레그램 전송이 성공했을 때만 '알림 완료'로 기록 — 실패·키 없음이면 다음 배치에서 다시 시도.
   * 1회성: 알린 모델은 verdict_notified.json(로컬 상태, git 제외)에 기록 — 중복 알림 없음.
   * 판정 자체는 안 함(그건 leaderboard.py §11 몫). 점수·표시 불변, 비치명.
 
@@ -72,12 +76,30 @@ def load_env():
             os.environ[k.strip()] = v.strip().strip('"').strip("'")
 
 
-def oos_days(con, model):
+def gate_ctx(con):
+    """leaderboard 와 같은 (거래일 인덱스, 제외 run 집합). 실패하면 None → oos_days 가 옛 셈으로."""
+    try:
+        sys.path.insert(0, str(HERE))
+        import leaderboard as lb
+        close, _ = lb.load_ohlcv()
+        partial, dbl, didx = lb.build_gates(con, close.index)
+        return lb, didx, partial | dbl
+    except Exception as e:
+        print(f"   ⚠ 유효 앵커 셈 준비 실패 — 옛 셈(고정 게이트)으로: {e}")
+        return None
+
+
+def oos_days(con, model, ctx=None):
     tbl = TABLE[TRACK[model]]
+    if ctx is not None:                                   # 판정과 같은 '유효 앵커' 수
+        lb, didx, excl = ctx
+        runs = [str(r) for (r,) in con.execute(f"SELECT DISTINCT run_id FROM {tbl} WHERE model_id=?", (model,))]
+        return len(lb.dedupe_by_anchor(lb.pd.DataFrame({"run_id": runs}), didx, excl, reg=REG_DATE[model]))
     runs = [r for (r,) in con.execute(
-        f"SELECT DISTINCT run_id FROM {tbl} WHERE model_id=? AND run_id>?",
+        f"SELECT DISTINCT run_id FROM {tbl} WHERE model_id=? AND run_id>=?",
         (model, REG_DATE[model]))]
     return len([r for r in runs if str(r) not in GATES])
+
 
 
 def send_telegram(msg):
@@ -108,10 +130,11 @@ def main():
         except Exception:
             pass
     con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    ctx = gate_ctx(con)
     status, newly = [], []
     for m in REG_DATE:
         try:
-            d = oos_days(con, m)
+            d = oos_days(con, m, ctx)
         except Exception:
             continue
         status.append((m, d))
@@ -133,7 +156,9 @@ def main():
     if args.dry_run:
         print("[dry-run] 전송·상태기록 생략.")
         return
-    send_telegram(msg)
+    if not send_telegram(msg):
+        print("   ⚠ 텔레그램 전송 실패(또는 키 없음) — '알림 완료'로 기록하지 않음. 다음 배치에서 다시 시도.")
+        return
     notified |= {m for m, _ in newly}
     STATE.write_text(json.dumps(sorted(notified), ensure_ascii=False), encoding="utf-8")
     print(f"상태 기록: {STATE.name} ({len(notified)}개 모델 알림 완료)")
