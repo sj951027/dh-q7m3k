@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""v32a 배선 0-diff (2026-10-24): 저장소 v3_rescore(현행) vs 후보(v32a 훅) — history.db stage3_final 전 run 으로
+"""v32a 배선 0-diff (2026-10-24): 저장소 v3_rescore(현행) vs 후보(v32a 훅)
+※ 배선 전 도구 — 배선 뒤(커밋 142077b~)에 재현하려면 A 를 `git show 142077b~1:v3_rescore.py` 사본으로 바꿔 넣을 것(Codex 10/24 점검 ①). — history.db stage3_final 전 run 으로
 v30 은 전 run, v31a~g 는 최근 10 run 을 재점수화해 DataFrame 완전 일치 비교 + spec_hash 비교 + v32a 미리보기. 읽기 전용."""
 import hashlib, importlib.util, json, sqlite3, sys, time, warnings
 import pandas as pd

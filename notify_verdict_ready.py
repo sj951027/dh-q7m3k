@@ -47,13 +47,16 @@ REG_DATE = {
     "sv_a": "20260715", "le_a": "20260715",
     "mom_b": "20260717", "qs_a": "20260723",
     "px_a": "20260810",
+    # [2026-10-24 Codex 커밋 점검 F4] 9월 이후 등록분이 빠져 있었음(lv_e·sv_b 판정 도달 알림 불능) + v32a 신규.
+    #   등록일은 checkup.REG_DATE 와 같은 값. v32a 판정 주지표는 IC 가 아니라 D20(PREREGISTER_v32a.md) — 알림 문구 참고.
+    "lv_e": "20260901", "sv_b": "20260914", "v32a": "20261026",
 }
 TABLE = {"v3": "v3_scores", "lowvol": "lowvol_scores", "wu": "wu_scores"}
 TRACK = {m: ("v3" if m.startswith("v3") else "wu" if m.startswith("wu") else "lowvol")
          for m in REG_DATE}
 # [2026-08-07 보수] 휴리스틱('wu' 접두어)이 못 잡는 wu 트랙 모델 명시 매핑 —
 # sv_a·le_a·qs_a 는 wu_scores 소속인데 기존 코드는 lowvol_scores 를 조회(알림 불능 결함).
-TRACK.update({"sv_a": "wu", "le_a": "wu", "qs_a": "wu", "px_a": "wu"})
+TRACK.update({"sv_a": "wu", "le_a": "wu", "qs_a": "wu", "px_a": "wu", "sv_b": "wu"})
 
 
 def load_env():
@@ -122,7 +125,8 @@ def main():
         return
     lines = ["🔔 <b>판정 가능 도달</b> — OOS 40거래일 충족",
              ""] + [f" · {m}: {d}거래일 (등록 {REG_DATE[m]})" for m, d in newly] + [
-        "", "판정 실행: <code>python leaderboard.py</code>",
+        "", "판정 실행: <code>python leaderboard.py</code>"
+        + (" · v32a 는 D20(PREREGISTER_v32a.md §2·§3)" if any(m == "v32a" for m, _ in newly) else ""),
         "⚠️ §11 그대로: CI·Bonferroni·방향일치 — '채택 안 함'도 정당한 결론."]
     msg = "\n".join(lines)
     print(msg)

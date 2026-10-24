@@ -6,6 +6,8 @@ PREREGISTER_v32a.md: v30 점수 그대로, 같은 (run×market) 셀의 21일 평
   v32a 목록의 v30 순위 · v30 상위 10 중 빠진 종목 · 20일 거래대금 · 참여율 1% 주문 상한(= 거래대금 × 1%).
 쌓인 기록: v3_scores 의 v32a·v30 동결 점수(REG_DATE 이후 · 게이트 제외 · 앵커 중복 제거 — leaderboard 와 같은 함수)로
   앵커마다 D20 = (v32a 상위 10 − v30 상위 10) h20 동일가중 수익 차, 두 시장 평균. ohlcv.db 본표(성적표 트랙 A 와 같은 경로), 보유 중 정지·상폐는 마지막 가격.
+  [2026-10-24 Codex 검토 반영] 바구니 = 점수 > −999 중 상위 10(모자라면 있는 만큼) · 진입가 없는 종목 제외(체결분만) · 두 시장 중 하나라도 못 내면 'D 산출 불가' ·
+  빈 표(첫 적재 직후·전부 게이트·stage3 없음)도 대기 화면으로 끝난다. 계산 핵심은 순수 함수 d20_rows/top/basket_ret(tests/test_v32a_page_rules.py).
   라벨 없음 — 판정은 유효 앵커 40 뒤 사전등록 §2·§3 로 한 번(사람이 적용). 실행: python build_v32a_page.py
 """
 import html, os, sqlite3, sys
@@ -42,8 +44,56 @@ CSS = """
 esc = html.escape
 
 
+COLS = ["run_id", "done", "ok", "D20"]   # d20 표는 행이 0 이어도 이 열을 항상 가진다(첫 적재 직후 KeyError 방지 — Codex 10/24 F1)
+
+
 def top(df, n=TOP):
-    return df.sort_values(["final_score_v3", "ticker"], ascending=[False, True]).head(n)
+    """바구니 = 점수 > −999 인 행 중 점수 내림차순·동점 종목코드 순 상위 n(PREREGISTER_v32a §2). n 개가 안 되면 있는 만큼.
+    −999(하드 제외·v32a 유동성 탈락)는 정렬 맨 아래일 뿐 빠지지 않으므로 명시적으로 뺀다(Codex 10/24 F2)."""
+    s = pd.to_numeric(df["final_score_v3"], errors="coerce")
+    return df[s > -999].sort_values(["final_score_v3", "ticker"], ascending=[False, True]).head(n)
+
+
+def basket_ret(tk, close, cf, e, x):
+    """체결분만 동일가중 수익(%): 진입일 종가 없음·0 이하 종목은 빼고(현금, 대체 없음), 청산은 마지막 가격(ffill). 체결 0 이면 NaN."""
+    tk = [k for k in tk if k in close.columns]
+    if not tk:
+        return np.nan
+    p0, p1 = close.iloc[e][tk], cf.iloc[x][tk]
+    ok = p0.notna() & (p0 > 0) & p1.notna()
+    return float(((p1[ok] / p0[ok] - 1) * 100).mean()) if ok.any() else np.nan
+
+
+def d20_rows(S, close, didx, excl, reg):
+    """순수 함수 — S(run_id, market, ticker, model_id, score) 동결 점수 · close(date×ticker 본표 종가) → 앵커별 표(COLS).
+    done = 20일 청산일이 달력 안 · ok = 두 시장 모두 두 바구니 체결이 있어 D 산출 가능 · D20 = 두 시장 (v32a − v30) 평균(ok 일 때만)."""
+    keep = lb.dedupe_by_anchor(S[S.model_id == MODEL], didx, excl, reg=reg) if len(S) else set()
+    dates = list(close.index); cf = close.ffill()          # 보유 중 정지·상폐 = 마지막 가격(진입가엔 안 씀)
+    rows = []
+    for rid in sorted(keep):
+        t = lb.anchor(rid, didx)
+        if t is None:
+            continue
+        e, x = t + 1, t + 1 + H
+        rec = dict(run_id=rid, done=bool(x < len(dates)), ok=False, D20=np.nan)
+        if rec["done"]:
+            ds = []
+            for mkt in ("kospi", "kosdaq"):
+                r = {}
+                for mid in (MODEL, REF):
+                    g = S[(S.run_id == rid) & (S.market == mkt) & (S.model_id == mid)].dropna(subset=["score"])
+                    r[mid] = basket_ret(list(top(g.rename(columns={"score": "final_score_v3"}))["ticker"]), close, cf, e, x)
+                ds.append(r[MODEL] - r[REF])
+            if all(np.isfinite(ds)):                       # 한 시장이라도 못 내면 그 앵커 D 산출 불가(Codex 10/24 F3)
+                rec["ok"], rec["D20"] = True, float(np.mean(ds))
+        rows.append(rec)
+    return typed(pd.DataFrame(rows, columns=COLS))
+
+
+def typed(h):
+    """빈 표도 형식을 고정(done·ok = bool, D20 = float) — 빈 object 열로 불리언 거르기를 하면 '열 선택'이 돼 버린다."""
+    h = h.reindex(columns=COLS)
+    return h.astype({"run_id": str, "done": bool, "ok": bool, "D20": float})
 
 
 def today_lists(allruns, rid):
@@ -55,7 +105,7 @@ def today_lists(allruns, rid):
             continue
         a = v3.rescore(sub.copy(), run_id=rid, market=mkt, spec=v3.MODELS[REF])
         w = v3.rescore(sub.copy(), run_id=rid, market=mkt, spec=v3.MODELS[MODEL])
-        a_rank = {t: i + 1 for i, t in enumerate(a.sort_values(["final_score_v3", "ticker"], ascending=[False, True])["ticker"])}
+        a_rank = {t: i + 1 for i, t in enumerate(top(a, n=len(a))["ticker"])}
         tw, ta = top(w), top(a)
         med = pd.to_numeric(sub["amt_avg_1m_억"], errors="coerce").median()
         dropped = ta[~ta["ticker"].isin(set(tw["ticker"]))]
@@ -77,31 +127,7 @@ def d20_history(today):
         partial, dbl, didx = lb.build_gates(con, close.index)
     finally:
         con.close()
-    excl = partial | dbl
-    keep = lb.dedupe_by_anchor(S[S.model_id == MODEL], didx, excl, reg=reg)
-    dates = list(close.index); cf = close.ffill()          # 보유 중 정지·상폐 = 마지막 가격
-    rows = []
-    for rid in sorted(keep):
-        t = lb.anchor(rid, didx)
-        if t is None:
-            continue
-        e, x = t + 1, t + 1 + H
-        done = x < len(dates)
-        rec = dict(run_id=rid, done=done)
-        if done:
-            ds = []
-            for mkt in ("kospi", "kosdaq"):
-                r = {}
-                for mid in (MODEL, REF):
-                    g = S[(S.run_id == rid) & (S.market == mkt) & (S.model_id == mid)].dropna(subset=["score"])
-                    tk = [k for k in top(g.rename(columns={"score": "final_score_v3"}))["ticker"] if k in close.columns]
-                    p0, p1 = close.iloc[e][tk], cf.iloc[x][tk]
-                    ok = p0.notna() & p1.notna() & (p0 > 0)
-                    r[mid] = float(((p1[ok] / p0[ok] - 1) * 100).mean()) if ok.any() else np.nan
-                ds.append(r[MODEL] - r[REF])
-            rec["D20"] = float(np.nanmean(ds)) if np.isfinite(ds).any() else np.nan
-        rows.append(rec)
-    return pd.DataFrame(rows), None
+    return d20_rows(S, close, didx, partial | dbl, reg), None
 
 
 def fmt(x, d=1, unit=""):
@@ -111,17 +137,18 @@ def fmt(x, d=1, unit=""):
 def main():
     today = datetime.now().strftime("%Y-%m-%d")
     allruns = v3.load_runs(DB); allruns["run_id"] = allruns["run_id"].astype(str)
-    rid = allruns["run_id"].max(); reg = REG_DATE.get(MODEL, "")
-    lists = today_lists(allruns, rid)
+    reg = REG_DATE.get(MODEL, "")
+    rid = str(allruns["run_id"].max()) if len(allruns) else ""          # stage3 가 비면 목록 없이 대기 화면(Codex 10/24 F1)
+    lists = today_lists(allruns, rid) if rid else {}
     hist, msg = d20_history(today)
     parts = [f"""<h1>한산한 과매도 v32a — v3 트랙 챌린저 (관측)</h1>
 <div class="sub">v30 점수 그대로 · 그날 시장 후보 중 1개월 평균 거래대금이 중앙값 이하인 절반만 · 점수 순 시장별 상위 10 · 가중 0 · <b>관측 전용</b> — <a href="https://github.com/sj951027/dh-q7m3k/blob/main/PREREGISTER_v32a.md">PREREGISTER_v32a.md</a> · <a href="leaderboard.html">리더보드로</a></div>
 <div class="warn"><b>매수 추천이 아닙니다.</b> 사전등록한 규칙(v32a)이 앞으로 v30 보다 나은지 기록만 합니다. 판정은 유효 앵커 40개가 쌓인 뒤 한 번(사전등록 §2·§3). 근거는 전부 사후 관측(10년 자료의 v30 대리)이고, <b>거래가 적은 종목이라 큰 금액은 살 수 없습니다</b> — 아래 '참여율 1% 주문 상한' 열을 보세요.</div>
 <details class="explain"><summary>이 규칙이 뭔가요 · 무엇을 재나요</summary><div class="explain-body">
-<p><b>고르는 법</b>: v30 과 같은 점수로 줄 세우되, 그날 그 시장 후보 전체에서 최근 한 달 하루 평균 거래대금이 <b>중간보다 많은 종목은 뺍니다</b>(점수 −999, 기존 '제외'와 같은 처리). 남은 한산한 절반에서 상위 10.</p>
-<p><b>재는 것(D20)</b>: 매 앵커마다 v32a 상위 10 과 v30 상위 10 을 다음 거래일 종가에 같은 금액으로 산 것으로 보고 20거래일 뒤 수익률 차이(v32a − v30)를 두 시장 평균. 두 목록이 같으면 그날 0.</p>
+<p><b>고르는 법</b>: v30 과 같은 점수로 줄 세우되, 그날 그 시장 후보 전체에서 최근 한 달(21거래일) 하루 평균 거래대금이 <b>중간보다 많은 종목은 뺍니다</b>(점수 −999, 기존 '제외'와 같은 처리). 남은 한산한 절반에서 상위 10 — 남은 종목이 10개가 안 되면 있는 만큼만.</p>
+<p><b>재는 것(D20)</b>: 매 앵커마다 v32a 상위 10 과 v30 상위 10 을 다음 거래일 종가에 같은 금액으로 산 것으로 보고 20거래일 뒤 수익률 차이(v32a − v30)를 두 시장 평균. 두 목록이 같으면 그날 0. 진입 가격이 없는 종목은 빼고 산 종목만 평균, 두 시장 중 하나라도 값을 못 내면 그 앵커는 'D 산출 불가'로 따로 셉니다.</p>
 <p><b>왜</b>: 10년 자료에서 과매도 종목 중 거래대금 아래 절반이 과매도 전체보다 40일 +1.3%p(Codex 독립 +1.5) 높았습니다 — 코스닥 위주, 2025 는 음수, 주문이 커지면 약해짐. 2026-08 기각된 v31c(5억 미만 제외)와 같은 방향의 관측을 앞으로 고정된 규칙으로 재는 것입니다.</p>
-<p><b>참여율 1% 주문 상한</b> = 20일 평균 거래대금 × 1%. 이보다 크게 사면 내 주문이 가격을 움직일 수 있다는 어림 기준(체결 보장 아님).</p></div></details>"""]
+<p><b>참여율 1% 주문 상한</b> = 1개월(21거래일) 평균 거래대금 × 1%. 이보다 크게 사면 내 주문이 가격을 움직일 수 있다는 어림 기준(체결 보장 아님).</p></div></details>"""]
     chips = [f"승인 <b>2026-10-23</b>", f"등록일(첫 적재) <b>{esc(reg)}</b>", f"spec <b>{esc(__import__('freeze_scores').spec_hash(MODEL))}</b>", f"기준 run <b>{esc(rid)}</b>",
              f"분모(v3) <b>8</b>", f"생성 <b>{today}</b>"]
     parts.append('<div class="meta">' + "".join(f'<span class="chip">{c}</span>' for c in chips) + "</div>")
@@ -129,20 +156,22 @@ def main():
     if hist is None:
         parts.append(f'<h2>쌓인 기록 (D20)</h2><div class="empty">{esc(msg)}</div>')
     else:
-        dn = hist[hist.done]; n_all, n_done = len(hist), len(dn)
-        d = dn["D20"].dropna()
+        hist = typed(hist); dn = hist[hist["done"]]; n_all, n_done = len(hist), len(dn)
+        d = dn.loc[dn["ok"], "D20"].dropna(); n_bad = n_done - len(d)
         lo = hi = None
         if len(d) >= 5:
             rng = np.random.default_rng(7); bs = [rng.choice(d.values, len(d)).mean() for _ in range(4000)]; lo, hi = np.percentile(bs, [2.5, 97.5])
         parts.append('<h2>쌓인 기록 (D20 · 라벨 없음)</h2><div class="grid">'
                      f'<div class="kpi"><div class="l">유효 앵커</div><div class="v">{n_all} / {GOAL}</div><div class="s">판정은 40 도달 뒤 1회</div></div>'
-                     f'<div class="kpi"><div class="l">20일 완결 앵커</div><div class="v">{n_done}</div><div class="s">진행 중 {n_all - n_done}</div></div>'
+                     f'<div class="kpi"><div class="l">20일 완결 앵커</div><div class="v">{n_done}</div><div class="s">진행 중 {n_all - n_done} · D 산출 불가 {n_bad}</div></div>'
                      f'<div class="kpi"><div class="l">D20 평균 (v32a − v30)</div><div class="v {"pos" if len(d) and d.mean() > 0 else "neg" if len(d) else ""}">{fmt(d.mean() if len(d) else None, 2, "%p")}</div>'
                      f'<div class="s">{"95% [" + fmt(lo, 2) + ", " + fmt(hi, 2) + "]" if lo is not None else "구간은 완결 5개부터"}</div></div>'
                      f'<div class="kpi"><div class="l">D20 &gt; 0 인 앵커</div><div class="v">{int((d > 0).sum())} / {len(d)}</div><div class="s">같은 목록이면 0</div></div></div>')
     # 오늘 목록
     pre = rid < reg if reg else False
-    parts.append(f'<h2>그날 목록 — run {esc(rid)}{" (등록 전 미리보기 · 표본 아님)" if pre else ""}</h2><div class="cols">')
+    parts.append(f'<h2>그날 목록 — run {esc(rid) or "없음"}{" (등록 전 미리보기 · 표본 아님)" if pre and rid else ""}</h2><div class="cols">')
+    if not lists:
+        parts.append('<div class="empty">stage3 후보 자료가 없습니다 — 다음 배치에서 다시 그립니다.</div>')
     for mkt, L in lists.items():
         w = L["w"]
         trs = []
@@ -154,7 +183,7 @@ def main():
                        f'<td>{"—" if not np.isfinite(amt) else f"{amt:.1f}"}</td><td>{"—" if not np.isfinite(amt) else f"{amt * 100:,.0f}만"}</td></tr>')
         dr = "".join(f'<tr><td>—</td><td>{esc(str(r.get("name", "")))} <span class="same">{esc(r["ticker"])}</span></td><td>{r["final_score_v3"]:.1f}</td><td>{L["a_rank"].get(r["ticker"], "—")}</td><td>빠짐</td>'
                      f'<td>{pd.to_numeric(r.get("amt_avg_1m_억"), errors="coerce"):.1f}</td><td>—</td></tr>' for _, r in L["dropped"].iterrows())
-        parts.append(f'<div><div class="sub"><b>{MK[mkt]}</b> · 후보 {L["n"]}종목 · 거래대금 중앙값 {L["med"]:.1f}억 · v30 상위 10 과 겹침 <b>{L["overlap"]}/10</b></div>'
+        parts.append(f'<div><div class="sub"><b>{MK[mkt]}</b> · 후보 {L["n"]}종목 · 거래대금 중앙값 {L["med"]:.1f}억 · v30 상위 10 과 겹침 <b>{L["overlap"]}/{len(w)}</b>{"" if len(w) >= TOP else " · 한산한 절반의 적격 종목이 10개 미만"}</div>'
                      '<div class="tablewrap"><table><thead><tr><th>#</th><th>종목</th><th>점수</th><th>v30 순위</th><th>버킷</th><th>거래대금(억)</th><th>참여율1% 상한</th></tr></thead><tbody>'
                      + "".join(trs) + (f'<tr><td colspan="7" style="text-align:left;color:var(--sub)">v30 상위 10 중 거래대금이 많아 빠진 종목</td></tr>' + dr if dr else "")
                      + "</tbody></table></div></div>")
@@ -167,7 +196,7 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(page)
-    print(f"✓ docs/v32a.html — run {rid} · 시장 {len(lists)} · 쌓인 앵커 {'0(대기)' if hist is None else len(hist)}")
+    print(f"✓ {os.path.relpath(OUT, HERE)} — run {rid or '없음'} · 시장 {len(lists)} · 쌓인 앵커 {'0(대기)' if hist is None else len(hist)}")
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ except Exception:
     pass
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
-FILES = ["test_index_source.py", "test_extra_ohlcv_targets.py", "test_kis_flows_targets.py","test_earnings_incr.py", "test_close_revision_detail.py", "test_fin_gap_warning.py", "test_missed_run_warning.py", "test_data_health.py","test_earnings_flag.py", "test_telegram_scoreboard.py", "test_regime_ad.py", "test_buy_context.py", "test_paper_engine.py", "test_cross_sim_hold.py", "test_shadow_ops_rules.py", "test_lowvol_score_rules.py", "test_wu_score_rules.py", "test_lead_observe_rules.py", "test_v3_models_rules.py", "test_leaderboard_frozen.py"]
+FILES = ["test_index_source.py", "test_extra_ohlcv_targets.py", "test_kis_flows_targets.py","test_earnings_incr.py", "test_close_revision_detail.py", "test_fin_gap_warning.py", "test_missed_run_warning.py", "test_data_health.py","test_earnings_flag.py", "test_telegram_scoreboard.py", "test_regime_ad.py", "test_buy_context.py", "test_paper_engine.py", "test_cross_sim_hold.py", "test_shadow_ops_rules.py", "test_lowvol_score_rules.py", "test_wu_score_rules.py", "test_lead_observe_rules.py", "test_v3_models_rules.py", "test_v32a_page_rules.py", "test_leaderboard_frozen.py"]
 fail = 0
 for f in FILES:
     print(f"━━ {f}")

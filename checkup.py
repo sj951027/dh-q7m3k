@@ -271,7 +271,7 @@ def print_panel(rep, shifts):
     print("="*78)
     print(f"{'모델':7} {'OOS일':>5} {'판정':10} {'IC(h)':>9} {'CI하한':>8} {'방향%':>6} {'베타':>6} {'레짐상관':>8}")
     print("-"*78)
-    order = ['v30','v31a','v31b','v31c','v31d','v31f','v31g','lv_a','lv_a3','lv_b','lv_c','lv_d','lv_short','sm_a','mom_a','hv_a']
+    order = ['v30','v31a','v31b','v31c','v31d','v31f','v31g','v32a','lv_a','lv_a3','lv_b','lv_c','lv_d','lv_short','sm_a','mom_a','hv_a']
     for mid in [m for m in order if m in rep['models']]:
         d = rep['models'][mid]
         ic = d['ic']
