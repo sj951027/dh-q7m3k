@@ -11,7 +11,8 @@ notify_verdict_ready.py — 판정일 도달 알림 (§11 판정 시즌 안전�
     (OOS = 등록일 이후 run 수, 게이트 run 제외 — leaderboard 와 동일 정의).
   * [2026-10-24 Codex 재점검 R1] 셈은 leaderboard 의 build_gates·dedupe_by_anchor 를 그대로 쓴다
     (등록일 run 포함 · 게이트 매일 계산 · 주말/공휴일 run 은 직전 거래일 앵커로 중복 제거 = 판정의 '유효 앵커').
-    전엔 `run_id > 등록일`·고정 GATES 라 전 모델이 하루 적게 셌다(lv_e 32↔33). 함수가 실패하면 옛 셈으로 대신.
+    전엔 `run_id > 등록일`·고정 GATES 라 전 모델이 하루 적게 셌다(lv_e 32↔33). 함수가 실패하면 옛 셈은 참고로만 찍고
+    그날 알림·완료 기록은 건너뛴다(옛 셈은 주말 중복을 못 걸러 많게 셀 수 있음 — Codex 재검토 F1).
   * [2026-10-24 R2] 텔레그램 전송이 성공했을 때만 '알림 완료'로 기록 — 실패·키 없음이면 다음 배치에서 다시 시도.
   * 1회성: 알린 모델은 verdict_notified.json(로컬 상태, git 제외)에 기록 — 중복 알림 없음.
   * 판정 자체는 안 함(그건 leaderboard.py §11 몫). 점수·표시 불변, 비치명.
@@ -143,6 +144,11 @@ def main():
     con.close()
     status.sort(key=lambda x: -x[1])
     print("OOS 현황: " + " · ".join(f"{m}={d}" for m, d in status[:8]) + " …")
+    if ctx is None:
+        # [2026-10-24 Codex 재검토 F1] 옛 셈은 주말 중복·새 제외일을 못 걸러 많게 셀 수 있다 → 일찍 알리고 '완료'로 굳으면
+        #   진짜 40 도달 때 다시 안 알린다. 정확한 셈을 못 한 날은 위 숫자를 참고로만 찍고 알림·기록을 건너뛴다.
+        print("   ⚠ 유효 앵커 정확 셈 실패 — 오늘은 도달 알림·완료 기록을 건너뜀(위 숫자는 옛 셈 참고값). 다음 배치에서 다시 셈.")
+        return
     if not newly:
         print(f"판정 도달({MIN_OOS}일↑) 신규 모델 없음.")
         return
