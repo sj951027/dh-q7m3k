@@ -49,7 +49,7 @@ MODELS = [
     ("mom_b", "lowvol_scores", "lowvol_score",   "mom_b", "20260717"),
     ("lv_e",  "lowvol_scores", "lowvol_score",   "lv_e",  "20260901"),
     ("sv_b",  "wu_scores",     "wu_score",       "sv_b",  "20260914"),
-    ("v32a",  "v3_scores",     "final_score_v3", "v32a",  "20261026"),   # [2026-10-24] PREREGISTER_v32a.md (관측 전용, 첫 적재 예정)
+    ("v32a",  "v3_scores",     "final_score_v3", "v32a",  "20261026"),   # [2026-10-24] PREREGISTER_v32a.md (관측 전용, 첫 적재 20261026 확정)
     ("ls_t1", "large_final",   None,             "ls_t1", "20260806"),
 ]
 MIN_DAYS = 10   # 표시 기준: 공통창 유효 거래일 10 미만 모델은 자동 대기(가독성 — 창이 차면 저절로 등장)

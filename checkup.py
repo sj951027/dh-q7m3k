@@ -55,7 +55,7 @@ REG_DATE = {
     "qs_a": "20260723",                                # PREREGISTER_qs.md (첫 적재 20260723)
     "px_a": "20260810",                                # PREREGISTER_px_a.md (첫 적재 예정 20260810)
     "sv_b": "20260914",                                # PREREGISTER_sv_b.md (2026-09-13 등록, 첫 적재 20260914)
-    "v32a": "20261026",                                # PREREGISTER_v32a.md (2026-10-23 승인·10-24 배선, 첫 적재 예정 20261026 — 실제 첫 적재 run_id 로 정정)
+    "v32a": "20261026",                                # PREREGISTER_v32a.md (2026-10-23 승인·10-24 배선, 첫 적재 20261026 확정 — 10-26 배치 1,496행)
     "lv_e": "20260901",
     "ld_a": "20261001",                                # PREREGISTER_ld_a.md (lead 트랙, 월 1회 관측 — 점수 테이블 없음 → checkup 판정 대상 아님, 기록용)                                # PREREGISTER_lv_e.md (첫 적재 예정 20260901 — sm_a 판정 후 등록, VERDICT_20260901_sm_a)
 }
