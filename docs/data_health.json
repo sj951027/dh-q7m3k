@@ -1,14 +1,14 @@
 {
- "generated": "2026-10-27 21:08",
- "ref_date": "20261027",
+ "generated": "2026-10-28 21:10",
+ "ref_date": "20261028",
  "rows": [
   {
    "key": "ohlcv",
    "name": "시세 본표",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2625,
+   "n_last": 2624,
    "n_med": 2625,
    "status": "ok",
    "note": ""
@@ -16,7 +16,7 @@
   {
    "key": "extra",
    "name": "보충표(대형 136)",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
    "n_last": 136,
@@ -27,7 +27,7 @@
   {
    "key": "flows",
    "name": "수급(KIS)",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
    "n_last": 2647,
@@ -38,7 +38,7 @@
   {
    "key": "flows_extra",
    "name": "수급(보충표 종목)",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
    "n_last": 136,
@@ -49,32 +49,32 @@
   {
    "key": "short",
    "name": "공매도",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2509,
-   "n_med": 2521,
+   "n_last": 2510,
+   "n_med": 2520,
    "status": "ok",
    "note": ""
   },
   {
    "key": "loan",
    "name": "대차잔고",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2487,
-   "n_med": 2496,
+   "n_last": 2488,
+   "n_med": 2494,
    "status": "ok",
    "note": ""
   },
   {
    "key": "credit",
    "name": "신용잔고",
-   "last": "20261022",
+   "last": "20261023",
    "lag": 3,
    "allowed": 4,
-   "n_last": 2419,
+   "n_last": 2421,
    "n_med": 2430,
    "status": "ok",
    "note": ""
@@ -82,10 +82,10 @@
   {
    "key": "valuation",
    "name": "PER/PBR",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2717,
+   "n_last": 2716,
    "n_med": 2714,
    "status": "ok",
    "note": ""
@@ -93,7 +93,7 @@
   {
    "key": "idx_kospi",
    "name": "지수 코스피",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
    "n_last": 1,
@@ -104,7 +104,7 @@
   {
    "key": "idx_kosdaq",
    "name": "지수 코스닥",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
    "n_last": 1,
@@ -116,7 +116,7 @@
    "key": "consensus",
    "name": "컨센서스",
    "last": "20261026",
-   "lag": 1,
+   "lag": 2,
    "allowed": 10,
    "n_last": 2509,
    "n_med": 2515,
@@ -126,10 +126,10 @@
   {
    "key": "dart",
    "name": "DART 공시",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 1,
-   "n_last": 30,
+   "n_last": 22,
    "n_med": 19,
    "status": "ok",
    "note": ""
@@ -137,11 +137,11 @@
   {
    "key": "uni_events",
    "name": "상장 변화",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 1,
-   "n_last": 4,
-   "n_med": 5,
+   "n_last": 2,
+   "n_med": 4,
    "status": "ok",
    "note": ""
   },
@@ -149,7 +149,7 @@
    "key": "earn_fetch",
    "name": "실적 증분 수집",
    "last": "20261027",
-   "lag": 0,
+   "lag": 1,
    "allowed": 1,
    "n_last": 2,
    "n_med": 4,
@@ -159,21 +159,21 @@
   {
    "key": "runs",
    "name": "점수 run",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2347,
-   "n_med": 2353,
+   "n_last": 2352,
+   "n_med": 2352,
    "status": "ok",
    "note": ""
   },
   {
    "key": "sector",
    "name": "업종 분류",
-   "last": "20261027",
+   "last": "20261028",
    "lag": 0,
    "allowed": 30,
-   "n_last": 2350,
+   "n_last": 2352,
    "n_med": null,
    "status": "ok",
    "note": ""
