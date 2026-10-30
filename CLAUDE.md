@@ -8,6 +8,7 @@
 1. `MODELS_LEDGER.md` — 전 모델 현황·골대·판정 예정(원장). 원장과 정본(PREREGISTER_*/VERDICT_*)이 어긋나면 정본이 이긴다. 판정 규약은 `VERDICT_RULES.md` 한 장(2026-10-20~; 각 모델 PREREGISTER 가 우선).
 2. 요청이 어느 트랙인지 분간한 뒤 그 설계 문서만: v3·lowvol·wu → `PROJECT_KNOWLEDGE.md`(크다 — 필요한 절만 grep), lowvol → `LOWVOL_TRACK_DESIGN.md`, 대형 → `LARGE_SCORE_DESIGN.md`.
 3. 운영 권고 `OPS_GUIDE.md`(강제 아님) · 최근 이력 `patch_note/`(최신 3~4건) · 연구 `research/`.
+4. **연구 방향 지도 `research/IDEA_MAP_20261030.md`**(2026-10-30~, 살아 있는 문서): 새 실험·연구를 시작하기 전에 §2(자리별 닫힌 것/열린 것)·§3(조합)·§6(하지 않을 것)을 확인하고, 끝나면 §10 에 결과 한 줄을 붙인다. 세 갈래(시장/종목/돈·운용)를 번갈아 가되 한 갈래 연속 두 건 금지(사용자 직접 질문은 예외).
 - 자매 프로젝트 `../Position-Tracker-Web`(실거래 소비자)는 그쪽 `CLAUDE.md`·`PTW_PROJECT_HANDBOOK.md` 기준. us-screener·div-tracker는 별개 — 여기서 다루지 않는다.
 
 ## 트랙
