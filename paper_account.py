@@ -54,9 +54,11 @@ def load_prices():
     if os.environ.get("PAPER_USE_EXTRA", "1") != "0":
         try:
             ex = pd.read_sql("SELECT ticker,date,close,change_pct,shares,is_suspended,market FROM daily_ohlcv_extra", con)
-            px = pd.concat([px, ex[~ex.ticker.isin(set(px.ticker))]], ignore_index=True)
-        except Exception as e:
-            print(f"  (보충표 daily_ohlcv_extra 생략: {e})")
+        except Exception as e:                               # [Codex 검토 10/31] 켜 놓고 조용히 생략하면 '보충 종목 = 현금' 결과가 정상처럼 게시된다 → 올려서 단계 전체를 비치명 실패로
+            con.close(); raise RuntimeError(f"보충표 daily_ohlcv_extra 를 읽지 못함: {type(e).__name__}") from None
+        for f in (px, ex):
+            f["ticker"] = f.ticker.astype(str).str.zfill(6)
+        px = pd.concat([ex, px], ignore_index=True).drop_duplicates(["ticker", "date"], keep="last")   # 같은 (종목, 날짜)만 본표 우선 — 보충표의 과거 이력은 보존
     con.close()
     px["ticker"] = px.ticker.astype(str).str.zfill(6)
     piv = lambda c: px.pivot_table(index="date", columns="ticker", values=c, aggfunc="last")
