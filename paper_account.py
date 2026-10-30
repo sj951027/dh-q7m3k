@@ -18,7 +18,7 @@
 적재: ../dh-q7m3k-data/paper_account.db (paper_nav · paper_meta) + docs/paper_account.json. history.db·ohlcv.db 는 읽기 전용.
 실행: python paper_account.py [--start 20260810] [--no-write] [--draws 100] [--out DIR]   (--out: 산출물을 다른 폴더에 — 0-diff 대조용)
 """
-import argparse, json, math, sqlite3, sys, time
+import argparse, json, math, os, sqlite3, sys, time
 from datetime import datetime
 from pathlib import Path
 
@@ -48,7 +48,16 @@ MODEL_ACCOUNTS = ["lv_b", "le_a", "lv_e", "sv_a", "sv_b"]     # §8-3 대상(은
 
 def load_prices():
     con = sqlite3.connect(f"file:{lb.OHLCV_DB}?mode=ro", uri=True)
-    px = pd.read_sql("SELECT ticker,date,close,change_pct,shares,is_suspended,market FROM daily_ohlcv", con); con.close()
+    px = pd.read_sql("SELECT ticker,date,close,change_pct,shares,is_suspended,market FROM daily_ohlcv", con)
+    # [2026-10-31 J06 실측] lv_b 뽑힘의 9%(90/980)·lv_e 3%·스위치 7% 가 '시세표에 없음' 으로 현금이 되고 있었다 — 그 종목들은 전부 보충표
+    #   daily_ohlcv_extra(코스닥 글로벌·영문코드 136종목, 본표와 겹침 0)에 있다. 리더보드와 같게 보충표를 합친다. 끄려면 PAPER_USE_EXTRA=0(0-diff 대조용).
+    if os.environ.get("PAPER_USE_EXTRA", "1") != "0":
+        try:
+            ex = pd.read_sql("SELECT ticker,date,close,change_pct,shares,is_suspended,market FROM daily_ohlcv_extra", con)
+            px = pd.concat([px, ex[~ex.ticker.isin(set(px.ticker))]], ignore_index=True)
+        except Exception as e:
+            print(f"  (보충표 daily_ohlcv_extra 생략: {e})")
+    con.close()
     px["ticker"] = px.ticker.astype(str).str.zfill(6)
     piv = lambda c: px.pivot_table(index="date", columns="ticker", values=c, aggfunc="last")
     close = piv("close").sort_index(); idx = close.index
@@ -179,6 +188,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
         accounts[aid] = pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr)
         nav_g, led_g = pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, gone=gone)
         sens[aid] = dict(cost035=_tot(pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, cost=pe.COST_ALT)[0]["nav"]),
+                         cost100=_tot(pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, cost=pe.COST_HI)[0]["nav"]),      # [C11] 왕복 1.0%
                          delist90=_tot(nav_g["nav"]), slots_gone=int(sum(1 for p in led_g if p.get("gone"))))
     navs3 = [pe.simulate(dates, sub, p, tradable=trd)[0]["nav"].to_numpy() for p in b3]
     M3 = np.vstack(navs3)
@@ -188,7 +198,8 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
     p_lo, p_hi = np.percentile(M3[:, -1], 2.5), np.percentile(M3[:, -1], 97.5)
     M3c = np.vstack([pe.simulate(dates, sub, p, tradable=trd, cost=pe.COST_ALT)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
     M3g = np.vstack([pe.simulate(dates, sub, p, tradable=trd, gone=gone)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
-    sens["B3_random"] = dict(cost035=float((M3c[-1] / M3c[0] - 1) * 100), delist90=float((M3g[-1] / M3g[0] - 1) * 100))
+    M3h = np.vstack([pe.simulate(dates, sub, p, tradable=trd, cost=pe.COST_HI)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
+    sens["B3_random"] = dict(cost035=float((M3c[-1] / M3c[0] - 1) * 100), cost100=float((M3h[-1] / M3h[0] - 1) * 100), delist90=float((M3g[-1] / M3g[0] - 1) * 100))
     # 요약
     gen = datetime.now().strftime("%Y-%m-%d %H:%M")
     summary = {}
@@ -199,7 +210,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
     summary["B3_random"]["p2_5"] = float((p_lo - 1) * 100); summary["B3_random"]["p97_5"] = float((p_hi - 1) * 100); summary["B3_random"]["draws"] = n_draws
     v_last = accounts["v30"][0]["nav"].iloc[-1]; summary["v30"]["random_pctile"] = float((M3[:, -1] < v_last).mean() * 100)
     for aid, s in summary.items():                                   # [2판] 감도 두 가지 — 모든 계좌(B3 는 벌 평균, 슬롯 수 없음)
-        s["total_ret_cost035"] = sens[aid]["cost035"]; s["total_ret_delist90"] = sens[aid]["delist90"]
+        s["total_ret_cost035"] = sens[aid]["cost035"]; s["total_ret_delist90"] = sens[aid]["delist90"]; s["total_ret_cost100"] = sens[aid]["cost100"]   # [C11]
         if "slots_gone" in sens[aid]:
             s["slots_gone"] = sens[aid]["slots_gone"]
     for mid in MODEL_ACCOUNTS:
@@ -210,7 +221,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
                               slots_from_lvb=int(sum(1 for p in sw_led if sw_src.get(p["run"]) == "other")))
     print(f"\n== 모의 계좌 {dates[0]}~{dates[-1]} (사후 되감기 · 비용 0.5% · 라벨 없음) ==")
     for aid, s in summary.items():
-        extra = f" · 0.35%: {s['total_ret_cost035']:+.1f}% · 상폐−90%: {s['total_ret_delist90']:+.1f}%"
+        extra = f" · 0.35%: {s['total_ret_cost035']:+.1f}% · 1.0%: {s['total_ret_cost100']:+.1f}% · 상폐−90%: {s['total_ret_delist90']:+.1f}%"
         extra += f" · 무작위 2.5/97.5: {s['p2_5']:+.1f}/{s['p97_5']:+.1f}%" if "p2_5" in s else ""
         extra += f" · 끊긴 슬롯 {s['slots_gone']}" if "slots_gone" in s else ""
         extra += f" · A {s['days_A']}/그 밖 {s['days_other']}/없음 {s['days_missing']} · 슬롯 v30 {s['slots_from_v30']}/lv_b {s['slots_from_lvb']}" if "days_A" in s else ""
@@ -236,7 +247,8 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
                    "switch": {SWITCH_ID: {"a_cells": list(SWITCH_A_CELLS), "list_A": "v30", "list_other": "lv_b", "cell_basis": "앵커일 코스피 칸(v30_gateD0 와 같음)",
                                           "note": "days_A/days_other = 그 목록을 쓴 앵커 수 · days_missing = 고른 목록이 없어 신규 0 인 날 · slots_from_v30/lvb = 체결 슬롯 수 · 사후 설계(2026-10-30)"}},
                    "sens": {"cost_alt": pe.COST_ALT, "gone_ret": pe.GONE_RET, "gone_tickers": len(gone),
-                            "note": "total_ret_cost035 = 왕복 0.35% · total_ret_delist90 = 시세가 끊긴 종목을 마지막 가격 −90% 로 평가·청산 · slots_gone = 그 영향을 받은 슬롯 수"},
+                            "cost_hi": pe.COST_HI,
+                            "note": "total_ret_cost035 = 왕복 0.35% · total_ret_cost100 = 왕복 1.0%(코스닥 소형주 현실 비용 가정) · total_ret_delist90 = 시세가 끊긴 종목을 마지막 가격 −90% 로 평가·청산 · slots_gone = 그 영향을 받은 슬롯 수"},
                    "accounts": {aid: {"name": NAMES[aid], "summary": summary[aid], "nav": [[d, round(float(v), 6)] for d, v in zip(dates, accounts[aid][0]["nav"])]} for aid in accounts}}
         def _clean(x):                                   # [Codex 검토 2] NaN/inf 는 null 로 — 브라우저 JSON.parse 가 NaN 을 거부한다
             if isinstance(x, dict): return {k: _clean(v) for k, v in x.items()}

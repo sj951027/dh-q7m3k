@@ -95,5 +95,11 @@ check("정지일 K2 False · 상한가일 K1 False · 그 밖 True", (not trd.lo
 check("등락률 없는 N1 은 진입 가능(True)", trd["N1"].all())
 check("뒤집기 결과가 옛 식(열이 다 있을 때)과 같음", trd[["K1", "K2"]].equals(~((susp[["K1", "K2"]] > 0) | (chg >= 0.29))))
 
+print("H. 비용 1.0% 감도 — 비용이 클수록 NAV 가 낮고, 두 비용의 차이는 회전×비용 차만큼 (2026-10-31 C11)")
+nav5, _ = pe.simulate(D, close, picks, slots=40, hold=40, cost=0.005); nav10, _ = pe.simulate(D, close, picks, slots=40, hold=40, cost=pe.COST_HI)
+check("COST_HI = 0.01", pe.COST_HI == 0.01)
+check("1.0% NAV ≤ 0.5% NAV (모든 날)", bool((nav10.nav <= nav5.nav + 1e-12).all()) and nav10.nav.iloc[-1] < nav5.nav.iloc[-1])
+check("비용 0 이면 둘보다 높음", pe.simulate(D, close, picks, slots=40, hold=40, cost=0.0)[0].nav.iloc[-1] > nav5.nav.iloc[-1])
+
 print("\n" + ("❌ 실패 %d" % fails if fails else "✅ paper_account 2판 합성 테스트 통과"))
 sys.exit(1 if fails else 0)
