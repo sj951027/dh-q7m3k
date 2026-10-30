@@ -86,5 +86,14 @@ check("D1 진입 K1(v30) · D2 진입 Q2(lv_b) · D3 진입 없음(현금) · D4
 check("체결 슬롯 출처 셈 v30 1 · lv_b 2", sum(1 for p in led_s if info["source"][p["run"]] == "A") == 1 and sum(1 for p in led_s if info["source"][p["run"]] == "other") == 2)
 check("두 목록이 같은 날 둘 다 들어간 날 없음", all(sw[d] == pv[d] or sw[d] == pl.get(d) for d in sw) and all(not (set(pv[d]) & set(pl.get(d, []))) for d in sw))
 
+print("F2. 진입 가능 표 — 등락률 열이 빠진 신규 상장 종목이 있어도 bool (2026-10-30 배치 TypeError 재현)")
+susp = pd.DataFrame(0.0, index=D[:3], columns=["K1", "K2", "N1"]); susp.loc[D[1], "K2"] = 1
+chg = pd.DataFrame(0.0, index=D[:3], columns=["K1", "K2"]); chg.loc[D[2], "K1"] = 0.30   # N1 = 상장 첫날 → 등락률 열 자체가 없음
+trd = pe.tradable_mask(susp, chg, 0.29)
+check("모든 열 bool · 열 = 합집합 3개", (trd.dtypes == bool).all() and list(trd.columns) == ["K1", "K2", "N1"])
+check("정지일 K2 False · 상한가일 K1 False · 그 밖 True", (not trd.loc[D[1], "K2"]) and (not trd.loc[D[2], "K1"]) and trd.loc[D[0], "K1"] and trd.loc[D[1], "K1"])
+check("등락률 없는 N1 은 진입 가능(True)", trd["N1"].all())
+check("뒤집기 결과가 옛 식(열이 다 있을 때)과 같음", trd[["K1", "K2"]].equals(~((susp[["K1", "K2"]] > 0) | (chg >= 0.29))))
+
 print("\n" + ("❌ 실패 %d" % fails if fails else "✅ paper_account 2판 합성 테스트 통과"))
 sys.exit(1 if fails else 0)

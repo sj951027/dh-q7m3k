@@ -54,7 +54,7 @@ def load_prices():
     close = piv("close").sort_index(); idx = close.index
     chg = piv("change_pct").reindex(idx); susp = piv("is_suspended").reindex(idx).fillna(0); shares = piv("shares").reindex(idx).ffill()
     mkt = px.groupby("ticker")["market"].last().str.lower()
-    tradable = ~((susp > 0) | (chg >= LIMIT_UP))
+    tradable = pe.tradable_mask(susp, chg, LIMIT_UP)      # [2026-10-30 수정] 등락률 열이 빠진 신규 상장 종목이 있어도 bool 표
     return close.where(close > 0), tradable, shares, mkt
 
 

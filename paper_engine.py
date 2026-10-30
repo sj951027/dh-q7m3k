@@ -105,6 +105,15 @@ def switch_picks(dates, cells, picks_a, picks_other, a_cells=("A",)):
     return out, dict(days_A=n_a, days_other=n_o, days_missing=n_m, source=src)
 
 
+def tradable_mask(susp, chg, limit_up):
+    """정지 표·등락률 표 → 진입 가능(bool) 표. 두 표의 열을 합집합으로 맞춘 뒤 비교한다 — 등락률이 전부 비어 열이 빠진 종목(상장 첫날 등)이
+    있으면 `|` 뒤에 float 열이 생겨 `~` 가 TypeError 로 죽는다(2026-10-30 배치 실측). 빈 값은 '정지 아님·상한가 아님' 으로 읽는다."""
+    cols = susp.columns.union(chg.columns)
+    susp = susp.reindex(columns=cols).fillna(0)
+    chg = chg.reindex(columns=cols)
+    return ~((susp > 0) | (chg >= limit_up)).fillna(False).astype(bool)
+
+
 def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new_ratio=None, entry_lag=ENTRY_LAG, start_nav=1.0, tradable=None,
              gone=None, gone_ret=GONE_RET):
     """dates: 거래일 목록(오름차순, str) · close: DataFrame(index=dates, columns=ticker) · picks: {추천일: [ticker]} ·
