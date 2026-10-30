@@ -12,6 +12,9 @@ paper_account.db 적재, docs/paper_account.json)은 `paper_account.py` 가 맡�
   - 비용 = 왕복 cost 를 진입 때 절반, 청산 때 절반 차감.
   - 평가 = 매일 종가(없으면 마지막 유효 종가). NAV = 현금 + 보유 평가.
   - 게이트 계좌 = 같은 규칙에 new_ratio(날짜 → 0~1)만 다름. 상시 비중 축소 계좌 = new_ratio 가 상수 q.
+  - [E3 2026-10-30] 스위치 계좌 = 같은 규칙에 '그날 어느 목록을 쓰나'만 다름 → switch_picks() 로 목록을 미리 합쳐 simulate 에 넘긴다.
+  - [2판 2026-10-30] 상폐 감도: gone(ticker → 시세가 끊긴 첫 날) + gone_ret 를 주면, 그날부터 그 종목은
+    '마지막 유효 종가 × (1 + gone_ret)' 로 평가·청산한다(기본 None = 1판과 완전히 같은 경로). 사라진 종목 판별은 gone_dates().
 """
 import math
 import numbers
@@ -24,6 +27,7 @@ HOLD = 40
 ENTRY_LAG = 1
 COST_MAIN = 0.005      # 왕복 0.5% (주)
 COST_ALT = 0.0035      # 왕복 0.35% (병기)
+GONE_RET = -0.90       # 상폐 감도: 시세가 끊긴 종목을 마지막 가격 대비 −90% 로 치는 경우(worklog 2026-10-23 '상폐 −90% 민감도')
 
 
 def last_px(arr, col, i):
@@ -35,6 +39,23 @@ def last_px(arr, col, i):
             return float(v)
         j -= 1
     return float("nan")
+
+
+def gone_dates(close):
+    """종가 표(index=날짜 오름차순, columns=ticker) → {ticker: 시세가 끊긴 첫 날짜}.
+    '끊김' = 마지막 유효 종가 날짜가 표의 마지막 날짜보다 앞섬(그 뒤로 끝까지 시세 없음 = 상장폐지 또는 목록에서 사라짐).
+    끝 하루이틀만 비는 종목도 들어간다(감도이므로 보수적으로). 순수 함수."""
+    valid = close.notna() & (close > 0)
+    dates = list(close.index)
+    if not dates:
+        return {}
+    last_i = len(dates) - 1
+    out = {}
+    for tk, col in valid.items():
+        idx = np.flatnonzero(col.to_numpy())
+        if len(idx) and idx[-1] < last_i:
+            out[str(tk)] = str(dates[idx[-1] + 1])
+    return out
 
 
 def picks_from_scores(S, top=10, exclude=None):
@@ -62,9 +83,33 @@ def ratio_by_cell(cells, zero_cells=("D",), half_cells=()):
     return out
 
 
-def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new_ratio=None, entry_lag=ENTRY_LAG, start_nav=1.0, tradable=None):
+def switch_picks(dates, cells, picks_a, picks_other, a_cells=("A",)):
+    """[E3 스위치] 날짜별 칸으로 두 목록 중 하나만 고른다 → (picks, info).
+    cells: Series/dict(date → 'A'~'D' 또는 NaN). 칸이 a_cells 면 picks_a[그날], 그 밖(칸 없음 포함)은 picks_other[그날].
+    고른 쪽 목록이 그날 없으면 그날 신규 없음(현금) → days_missing. info: days_A·days_other·days_missing·source{date: 'A'|'other'}. 순수 함수."""
+    out, src = {}, {}
+    n_a = n_o = n_m = 0
+    for d in dates:
+        d = str(d)
+        c = cells.get(d) if cells is not None else None
+        use_a = c in a_cells
+        pk = (picks_a if use_a else picks_other).get(d)
+        if pk is None:
+            n_m += 1
+            continue
+        out[d] = list(pk); src[d] = "A" if use_a else "other"
+        if use_a:
+            n_a += 1
+        else:
+            n_o += 1
+    return out, dict(days_A=n_a, days_other=n_o, days_missing=n_m, source=src)
+
+
+def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new_ratio=None, entry_lag=ENTRY_LAG, start_nav=1.0, tradable=None,
+             gone=None, gone_ret=GONE_RET):
     """dates: 거래일 목록(오름차순, str) · close: DataFrame(index=dates, columns=ticker) · picks: {추천일: [ticker]} ·
     new_ratio: {추천일: 0~1} 또는 None(=1) 또는 float(상수). tradable: DataFrame(bool, index=dates, columns=ticker) — False 면 그날 진입 불가(정지·상한가) → 현금.
+    gone: {ticker: 시세가 끊긴 첫 날짜} 또는 None. 주면 그날부터 그 종목은 마지막 유효 종가 × (1 + gone_ret) 로 평가·청산(상폐 감도).
     반환: (nav DataFrame[date, nav, cash, n_pos, invested, ret_1d, entries, exits], slots list[dict])."""
     dates = [str(d) for d in dates]
     didx = {d: i for i, d in enumerate(dates)}
@@ -74,6 +119,28 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
     trd = tradable.reindex(index=dates, columns=close.columns).fillna(True).to_numpy(dtype=bool) if tradable is not None else None
     N = len(dates)
     half = cost / 2.0
+    gone_i = {}
+    if gone:
+        for tk, d in gone.items():
+            c = cols.get(str(tk))
+            if c is None:
+                continue
+            d = str(d)
+            if d in didx:
+                gone_i[c] = didx[d]
+            elif d > dates[-1]:
+                continue                                        # 표 끝 뒤에 끊김 → 이 구간에선 살아 있음
+            else:
+                gone_i[c] = sum(1 for x in dates if x < d)     # 구간 시작 전에 끊김 → 0, 그 밖은 첫 날짜 이상
+    gone_mult = 1.0 + gone_ret
+
+    def mark_px(col, i):
+        """평가·청산 가격: 마지막 유효 종가, 끊긴 종목은 × (1 + gone_ret)."""
+        px = last_px(arr, col, i)
+        g = gone_i.get(col)
+        if g is not None and i >= g and px == px:
+            px *= gone_mult
+        return px
 
     def ratio_of(d):
         if new_ratio is None:
@@ -103,11 +170,12 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
         still = []
         for p in open_pos:
             if p["exit_i"] == i:
-                px = last_px(arr, p["col"], i)
+                px = mark_px(p["col"], i)
                 proceeds = p["shares"] * px * (1.0 - half)
                 cash += proceeds
                 p.update(exit_date=dates[i], exit_px=px, proceeds=proceeds, status="closed",
-                         ret=(px * (1.0 - half)) / (p["entry_px"] / (1.0 - half)) - 1.0)
+                         ret=(px * (1.0 - half)) / (p["entry_px"] / (1.0 - half)) - 1.0,
+                         gone=bool(gone_i.get(p["col"]) is not None and i >= gone_i[p["col"]]))
                 ledger.append(p)
                 n_exit += 1
             else:
@@ -137,15 +205,15 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
         # ③ 평가
         val = 0.0
         for p in open_pos:
-            px = last_px(arr, p["col"], i)
+            px = mark_px(p["col"], i)
             val += p["shares"] * (px if px == px else 0.0)
         nav = cash + val
         rows.append(dict(date=dates[i], nav=nav, cash=cash, n_pos=len(open_pos), invested=val,
                          ret_1d=(nav / prev_nav - 1.0) if prev_nav > 0 else float("nan"), entries=n_entry, exits=n_exit))
         prev_nav = nav
     for p in open_pos:                                   # 끝에 열린 것(평가만)
-        px = last_px(arr, p["col"], N - 1)
-        p.update(exit_date=None, exit_px=px, status="open")
+        px = mark_px(p["col"], N - 1)
+        p.update(exit_date=None, exit_px=px, status="open", gone=bool(gone_i.get(p["col"]) is not None and N - 1 >= gone_i[p["col"]]))
         ledger.append(p)
     return pd.DataFrame(rows), ledger
 
