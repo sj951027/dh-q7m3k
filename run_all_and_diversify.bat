@@ -62,6 +62,8 @@ echo   [B track] market series + universe events (P2/P3 data layers, non-fatal)
 echo ========================================================================
 python market_series.py
 if errorlevel 1 set "FAILED=%FAILED% market_series"
+rem [2026-10-31] market investor flows (KRX, 11 groups, 20/60-day sums) -> docs/market_flows_obs.json. observation only, non-fatal, exit 0 always
+python market_flows_obs.py
 python universe_events.py
 if errorlevel 1 set "FAILED=%FAILED% universe_events"
 

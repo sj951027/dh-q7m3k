@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.10.43** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.10.44** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -24,6 +24,7 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
+- [20261031_market_flows_obs.md](20261031_market_flows_obs.md) — **2026.10.44** 시장 수급(KRX 투자자별 11구분) 11년 수집(`market_flows_10y.db`) + 배치 일일 갱신·`docs/market_flows_obs.json`(관측·가중 0, 표시 미반영). 연구: 외국인 추종 닫음·연기금 보류. 판정·점수 0-diff.
 - [20261030_paper_tradable_newlisting_fix.md](20261030_paper_tradable_newlisting_fix.md) — **2026.10.43** 모의 계좌: 상장 첫날 종목(등락률 NULL)이 있으면 진입 가능 표가 bool 이 못 되어 배치 단계가 비치명 실패하던 것 수정(`paper_engine.tradable_mask`, 열 합집합). 옛 식과 2,660열 전부 같음 · 판정·점수 0-diff.
 - [20261030_paper_switch_e3.md](20261030_paper_switch_e3.md) — **2026.10.42** 모의 계좌 E3 '국면 스위치 계좌' 1장(`switch_v30_lvb`: 앵커일 코스피 A 칸이면 v30 상위 10, 그 밖 lv_b 상위 10 — `paper_engine.switch_picks`). 기존 12계좌 0-diff · 판정·점수 0-diff · 표시 무변경.
 - [20261030_paper_account_v2.md](20261030_paper_account_v2.md) — **2026.10.41** 모의 계좌 2판: 모델 계좌 5장(lv_b·le_a·lv_e·sv_a·sv_b) + 전 계좌 상폐 −90%·비용 0.35% 감도(`paper_engine.simulate(gone=…)`·`paper_account.model_picks`). 기존 7계좌 0-diff · 판정·점수 0-diff. 자리바꿈·돈 기준 탭은 다음.

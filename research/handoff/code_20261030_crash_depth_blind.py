@@ -249,7 +249,7 @@ def comparison_audit(batch_finished=False):
              '**사후 대조 순서:** §0~6 본문을 저장한 뒤에만 기존 연구 보고서와 계산 코드, 지정 표의 CSV를 열었다. 기존 코드는 실행하지 않았다. 대조 직전 본문 SHA256: `' + independent_hash + '`.', '',
              '원문 표는 한 자리로 반올림되어 있어 아래 Claude 값은 같은 연구의 `out_crash_depth/bins_KOSPI.csv`, `thresholds_KOSPI.csv`, `thresholds_KOSDAQ.csv` 두 자리 저장값을 썼다. 기본판은 모두 마지막 가격 판이며 95%는 각 분석의 사건 구간이다. **정의 정렬 재계산**은 사후 원인 점검으로, 앞의 독립 결과를 교체하지 않는다.', '',
              '### 7-1. 기존 §1 코스피 날 표 대조']
-    rows, checks, causes = [], [], []
+    rows, checks, causes, large_diffs = [], [], [], []
     for i, (lower, upper, label) in enumerate([(-10,-5,'(−10,−5]'),(-15,-10,'(−15,−10]'),(-20,-15,'(−20,−15]'),(-np.inf,-20,'≤−20')]):
         own_mask = (s.signals[20][:,0] > lower) & (s.signals[20][:,0] <= upper) & np.isfinite(main_basket)
         aligned_mask = (aligned_signal[:,0] > lower) & (aligned_signal[:,0] <= upper) & np.isfinite(aligned)
@@ -257,6 +257,8 @@ def comparison_audit(batch_finished=False):
         own = main_basket[own_mask].mean()
         matched = aligned[aligned_mask].mean()
         checks.append(abs(matched - original['바구니평균']))
+        if abs(own-original['바구니평균']) > .5:
+            large_diffs.append(f'KOSPI 날 {label}')
         assert int(aligned_mask.sum()) == original['날수']
         rows.append([label, f"{int(original['날수'])}/{int(own_mask.sum())}", f"{original['바구니평균']:+.2f}", fmt(own), fmt(own-original['바구니평균']), f"{original['중앙']:+.2f}/{np.median(main_basket[own_mask]):+.2f}", f"{original['플러스비율']:.0f}%/{100*(main_basket[own_mask]>0).mean():.1f}%", f"{original['최악']:+.1f}/{main_basket[own_mask].min():+.2f}", fmt(matched)])
         causes.append([f'KOSPI 날 {label}', int(own_mask.sum()), fmt(own), fmt(no_volume[own_mask].mean()), fmt(aligned[own_mask].mean()), fmt(matched)])
@@ -276,9 +278,11 @@ def comparison_audit(batch_finished=False):
             own = main_basket[ts]
             matched = aligned[matched_ts]
             checks.append(abs(matched.mean()-original_mean))
+            if abs(own.mean()-original_mean) > .5:
+                large_diffs.append(f'{name} 사건 ≤{threshold}')
             assert len(matched_ts) == orig['사건']
             st = stats(own)
-            rows.append([threshold, f"{int(orig['사건'])}/{len(ts)}", f"{original_mean:+.2f} {orig['구간']}", cell(own), fmt(own.mean()-original_mean), f"{orig['플러스']}/{st['pos']}·{st['n']}", f"{orig['최악']:+.1f}/{st['worst']:+.2f}", fmt(matched.mean())])
+            rows.append([threshold, f"{int(orig['사건'])}/{len(ts)}", f"{original_mean:+.2f} {orig['구간']}", cell(own), fmt(own.mean()-original_mean), f"{orig['플러스']} → {st['pos']}/{st['n']}", f"{orig['최악']:+.1f}/{st['worst']:+.2f}", fmt(matched.mean())])
             if market == 0 and threshold == -5:
                 missing = sorted(set(ts)-set(matched_ts))
                 missing_text = ', '.join(f'{s.dates[t]} (R20 {s.signals[20][t,0]:+.2f}, 바구니 {main_basket[t]:+.2f})' for t in missing)
@@ -291,7 +295,7 @@ def comparison_audit(batch_finished=False):
               '**직접 확인 3 — 종목 진입·상폐 세부:** 기존판은 신호일 가격 없이 다음날 신규 관측된 종목도 포함하고 `meta.note`의 delisted 표식 종목 가격을 전방채움한다. 독립판은 신호일 가격을 요구하고 실제 meta.delisted 날짜가 보유기간 안인 경우에만 말기 끝값을 쓴다. 이 정의들까지 정렬하고 지수 시작 이력도 기존판과 맞추면 아래 세 표의 평균·사건 수가 모두 CSV 반올림 범위 안에서 재현된다.', '',
               '아래 A→B는 진입 거래량 조건만 변경, B→C는 종목 진입·상폐 세부를 정렬, C→D는 지수 이력 시작점까지 정렬한 단계다. A~C는 Codex 사건/날 집합 고정이고 D에서만 기존 집합으로 바뀐다. 원인 분해용 기술통계이며 새 성과 추정이 아니므로 별도 CI를 붙이지 않았다.']
     table(lines, ['표/집합', 'n(A~C)', 'A 독립 기본', 'B 거래량0 허용', 'C 진입·상폐도 정렬', 'D 지수 시작도 정렬'], causes)
-    lines += [f'정렬 후 12개 표 행 평균과 기존 CSV 저장값의 최대 절대차 = {max(checks):.6f}%p(두 자리 반올림 범위 0.005%p 이내), 날수·사건 수 전부 일치. 원래 독립 본문의 0.5%p 초과 차이는 코스피 날 (−15,−10]·(−20,−15]·≤−20, 코스피 사건 ≤−5·≤−15·≤−20, 코스닥 사건 ≤−15·≤−20이다. 사건 수 차이는 코스피 ≤−5 한 칸이다.', '',
+    lines += [f'정렬 후 12개 표 행 평균과 기존 CSV 저장값의 최대 절대차 = {max(checks):.6f}%p(두 자리 반올림 범위 0.005%p 이내), 날수·사건 수 전부 일치. 원래 독립 본문과 0.5%p 넘게 차이 나는 칸: {", ".join(large_diffs)}. 사건 수 차이는 코스피 ≤−5 한 칸이다.', '',
               '**해석:** 코스피 하한을 둘 증거가 없다는 제한적 결론은 일치한다. 다만 코스닥의 “단독 하락은 실패”라는 일반화는 추가한 분리표(단독 4/5 플러스, 넓은 구간)가 뒷받침하지 않는다. 특정 2026-05 하락 실패 사례와 단독 하락 전체의 효과는 구분해야 한다. 상폐 −90%판·불연속 제외판은 두 연구의 세부 처리도 달라, 값이 정확히 같은 감도 실험으로 부르지 않는다.', '',
               '수정 범위: 이 REPLY 및 동명의 재현 Python 두 파일만 새로 작성. 저장소 기존 파일·DB·docs·worklog·운영 코드는 변경하지 않았다. 커밋·푸시·전송 없음. 계산 중간 대용량 파일 없음.', '',
               '사후 정렬 재현: `python -B research/handoff/code_20261030_crash_depth_blind.py --comparison-audit` (본문 REPLY와 원 연구 CSV가 필요하며 §7만 갱신). 최초 독립 재현에는 이 옵션을 쓰지 않는다.']
