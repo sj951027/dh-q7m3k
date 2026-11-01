@@ -1,4 +1,4 @@
-# 준비 메모 — '실적 발표 N일 전' 표시(관측·가중 0) 구현 계획 (2026-10-31 06:20, 사용자 승인 "실적만 넣자" · 구현은 다음 세션)
+# 준비 메모 — '정기보고서 접수 후 N거래일' 표시(관측·가중 0) 구현 계획 (라벨은 Codex 11/1 교정 반영) (2026-10-31 06:20, 사용자 승인 "실적만 넣자" · 구현은 다음 세션)
 
 ## 근거
 - `RESEARCH_earnings_oversold_3y_20261031.md`: 직전 20거래일 안에 분기 실적이 접수된 과매도는 40일 −2.9%p [−4.7, −1.1](3.2년 대리, 과매도의 31%·v30 목록의 27% 적용, 악화/개선 안 갈림). 실제 목록은 앵커 8 로 못 가림 → **표시만**, 2027-01 말 재측정, 그때 챌린저 후보.
@@ -8,7 +8,7 @@
 - 새 표시는 **부호와 무관하게 '발표 자체'**(연구 결과) — 기존 배지와 뜻이 다르므로 열을 따로 둔다.
 
 ## 가장 작은 구현(변수 1개 · 점수 무접촉)
-1. `earnings_flag.py` 에 함수 추가: `load_recent(asof, lookback=20)` → `{ticker: (rcept_dt, days_ago, sue_sign)}` — 직전 20거래일 안 **원본 정기보고서** 접수(정정 제외, `earnings_q.rcept_dt` 그대로) 중 최신 1건. `attach_recent(df, asof, col="earn_recent_20d")` → 값 예: `"실적 3일전(↓)"` / `""`. 상수는 `RECENT_LOOKBACK = 20` 하나(연구와 같은 창).
+1. `earnings_flag.py` 에 함수 추가: `load_recent(asof, lookback=20)` → `{ticker: (rcept_dt, days_ago, sue_sign)}` — 직전 20거래일 안 **원본 정기보고서** 접수(정정 제외, `earnings_q.rcept_dt` 그대로) 중 최신 1건. `attach_recent(df, asof, col="earn_recent_20d")` → 값 예: `"접수 3일(↓)"`(= 정기보고서 접수 후 3거래일, 전년 동기 대비 영업이익 ↓) / `""`. 원본 접수번호 기준(정정으로 리셋 안 함). 상수는 `RECENT_LOOKBACK = 20` 하나(연구와 같은 창).
 2. 소비처 4곳의 기존 `attach` 바로 아래에 `attach_recent` 한 줄씩(비치명 try 그대로). CSV·JSON 에 열이 하나 늘 뿐 순위·점수 무변경.
 3. 페이지: `docs/filter*.html`·저변동·wu 페이지의 열 정의에 `earn_recent_20d` 추가(기존 `earn_drop_60d` 옆, 회색 배지). PTW 는 손대지 않음(독립 원칙 — PTW 쪽에서 원하면 그쪽 저장소에서).
 4. 테스트: `tests/test_earnings_flag.py` 에 합성 3체크(창 안/밖 · 정정 제외 · 최신 1건).
