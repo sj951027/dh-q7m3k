@@ -101,5 +101,16 @@ check("COST_HI = 0.01", pe.COST_HI == 0.01)
 check("1.0% NAV ≤ 0.5% NAV (모든 날)", bool((nav10.nav <= nav5.nav + 1e-12).all()) and nav10.nav.iloc[-1] < nav5.nav.iloc[-1])
 check("비용 0 이면 둘보다 높음", pe.simulate(D, close, picks, slots=40, hold=40, cost=0.0)[0].nav.iloc[-1] > nav5.nav.iloc[-1])
 
+print("I. 매도대금 T+2 결제 감도 — settle_days=0 은 종전과 동일, 2 면 결제 전 돈으론 못 사고 NAV 는 보존 (2026-11-01 J11)")
+D2 = D[:12]; c2 = pd.DataFrame(100.0, index=D2, columns=["K1", "K2"]); c2.loc[D2[2]:, "K1"] = 120.0
+nav0, _ = pe.simulate(D2, c2, {D2[0]: ["K1"], D2[3]: ["K2"]}, slots=1, hold=2, cost=0.0)             # K1 D1 진입 → D3 청산(대금 1.2) · 같은 날 K2 진입(종전: 그 돈으로 삼)
+nav2, led2 = pe.simulate(D2, c2, {D2[0]: ["K1"], D2[3]: ["K2"]}, slots=1, hold=2, cost=0.0, settle_days=2)
+nav00, _ = pe.simulate(D2, c2, {D2[0]: ["K1"], D2[3]: ["K2"]}, slots=1, hold=2, cost=0.0, settle_days=0)
+check("settle_days=0 명시 = 기본값과 NAV 완전 동일", nav00.nav.equals(nav0.nav))
+check("종전: D4 에 K2 진입(청산 대금 즉시 사용)", nav0.loc[4, "n_pos"] == 1)
+check("T+2: D4 엔 현금 0(결제 대기) → K2 못 삼(현금), D5 에 대금 입금", nav2.loc[4, "n_pos"] == 0 and nav2.loc[4, "cash"] == 0.0 and nav2.loc[5, "cash"] > 1.19)
+check("결제 대기 중에도 NAV 는 보존(D3·D4 NAV = 1.2)", abs(nav2.loc[3, "nav"] - 1.2) < 1e-12 and abs(nav2.loc[4, "nav"] - 1.2) < 1e-12)
+check("SETTLE_DAYS = 2", pe.SETTLE_DAYS == 2)
+
 print("\n" + ("❌ 실패 %d" % fails if fails else "✅ paper_account 2판 합성 테스트 통과"))
 sys.exit(1 if fails else 0)

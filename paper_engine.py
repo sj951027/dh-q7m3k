@@ -28,6 +28,7 @@ ENTRY_LAG = 1
 COST_MAIN = 0.005      # 왕복 0.5% (주)
 COST_ALT = 0.0035      # 왕복 0.35% (병기)
 COST_HI = 0.01         # [2026-10-31 C11] 왕복 1.0% 감도 — 코스닥 소형주 현실 비용(외부 카드 C1) 가정에서도 남나
+SETTLE_DAYS = 2        # [2026-11-01 J11] 감도: 매도대금이 현금이 되기까지 거래일(한국 주식 T+2). 주 계좌는 0(종전) — research/RESEARCH_ops_realism_20261101.md §2
 GONE_RET = -0.90       # 상폐 감도: 시세가 끊긴 종목을 마지막 가격 대비 −90% 로 치는 경우(worklog 2026-10-23 '상폐 −90% 민감도')
 
 
@@ -116,7 +117,7 @@ def tradable_mask(susp, chg, limit_up):
 
 
 def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new_ratio=None, entry_lag=ENTRY_LAG, start_nav=1.0, tradable=None,
-             gone=None, gone_ret=GONE_RET):
+             gone=None, gone_ret=GONE_RET, settle_days=0):
     """dates: 거래일 목록(오름차순, str) · close: DataFrame(index=dates, columns=ticker) · picks: {추천일: [ticker]} ·
     new_ratio: {추천일: 0~1} 또는 None(=1) 또는 float(상수). tradable: DataFrame(bool, index=dates, columns=ticker) — False 면 그날 진입 불가(정지·상한가) → 현금.
     gone: {ticker: 시세가 끊긴 첫 날짜} 또는 None. 주면 그날부터 그 종목은 마지막 유효 종가 × (1 + gone_ret) 로 평가·청산(상폐 감도).
@@ -170,6 +171,7 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
             sched.setdefault(e, []).append((str(rid), list(lst), ratio_of(str(rid))))
 
     cash = float(start_nav)
+    pend = {}          # [2026-11-01 J11] 매도대금 결제 대기: {현금이 되는 날 i: 금액}. settle_days=0 이면 같은 날 바로 현금(종전과 동일)
     open_pos = []      # dict(ticker, col, shares, entry_i, exit_i, entry_px, run)
     ledger = []
     rows = []
@@ -182,7 +184,7 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
             if p["exit_i"] == i:
                 px = mark_px(p["col"], i)
                 proceeds = p["shares"] * px * (1.0 - half)
-                cash += proceeds
+                pend[i + settle_days] = pend.get(i + settle_days, 0.0) + proceeds
                 p.update(exit_date=dates[i], exit_px=px, proceeds=proceeds, status="closed",
                          ret=(px * (1.0 - half)) / (p["entry_px"] / (1.0 - half)) - 1.0,
                          gone=bool(gone_i.get(p["col"]) is not None and i >= gone_i[p["col"]]))
@@ -191,6 +193,7 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
             else:
                 still.append(p)
         open_pos = still
+        cash += pend.pop(i, 0.0)                              # 오늘 결제되는 매도대금 → 현금(settle_days=0 이면 방금 청산한 몫)
         # ② 진입(예정 = i) — 슬롯 돈 = 전날 NAV/slots × 비율, 현금 한도
         n_entry = 0
         for rid, lst, ratio in sched.get(i, []):
@@ -217,7 +220,7 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
         for p in open_pos:
             px = mark_px(p["col"], i)
             val += p["shares"] * (px if px == px else 0.0)
-        nav = cash + val
+        nav = cash + val + sum(pend.values())                 # 결제 대기 대금도 자산(아직 쓸 수 없을 뿐)
         rows.append(dict(date=dates[i], nav=nav, cash=cash, n_pos=len(open_pos), invested=val,
                          ret_1d=(nav / prev_nav - 1.0) if prev_nav > 0 else float("nan"), entries=n_entry, exits=n_exit))
         prev_nav = nav

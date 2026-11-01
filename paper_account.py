@@ -191,6 +191,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
         nav_g, led_g = pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, gone=gone)
         sens[aid] = dict(cost035=_tot(pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, cost=pe.COST_ALT)[0]["nav"]),
                          cost100=_tot(pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, cost=pe.COST_HI)[0]["nav"]),      # [C11] 왕복 1.0%
+                         settle2=_tot(pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr, settle_days=pe.SETTLE_DAYS)[0]["nav"]),   # [J11] 매도대금 T+2 결제
                          delist90=_tot(nav_g["nav"]), slots_gone=int(sum(1 for p in led_g if p.get("gone"))))
     navs3 = [pe.simulate(dates, sub, p, tradable=trd)[0]["nav"].to_numpy() for p in b3]
     M3 = np.vstack(navs3)
@@ -201,7 +202,9 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
     M3c = np.vstack([pe.simulate(dates, sub, p, tradable=trd, cost=pe.COST_ALT)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
     M3g = np.vstack([pe.simulate(dates, sub, p, tradable=trd, gone=gone)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
     M3h = np.vstack([pe.simulate(dates, sub, p, tradable=trd, cost=pe.COST_HI)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
-    sens["B3_random"] = dict(cost035=float((M3c[-1] / M3c[0] - 1) * 100), cost100=float((M3h[-1] / M3h[0] - 1) * 100), delist90=float((M3g[-1] / M3g[0] - 1) * 100))
+    M3s = np.vstack([pe.simulate(dates, sub, p, tradable=trd, settle_days=pe.SETTLE_DAYS)[0]["nav"].to_numpy() for p in b3]).mean(axis=0)
+    sens["B3_random"] = dict(cost035=float((M3c[-1] / M3c[0] - 1) * 100), cost100=float((M3h[-1] / M3h[0] - 1) * 100), delist90=float((M3g[-1] / M3g[0] - 1) * 100),
+                             settle2=float((M3s[-1] / M3s[0] - 1) * 100))
     # 요약
     gen = datetime.now().strftime("%Y-%m-%d %H:%M")
     summary = {}
@@ -213,6 +216,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
     v_last = accounts["v30"][0]["nav"].iloc[-1]; summary["v30"]["random_pctile"] = float((M3[:, -1] < v_last).mean() * 100)
     for aid, s in summary.items():                                   # [2판] 감도 두 가지 — 모든 계좌(B3 는 벌 평균, 슬롯 수 없음)
         s["total_ret_cost035"] = sens[aid]["cost035"]; s["total_ret_delist90"] = sens[aid]["delist90"]; s["total_ret_cost100"] = sens[aid]["cost100"]   # [C11]
+        s["total_ret_settle2"] = sens[aid]["settle2"]                                                                                                  # [J11]
         if "slots_gone" in sens[aid]:
             s["slots_gone"] = sens[aid]["slots_gone"]
     for mid in MODEL_ACCOUNTS:
@@ -223,7 +227,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
                               slots_from_lvb=int(sum(1 for p in sw_led if sw_src.get(p["run"]) == "other")))
     print(f"\n== 모의 계좌 {dates[0]}~{dates[-1]} (사후 되감기 · 비용 0.5% · 라벨 없음) ==")
     for aid, s in summary.items():
-        extra = f" · 0.35%: {s['total_ret_cost035']:+.1f}% · 1.0%: {s['total_ret_cost100']:+.1f}% · 상폐−90%: {s['total_ret_delist90']:+.1f}%"
+        extra = f" · 0.35%: {s['total_ret_cost035']:+.1f}% · 1.0%: {s['total_ret_cost100']:+.1f}% · 상폐−90%: {s['total_ret_delist90']:+.1f}% · T+2: {s['total_ret_settle2']:+.1f}%"
         extra += f" · 무작위 2.5/97.5: {s['p2_5']:+.1f}/{s['p97_5']:+.1f}%" if "p2_5" in s else ""
         extra += f" · 끊긴 슬롯 {s['slots_gone']}" if "slots_gone" in s else ""
         extra += f" · A {s['days_A']}/그 밖 {s['days_other']}/없음 {s['days_missing']} · 슬롯 v30 {s['slots_from_v30']}/lv_b {s['slots_from_lvb']}" if "days_A" in s else ""
@@ -249,8 +253,8 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
                    "switch": {SWITCH_ID: {"a_cells": list(SWITCH_A_CELLS), "list_A": "v30", "list_other": "lv_b", "cell_basis": "앵커일 코스피 칸(v30_gateD0 와 같음)",
                                           "note": "days_A/days_other = 그 목록을 쓴 앵커 수 · days_missing = 고른 목록이 없어 신규 0 인 날 · slots_from_v30/lvb = 체결 슬롯 수 · 사후 설계(2026-10-30)"}},
                    "sens": {"cost_alt": pe.COST_ALT, "gone_ret": pe.GONE_RET, "gone_tickers": len(gone),
-                            "cost_hi": pe.COST_HI,
-                            "note": "total_ret_cost035 = 왕복 0.35% · total_ret_cost100 = 왕복 1.0%(코스닥 소형주 현실 비용 가정) · total_ret_delist90 = 시세가 끊긴 종목을 마지막 가격 −90% 로 평가·청산 · slots_gone = 그 영향을 받은 슬롯 수"},
+                            "cost_hi": pe.COST_HI, "settle_days": pe.SETTLE_DAYS,
+                            "note": "total_ret_cost035 = 왕복 0.35% · total_ret_cost100 = 왕복 1.0%(코스닥 소형주 현실 비용 가정) · total_ret_delist90 = 시세가 끊긴 종목을 마지막 가격 −90% 로 평가·청산 · slots_gone = 그 영향을 받은 슬롯 수 · total_ret_settle2 = 매도대금이 T+2 에 현금이 되는 가정(결제 전 돈으로 못 삼 → 현금)"},
                    "accounts": {aid: {"name": NAMES[aid], "summary": summary[aid], "nav": [[d, round(float(v), 6)] for d, v in zip(dates, accounts[aid][0]["nav"])]} for aid in accounts}}
         def _clean(x):                                   # [Codex 검토 2] NaN/inf 는 null 로 — 브라우저 JSON.parse 가 NaN 을 거부한다
             if isinstance(x, dict): return {k: _clean(v) for k, v in x.items()}
