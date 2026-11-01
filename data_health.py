@@ -58,7 +58,11 @@ BRANCHES = [
     # [2026-10-18 추가] 업종 분류(sector_cache.json, DART 산업코드 → 업종 버킷 · diversify_picks 가 씀). 파일 날짜는 새 종목이 있을 때만 바뀌어
     #   지연 허용 30. 대신 '최신 run 종목 중 업종 있는 비율'(cover)이 90% 밑이면 ⚠️ — 조용히 비는 것을 잡는다.
     ("sector",     "업종 분류",       30, False),
+    # [2026-11-01 추가 J14] 시장 수급(KRX 투자자별 11구분, market_flows_10y.db — market_flows_obs.py 가 배치에서 매일 덧붙임). 하루 = 2시장 × 12행 = 24.
+    #   같은 배치 안에서 시세 뒤에 받으므로 허용 지연 0. 조용히 멈추면(로그인·KRX 변경) 이 갈래가 lag 로 잡힌다 — 비치명 단계라 로그 ⚠ 줄만으론 놓치기 쉽다.
+    ("mkt_flows",  "시장 수급(KRX)",   0, True),
 ]
+MARKET_FLOWS_DB = os.environ.get("MARKET_FLOWS_DB", str(HERE / ".." / "dh-q7m3k-data" / "market_flows_10y.db"))
 SECTOR_CACHE = HERE / "sector_cache.json"
 COVER_MIN = 0.9
 ALLOWED = {k: a for k, _, a, _ in BRANCHES}
@@ -223,6 +227,15 @@ def collect(ohlcv_db=OHLCV_DB, history_db=HISTORY_DB, earnings_db=EARNINGS_DB, a
         try:
             sql = "SELECT substr(fetched_at,1,8) AS d, COUNT(*) FROM earnings_raw WHERE fetched_at >= ?" + (" AND fetched_at <= ?" if asof else "") + " GROUP BY d ORDER BY d DESC"
             out["earn_fetch"] = _hist(con, sql, (lower, asof) if asof else (lower,))
+        finally:
+            con.close()
+    except Exception:
+        pass
+    try:                                                     # [J14] 시장 수급(KRX) — 파일이 없거나 표가 없으면 비워 둠(missing)
+        con = _ro(MARKET_FLOWS_DB)
+        try:
+            fa = " AND fetched_at <= ?" if asof else ""
+            out["mkt_flows"] = _hist(con, f"SELECT date, COUNT(*) FROM investor_daily WHERE date >= ?{fa} GROUP BY date ORDER BY date DESC", (lower, asof) if asof else (lower,))
         finally:
             con.close()
     except Exception:

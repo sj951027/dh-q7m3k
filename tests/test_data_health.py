@@ -66,6 +66,13 @@ check("경고 줄 4개, 전부 ⚠️ 로 시작", len(w) == 4 and all(x.startsw
 check("경고 문구에 갈래 이름·날짜", any("보충표" in x and "10/08" in x for x in w))
 md = dh.to_markdown(rows2, "20261016", "now")
 check("markdown 표에 14갈래 행", md.count("\n| ") == len(dh.BRANCHES) + 1)
+# [2026-11-01 J14] 시장 수급(KRX) 갈래 — 하루 24행(2시장×12), 멈추면 lag, 반으로 줄면 count
+br3 = {k: dict(ok) for k, *_ in dh.BRANCHES}; br3["credit"] = dict(br["credit"]); br3["consensus"] = dict(br["consensus"])
+br3["mkt_flows"] = {"last": "20261014", "n_last": 24, "n_hist": [24] * 10}
+check("시장 수급 갈래 있음·허용 지연 0·건수 검사", "mkt_flows" in dh.ALLOWED and dh.ALLOWED["mkt_flows"] == 0 and dh.CHECK_COUNT["mkt_flows"])
+check("수급 2거래일 멈춤 → lag", {r["key"]: r for r in dh.assess(br3, "20261016", cal)}["mkt_flows"]["status"] == "lag")
+br3["mkt_flows"] = {"last": "20261016", "n_last": 10, "n_hist": [24] * 10}
+check("건수 절반 미만(10/24) → count", {r["key"]: r for r in dh.assess(br3, "20261016", cal)}["mkt_flows"]["status"] == "count")
 
 print("[C] 되감기 — 과거 사고 재현(실제 DB, 읽기 전용)")
 if os.path.exists(dh.OHLCV_DB):

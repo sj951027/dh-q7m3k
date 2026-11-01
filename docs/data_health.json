@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 21:10",
+ "generated": "2026-11-01 14:53",
  "ref_date": "20261030",
  "rows": [
   {
@@ -175,6 +175,17 @@
    "allowed": 30,
    "n_last": 2352,
    "n_med": null,
+   "status": "ok",
+   "note": ""
+  },
+  {
+   "key": "mkt_flows",
+   "name": "시장 수급(KRX)",
+   "last": "20261030",
+   "lag": 0,
+   "allowed": 0,
+   "n_last": 24,
+   "n_med": 24,
    "status": "ok",
    "note": ""
   }
