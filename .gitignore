@@ -123,3 +123,4 @@ research/**/*.parquet
 research/**/*.db
 research/**/*.db.gz
 research/**/fullgrid/
+research/handoff/**/baseline/
