@@ -354,6 +354,7 @@ def main():
     try:
         import earnings_flag as _ern
         raw, _ne = _ern.attach(raw, asof=(str(raw["run_id"].max()) if "run_id" in raw.columns else None))
+        raw, _ = _ern.attach_recent(raw, asof=(str(raw["run_id"].max()) if "run_id" in raw.columns else None))
         if _ne: print(f"  📉 실적 악화 60거래일 내 {_ne}종목(배지)")
     except Exception as _e:
         print(f"  ⚠️ 실적 배지 생략(비치명): {_e}")

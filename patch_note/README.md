@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.10.48** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.10.49** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -24,6 +24,7 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
+- [20261103_earnings_recent_badge.md](20261103_earnings_recent_badge.md) — **2026.10.49** 목록 페이지 '정기보고서 접수 N일' 표시(관측·가중 0, 열 `earn_recent_20d`; Codex 구현·Claude 검증, 테스트 통과). 판정·점수 0-diff.
 - [20261101_paper_settle_days.md](20261101_paper_settle_days.md) — **2026.10.48** 모의 계좌 매도대금 T+2 결제 감도 키 `total_ret_settle2`(기본 경로 0-diff; le_a −20.1→−19.2 · sv_a −11.9→−11.4 병기). 판정·점수 0-diff.
 - [20261101_data_health_market_flows.md](20261101_data_health_market_flows.md) — **2026.10.47** 자료 점검표 17번째 갈래 '시장 수급(KRX)'(J14). 표시·점수 무관.
 - [20261031_market_flows_obs_hardening.md](20261031_market_flows_obs_hardening.md) — **2026.10.46** 수급 일일 갱신 단계 보강(자식 프로세스 300s 제한·저장 전 보존식 검사·수량 NULL 보존·revision·로그인 ID 출력 차단·창 완전성·원자적 JSON) + 모의 계좌 보충표 병합 (종목,날짜) 우선·실패 시 raise. Codex 검토 반영. 표시·점수 0-diff.

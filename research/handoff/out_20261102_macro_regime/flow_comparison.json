@@ -1,0 +1,77 @@
+{
+  "compared_at": "2026-11-02T00:56:03+09:00",
+  "flow_path": "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\research\\out_flow_regime\\events.csv",
+  "flow_sha256": "3a998ea13ab117304557e902845f429134ca1fae85ab3071849708711b31d4f4",
+  "own_events": 20,
+  "flow_events": 22,
+  "exact_date_overlap": 0,
+  "thresholds_fixed_from_blind": {
+    "FX20": 2.10327866814789,
+    "US20": -3.888984536607387,
+    "RATE20": 0.06500000000000017,
+    "IXIC20": -5.420131802195494,
+    "OIL20": -3.8033796550003607
+  },
+  "cross_tabs": [
+    {
+      "axis": "FX20",
+      "flow": "foreign",
+      "n": 22,
+      "macro_bad_flow_sell": 9,
+      "macro_bad_flow_buy": 2,
+      "macro_good_flow_sell": 9,
+      "macro_good_flow_buy": 2,
+      "same_hypothesis_side": 11
+    },
+    {
+      "axis": "FX20",
+      "flow": "pension",
+      "n": 22,
+      "macro_bad_flow_sell": 5,
+      "macro_bad_flow_buy": 6,
+      "macro_good_flow_sell": 9,
+      "macro_good_flow_buy": 2,
+      "same_hypothesis_side": 7
+    },
+    {
+      "axis": "US20",
+      "flow": "foreign",
+      "n": 22,
+      "macro_bad_flow_sell": 9,
+      "macro_bad_flow_buy": 3,
+      "macro_good_flow_sell": 9,
+      "macro_good_flow_buy": 1,
+      "same_hypothesis_side": 10
+    },
+    {
+      "axis": "US20",
+      "flow": "pension",
+      "n": 22,
+      "macro_bad_flow_sell": 8,
+      "macro_bad_flow_buy": 4,
+      "macro_good_flow_sell": 6,
+      "macro_good_flow_buy": 4,
+      "same_hypothesis_side": 12
+    },
+    {
+      "axis": "RATE20",
+      "flow": "foreign",
+      "n": 22,
+      "macro_bad_flow_sell": 8,
+      "macro_bad_flow_buy": 3,
+      "macro_good_flow_sell": 10,
+      "macro_good_flow_buy": 1,
+      "same_hypothesis_side": 9
+    },
+    {
+      "axis": "RATE20",
+      "flow": "pension",
+      "n": 22,
+      "macro_bad_flow_sell": 9,
+      "macro_bad_flow_buy": 2,
+      "macro_good_flow_sell": 5,
+      "macro_good_flow_buy": 6,
+      "same_hypothesis_side": 15
+    }
+  ]
+}

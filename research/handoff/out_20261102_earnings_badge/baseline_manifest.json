@@ -1,0 +1,107 @@
+{
+  "earnings_flag.py": {
+    "sha256": "e54b42c0a0dadabc93d1d3ef43937b9ba86e733d59956b9d8b98fb8213e2745c",
+    "CRLF": 0,
+    "LF": 224,
+    "bytes": 13637
+  },
+  "tests/test_earnings_flag.py": {
+    "sha256": "845f99c95da92aa2e52bbcf96311f6a0f735946f4c2f843b55324446ff6837b3",
+    "CRLF": 0,
+    "LF": 150,
+    "bytes": 13355
+  },
+  "diversify_picks.py": {
+    "sha256": "a192492419d0c3fea23194d9ad2f530cea6ec0def4f9d2c028e49cb71254ce67",
+    "CRLF": 0,
+    "LF": 446,
+    "bytes": 22213
+  },
+  "build_lowvol_filter.py": {
+    "sha256": "7e67265a3d36bd85033488527faa19a4f946842f1206ca246457e1492fecf644",
+    "CRLF": 0,
+    "LF": 273,
+    "bytes": 14577
+  },
+  "build_wu_filter.py": {
+    "sha256": "4ee909a4857b1722fb49893a89049f235548fb2f866c9bcd407c165778518c9a",
+    "CRLF": 0,
+    "LF": 321,
+    "bytes": 16349
+  },
+  "build_mom_filter.py": {
+    "sha256": "092c518a5b1983cd1d14ed213b4f06045c82ad2bde7d003f34371b5acdcf0418",
+    "CRLF": 0,
+    "LF": 284,
+    "bytes": 13069
+  },
+  "docs/filter.html": {
+    "sha256": "b652c2ce87350d184e12d87901c16c9a0448c57d1000e0ad27a0d6cb263bbda4",
+    "CRLF": 1640,
+    "LF": 0,
+    "bytes": 74049
+  },
+  "docs/lowvol.html": {
+    "sha256": "99aad5376ee61586ecaec57ea47b2610be5c39b5753a68b0399d24076b8f6141",
+    "CRLF": 364,
+    "LF": 0,
+    "bytes": 23968
+  },
+  "docs/lva.html": {
+    "sha256": "52f908baa388faa31af8eab2ea73822d6f36f8366ebd4f682cf5625849a044a8",
+    "CRLF": 0,
+    "LF": 363,
+    "bytes": 23597
+  },
+  "docs/le.html": {
+    "sha256": "2bcf4dd9a7e8a215d4b7bb94a7ac34c9d4e9e3d87e3be31caa1fb470b29fb178",
+    "CRLF": 0,
+    "LF": 356,
+    "bytes": 25354
+  },
+  "docs/sv.html": {
+    "sha256": "6c34f4e9375facbe092fecdcad12dccfea16c3b9fe76715c6181e54849eefcfb",
+    "CRLF": 328,
+    "LF": 0,
+    "bytes": 20012
+  },
+  "docs/qs.html": {
+    "sha256": "1d9adec67fefd87948725bda6c1bb5feb3de17381f6d10b04fae056f0fbe8d6b",
+    "CRLF": 0,
+    "LF": 287,
+    "bytes": 15815
+  },
+  "docs/px.html": {
+    "sha256": "7ce833fe7c5683a3dbe21323e10a4e6403ebb7071e3e20dbef2ca42f8ac5352b",
+    "CRLF": 0,
+    "LF": 329,
+    "bytes": 19826
+  },
+  "docs/mom.html": {
+    "sha256": "e4478fe488a9780a4539b3902d740a87bb5945b8b850ded23dd8e39edde0a78b",
+    "CRLF": 0,
+    "LF": 350,
+    "bytes": 22048
+  },
+  "_db_states": {
+    "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\history.db": [
+      483438592,
+      1793621946210337400
+    ],
+    "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k-data\\ohlcv.db": [
+      432234496,
+      1793621752391095500
+    ],
+    "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k-data\\earnings.db": [
+      4038656,
+      1793618126881597200
+    ],
+    "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k-data\\paper_account.db": [
+      102400,
+      1793621934911027900
+    ]
+  },
+  "_other_change": {
+    "research/large_verdict_status.md": "f568ce5030374e701408fc92db8983bdd4a6748905e1624daaf3d2f8fb76649d"
+  }
+}

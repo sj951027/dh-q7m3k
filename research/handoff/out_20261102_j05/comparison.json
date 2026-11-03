@@ -1,0 +1,32 @@
+{
+  "current": {
+    "v30": {
+      "entered": 995,
+      "closed": 235,
+      "closed_on_suspended": 5,
+      "suspended_ret_mean_pct": -14.856944552782759,
+      "list_min": 20,
+      "short_anchors": 0,
+      "entry_anchors": 50
+    },
+    "lv_b": {
+      "entered": 978,
+      "closed": 218,
+      "closed_on_suspended": 0,
+      "suspended_ret_mean_pct": null,
+      "list_min": 9,
+      "short_anchors": 6,
+      "entry_anchors": 50
+    },
+    "v32a": {
+      "entered": 80,
+      "closed": 0,
+      "closed_on_suspended": 0,
+      "suspended_ret_mean_pct": null,
+      "list_min": 20,
+      "short_anchors": 0,
+      "entry_anchors": 4
+    }
+  },
+  "old_summary_sha256": "8631de82455896e0f2f9d13ffe686d4298a0b9c3522fcce3aaf6ab3592437223"
+}

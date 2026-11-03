@@ -1,0 +1,11 @@
+{
+  "frozen_at": "2026-11-02T00:44:54+09:00",
+  "code_sha256": "a9c5558dd42e450a45e62c5dfaeb89cc66b135665f40254f11da2864eff79cef",
+  "files": {
+    "protocol.json": "8bdc8ff803f52313bfe19843d4c84fe0e9ff592f140e7562a8ecb1d4fc14fcdc",
+    "events.csv": "97f5902ffb0aff74e6d1b1dd4b66a51773b13aac744d9da7bd59acd9fa427053",
+    "days.csv": "dc15ef5411ee037835aaca75840e6528768032ee05e4f6fb74182a07ffbffd6e",
+    "results.json": "ec6b8d7853e2accabc84a7be732c81314b63a28e99dfe05f9633085175775bad"
+  },
+  "blind_reply_sha256": "fdb96801464e1dbbaec003d7abdf6c68ceacb6ef7dbd2f3f2bd352d7752072a9"
+}

@@ -1,0 +1,31 @@
+{
+  "frozen_at": "2026-11-02T00:44:44+09:00",
+  "code_sha256": "a9c5558dd42e450a45e62c5dfaeb89cc66b135665f40254f11da2864eff79cef",
+  "request": "REQUEST_20261102_macro_regime_blind",
+  "signal_window": [
+    "20150201",
+    "20260831"
+  ],
+  "grid": "first common KOSPI/KOSDAQ date >=20150201, then every 5 common sessions; t+41 within price data",
+  "entry": "t+1 close",
+  "exit": "t+41 close; delisted within holding interval uses last stored positive close if exact exit absent",
+  "eligibility": "allowed current metadata market/name/code; t and t+1 positive close and volume; t and t+1 close>=1000; positive t-20 close",
+  "rank": "linear 20th percentile on ex-ante eligible R20, inclusive <=; missing future outcomes excluded only after selection, never re-ranked",
+  "regime": "KOSPI common-axis R20: A<=-5; BC (-5,5]; D>5",
+  "events": "greedy first A grid day with common-calendar index at least 40 after prior selected event",
+  "macro_cutoff": "subtract 1/0/2 CALENDAR days from signal date for FX/US/rate+oil; last available observation <= cutoff",
+  "macro_reference": "last observation <= last_selected_observation_date minus 28 CALENDAR days",
+  "oil_negative": "exclude if any nonpositive WTI observation inside [reference observation date,last observation date]",
+  "median": "A-day available-value median for both A events and A days; equal values go lower (<=median), upper >median",
+  "bad_group": "FX/RATE/OIL upper; US/IXIC lower; US+IXIC zero sensitivity uses <0 versus >=0",
+  "reference_splits": "each regime own all-period median; halves reuse pooled regime thresholds; all-period terciles per own axis",
+  "bootstrap": "whole event rows 4000 draws seed20261030; whole calendar-month blocks with all member grid rows 2000 draws seed7; percentile95; thresholds fixed",
+  "event_minimum": "either group n<5 => n shortage only, no reported estimate or CI",
+  "depth_match": "A-day KOSPI R20 5 quantile bins; within bin global A-axis split; common weights=min(nbad,ngood); fixed bins/labels, month bootstrap",
+  "verdict": "os_mean primary. Closed has precedence: |event diff|<3 or sign flip across A/BC/D/ALL/A halves/ALL halves, or |A-day rho(axis,R20)|>=.5 and |depth-matched diff|<3. Open requires nonzero95CI, |event diff|>=3, same sign in all references and depth match. Otherwise consistent sign+CI contains0=hold; unassessable=hold. No causal claim.",
+  "no_network": true,
+  "read_only_databases": [
+    "ohlcv_10y.db",
+    "macro_10y.db"
+  ]
+}

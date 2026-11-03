@@ -146,5 +146,39 @@ lines = buf.getvalue().strip().splitlines()
 check("자료가 60거래일 창 밖이면 빈 배지 + 경고", r1 == {} and any("전부 비었음" in x for x in lines))
 check("자료가 싱싱하면 경고 없음 · 조금 낡으면(45거래일 초과) '반영 안 됨' 경고", len(r2) == 4 and sum("반영 안 됨" in x for x in lines) == 1 and len(lines) == 2)
 
+print("[H] 정기보고서 접수 후 20거래일 표시")
+recent_db = os.path.join(td, "recent.db")
+with sqlite3.connect(recent_db) as c:
+    c.execute("CREATE TABLE earnings_q(ticker TEXT, year INTEGER, reprt TEXT, reprt_ord INTEGER, rcept_dt TEXT, sue REAL, PRIMARY KEY(ticker,year,reprt))")
+    c.executemany("INSERT INTO earnings_q VALUES(?,?,?,?,?,?)", [
+        ("000101", 2026, "H1", 2, days[-20], None),      # 경과 19일: 창 안, 부호 없어도 표시
+        ("000102", 2026, "H1", 2, days[-21], -0.02),    # 경과 20일: 창 밖
+        ("000103", 2026, "H1", 2, days[-1], 0.0),       # 당일: 0일
+        ("000104", 2026, "Q3", 3, "20261101", -0.02),   # asof 뒤: 제외
+        ("000105", 2026, "Q1", 1, days[-15], -0.02),
+        ("000105", 2026, "H1", 2, days[-3], None),      # 최신 결측이 옛 악화보다 우선
+        ("000106", 2026, "H1", 2, days[-4], ef.DROP),
+        ("000107", 2026, "H1", 2, days[-13], abs(ef.DROP)),
+        ("000108", 2026, "H1", 2, days[-8], 0.009),
+    ])
+recent = ef.load_recent(asof, db=recent_db, cal_db=cal)
+check("최근 접수 창 안/밖·당일 0·미래 제외", recent.get("000101") == (days[-20], 19, "")
+      and recent.get("000103") == (days[-1], 0, "") and "000102" not in recent and "000104" not in recent
+      and ef.load_recent(asof, lookback=0, db=recent_db, cal_db=cal) == {})
+check("최신 1건: SUE NULL도 포함해 옛 악화를 대체", recent.get("000105") == (days[-3], 2, "")
+      and len(recent) == 6)
+_load_recent = ef.load_recent
+try:
+    ef.load_recent = lambda asof=None, **kw: _load_recent(asof, db=recent_db, cal_db=cal)
+    sample = pd.DataFrame({"ticker": ["106", "000107", "000108", "000105", "000102"],
+                           "score": [float("nan"), 5., 7., 1., 0.]}, index=[4, 2, 2, 1, 0])
+    tagged, count = ef.attach_recent(sample, asof=asof)
+finally:
+    ef.load_recent = _load_recent
+check("부호 라벨·경계값·빈값·기존 열/행 순서 0-diff", tagged.earn_recent_20d.tolist()
+      == ["접수 3일(↓)", "접수 12일(↑)", "접수 7일", "접수 2일", ""] and count == 4
+      and tagged.iloc[:, :-1].equals(sample) and list(tagged.columns) == list(sample.columns) + ["earn_recent_20d"]
+      and "earn_recent_20d" not in sample.columns)
+
 print("\n" + ("❌ 실패 %d건" % fails if fails else "✅ test_earnings_flag 통과"))
 sys.exit(1 if fails else 0)

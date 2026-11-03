@@ -1,0 +1,146 @@
+{
+  "run": {
+    "started_at": "2026-11-02T00:52:10+09:00",
+    "code_sha256": "94868eb850b078d90aa9a6fac9e6bf3df88145d8c4ef9c50b261a1760867b47c",
+    "protected_hashes": {
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\paper_engine.py": "13e2b11d18f070007c7dddcf9f52cf9b1271893dc585296c50ad3e18c2733401",
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\paper_account.py": "249b39284620e1cfb8e88a5a2a3bf4150f4a463f18477239b76d5aa1b6138eb7",
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\docs\\paper_account.json": "9ddd29eae15da77ca900cb995a0a4dec3a52e07425eaa13e924c2a9f1d905372"
+    },
+    "db_states": {
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\history.db": [
+        478355456,
+        1793360914609200600
+      ],
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k-data\\ohlcv.db": [
+        430661632,
+        1793362035218482500
+      ],
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k-data\\paper_account.db": [
+        102400,
+        1793524228934145700
+      ]
+    },
+    "constants": {
+      "slots": 40,
+      "hold": 40,
+      "entry_lag": 1,
+      "cost": 0.005,
+      "limit_up": 0.29,
+      "top": 10,
+      "settle_days": 0
+    },
+    "start": "20260810",
+    "end": "20261030",
+    "days": 55,
+    "price_tickers": 2798,
+    "gate_excluded_runs": [
+      "20260608",
+      "20260703"
+    ],
+    "finished_at": "2026-11-02T00:52:29+09:00",
+    "readonly_connections": 103,
+    "connection_paths": [
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k-data\\ohlcv.db",
+      "C:\\Users\\SAMSUNG\\Documents\\GitHub\\dh-q7m3k\\history.db"
+    ]
+  },
+  "models": {
+    "v30": {
+      "baseline": {
+        "days": 55,
+        "total_ret": -7.589799563827304,
+        "mdd": -9.722517115050522,
+        "cash_share": 43.35937033330254,
+        "last": "20261030"
+      },
+      "replace_A": {
+        "days": 55,
+        "total_ret": -7.619135524281983,
+        "mdd": -9.76341490075987,
+        "cash_share": 42.89602098471565,
+        "last": "20261030"
+      },
+      "delta": {
+        "total_ret": -0.02933596045467901,
+        "mdd": -0.040897785709347545,
+        "cash_share": -0.46334934858689536
+      },
+      "attempted_stock_slots": 1000,
+      "blocked_slots": 5,
+      "executed_replacements": 5,
+      "replacement_days": 5,
+      "replacement_rate_pct": 0.5,
+      "blocked_rate_pct": 0.5,
+      "anchors": 51,
+      "first_anchor": "20260810",
+      "anchors_without_entry": 1,
+      "volume_zero_but_allowed": 0,
+      "decision": "후순위 닫음(규칙 유지 = 현금)"
+    },
+    "lv_b": {
+      "baseline": {
+        "days": 55,
+        "total_ret": -7.681339165231426,
+        "mdd": -8.926788650043049,
+        "cash_share": 43.58332176619978,
+        "last": "20261030"
+      },
+      "replace_A": {
+        "days": 55,
+        "total_ret": -7.677544543412007,
+        "mdd": -8.928956339496985,
+        "cash_share": 43.47735598655609,
+        "last": "20261030"
+      },
+      "delta": {
+        "total_ret": 0.0037946218194191417,
+        "mdd": -0.0021676894539357505,
+        "cash_share": -0.10596577964368947
+      },
+      "attempted_stock_slots": 980,
+      "blocked_slots": 2,
+      "executed_replacements": 1,
+      "replacement_days": 1,
+      "replacement_rate_pct": 0.10204081632653061,
+      "blocked_rate_pct": 0.20408163265306123,
+      "anchors": 51,
+      "first_anchor": "20260810",
+      "anchors_without_entry": 1,
+      "volume_zero_but_allowed": 0,
+      "decision": "후순위 닫음(규칙 유지 = 현금)"
+    },
+    "v32a": {
+      "baseline": {
+        "days": 55,
+        "total_ret": -0.13748393186139296,
+        "mdd": -0.14161892077239058,
+        "cash_share": 99.54873642996282,
+        "last": "20261030"
+      },
+      "replace_A": {
+        "days": 55,
+        "total_ret": -0.13748393186139296,
+        "mdd": -0.14161892077239058,
+        "cash_share": 99.54873642996282,
+        "last": "20261030"
+      },
+      "delta": {
+        "total_ret": 0.0,
+        "mdd": 0.0,
+        "cash_share": 0.0
+      },
+      "attempted_stock_slots": 80,
+      "blocked_slots": 0,
+      "executed_replacements": 0,
+      "replacement_days": 0,
+      "replacement_rate_pct": 0.0,
+      "blocked_rate_pct": 0.0,
+      "anchors": 5,
+      "first_anchor": "20261026",
+      "anchors_without_entry": 1,
+      "volume_zero_but_allowed": 0,
+      "decision": "후순위 닫음(규칙 유지 = 현금) · 발생 0"
+    }
+  }
+}

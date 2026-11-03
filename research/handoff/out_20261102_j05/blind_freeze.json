@@ -1,0 +1,22 @@
+{
+  "frozen_at": "2026-11-02T00:52:29+09:00",
+  "code_sha256": "94868eb850b078d90aa9a6fac9e6bf3df88145d8c4ef9c50b261a1760867b47c",
+  "files": {
+    "events.csv": "0395842cd11fbed45676b0e0fe7ecfb73467230f448bd69812e7010df3a1e118",
+    "lv_b_cash_ledger.csv": "022e4928ff2a81c9932bca769303fc14a3b67e9d2a0afdbb37421b015ae2553a",
+    "lv_b_cash_nav.csv": "053d087f194830d29577bcd67fb624cdd9be6d4c6bdd39b5f5bc65513e2b319c",
+    "lv_b_replace_A_ledger.csv": "48194822a0b430416e19bbf74ad54a63e5b5d85b6e019003c1cb9367cf6e5841",
+    "lv_b_replace_A_nav.csv": "ea2cb067d5e0ab66a1dae3441f7f7e89a41e4ed662d50c8da8021db5a4ddcbfa",
+    "picks.csv": "6f0d7a2724074ffda0d29658c3048fd46b8e43e665da84fb57522867fbdb5fa3",
+    "v30_cash_ledger.csv": "247dabe0aef6e74f954a631fb8f1d5757c365b1d7a9cac88b90779d787b502e5",
+    "v30_cash_nav.csv": "4bf02c60c581891bd3caa07c0fd03c2342e705f9a0bac347dbd9246c3f16348e",
+    "v30_replace_A_ledger.csv": "923ad23b0020601451036a74bbda1bd86b59f9b81f49d36847795aa7f43f5fbc",
+    "v30_replace_A_nav.csv": "e6cf10264fa1d2b830d32a2f7a3780a8c7481183a6f43f7214c4f1533cac1767",
+    "v32a_cash_ledger.csv": "d702c5bc19ca50b0f039877dad267bd6669654dd99623025e93174df3a880dcf",
+    "v32a_cash_nav.csv": "3e79fa020298bb40156366369396e3ecb434afb9a036894f1079e10b30735a54",
+    "v32a_replace_A_ledger.csv": "d702c5bc19ca50b0f039877dad267bd6669654dd99623025e93174df3a880dcf",
+    "v32a_replace_A_nav.csv": "3e79fa020298bb40156366369396e3ecb434afb9a036894f1079e10b30735a54",
+    "summary.json": "c10bcc75b391c3d4c70690a8d9acf43ba1286cb4d4e51d153f5dc4e2cd0401c4"
+  },
+  "blind_reply_sha256": "5c9ec86ab7ca018f2bdd6b2bba262e0a2f4a5cd2c47faa086737c083bb4b8cdf"
+}

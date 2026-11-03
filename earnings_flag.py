@@ -22,11 +22,14 @@ earnings_flag.py — 실적 악화 60거래일 배지 (표시 전용 · 점수·
 """
 import os
 import sqlite3
+from bisect import bisect_right
+from contextlib import closing
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OHLCV_DB = os.environ.get("OHLCV_DB", os.path.join(HERE, "..", "dh-q7m3k-data", "ohlcv.db"))
 EARN_DB = os.environ.get("EARNINGS_DB", os.path.join(HERE, "..", "dh-q7m3k-data", "earnings.db"))
 LOOKBACK = 60          # 거래일
+RECENT_LOOKBACK = 20   # 접수일 포함 20거래일(경과 0~19일), 표시 전용
 DROP = -0.01           # (이번 분기 영업이익 − 전년 같은 분기) ÷ 시총
 COL = "earn_drop_60d"
 STALE_DAYS = 45        # 자료의 마지막 접수일이 이만큼(거래일) 지나면 로그에 경고
@@ -77,6 +80,58 @@ def attach(df, asof=None, ticker_col="ticker", col=COL):
         else:
             vals.append("")
     df = df.copy(); df[col] = vals
+    return df, n
+
+
+def load_recent(asof=None, lookback=RECENT_LOOKBACK, db=EARN_DB, cal_db=OHLCV_DB):
+    """→ {ticker: (원본 접수일, 경과 거래일, 부호)}. SUE 결측도 포함한 최신 보고서 하나.
+
+    원본/정정 구분은 earnings_q 적재 단계 규칙을 따른다. 접수일은 0일이며
+    기존 load와 같은 달력·창 경계를 쓴다. 실패하면 빈 표시(비치명).
+    """
+    try:
+        if lookback <= 0:
+            return {}
+        with closing(sqlite3.connect(f"file:{cal_db}?mode=ro", uri=True)) as con:
+            con.execute("PRAGMA query_only=ON")
+            dates = [d for (d,) in con.execute(
+                "SELECT DISTINCT date FROM market_daily WHERE series='KOSPI' ORDER BY date")]
+        if asof:
+            asof = "".join(ch for ch in str(asof) if ch.isdigit())[:8]
+            dates = [d for d in dates if d <= asof]
+        if not dates:
+            return {}
+        start, end = dates[max(0, len(dates) - lookback)], dates[-1]
+        with closing(sqlite3.connect(f"file:{db}?mode=ro", uri=True)) as con:
+            con.execute("PRAGMA query_only=ON")
+            rows = con.execute(
+                "SELECT ticker, rcept_dt, sue FROM earnings_q WHERE rcept_dt>=? AND rcept_dt<=? "
+                "ORDER BY rcept_dt, year, reprt_ord", (start, end)).fetchall()
+        latest = {}
+        for ticker, rcept_dt, sue in rows:
+            sign = "↓" if sue is not None and sue <= DROP else "↑" if sue is not None and sue >= abs(DROP) else ""
+            date = str(rcept_dt)
+            latest[str(ticker).zfill(6)] = (date, len(dates) - bisect_right(dates, date), sign)
+        return latest
+    except Exception as e:
+        print(f"   ⚠️ earnings_flag: 최근 접수 로드 실패(비치명, 표시 없음): {e}")
+        return {}
+
+
+def attach_recent(df, asof=None, ticker_col="ticker", col="earn_recent_20d"):
+    """행·기존 열을 보존하고 '접수 3일(↓)' / '접수 12일' / '' 열 추가. 반환 (df, 건수)."""
+    flags = load_recent(asof)
+    vals, n = [], 0
+    for ticker in df[ticker_col]:
+        item = flags.get(str(ticker).zfill(6))
+        if item is None:
+            vals.append("")
+        else:
+            _, days_ago, sign = item
+            vals.append(f"접수 {days_ago}일" + (f"({sign})" if sign else ""))
+            n += 1
+    df = df.copy()
+    df[col] = vals
     return df, n
 
 

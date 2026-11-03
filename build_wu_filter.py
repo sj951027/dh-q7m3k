@@ -291,6 +291,7 @@ def main():
     try:
         import earnings_flag as _ern
         g, _ne = _ern.attach(g, asof=rid)
+        g, _ = _ern.attach_recent(g, asof=rid)
         if _ne: print(f"  📉 실적 악화 60거래일 내 {_ne}종목(배지)")
     except Exception as _e:
         print(f"  ⚠️ 실적 배지 생략(비치명): {_e}")

@@ -1,0 +1,133 @@
+{
+  "diversify_picks.py": "PASS: only one added attach_recent assignment, all other AST identical",
+  "build_lowvol_filter.py": "PASS: only one added attach_recent assignment, all other AST identical",
+  "build_wu_filter.py": "PASS: only one added attach_recent assignment, all other AST identical",
+  "build_mom_filter.py": "PASS: only one added attach_recent assignment, all other AST identical",
+  "existing_earnings_functions": "PASS: all original function ASTs unchanged",
+  "frozen_v30_rows": {
+    "rows": 1483,
+    "new_column_hits": 2,
+    "unchanged_cells": 13347,
+    "columns_before": [
+      "run_id",
+      "market",
+      "ticker",
+      "model_id",
+      "spec_hash",
+      "final_score_v3",
+      "grade",
+      "bucket",
+      "frozen_at"
+    ],
+    "after_column": "earn_recent_20d",
+    "csv_without_new_column_identical": true
+  },
+  "coverage": {
+    "asof": "20261030",
+    "flag_count": 6,
+    "top20_n": 20,
+    "top20_hits": 0,
+    "top20_percent": 0.0,
+    "by_market": {
+      "kosdaq": {
+        "n": 10,
+        "hits": 0
+      },
+      "kospi": {
+        "n": 10,
+        "hits": 0
+      }
+    },
+    "flags": {
+      "226340": [
+        "20261007",
+        16,
+        ""
+      ],
+      "396470": [
+        "20261026",
+        4,
+        "↑"
+      ],
+      "032580": [
+        "20261029",
+        1,
+        "↑"
+      ],
+      "307180": [
+        "20261029",
+        1,
+        ""
+      ],
+      "044990": [
+        "20261030",
+        0,
+        ""
+      ],
+      "469480": [
+        "20261030",
+        0,
+        ""
+      ]
+    }
+  },
+  "line_endings": {
+    "earnings_flag.py": {
+      "CRLF": 0,
+      "LF": 279
+    },
+    "tests/test_earnings_flag.py": {
+      "CRLF": 0,
+      "LF": 184
+    },
+    "diversify_picks.py": {
+      "CRLF": 0,
+      "LF": 447
+    },
+    "build_lowvol_filter.py": {
+      "CRLF": 0,
+      "LF": 274
+    },
+    "build_wu_filter.py": {
+      "CRLF": 0,
+      "LF": 322
+    },
+    "build_mom_filter.py": {
+      "CRLF": 0,
+      "LF": 285
+    },
+    "docs/filter.html": {
+      "CRLF": 1652,
+      "LF": 0
+    },
+    "docs/lowvol.html": {
+      "CRLF": 366,
+      "LF": 0
+    },
+    "docs/lva.html": {
+      "CRLF": 0,
+      "LF": 365
+    },
+    "docs/le.html": {
+      "CRLF": 0,
+      "LF": 358
+    },
+    "docs/sv.html": {
+      "CRLF": 330,
+      "LF": 0
+    },
+    "docs/qs.html": {
+      "CRLF": 0,
+      "LF": 289
+    },
+    "docs/px.html": {
+      "CRLF": 0,
+      "LF": 331
+    },
+    "docs/mom.html": {
+      "CRLF": 0,
+      "LF": 352
+    }
+  },
+  "db_states_unchanged": true
+}

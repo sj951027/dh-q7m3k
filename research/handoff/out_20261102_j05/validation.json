@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": [
+    "frozen hashes",
+    "6 replaced slots / 7 blocked",
+    "ranks11..15 only",
+    "all NAV summary formulas",
+    "skip unavailable rank11",
+    "distinct rank12+13",
+    "rank16 prohibited",
+    "failed replacement retains cash weight and original list"
+  ]
+}
