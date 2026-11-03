@@ -6,8 +6,12 @@
 - 진화 검토 2차: 내 점검문 교정 8건 수용 → `handoff/CLAUDE_20261104_evolution_round2_merge.md`. 먼저 할 다섯 = ① 관측 계약 한 장 ② F1·F5·F3(+F2) ③ 300만원 장부 ④ 탐색 원장·자격 심사 ⑤ 절차 모의검증. 보류 = 청산 3장·앙상블 ①·ROE 제거·10년 합격장·자동 2·3차 판정.
 - 지도 §13 2단계 ① 문장을 사용자 11/3 승인대로 하나로 고정 · 점검문 §0 문구 교정.
 
-## 사용자 결정(대기)
-1. lv_e 라벨 '유의(11/4 정본)' 확정 2. 승격(표시 기준 lv_b→lv_e) — 권장 1주 관전 뒤 재질문 3. 후속 창은 관측 계약 뒤 4. 처방 = merge §3 순서.
+## 사용자 결정(확정 "그렇게 확정")
+1. lv_e 라벨 **'유의(11/4 정본)'** 2. 승격(표시 기준 lv_b→lv_e)은 **1주 관전 뒤(≈11/11) 재질문** 3. 후속 창은 관측 계약 뒤 4. 처방 = merge §3 순서(관측 계약 → F1·F5·F3 → 300만원 장부 → 탐색 원장 → 절차 모의검증).
+- 반영: `VERDICT_20261104_lv_e.md` 정본 · `MODELS_LEDGER.md`(lv_e 행·lv_b 행·공통 메모) · `docs/models_registry.json`(sealed.lv_e 유의, updated 2026-11-04) · `tests/run_tests.py` 전체 통과 · 커밋·푸시(사용자 요청).
 
 ## 다음 세션 시작점
-- 결정이 오면: VERDICT 정본화 → `MODELS_LEDGER.md`(lv_e 행·lv_b 행 각주) · `docs/models_registry.json`(sealed.lv_e) → `python tests/run_tests.py` → 커밋. 그다음 ① 관측 계약 한 장 작성.
+1. **관측 계약 한 장** `research/OBSERVATION_CONTRACT_20261104.md` 초안(merge §3 ①: lv_e 후속 창 정의·E3 전향·소액 (a)~(c) 결과의 쓰임·돈 지표 정의(h40·전종목·비용 0.5%)·§13 2단계 ① 문장·MDE 표기) → 사용자 승인 뒤 VERDICT_RULES 에 한 절.
+2. 병행: 운영 검토 F1·F5·F3(+F2) 수정 — 각각 합성 사고 테스트 + 0-diff + 승인.
+3. ≈11/11 lv_e 승격 재질문 · ≈11/13 sv_b 판정(요청서 `REQUEST_20261103_sv_b_verdict_blind.md`).
+4. 그다음 300만원 장부 설계 → 탐색 원장·자격 심사.
