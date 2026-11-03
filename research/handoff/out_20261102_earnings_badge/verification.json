@@ -97,7 +97,7 @@
       "LF": 285
     },
     "docs/filter.html": {
-      "CRLF": 1652,
+      "CRLF": 1653,
       "LF": 0
     },
     "docs/lowvol.html": {
@@ -129,5 +129,56 @@
       "LF": 352
     }
   },
-  "db_states_unchanged": true
+  "db_states_unchanged": true,
+  "finished_at": "2026-11-03T19:14:15+09:00",
+  "pages": [
+    {
+      "page": "filter",
+      "inlineScripts": 1,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection, existing/new column preferences preserve later opt-out"
+    },
+    {
+      "page": "lowvol",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    },
+    {
+      "page": "lva",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    },
+    {
+      "page": "le",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    },
+    {
+      "page": "sv",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    },
+    {
+      "page": "qs",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    },
+    {
+      "page": "px",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    },
+    {
+      "page": "mom",
+      "inlineScripts": 2,
+      "status": "PASS",
+      "checks": "JS syntax, gray labels/empty input, no raw HTML injection"
+    }
+  ]
 }

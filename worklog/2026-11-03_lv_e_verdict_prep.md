@@ -38,4 +38,4 @@
 
 ## 다음 세션 시작점 (보강)
 0. 커밋: 운영 14파일(earnings_flag·소비처 4·docs/*.html 8·tests) + patch_note 2 + research/handoff 11/2 답·코드·out + verdict_lv_e 스크립트 + worklog·지도. `research/large_verdict_status.md` 는 배치 산출물(제외).
-
+- **(19:40) 눈가림 각주 예약**: Codex(실적 구현 세션)가 이 기록의 lv_e 중간 관측 본문을 읽었다고 스스로 고지함(`worklog/2026-11-03_codex_macro_j05_earnings.md`). lv_e 판정의 Codex 독립 재현은 '완전한 눈가림 아님'으로 §4 에 적는다(10/18 v30 W2b 와 같은 처리 — 구현 독립이라 계산 실수 검출 목적은 충족).
