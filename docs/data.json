@@ -1,7 +1,15 @@
 {
-  "generated_at": "2026-11-04 20:40 KST",
+  "generated_at": "2026-11-05 20:41 KST",
   "runs": {
     "kospi": [
+      {
+        "run_id": "20261105",
+        "market_regime": "약세",
+        "regime_score": -14,
+        "usdkrw": 1342.98,
+        "foreign_5d": -77795.0,
+        "stage1_count": 726
+      },
       {
         "run_id": "20261104",
         "market_regime": "약세",
@@ -233,17 +241,17 @@
         "usdkrw": 1387.96,
         "foreign_5d": -61999.0,
         "stage1_count": 735
-      },
-      {
-        "run_id": "20260917",
-        "market_regime": "강세",
-        "regime_score": -3,
-        "usdkrw": 1384.74,
-        "foreign_5d": -93143.0,
-        "stage1_count": 737
       }
     ],
     "kosdaq": [
+      {
+        "run_id": "20261105",
+        "market_regime": "약세",
+        "regime_score": -8,
+        "usdkrw": 1343.38,
+        "foreign_5d": -1078.0,
+        "stage1_count": 1603
+      },
       {
         "run_id": "20261104",
         "market_regime": "약세",
@@ -475,14 +483,6 @@
         "usdkrw": 1387.08,
         "foreign_5d": -3025.0,
         "stage1_count": 1619
-      },
-      {
-        "run_id": "20260917",
-        "market_regime": "반등",
-        "regime_score": -5,
-        "usdkrw": 1384.28,
-        "foreign_5d": -3059.0,
-        "stage1_count": 1619
       }
     ]
   },
@@ -490,37 +490,100 @@
     "kospi": {
       "top": [
         {
-          "ticker": "120110",
-          "name": "코오롱인더",
+          "ticker": "008490",
+          "name": "서흥",
           "sector": "화학",
-          "final_score_v3": 95.6,
-          "grade": "A+",
-          "bucket": "BUY",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "016380",
-          "name": "KG스틸",
-          "sector": "철강·1차금속",
-          "final_score_v3": 80.0,
-          "grade": "A+",
-          "bucket": "BUY",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "017940",
-          "name": "E1",
-          "sector": "도매",
-          "final_score_v3": 76.4,
+          "final_score_v3": 83.5,
           "grade": "A",
           "bucket": "BUY",
           "q_basis": "3개월"
         },
         {
-          "ticker": "071320",
-          "name": "지역난방공사",
-          "sector": "전력·가스",
-          "final_score_v3": 86.2,
+          "ticker": "058650",
+          "name": "세아홀딩스",
+          "sector": "철강·1차금속",
+          "final_score_v3": 78.4,
+          "grade": "A",
+          "bucket": "BUY",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "009290",
+          "name": "광동제약",
+          "sector": "제약·바이오",
+          "final_score_v3": 74.9,
+          "grade": "A",
+          "bucket": "BUY",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "079980",
+          "name": "휴비스",
+          "sector": "화학",
+          "final_score_v3": 69.9,
+          "grade": "A",
+          "bucket": "BUY",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "004430",
+          "name": "송원산업",
+          "sector": "화학",
+          "final_score_v3": 89.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "014910",
+          "name": "성문전자",
+          "sector": "반도체·전자부품",
+          "final_score_v3": 85.0,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "009200",
+          "name": "무림페이퍼",
+          "sector": "펄프·종이",
+          "final_score_v3": 84.7,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "272550",
+          "name": "삼양패키징",
+          "sector": "고무·플라스틱",
+          "final_score_v3": 83.6,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "058430",
+          "name": "포스코스틸리온",
+          "sector": "철강·1차금속",
+          "final_score_v3": 83.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "120110",
+          "name": "코오롱인더",
+          "sector": "화학",
+          "final_score_v3": 83.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "010100",
+          "name": "한국무브넥스",
+          "sector": "자동차·부품",
+          "final_score_v3": 82.0,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -529,151 +592,16 @@
           "ticker": "075580",
           "name": "세진중공업",
           "sector": "조선·기타운송",
-          "final_score_v3": 79.4,
+          "final_score_v3": 81.4,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "007210",
-          "name": "벽산",
-          "sector": "비금속광물(시멘트·유리)",
-          "final_score_v3": 78.9,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "001340",
-          "name": "PKC",
-          "sector": "화학",
-          "final_score_v3": 77.7,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "439260",
-          "name": "대한조선",
-          "sector": "조선·기타운송",
-          "final_score_v3": 73.6,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "111770",
-          "name": "영원무역",
-          "sector": "도매",
-          "final_score_v3": 71.2,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "329180",
-          "name": "HD현대중공업",
-          "sector": "조선·기타운송",
-          "final_score_v3": 69.8,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "001560",
-          "name": "제일연마",
-          "sector": "비금속광물(시멘트·유리)",
-          "final_score_v3": 67.5,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "009290",
-          "name": "광동제약",
-          "sector": "제약·바이오",
-          "final_score_v3": 66.8,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "008730",
-          "name": "율촌화학",
-          "sector": "고무·플라스틱",
-          "final_score_v3": 64.1,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "483650",
-          "name": "달바글로벌",
-          "sector": "화학",
-          "final_score_v3": 63.9,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "002030",
-          "name": "아세아",
-          "sector": "엔지니어링",
-          "final_score_v3": 63.8,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "000680",
-          "name": "LS네트웍스",
-          "sector": "도매",
-          "final_score_v3": 61.6,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "003720",
-          "name": "삼영",
-          "sector": "고무·플라스틱",
-          "final_score_v3": 61.6,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "161890",
-          "name": "한국콜마",
-          "sector": "화학",
-          "final_score_v3": 61.4,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "005490",
-          "name": "POSCO홀딩스",
-          "sector": "철강·1차금속",
-          "final_score_v3": 61.1,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "443060",
-          "name": "HD현대마린솔루션",
-          "sector": "연구개발",
-          "final_score_v3": 60.8,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "457190",
-          "name": "이수스페셜티케미컬",
-          "sector": "화학",
-          "final_score_v3": 60.6,
+          "ticker": "071320",
+          "name": "지역난방공사",
+          "sector": "전력·가스",
+          "final_score_v3": 79.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -682,25 +610,115 @@
           "ticker": "001060",
           "name": "JW중외제약",
           "sector": "제약·바이오",
-          "final_score_v3": 60.6,
+          "final_score_v3": 78.5,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "178920",
-          "name": "PI첨단소재",
-          "sector": "고무·플라스틱",
-          "final_score_v3": 60.4,
+          "ticker": "120030",
+          "name": "조선선재",
+          "sector": "금속가공",
+          "final_score_v3": 75.5,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "000230",
-          "name": "일동홀딩스",
+          "ticker": "029460",
+          "name": "케이씨",
+          "sector": "의료·정밀·광학",
+          "final_score_v3": 75.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "003200",
+          "name": "일신방직",
+          "sector": "섬유",
+          "final_score_v3": 73.5,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "377300",
+          "name": "카카오페이",
+          "sector": "금융보조",
+          "final_score_v3": 73.0,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "114090",
+          "name": "GKL",
+          "sector": "예술·스포츠",
+          "final_score_v3": 72.7,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "037270",
+          "name": "YG PLUS",
+          "sector": "IT서비스",
+          "final_score_v3": 72.6,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "003350",
+          "name": "한국화장품제조",
+          "sector": "화학",
+          "final_score_v3": 72.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "293480",
+          "name": "하나제약",
           "sector": "제약·바이오",
-          "final_score_v3": 59.9,
+          "final_score_v3": 72.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "105630",
+          "name": "한세실업",
+          "sector": "의복",
+          "final_score_v3": 71.2,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "007210",
+          "name": "벽산",
+          "sector": "비금속광물(시멘트·유리)",
+          "final_score_v3": 70.8,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "483650",
+          "name": "달바글로벌",
+          "sector": "화학",
+          "final_score_v3": 69.4,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "003120",
+          "name": "일성아이에스",
+          "sector": "제약·바이오",
+          "final_score_v3": 68.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -709,119 +727,65 @@
           "ticker": "014830",
           "name": "유니드",
           "sector": "화학",
-          "final_score_v3": 59.2,
+          "final_score_v3": 67.9,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "322000",
-          "name": "HD현대에너지솔루션",
-          "sector": "반도체·전자부품",
-          "final_score_v3": 59.2,
+          "ticker": "010140",
+          "name": "삼성중공업",
+          "sector": "조선·기타운송",
+          "final_score_v3": 67.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "009070",
-          "name": "KCTC",
-          "sector": "운수·물류",
-          "final_score_v3": 59.1,
+          "ticker": "071970",
+          "name": "HD현대마린엔진",
+          "sector": "기계·장비",
+          "final_score_v3": 67.4,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "003480",
-          "name": "한진중공업홀딩스",
-          "sector": "전력·가스",
-          "final_score_v3": 58.7,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "004000",
-          "name": "롯데정밀화학",
-          "sector": "화학",
-          "final_score_v3": 57.8,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "004090",
-          "name": "한국석유",
-          "sector": "비금속광물(시멘트·유리)",
-          "final_score_v3": 57.0,
+          "ticker": "249420",
+          "name": "일동제약",
+          "sector": "제약·바이오",
+          "final_score_v3": 66.0,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         }
       ],
       "meta": {
-        "run_id": "20261104",
+        "run_id": "20261105",
         "market_regime": "약세",
-        "regime_score": -13,
-        "usdkrw": 1338.68,
-        "foreign_5d": -44861.0,
-        "stage1_count": 728
+        "regime_score": -14,
+        "usdkrw": 1342.98,
+        "foreign_5d": -77795.0,
+        "stage1_count": 726
       },
       "ranked_by": "v3"
     },
     "kosdaq": {
       "top": [
         {
-          "ticker": "093380",
-          "name": "풍강",
-          "sector": "금속가공",
-          "final_score_v3": 87.5,
-          "grade": "A",
-          "bucket": "BUY",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "014570",
-          "name": "고려제약",
+          "ticker": "078140",
+          "name": "대봉엘에스",
           "sector": "제약·바이오",
-          "final_score_v3": 85.6,
-          "grade": "A+",
-          "bucket": "BUY",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "005990",
-          "name": "매일홀딩스",
-          "sector": "식료품",
-          "final_score_v3": 78.9,
+          "final_score_v3": 78.8,
           "grade": "A",
           "bucket": "BUY",
           "q_basis": "3개월"
         },
         {
-          "ticker": "078150",
-          "name": "HB테크놀러지",
-          "sector": "기계·장비",
-          "final_score_v3": 68.8,
-          "grade": "A",
-          "bucket": "BUY",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "079960",
-          "name": "동양이엔피",
-          "sector": "전기장비",
-          "final_score_v3": 66.8,
-          "grade": "A",
-          "bucket": "BUY",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "277880",
-          "name": "티에스아이",
-          "sector": "기계·장비",
-          "final_score_v3": 65.2,
+          "ticker": "046440",
+          "name": "KG파이낸셜",
+          "sector": "출판·SW",
+          "final_score_v3": 74.9,
           "grade": "A",
           "bucket": "BUY",
           "q_basis": "3개월"
@@ -830,7 +794,7 @@
           "ticker": "108380",
           "name": "대양전기공업",
           "sector": "조선·기타운송",
-          "final_score_v3": 65.0,
+          "final_score_v3": 69.4,
           "grade": "A",
           "bucket": "BUY",
           "q_basis": "3개월"
@@ -839,115 +803,43 @@
           "ticker": "122450",
           "name": "KX",
           "sector": "방송",
-          "final_score_v3": 86.2,
+          "final_score_v3": 89.1,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "039830",
-          "name": "오로라",
-          "sector": "전문서비스",
-          "final_score_v3": 79.4,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "033500",
-          "name": "동성화인텍",
-          "sector": "화학",
-          "final_score_v3": 77.9,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "126640",
-          "name": "화신정공",
-          "sector": "자동차·부품",
-          "final_score_v3": 77.0,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "179290",
-          "name": "엠아이텍",
-          "sector": "의료·정밀·광학",
-          "final_score_v3": 74.9,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "092460",
-          "name": "한라IMS",
-          "sector": "조선·기타운송",
-          "final_score_v3": 69.6,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "465480",
-          "name": "인스피언",
-          "sector": "출판·SW",
-          "final_score_v3": 69.4,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "078140",
-          "name": "대봉엘에스",
+          "ticker": "014570",
+          "name": "고려제약",
           "sector": "제약·바이오",
-          "final_score_v3": 67.4,
+          "final_score_v3": 84.8,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "144510",
-          "name": "지씨셀",
-          "sector": "전문서비스",
-          "final_score_v3": 67.0,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "318410",
-          "name": "비비씨",
-          "sector": "화학",
-          "final_score_v3": 66.0,
-          "grade": "B",
-          "bucket": "WAIT",
-          "q_basis": "3개월"
-        },
-        {
-          "ticker": "106190",
-          "name": "하이텍팜",
+          "ticker": "060590",
+          "name": "씨티씨바이오",
           "sector": "제약·바이오",
-          "final_score_v3": 65.8,
+          "final_score_v3": 83.4,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "060370",
-          "name": "LS마린솔루션",
-          "sector": "건설",
-          "final_score_v3": 65.6,
+          "ticker": "001540",
+          "name": "안국약품",
+          "sector": "제약·바이오",
+          "final_score_v3": 82.8,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "147830",
-          "name": "제룡산업",
-          "sector": "금속가공",
-          "final_score_v3": 64.9,
+          "ticker": "059100",
+          "name": "아이컴포넌트",
+          "sector": "반도체·전자부품",
+          "final_score_v3": 75.0,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -956,61 +848,70 @@
           "ticker": "476060",
           "name": "온코닉테라퓨틱스",
           "sector": "지주·전문서비스",
-          "final_score_v3": 64.6,
+          "final_score_v3": 72.5,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "333430",
-          "name": "일승",
-          "sector": "조선·기타운송",
-          "final_score_v3": 64.0,
+          "ticker": "013990",
+          "name": "아가방컴퍼니",
+          "sector": "도매",
+          "final_score_v3": 72.2,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "462980",
-          "name": "아이지넷",
-          "sector": "IT서비스",
-          "final_score_v3": 63.3,
+          "ticker": "0009K0",
+          "name": "에임드바이오",
+          "sector": "지주·전문서비스",
+          "final_score_v3": 71.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "123410",
-          "name": "코리아에프티",
-          "sector": "자동차·부품",
-          "final_score_v3": 63.2,
+          "ticker": "144510",
+          "name": "지씨셀",
+          "sector": "전문서비스",
+          "final_score_v3": 71.0,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "014940",
-          "name": "오리엔탈정공",
+          "ticker": "071280",
+          "name": "로체시스템즈",
           "sector": "기계·장비",
-          "final_score_v3": 63.1,
+          "final_score_v3": 70.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "095660",
-          "name": "네오위즈",
-          "sector": "출판·SW",
-          "final_score_v3": 62.8,
+          "ticker": "038290",
+          "name": "마크로젠",
+          "sector": "전문서비스",
+          "final_score_v3": 69.9,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "054930",
-          "name": "유신",
-          "sector": "연구개발",
-          "final_score_v3": 61.9,
+          "ticker": "015750",
+          "name": "성우하이텍",
+          "sector": "자동차·부품",
+          "final_score_v3": 69.5,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "122690",
+          "name": "서진오토모티브",
+          "sector": "자동차·부품",
+          "final_score_v3": 68.8,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -1019,7 +920,34 @@
           "ticker": "0008Z0",
           "name": "에스엔시스",
           "sector": "전기장비",
-          "final_score_v3": 61.8,
+          "final_score_v3": 68.6,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "041510",
+          "name": "에스엠",
+          "sector": "미디어·엔터",
+          "final_score_v3": 68.6,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "013030",
+          "name": "하이록코리아",
+          "sector": "철강·1차금속",
+          "final_score_v3": 68.0,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "053290",
+          "name": "NE능률",
+          "sector": "출판·SW",
+          "final_score_v3": 67.3,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
@@ -1028,28 +956,100 @@
           "ticker": "214450",
           "name": "파마리서치",
           "sector": "제약·바이오",
-          "final_score_v3": 61.7,
+          "final_score_v3": 66.9,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         },
         {
-          "ticker": "460930",
-          "name": "현대힘스",
-          "sector": "조선·기타운송",
-          "final_score_v3": 61.5,
+          "ticker": "106190",
+          "name": "하이텍팜",
+          "sector": "제약·바이오",
+          "final_score_v3": 66.6,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "462980",
+          "name": "아이지넷",
+          "sector": "IT서비스",
+          "final_score_v3": 66.4,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "318410",
+          "name": "비비씨",
+          "sector": "화학",
+          "final_score_v3": 65.3,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "465480",
+          "name": "인스피언",
+          "sector": "출판·SW",
+          "final_score_v3": 63.9,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "0015N0",
+          "name": "아로마티카",
+          "sector": "화학",
+          "final_score_v3": 63.6,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "376300",
+          "name": "디어유",
+          "sector": "출판·SW",
+          "final_score_v3": 63.5,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "045660",
+          "name": "에이텍",
+          "sector": "기계·장비",
+          "final_score_v3": 62.1,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "139670",
+          "name": "키네마스터",
+          "sector": "출판·SW",
+          "final_score_v3": 59.9,
+          "grade": "B",
+          "bucket": "WAIT",
+          "q_basis": "3개월"
+        },
+        {
+          "ticker": "024940",
+          "name": "PN풍년",
+          "sector": "도매",
+          "final_score_v3": 59.6,
           "grade": "B",
           "bucket": "WAIT",
           "q_basis": "3개월"
         }
       ],
       "meta": {
-        "run_id": "20261104",
+        "run_id": "20261105",
         "market_regime": "약세",
-        "regime_score": -7,
-        "usdkrw": 1339.02,
-        "foreign_5d": -857.0,
-        "stage1_count": 1609
+        "regime_score": -8,
+        "usdkrw": 1343.38,
+        "foreign_5d": -1078.0,
+        "stage1_count": 1603
       },
       "ranked_by": "v3"
     }
@@ -1059,8 +1059,8 @@
       {
         "name": "SK디앤디",
         "ticker": "210980",
-        "appearances": 89,
-        "avg_score": 59.8,
+        "appearances": 90,
+        "avg_score": 59.9,
         "max_score": 94.0,
         "v3_score": -999.0,
         "grade": "EXCLUDE",
@@ -1069,7 +1069,7 @@
       {
         "name": "계양전기",
         "ticker": "012200",
-        "appearances": 88,
+        "appearances": 89,
         "avg_score": 91.9,
         "max_score": 118.4,
         "v3_score": -999.0,
@@ -1079,59 +1079,99 @@
       {
         "name": "한국카본",
         "ticker": "017960",
-        "appearances": 87,
+        "appearances": 88,
         "avg_score": 92.4,
         "max_score": 110.9,
-        "v3_score": 70.7,
+        "v3_score": 58.4,
         "grade": "WATCH",
         "bucket": "WATCH"
       },
       {
         "name": "코오롱",
         "ticker": "002020",
-        "appearances": 86,
-        "avg_score": 82.1,
+        "appearances": 87,
+        "avg_score": 81.9,
         "max_score": 127.0,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
+        "v3_score": 30.0,
+        "grade": "WATCH",
+        "bucket": "WATCH"
       },
       {
         "name": "STX엔진",
         "ticker": "077970",
-        "appearances": 85,
-        "avg_score": 80.4,
+        "appearances": 86,
+        "avg_score": 80.3,
         "max_score": 117.7,
-        "v3_score": 16.6,
+        "v3_score": 26.0,
         "grade": "B",
-        "bucket": "WAIT"
+        "bucket": "OBSERVE"
       },
       {
         "name": "아이에스동서",
         "ticker": "010780",
-        "appearances": 83,
-        "avg_score": 79.8,
+        "appearances": 84,
+        "avg_score": 79.5,
         "max_score": 121.1,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
+        "v3_score": 42.0,
+        "grade": "B",
+        "bucket": "WAIT"
       },
       {
         "name": "태경케미컬",
         "ticker": "006890",
-        "appearances": 82,
+        "appearances": 83,
         "avg_score": 67.5,
         "max_score": 95.1,
-        "v3_score": 54.7,
+        "v3_score": 52.2,
         "grade": "B",
         "bucket": "WAIT"
       },
       {
         "name": "더본코리아",
         "ticker": "475560",
-        "appearances": 81,
-        "avg_score": 67.6,
+        "appearances": 82,
+        "avg_score": 67.7,
         "max_score": 99.8,
+        "v3_score": -999.0,
+        "grade": "EXCLUDE",
+        "bucket": "EXCLUDE"
+      },
+      {
+        "name": "현대로템",
+        "ticker": "064350",
+        "appearances": 81,
+        "avg_score": 85.6,
+        "max_score": 123.9,
+        "v3_score": 51.0,
+        "grade": "B",
+        "bucket": "OBSERVE"
+      },
+      {
+        "name": "한국전자홀딩스",
+        "ticker": "006200",
+        "appearances": 81,
+        "avg_score": 79.5,
+        "max_score": 116.0,
+        "v3_score": 62.0,
+        "grade": "WATCH",
+        "bucket": "WATCH"
+      },
+      {
+        "name": "SNT다이내믹스",
+        "ticker": "003570",
+        "appearances": 81,
+        "avg_score": 67.5,
+        "max_score": 103.8,
+        "v3_score": 12.6,
+        "grade": "WATCH",
+        "bucket": "WATCH"
+      },
+      {
+        "name": "대구백화점",
+        "ticker": "006370",
+        "appearances": 81,
+        "avg_score": 64.7,
+        "max_score": 105.1,
         "v3_score": -999.0,
         "grade": "EXCLUDE",
         "bucket": "EXCLUDE"
@@ -1147,26 +1187,6 @@
         "bucket": null
       },
       {
-        "name": "현대로템",
-        "ticker": "064350",
-        "appearances": 80,
-        "avg_score": 85.5,
-        "max_score": 123.9,
-        "v3_score": 49.2,
-        "grade": "B",
-        "bucket": "WAIT"
-      },
-      {
-        "name": "한국전자홀딩스",
-        "ticker": "006200",
-        "appearances": 80,
-        "avg_score": 79.3,
-        "max_score": 116.0,
-        "v3_score": 62.0,
-        "grade": "WATCH",
-        "bucket": "WATCH"
-      },
-      {
         "name": "고려아연",
         "ticker": "010130",
         "appearances": 80,
@@ -1177,34 +1197,14 @@
         "bucket": null
       },
       {
-        "name": "SNT다이내믹스",
-        "ticker": "003570",
-        "appearances": 80,
-        "avg_score": 67.8,
-        "max_score": 103.8,
-        "v3_score": 6.4,
-        "grade": "WATCH",
-        "bucket": "WATCH"
-      },
-      {
-        "name": "대구백화점",
-        "ticker": "006370",
-        "appearances": 80,
-        "avg_score": 64.8,
-        "max_score": 105.1,
-        "v3_score": -999.0,
-        "grade": "EXCLUDE",
-        "bucket": "EXCLUDE"
-      },
-      {
         "name": "SG세계물산",
         "ticker": "004060",
-        "appearances": 79,
-        "avg_score": 63.4,
+        "appearances": 80,
+        "avg_score": 63.3,
         "max_score": 103.1,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
+        "v3_score": 26.2,
+        "grade": "WATCH",
+        "bucket": "WATCH"
       },
       {
         "name": "롯데관광개발",
@@ -1217,6 +1217,16 @@
         "bucket": null
       },
       {
+        "name": "화승엔터프라이즈",
+        "ticker": "241590",
+        "appearances": 78,
+        "avg_score": 87.7,
+        "max_score": 121.7,
+        "v3_score": 57.2,
+        "grade": "C",
+        "bucket": "OBSERVE"
+      },
+      {
         "name": "대한유화",
         "ticker": "006650",
         "appearances": 78,
@@ -1227,32 +1237,22 @@
         "bucket": null
       },
       {
-        "name": "화승엔터프라이즈",
-        "ticker": "241590",
-        "appearances": 77,
-        "avg_score": 87.7,
-        "max_score": 121.7,
-        "v3_score": 56.7,
-        "grade": "C",
-        "bucket": "OBSERVE"
-      },
-      {
         "name": "우진",
         "ticker": "105840",
-        "appearances": 77,
-        "avg_score": 75.9,
+        "appearances": 78,
+        "avg_score": 75.8,
         "max_score": 114.6,
-        "v3_score": -0.9,
+        "v3_score": -1.0,
         "grade": "WATCH",
         "bucket": "WATCH"
       },
       {
         "name": "에코프로머티",
         "ticker": "450080",
-        "appearances": 77,
+        "appearances": 78,
         "avg_score": 70.9,
         "max_score": 97.2,
-        "v3_score": 37.2,
+        "v3_score": 23.8,
         "grade": "C",
         "bucket": "OBSERVE"
       }
@@ -1261,22 +1261,32 @@
       {
         "name": "하이텍팜",
         "ticker": "106190",
-        "appearances": 92,
-        "avg_score": 80.2,
+        "appearances": 93,
+        "avg_score": 80.5,
         "max_score": 114.6,
-        "v3_score": 65.8,
+        "v3_score": 66.6,
         "grade": "B",
         "bucket": "WAIT"
       },
       {
         "name": "아셈스",
         "ticker": "136410",
-        "appearances": 90,
+        "appearances": 91,
         "avg_score": 63.5,
         "max_score": 108.5,
-        "v3_score": 21.0,
+        "v3_score": 20.8,
         "grade": "C",
         "bucket": "OBSERVE"
+      },
+      {
+        "name": "브리지텍",
+        "ticker": "064480",
+        "appearances": 90,
+        "avg_score": 74.8,
+        "max_score": 101.1,
+        "v3_score": 42.8,
+        "grade": "WATCH",
+        "bucket": "WATCH"
       },
       {
         "name": "디와이피엔에프",
@@ -1289,49 +1299,39 @@
         "bucket": null
       },
       {
-        "name": "브리지텍",
-        "ticker": "064480",
-        "appearances": 89,
-        "avg_score": 74.6,
-        "max_score": 101.1,
-        "v3_score": 42.4,
-        "grade": "WATCH",
-        "bucket": "WATCH"
-      },
-      {
         "name": "우양",
         "ticker": "103840",
-        "appearances": 88,
-        "avg_score": 71.5,
+        "appearances": 89,
+        "avg_score": 71.4,
         "max_score": 105.8,
-        "v3_score": 9.1,
+        "v3_score": 7.9,
         "grade": "WATCH",
         "bucket": "WATCH"
       },
       {
         "name": "와토스코리아",
         "ticker": "079000",
-        "appearances": 88,
+        "appearances": 89,
         "avg_score": 59.1,
         "max_score": 88.5,
-        "v3_score": 14.4,
+        "v3_score": 20.1,
         "grade": "C",
         "bucket": "OBSERVE"
       },
       {
         "name": "iMBC",
         "ticker": "052220",
-        "appearances": 87,
+        "appearances": 88,
         "avg_score": 91.0,
         "max_score": 121.6,
-        "v3_score": 39.0,
+        "v3_score": 43.4,
         "grade": "C",
         "bucket": "OBSERVE"
       },
       {
         "name": "티엑스알로보틱스",
         "ticker": "484810",
-        "appearances": 87,
+        "appearances": 88,
         "avg_score": 78.4,
         "max_score": 128.3,
         "v3_score": -999.0,
@@ -1341,8 +1341,8 @@
       {
         "name": "에이비엘바이오",
         "ticker": "298380",
-        "appearances": 87,
-        "avg_score": 72.8,
+        "appearances": 88,
+        "avg_score": 72.6,
         "max_score": 105.8,
         "v3_score": -999.0,
         "grade": "EXCLUDE",
@@ -1351,27 +1351,27 @@
       {
         "name": "에이에스텍",
         "ticker": "453860",
-        "appearances": 87,
-        "avg_score": 59.4,
+        "appearances": 88,
+        "avg_score": 59.1,
         "max_score": 87.5,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
+        "v3_score": 7.3,
+        "grade": "WATCH",
+        "bucket": "WATCH"
       },
       {
         "name": "삼표시멘트",
         "ticker": "038500",
-        "appearances": 86,
-        "avg_score": 87.7,
+        "appearances": 87,
+        "avg_score": 87.4,
         "max_score": 132.8,
-        "v3_score": null,
-        "grade": null,
-        "bucket": null
+        "v3_score": 24.7,
+        "grade": "WATCH",
+        "bucket": "WATCH"
       },
       {
         "name": "아이티엠반도체",
         "ticker": "084850",
-        "appearances": 86,
+        "appearances": 87,
         "avg_score": 85.6,
         "max_score": 121.0,
         "v3_score": -10.0,
@@ -1381,7 +1381,7 @@
       {
         "name": "케어젠",
         "ticker": "214370",
-        "appearances": 86,
+        "appearances": 87,
         "avg_score": 77.0,
         "max_score": 106.7,
         "v3_score": 40.0,
@@ -1391,67 +1391,67 @@
       {
         "name": "엔텔스",
         "ticker": "069410",
-        "appearances": 86,
-        "avg_score": 68.2,
+        "appearances": 87,
+        "avg_score": 68.3,
         "max_score": 90.4,
-        "v3_score": 25.0,
+        "v3_score": 27.8,
         "grade": "B",
         "bucket": "OBSERVE"
       },
       {
         "name": "플레이디",
         "ticker": "237820",
-        "appearances": 86,
-        "avg_score": 63.1,
+        "appearances": 87,
+        "avg_score": 63.0,
         "max_score": 105.5,
-        "v3_score": 51.1,
+        "v3_score": 44.1,
         "grade": "B",
-        "bucket": "WAIT"
+        "bucket": "OBSERVE"
       },
       {
         "name": "오픈놀",
         "ticker": "440320",
-        "appearances": 85,
+        "appearances": 86,
         "avg_score": 93.6,
         "max_score": 119.6,
-        "v3_score": 35.4,
+        "v3_score": 33.4,
         "grade": "WATCH",
         "bucket": "WATCH"
       },
       {
         "name": "뉴엔AI",
         "ticker": "463020",
-        "appearances": 85,
-        "avg_score": 87.3,
+        "appearances": 86,
+        "avg_score": 87.5,
         "max_score": 121.2,
-        "v3_score": 46.6,
+        "v3_score": 58.0,
         "grade": "C",
         "bucket": "OBSERVE"
       },
       {
         "name": "디앤씨미디어",
         "ticker": "263720",
-        "appearances": 85,
-        "avg_score": 74.9,
+        "appearances": 86,
+        "avg_score": 74.6,
         "max_score": 120.5,
-        "v3_score": 12.3,
+        "v3_score": 23.6,
         "grade": "B",
-        "bucket": "OBSERVE"
+        "bucket": "WAIT"
       },
       {
         "name": "동운아나텍",
         "ticker": "094170",
-        "appearances": 85,
-        "avg_score": 54.5,
+        "appearances": 86,
+        "avg_score": 54.6,
         "max_score": 84.2,
-        "v3_score": -4.6,
+        "v3_score": 0.0,
         "grade": "WATCH",
         "bucket": "WATCH"
       },
       {
         "name": "새빗켐",
         "ticker": "107600",
-        "appearances": 84,
+        "appearances": 85,
         "avg_score": 96.5,
         "max_score": 122.4,
         "v3_score": -999.0,
@@ -1462,11 +1462,6 @@
   },
   "regime_history": {
     "kospi": [
-      {
-        "run_id": "20260917",
-        "regime_score": -3,
-        "market_regime": "강세"
-      },
       {
         "run_id": "20260918",
         "regime_score": -3,
@@ -1611,14 +1606,14 @@
         "run_id": "20261104",
         "regime_score": -13,
         "market_regime": "약세"
+      },
+      {
+        "run_id": "20261105",
+        "regime_score": -14,
+        "market_regime": "약세"
       }
     ],
     "kosdaq": [
-      {
-        "run_id": "20260917",
-        "regime_score": -5,
-        "market_regime": "반등"
-      },
       {
         "run_id": "20260918",
         "regime_score": -5,
@@ -1763,25 +1758,30 @@
         "run_id": "20261104",
         "regime_score": -7,
         "market_regime": "약세"
+      },
+      {
+        "run_id": "20261105",
+        "regime_score": -8,
+        "market_regime": "약세"
       }
     ]
   },
   "regime_ad": {
     "kospi": {
-      "date": "20261104",
-      "r20_pct": -21.4,
+      "date": "20261105",
+      "r20_pct": -20.4,
       "cell": "A",
       "label": "급락 뒤",
-      "days": 19,
-      "pos10": 9.9
+      "days": 20,
+      "pos10": 9.8
     },
     "kosdaq": {
-      "date": "20261104",
-      "r20_pct": -25.2,
+      "date": "20261105",
+      "r20_pct": -23.9,
       "cell": "A",
       "label": "급락 뒤",
-      "days": 10,
-      "pos10": 10.0
+      "days": 11,
+      "pos10": 9.9
     }
   }
 }
