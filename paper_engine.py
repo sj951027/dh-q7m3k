@@ -133,6 +133,14 @@ def mix_picks(dates, picks_a, picks_b):
     return out, dict(days_both=n_both, days_only_a=n_a, days_only_b=n_b, days_missing=n_m)
 
 
+def restrict_to_calendar(df, calendar, date_col="date"):
+    """[2026-11-07 F2] 보충표 행 중 **본표 거래일 달력에 없는 날짜**(주말 행·본표보다 앞선 날 등)를 버린다 → (df, 버린 행 수).
+    종전엔 그런 날짜가 종가 표의 날짜축에 들어가 모든 계좌의 진입·만기·결제 거래일을 바꾸고, 본표 종목을 그날부터 '끊김'으로 잡았다(Codex 운영 검토 F2). 순수 함수."""
+    cal = set(str(d) for d in calendar)
+    keep = df[date_col].astype(str).isin(cal)
+    return df[keep], int((~keep).sum())
+
+
 def tradable_mask(susp, chg, limit_up):
     """정지 표·등락률 표 → 진입 가능(bool) 표. 두 표의 열을 합집합으로 맞춘 뒤 비교한다 — 등락률이 전부 비어 열이 빠진 종목(상장 첫날 등)이
     있으면 `|` 뒤에 float 열이 생겨 `~` 가 TypeError 로 죽는다(2026-10-30 배치 실측). 빈 값은 '정지 아님·상한가 아님' 으로 읽는다."""

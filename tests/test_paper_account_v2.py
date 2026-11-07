@@ -112,6 +112,12 @@ check("T+2: D4 엔 현금 0(결제 대기) → K2 못 삼(현금), D5 에 대금
 check("결제 대기 중에도 NAV 는 보존(D3·D4 NAV = 1.2)", abs(nav2.loc[3, "nav"] - 1.2) < 1e-12 and abs(nav2.loc[4, "nav"] - 1.2) < 1e-12)
 check("SETTLE_DAYS = 2", pe.SETTLE_DAYS == 2)
 
+print("K. [2026-11-07 F2] restrict_to_calendar — 보충표의 본표 밖 날짜(주말 등) 제거")
+ex_df = pd.DataFrame({"ticker": ["A", "A", "A"], "date": [D[0], "20261231", D[1]], "close": [1.0, 2.0, 3.0]})   # 20261231 은 D(1~4월) 에 없는 날
+kept, n_off = pe.restrict_to_calendar(ex_df, D)
+check("본표 달력 밖 1행 제거·나머지 보존", n_off == 1 and list(kept.date) == [D[0], D[1]])
+check("전부 달력 안이면 0-diff", pe.restrict_to_calendar(ex_df.iloc[[0, 2]], D)[1] == 0)
+
 print("J. [관측 계약 11/07] 정적 반반 mix_picks — 두 목록 이어 붙임(중복 1회) · 한쪽만 있는 날은 그 목록 · 둘 다 없으면 현금")
 mx, mi = pe.mix_picks(D[:4], pv, pl)
 check("둘 다 있는 날 = 이어 붙임(v30 먼저)", mx[D[0]] == ["K1", "Q1"] and mx[D[1]] == ["K2", "Q2"])

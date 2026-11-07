@@ -26,3 +26,12 @@
 2. F2(보충표 날짜 → 본표 달력 고정)·F4(수급 창 결손일) — 각각 합성 테스트·0-diff·승인.
 3. ≈11/11 lv_e 승격 재질문 · ≈11/13 sv_b 판정 · 300만원 장부 설계.
 
+## (이어서 2) 운영 검토 F2·F4 보강 — 2026.11.3 + Codex 중간점검 요청서
+- F2 `pe.restrict_to_calendar` + `load_prices` 달력 = 본표(현재 보충표 밖 날짜 0행 → 14계좌 0-diff). F4 `summarize(calendar=)` 거래일 달력 창 검사 + `build_json` 이 ohlcv.db 달력을 넘김(수급 JSON `markets` 0-diff, `calendar` 문구 추가). 테스트 +6. 남은 운영 검토 = 하 3건(F6~F8).
+- **Codex 중간점검 요청서** `research/handoff/REQUEST_20261107_midterm_review.md`(사용자 요청): F1~F5 닫힘 여부 · mix 계좌 '반반' 정의 · 관측 계약 모순 · 판정문 인용 정확성 · 놓친 구멍 1. 전송은 사용자.
+
+## 다음 세션 시작점(최종)
+1. 11/9(월) 배치 로그: 14장 · E3 전향 첫 run · 수급 `ok`/`partial` · 점검표 19갈래 경고 0 · 보충표 달력 밖 행 메시지 유무.
+2. Codex 중간점검 답 대조 → 지적 반영(0-diff·승인) · 하 3건(F6~F8).
+3. ≈11/11 lv_e 승격 재질문 · ≈11/13 sv_b 판정(요청서 `REQUEST_20261103_sv_b_verdict_blind.md`) · 300만원 장부 설계(merge §3 ③).
+

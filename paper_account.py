@@ -60,6 +60,9 @@ def load_prices():
             con.close(); raise RuntimeError(f"보충표 daily_ohlcv_extra 를 읽지 못함: {type(e).__name__}") from None
         for f in (px, ex):
             f["ticker"] = f.ticker.astype(str).str.zfill(6)
+        ex, n_off = pe.restrict_to_calendar(ex, px["date"].unique())    # [2026-11-07 F2] 달력은 본표 기준 — 보충표에만 있는 날짜는 버린다
+        if n_off:
+            print(f"  ⚠ 보충표 행 {n_off}개가 본표 거래일 밖 날짜라 제외(달력 = 본표)")
         px = pd.concat([ex, px], ignore_index=True).drop_duplicates(["ticker", "date"], keep="last")   # 같은 (종목, 날짜)만 본표 우선 — 보충표의 과거 이력은 보존
     con.close()
     px["ticker"] = px.ticker.astype(str).str.zfill(6)

@@ -19,16 +19,23 @@ MARKETS = ["KOSPI", "KOSDAQ"]
 TIMEOUT_S = 300
 
 
-def summarize(net, T, windows=(20, 60)):
+def summarize(net, T, windows=(20, 60), calendar=None):
     """net: DataFrame(index=date 오름차순, columns=투자자, 순매수 원) · T: Series(index=date, 그날 거래대금 원).
-    → {"date", "w20": {투자자: {"sum", "pct"}} 또는 None, "T20", ...}. 창 w 는 **마지막 w 행이 모두 유효하고 거래대금 > 0** 일 때만 값, 아니면 None(결측을 건너뛰어 19일을 20일로 내지 않음)."""
+    → {"date", "w20": {투자자: {"sum", "pct"}} 또는 None, "T20", ...}. 창 w 는 **마지막 w 행이 모두 유효하고 거래대금 > 0** 일 때만 값, 아니면 None(결측을 건너뛰어 19일을 20일로 내지 않음).
+    calendar(선택, [2026-11-07 F4]): 거래일 날짜 목록(오름차순). 주어지면 창 = **마지막 날짜 이하 달력의 마지막 w 거래일**이어야 하고 그중 하나라도 net 에 없으면 None
+    — 하루가 통째로 빠지면 결측 셀이 안 생겨 이전 하루가 창에 끼던 구멍을 막는다. 없으면 종전 행 기준."""
     import numpy as np, pandas as pd
     if net is None or not len(net):
         return None
     net = net.sort_index(); T = T.reindex(net.index)
     cols = [c for c in net.columns if c != "전체"]
     out = {"date": str(net.index[-1])}
+    cal = [str(d) for d in calendar if str(d) <= str(net.index[-1])] if calendar is not None else None
     for w in windows:
+        if cal is not None:
+            exp = cal[-w:]
+            if len(exp) < w or any(d not in net.index for d in exp):
+                out[f"w{w}"] = None; out[f"T{w}"] = None; out[f"w{w}_missing"] = [d for d in exp if d not in net.index][:5]; continue
         if len(net) < w:
             out[f"w{w}"] = None; out[f"T{w}"] = None; continue
         z = net[cols].iloc[-w:].to_numpy(dtype=float); tw = T.iloc[-w:].to_numpy(dtype=float)
@@ -179,8 +186,19 @@ def build_json(con, refresh):
     since = (datetime.now() - pd.Timedelta(days=200)).strftime("%Y%m%d")
     F = pd.read_sql("SELECT market, date, investor, net_val, buy_val FROM investor_daily WHERE date >= ?", con, params=(since,))
     last_ok = next((v for (k, v) in con.execute("SELECT key, value FROM meta WHERE key='last_success_at'")), None)
+    calendar = None                                                   # [F4] 거래일 달력 = 시세 본표(ohlcv.db) — 못 읽으면 종전 행 기준(그 사실을 적음)
+    try:
+        import sqlite3
+        from pathlib import Path
+        ocon = sqlite3.connect(f"file:{Path(__file__).resolve().parent / '..' / 'dh-q7m3k-data' / 'ohlcv.db'}?mode=ro", uri=True)
+        calendar = [r[0] for r in ocon.execute("SELECT DISTINCT date FROM daily_ohlcv WHERE date >= ? ORDER BY date", (since,))]; ocon.close()
+        if not calendar:
+            calendar = None
+    except Exception:
+        calendar = None
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"), "last_success_at": last_ok, "refresh_status": refresh, "unit": "KRW",
-           "note": "KRX 투자자별 매매 20·60일 누적 순매수(관측·가중 0 — 점수·판정·게이트·표시에 넣지 않음; 연구 RESEARCH_flow_regime_a_10y_20261031). 창이 불완전하면 null.", "markets": {}}
+           "note": "KRX 투자자별 매매 20·60일 누적 순매수(관측·가중 0 — 점수·판정·게이트·표시에 넣지 않음; 연구 RESEARCH_flow_regime_a_10y_20261031). 창이 불완전하면 null.",
+           "calendar": ("시세 본표 거래일 기준(창 안 결손일 있으면 null)" if calendar else "달력 없음 — 행 기준(결손일 검사 못 함)"), "markets": {}}
     for mk in MARKETS:
         f = F[F.market == mk]
         if f.empty:
@@ -188,7 +206,7 @@ def build_json(con, refresh):
         net = f.pivot(index="date", columns="investor", values="net_val").sort_index().tail(80)
         net = net[[c for c in DETAIL if c in net.columns]]
         T = f[f.investor == "전체"].set_index("date").buy_val.sort_index()
-        s = summarize(net, T); s["data_as_of"] = s["date"]; out["markets"][mk] = s
+        s = summarize(net, T, calendar=calendar); s["data_as_of"] = s["date"]; out["markets"][mk] = s
     return out
 
 
