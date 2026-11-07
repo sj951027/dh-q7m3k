@@ -234,6 +234,42 @@ if args.perm > 0:
     print(f"  lv_e 평균 IC: 뒤섞은 2.5/50/97.5 = {np.percentile(pe,2.5):+.3f}/{np.percentile(pe,50):+.3f}/{np.percentile(pe,97.5):+.3f} · 실제 {real_e:+.4f} 는 {pct_e:.1f} 백분위 · 뒤섞은 점수에 '유의' 준 비율 {100*sig/args.perm:.1f}%")
     print(f"  짝 diff: 뒤섞은 2.5/50/97.5 = {np.percentile(pdiff,2.5):+.3f}/{np.percentile(pdiff,50):+.3f}/{np.percentile(pdiff,97.5):+.3f} · 실제 {real_d:+.4f} 는 {pct_d:.1f} 백분위")
 
+# ── ⑩ 돈 관측표 (관측 계약 2026-11-07 §2 — 라벨 아님) ──────────────────────
+print("\n=== ⑩ 돈 관측표 (계약 §2: 시장별 상위10 · t+1 종가 · 40거래일 · 동일가중 · 희석 제외 · 비용 왕복 차감 · 같은 시장 전종목 동일가중 대비 · 40일 코호트 블록 부트스트랩 4,000 seed 7 · 라벨 아님) ===")
+try:
+    import paper_account as _pa; _dil_of = _pa._dil_flags
+except Exception as _e:
+    _dil_of = None; print(f"  (희석 제외 못 함 — paper_account import 실패: {_e!r})")
+H40 = 40; mkt_lower = mktmap.astype(str).str.lower()
+def money_table(mid, reg, cost):
+    s, keep = keep_set(mid, reg); rows = []
+    for rid, g in s.groupby("run_id"):
+        if rid in excl or rid not in keep: continue
+        t = lb.anchor(rid, didx)
+        if t is None or t + lb.ENTRY_LAG + H40 >= N: continue
+        r40 = close.iloc[t + lb.ENTRY_LAG + H40] / close.iloc[t + lb.ENTRY_LAG] - 1
+        dil = _dil_of(rid) if _dil_of else set(); ex = []
+        for mk, gm in g.groupby("market"):
+            gm = gm.dropna(subset=["score"]); gm = gm[~gm.ticker.isin(dil)]
+            top = r40.reindex(gm.nlargest(10, "score").ticker).dropna()
+            allm = r40.reindex(mkt_lower.index[mkt_lower == mk]).dropna()
+            if len(top) < 5 or len(allm) < 50: continue
+            ex.append((top.mean() - cost - allm.mean()) * 100)
+        if ex: rows.append((rid, t, float(np.mean(ex))))
+    if not rows: return None
+    t0 = rows[0][1]; blocks = {}
+    for rid, t, v in rows: blocks.setdefault((t - t0) // H40, []).append(v)
+    vals = np.array([v for _, _, v in rows]); bl = [np.array(b) for b in blocks.values()]
+    rng = np.random.default_rng(7)
+    means = [np.concatenate([bl[i] for i in rng.integers(0, len(bl), len(bl))]).mean() for _ in range(BOOT)]
+    return dict(n=len(rows), cohorts=len(bl), mean=float(vals.mean()), lo=float(np.percentile(means, 2.5)), hi=float(np.percentile(means, 97.5)), pos=float((vals > 0).mean()), first=rows[0][0], last=rows[-1][0])
+for name, mid, reg in TARGETS + REFS:
+    for cost in (0.005, 0.0035):
+        m = money_table(mid, reg, cost)
+        if m is None: print(f"  {name} 비용 {cost*100:.2f}%: 표본 없음"); continue
+        flag = "" if m["cohorts"] >= 4 else "  (코호트 <4 → n 부족, 구간은 참고)"
+        print(f"  {name:13s} 비용 {cost*100:.2f}%: 상위10 40일 초과(전종목 대비) {m['mean']:+.2f}%p  코호트블록 CI95[{m['lo']:+.2f},{m['hi']:+.2f}]  n={m['n']} 앵커 [{m['first']}~{m['last']}] · 코호트 {m['cohorts']} · 양(+) {100*m['pos']:.0f}%{flag}")
+
 # ── 해석표 (PREREGISTER_lv_e §2·§4 + VERDICT_RULES §2) ──────────────────
 print("\n=== 해석표 (조건 충족 ✔/✘ — 라벨은 사용자 확정) ===")
 sr = base["lv_e"]; c95 = boot_ci(sr.values); w = weekly(sr); wb = week_block_ci(sr)

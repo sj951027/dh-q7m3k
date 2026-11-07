@@ -112,5 +112,14 @@ check("T+2: D4 엔 현금 0(결제 대기) → K2 못 삼(현금), D5 에 대금
 check("결제 대기 중에도 NAV 는 보존(D3·D4 NAV = 1.2)", abs(nav2.loc[3, "nav"] - 1.2) < 1e-12 and abs(nav2.loc[4, "nav"] - 1.2) < 1e-12)
 check("SETTLE_DAYS = 2", pe.SETTLE_DAYS == 2)
 
+print("J. [관측 계약 11/07] 정적 반반 mix_picks — 두 목록 이어 붙임(중복 1회) · 한쪽만 있는 날은 그 목록 · 둘 다 없으면 현금")
+mx, mi = pe.mix_picks(D[:4], pv, pl)
+check("둘 다 있는 날 = 이어 붙임(v30 먼저)", mx[D[0]] == ["K1", "Q1"] and mx[D[1]] == ["K2", "Q2"])
+check("lv_b 결손일(D2) = v30 목록만", mx[D[2]] == ["K3"] and mi["days_only_a"] == 1 and mi["days_both"] == 3)
+check("중복 종목은 한 번", pe.mix_picks([D[0]], {D[0]: ["K1", "X"]}, {D[0]: ["X", "K1", "Y"]})[0][D[0]] == ["K1", "X", "Y"])
+check("둘 다 없는 날은 현금", pe.mix_picks([D[0]], {}, {})[1]["days_missing"] == 1 and D[0] not in pe.mix_picks([D[0]], {}, {})[0])
+nav_m, led_m = pe.simulate(D[:6], close.iloc[:6], {D[0]: ["K1", "Q1"]}, cost=0.0)
+check("둘 다 있는 날 예산 반반(각 1/80)", len(led_m) == 2 and all(abs(p["invested"] - 1 / 80) < 1e-12 for p in led_m))
+
 print("\n" + ("❌ 실패 %d" % fails if fails else "✅ paper_account 2판 합성 테스트 통과"))
 sys.exit(1 if fails else 0)

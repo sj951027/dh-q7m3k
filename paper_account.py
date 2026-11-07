@@ -38,8 +38,10 @@ TOP = 10; N_DRAWS_DEFAULT = 100       # 설계는 1,000벌 — 1판은 100벌(�
 NAMES = {"v30": "v30 기본", "v30_gateD0": "v30 · 급등 뒤 신규 0", "v30_fixq": "v30 · 고정 비율 축소",
          "B0_market": "시장 평균(전 종목)", "B1_bigcap": "큰 회사 10", "B2_quiet_big": "조용한 큰 회사 10", "B3_random": "아무 종목 10(평균)",
          "lv_b": "lv_b 기본", "le_a": "le_a 기본", "lv_e": "lv_e 기본", "sv_a": "sv_a 기본", "sv_b": "sv_b 기본",
-         "switch_v30_lvb": "스위치 · 급락 뒤 v30, 그 밖 lv_b"}
+         "switch_v30_lvb": "스위치 · 급락 뒤 v30, 그 밖 lv_b",
+         "mix_v30_lvb_5050": "정적 반반 · v30+lv_b 같은 투입액"}
 SWITCH_ID = "switch_v30_lvb"; SWITCH_A_CELLS = ("A",)          # [E3] A 칸 = v30 목록, 그 밖 = lv_b 목록
+MIX_ID = "mix_v30_lvb_5050"                                     # [관측 계약 2026-11-07] E3 비교군: 두 목록을 날마다 이어 붙여 예산 반반(변수 = '그날 어느 목록' 하나)
 # [2판] 모델 계좌: model_id → (점수 표, 점수 열). 표·열은 leaderboard.TRACKS 와 같다(v30 은 1판 경로 그대로).
 MODEL_SRC = {"lv_b": ("lowvol_scores", "lowvol_score"), "le_a": ("wu_scores", "wu_score"), "lv_e": ("lowvol_scores", "lowvol_score"),
              "sv_a": ("wu_scores", "wu_score"), "sv_b": ("wu_scores", "wu_score")}
@@ -185,6 +187,9 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
     sw_picks, sw_info = pe.switch_picks(dates, cells.reindex(dates), picks, mpicks["lv_b"], a_cells=SWITCH_A_CELLS)   # [E3] 칸 = gateD0 와 같은 Series
     defs[SWITCH_ID] = (sw_picks, None)
     print(f"  스위치 앵커 A {sw_info['days_A']} · 그 밖 {sw_info['days_other']} · 목록 없음 {sw_info['days_missing']}")
+    mx_picks, mx_info = pe.mix_picks(dates, picks, mpicks["lv_b"])                                                     # [관측 계약] 정적 50/50
+    defs[MIX_ID] = (mx_picks, None)
+    print(f"  반반 앵커 둘 다 {mx_info['days_both']} · v30 만 {mx_info['days_only_a']} · lv_b 만 {mx_info['days_only_b']} · 목록 없음 {mx_info['days_missing']}")
     accounts, sens = {}, {}
     for aid, (pk, nr) in defs.items():
         accounts[aid] = pe.simulate(dates, sub, pk, tradable=trd, new_ratio=nr)
@@ -225,12 +230,14 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
     summary[SWITCH_ID].update(days_A=sw_info["days_A"], days_other=sw_info["days_other"], days_missing=sw_info["days_missing"],
                               slots_from_v30=int(sum(1 for p in sw_led if sw_src.get(p["run"]) == "A")),
                               slots_from_lvb=int(sum(1 for p in sw_led if sw_src.get(p["run"]) == "other")))
+    summary[MIX_ID].update(days_both=mx_info["days_both"], days_only_a=mx_info["days_only_a"], days_only_b=mx_info["days_only_b"], days_missing=mx_info["days_missing"])
     print(f"\n== 모의 계좌 {dates[0]}~{dates[-1]} (사후 되감기 · 비용 0.5% · 라벨 없음) ==")
     for aid, s in summary.items():
         extra = f" · 0.35%: {s['total_ret_cost035']:+.1f}% · 1.0%: {s['total_ret_cost100']:+.1f}% · 상폐−90%: {s['total_ret_delist90']:+.1f}% · T+2: {s['total_ret_settle2']:+.1f}%"
         extra += f" · 무작위 2.5/97.5: {s['p2_5']:+.1f}/{s['p97_5']:+.1f}%" if "p2_5" in s else ""
         extra += f" · 끊긴 슬롯 {s['slots_gone']}" if "slots_gone" in s else ""
         extra += f" · A {s['days_A']}/그 밖 {s['days_other']}/없음 {s['days_missing']} · 슬롯 v30 {s['slots_from_v30']}/lv_b {s['slots_from_lvb']}" if "days_A" in s else ""
+        extra += f" · 둘 다 {s['days_both']}/v30 만 {s['days_only_a']}/lv_b 만 {s['days_only_b']}/없음 {s['days_missing']}" if "days_both" in s else ""
         print(f"  {s['name']:<18} 누적 {s['total_ret']:+6.1f}% · 최대낙폭 {s['mdd']:6.1f}% · 평균 현금 {s['cash_share']:5.1f}% · 끝난 슬롯 {s['slots_closed']}{extra}")
     print(f"  v30 이 무작위 {n_draws}벌 중 아래에서 {summary['v30']['random_pctile']:.0f} 백분위 · q₀ {q0:.3f}")
     if write:
@@ -244,7 +251,7 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
                             [(aid, r.date, float(r.nav), None if pd.isna(r.cash) else float(r.cash), None if pd.isna(r.n_pos) else int(r.n_pos),
                               None if pd.isna(r.ret_1d) else float(r.ret_1d), "사후", gen) for r in nav.itertuples()])
         for k, v in {"start": start, "q0": f"{q0:.6f}", "cost": "0.005", "slots": "40", "hold": "40", "draws": str(n_draws), "generated": gen,
-                     "version": "2", "switch": SWITCH_ID, "cost_alt": f"{pe.COST_ALT}", "gone_ret": f"{pe.GONE_RET}", "models": ",".join(MODEL_ACCOUNTS)}.items():
+                     "version": "2", "switch": SWITCH_ID, "mix": MIX_ID, "cost_alt": f"{pe.COST_ALT}", "gone_ret": f"{pe.GONE_RET}", "models": ",".join(MODEL_ACCOUNTS)}.items():
             con.execute("INSERT OR REPLACE INTO paper_meta VALUES (?,?)", (k, v))
         con.commit(); con.close()
         payload = {"generated": gen, "start": start, "end": dates[-1], "q0": q0, "cost": 0.005, "slots": 40, "hold": 40, "label": "사후(등록 전 되감기)",
@@ -252,6 +259,8 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
                    "version": 2, "models": MODEL_ACCOUNTS,
                    "switch": {SWITCH_ID: {"a_cells": list(SWITCH_A_CELLS), "list_A": "v30", "list_other": "lv_b", "cell_basis": "앵커일 코스피 칸(v30_gateD0 와 같음)",
                                           "note": "days_A/days_other = 그 목록을 쓴 앵커 수 · days_missing = 고른 목록이 없어 신규 0 인 날 · slots_from_v30/lvb = 체결 슬롯 수 · 사후 설계(2026-10-30)"}},
+                   "mix": {MIX_ID: {"list_a": "v30", "list_b": "lv_b", "rule": "날마다 두 목록을 이어 붙임(중복 1회) → 그날 예산을 목록 길이로 나누므로 둘 다 있는 날은 반반",
+                                    "note": "E3 스위치의 비교군(같은 투입액 통제) · 관측 계약 2026-11-07 · 되감기 20260810~ 은 탐색, 전향 시작 = 20261109 run"}},
                    "sens": {"cost_alt": pe.COST_ALT, "gone_ret": pe.GONE_RET, "gone_tickers": len(gone),
                             "cost_hi": pe.COST_HI, "settle_days": pe.SETTLE_DAYS,
                             "note": "total_ret_cost035 = 왕복 0.35% · total_ret_cost100 = 왕복 1.0%(코스닥 소형주 현실 비용 가정) · total_ret_delist90 = 시세가 끊긴 종목을 마지막 가격 −90% 로 평가·청산 · slots_gone = 그 영향을 받은 슬롯 수 · total_ret_settle2 = 매도대금이 T+2 에 현금이 되는 가정(결제 전 돈으로 못 삼 → 현금)"},

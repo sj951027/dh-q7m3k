@@ -107,6 +107,32 @@ def switch_picks(dates, cells, picks_a, picks_other, a_cells=("A",)):
     return out, dict(days_A=n_a, days_other=n_o, days_missing=n_m, source=src)
 
 
+def mix_picks(dates, picks_a, picks_b):
+    """[관측 계약 2026-11-07 · E3 비교군] 정적 50/50 혼합 — 날마다 두 목록을 **이어 붙인다**(중복 종목은 한 번, 앞 목록 순서 유지).
+    simulate 는 그날 예산(NAV/slots)을 목록 길이로 나누므로, 두 목록이 다 있는 날은 각 목록이 예산의 절반을 받는다(= 같은 투입액으로 반반).
+    한쪽만 있는 날은 있는 쪽 목록 전부(예산 전부) — 그 날 수를 days_only_a/b 로 센다. 둘 다 없으면 현금(days_missing). 순수 함수."""
+    out = {}
+    n_both = n_a = n_b = n_m = 0
+    for d in dates:
+        d = str(d)
+        pa, pb = picks_a.get(d), picks_b.get(d)
+        if pa is None and pb is None:
+            n_m += 1
+            continue
+        merged, seen = [], set()
+        for t in list(pa or []) + list(pb or []):
+            if t not in seen:
+                seen.add(t); merged.append(t)
+        out[d] = merged
+        if pa is not None and pb is not None:
+            n_both += 1
+        elif pa is not None:
+            n_a += 1
+        else:
+            n_b += 1
+    return out, dict(days_both=n_both, days_only_a=n_a, days_only_b=n_b, days_missing=n_m)
+
+
 def tradable_mask(susp, chg, limit_up):
     """정지 표·등락률 표 → 진입 가능(bool) 표. 두 표의 열을 합집합으로 맞춘 뒤 비교한다 — 등락률이 전부 비어 열이 빠진 종목(상장 첫날 등)이
     있으면 `|` 뒤에 float 열이 생겨 `~` 가 TypeError 로 죽는다(2026-10-30 배치 실측). 빈 값은 '정지 아님·상한가 아님' 으로 읽는다."""
