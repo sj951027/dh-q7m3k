@@ -15,6 +15,10 @@
 - "1·2·3 진행"(표시 3건, 0-diff) — 별도 세션 진행 중.
 - 조기 매도: 결과 보고 뒤 결정 없음(연구 결론 = 40일 유지).
 
+## 이어서(아침) — "더 좋은 후보를 찾기 위해 전부 실험해 봐"
+- 사용자가 설계 문서 대신 전수 실험을 택함 → `research/EARLY_RISE_SCAN_20261108.md` §0 에 틀(성공 정의 T1 5일 초과·T2 Codex 정의, 분모 고정, 변수 목록, Bonferroni 0.05/(2M), 앞/뒤 반 부호, T4 대가 확인)을 결과 전에 적음 → A 5개월 stage3 92변수(`early_rise_scan_20261108.py`) + B 11년 가격 20변수(`early_rise_scan_10y_20261108.py`, 보조 세션). 결과: **첫 주 전용 신호 없음**(통과 변수 = 전부 40일을 더 세게 예측하는 저변동 계열). 부산물: 수급 외국인 음/기관 양(산 20종목 T4 −0.162/+0.129) → 챌린저 후보 기록(11/13 뒤 PREREGISTER), 과매도 반복 횟수 + → 깔때기 관측 후보. 지도 ③ 두 행·§10.
+- 산출 `research/out_early_rise_scan/`(panel.pkl 153MB 는 커밋 제외).
+
 ## 바뀐 것
 - 새 파일: `research/HOLD_EARLY_EXIT_20261108.md` · `research/hold_early_exit_20261108.py` · `research/hold_early_exit_10y_20261108.py` · `research/out_hold_early_exit/`(csv·stdout).
 - `research/IDEA_MAP_20261030.md` ⑤ "목표 수익 도달 시 청산" 행 ✅ 닫음 + §10 한 줄. 코드·docs·DB·점수·판정 무변경, 새 model_id 없음.
