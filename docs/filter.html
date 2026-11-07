@@ -413,6 +413,8 @@
   }
   
   .actions { display: flex; gap: 8px; }
+  /* [2026-11-07 Codex 3-2] 375px 에서 버튼 6개가 한 줄에 압축되고(높이 135px) 마지막 버튼이 화면 밖(문서 폭 401px) → 두 열 */
+  @media (max-width: 600px) { .filters-header { display: block; } .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; } .actions .btn { white-space: nowrap; min-height: 44px; } }
   
   .info-banner {
     background: #fff8dc;
@@ -478,6 +480,7 @@
   <div class="dtabs" id="dtabs"></div>
   <div id="histPanel" hidden>
     <div class="dnote" id="dnote"></div>
+    <details style="font-size:12px;color:#4a5568;margin:4px 0"><summary style="cursor:pointer">배지 뜻</summary>⚠️ 떨어지는 칼날(5일 신저가+양봉 0개+5일선&lt;20일선) · 💧 희석 공시 60거래일 내(유상증자·CB·BW·EB) · 📉 실적 악화 60거래일 내(영업이익 감소분 ≥ 시총 1%) · 접수 후 N거래일 = 정기보고서 접수일(0)부터 센 거래일, ↑↓는 영업이익 전년 대비(시총 ±1% 이상)이지 주가 방향이 아님 · 모두 점수·순위에 미반영, 사람이 보고 판단 · 빈칸 = 해당 공시 없음 또는 자료 미확인(구분 안 됨)</details>
     <div style="overflow-x:auto"><table class="hist-table"><thead id="histHead"></thead><tbody id="histBody"></tbody></table></div>
   </div>
   <div class="main-content" id="mainContent">
@@ -492,7 +495,7 @@
         <div class="actions">
           <button class="btn btn-secondary" onclick="resetFilters()">초기화</button>
           <button class="btn btn-primary" onclick="applyRecommendedFilter()">⭐ 추천 종목만</button>
-          <button class="btn btn-primary" onclick="applyV26SafeFilter()" style="background:#48bb78;">💚 V2.6 안전필터</button>
+          <button class="btn btn-secondary" onclick="applyV26SafeFilter()" title="재무·위험 조건 일부를 제외하는 필터(V2.6). 손실 방지 기능이 아닙니다.">재무 위험 조건 제외</button>
           <button class="btn btn-primary" onclick="applyVolumeFilter()" style="background:#9f7aea;">💹 거래량 TOP</button>
           <button class="btn btn-primary" onclick="applyRecoReversalFilter()" style="background:#319795;">🔄 추천+수급반전</button>
           <button class="btn btn-success" onclick="exportFiltered()">💾 결과 CSV 다운</button>
@@ -1362,12 +1365,12 @@ function formatCell(row, col) {
       const fkBadge = isFK ? '<span title="떨어지는 칼날 (5일 신저가+양봉0개+5일선<20일선)" style="margin-left:4px;color:#e53e3e;font-size:11px;">⚠️</span>' : '';
       const dil = row.dilution_60d && row.dilution_60d !== 'nan' ? '<span title="희석 공시 60거래일 내: '+row.dilution_60d+' (3년 실측 −1.4~−6.6%p/60일)" style="margin-left:4px;color:#e53e3e;font-size:11px;">💧</span>' : '';
       const ern = row.earn_drop_60d && row.earn_drop_60d !== 'nan' ? '<span title="실적 악화 60거래일 내: '+row.earn_drop_60d+' (영업이익 감소분 ≥ 시총 1%)" style="margin-left:4px;color:#b7791f;font-size:11px;">📉</span>' : '';
-      const recent = /^접수 \d+일(?:\([↑↓]\))?$/.test(row.earn_recent_20d) ? '<span title="정기보고서 접수일 기준: '+row.earn_recent_20d+'" style="margin-left:4px;color:#4a5568;font-size:11px;">접수</span>' : '';
+      const recent = /^접수 \d+일(?:\([↑↓]\))?$/.test(row.earn_recent_20d) ? '<span title="정기보고서 접수 후 N거래일(접수일 0): '+row.earn_recent_20d+' · ↑↓는 영업이익 전년 대비(시총 ±1% 이상), 주가 방향 아님 · 점수 미반영" style="margin-left:4px;color:#4a5568;font-size:11px;">'+row.earn_recent_20d.replace(/^접수 (\d+)일/,'접수 후 $1거래일')+'</span>' : '';
       return `<td><a href="https://finance.naver.com/item/main.naver?code=${row.ticker}" target="_blank" style="color:#2b6cb0;text-decoration:none;">${val}</a>${fkBadge}${dil}${ern}${recent}</td>`;
     case 'earnflag':
       return (val && val !== 'nan') ? `<td style="color:#b7791f;font-weight:600;white-space:nowrap" title="직전 60거래일 안에 접수된 최근 분기 보고서에서 영업이익이 전년 같은 분기보다 시총의 1% 이상 줄었음. 실측: 그 뒤 20거래일 같은 시장·시총 대비 −1.0%p(3년), 모델 목록 상위 10 안에서는 −3.2%p(2026-06~09 넉 달 — 단서). 사람이 보고 판단. 점수·순위에는 미반영">📉 ${val}</td>` : `<td></td>`;
     case 'earnrecent':
-      return /^접수 \d+일(?:\([↑↓]\))?$/.test(val) ? `<td style="white-space:nowrap"><span style="color:#4a5568;background:#edf2f7;border-radius:3px;padding:2px 4px" title="정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우. 부호가 없거나 결측이어도 표시. 점수·순위 미반영.">${val}</span></td>` : `<td></td>`;
+      return /^접수 \d+일(?:\([↑↓]\))?$/.test(val) ? `<td style="white-space:nowrap"><span style="color:#4a5568;background:#edf2f7;border-radius:3px;padding:2px 4px" title="정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우(주가 방향 아님). 부호가 없거나 결측이어도 표시. 점수·순위 미반영.">${val.replace(/^접수 (\d+)일/,'접수 후 $1거래일')}</span></td>` : `<td></td>`;
     case 'dilution':
       return `<td style="color:#e53e3e;font-weight:600;white-space:nowrap" title="직전 60거래일 내 유상증자·CB·BW·EB 결정 공시(정정 제외). 점수·순위 미반영 — 사람이 판단">⚠️ ${val}</td>`;
     case 'string':

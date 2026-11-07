@@ -83,7 +83,7 @@ def build_message():
             #   종전엔 누적 최대 OOS 로 '판정 가능'이 늘 떠서(이미 판정 끝난 모델) 정보가 없었음.
             pend = [m for m in ms if (m.get("oos_days") or 0) < min_oos]
             if not pend:
-                lines.append(f"  {emoji} {label:8s} 전부 판정 완료(정본은 VERDICT 문서)")
+                lines.append(f"  {emoji} {label:8s} 표본 대기 모델 없음 — 판정 정본 유무는 VERDICT 문서·성적표 상세")   # [2026-11-07 Codex 4-3] 표본 도달 ≠ 판정 완료
                 continue
             mx = max(pend, key=lambda m: m.get("oos_days", 0))
             o = mx.get("oos_days", 0)
@@ -114,7 +114,7 @@ def build_message():
                 if rows20:
                     lines.append(f"  최근 20거래일 — 시장 평균 {b20:+.1f}%")
                     lines.append("  " + " · ".join(f"{m} {v:+.1f}%" for m, v in rows20))
-                lines.append("  ※ 실제 수익(%)이에요. 시장 평균보다 높으면 더 번 것 · 1주는 운 비중이 큼 · 판정 정본은 §11")
+                lines.append("  ※ 모의 상위20 따라사기 수익(%, 비용 미반영) — 실제 계좌 아님 · 성적표의 상위10·40일 기록과 다른 계산 · 1주는 운 비중이 큼 · 판정 정본은 §11")   # [2026-11-07 Codex 4-3]
         except Exception as e:
             lines.append(f"📈 이번 주 성적 실패(비치명): {str(e)[:60]}")
         # ③ 이번 주 달라진 것 — leaderboard_history 7일 범위(판정 표본 도달·자동 라벨 변경·은퇴)

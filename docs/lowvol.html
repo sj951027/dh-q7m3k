@@ -158,7 +158,7 @@
 
   <div class="filters" id="filters">
     <span class="flabel">필터:</span>
-    <span class="fbtn" data-f="top10">★ 상위 10%만</span>
+    <span class="fbtn" data-f="top10" title="점수 상위 10% — 성적표의 '시장별 상위 10종목'과 다름">★ 점수 상위 10%만</span>
     <span class="fbtn" data-f="f5pos">외인5일 &gt; 0</span>
     <span class="fbtn" data-f="i5pos">기관5일 &gt; 0</span>
     <span class="fbtn" data-f="any5pos">외인/기관 中 매수</span>
@@ -234,7 +234,7 @@ function applyFilters(){
 function fmt(v, type){
   if(type==='dil') return v?'<span style="color:#e53e3e;font-weight:600" title="희석 공시 60거래일 내">⚠️ '+v+'</span>':'';
   if(type==='ern') return v?'<span style="color:#b7791f;font-weight:600" title="실적 악화 60거래일 내(접수일)">📉 '+v+'</span>':'';
-  if(type==='recentern') return /^접수 \d+일(?:\([↑↓]\))?$/.test(v)?'<span style="color:#4a5568;background:#edf2f7;border-radius:3px;padding:2px 4px;white-space:nowrap" title="정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우. 부호가 없거나 결측이어도 표시. 점수·순위 미반영.">'+v+'</span>':'';
+  if(type==='recentern') return /^접수 \d+일(?:\([↑↓]\))?$/.test(v)?'<span style="color:#4a5568;background:#edf2f7;border-radius:3px;padding:2px 4px;white-space:nowrap" title="정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우(주가 방향 아님). 부호가 없거나 결측이어도 표시. 점수·순위 미반영.">'+v.replace(/^접수 (\d+)일/,'접수 후 $1거래일')+'</span>':'';
   if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
   if(type==='int') return parseInt(v);
   if(type==='score') return '<span class="score">'+parseFloat(v).toFixed(3)+'</span>';

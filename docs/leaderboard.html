@@ -25,13 +25,13 @@
   details{margin:8px 0} summary{cursor:pointer;color:var(--blue);font-size:13px}
   .foot{color:var(--sub);font-size:12px;margin-top:8px;line-height:1.6} .small{font-size:11.5px;color:var(--sub)}
   tr.ens td{background:#f3f6ff} .loading{color:var(--sub);text-align:center;padding:20px}
-  @media(max-width:600px){ .hm{display:none} .wrap{padding:12px 8px} .card{padding:4px 8px} td,th{padding:9px 3px;white-space:normal} th .small{display:none} body{font-size:13.5px} td.perf .r{font-size:15px} td.perf .x{font-size:12px} .per,.st{font-size:10.5px} td.l span.id{display:block;margin:0;font-size:11px} td.rec{font-size:11px;line-height:1.3} .btn{padding:2px 6px;font-size:11px} .one .small{display:block;margin:4px 0 0} }
+  @media(max-width:600px){ .hm{display:none} .wrap{padding:12px 8px} .card{padding:4px 8px} td,th{padding:9px 3px;white-space:normal} th .small{display:block;font-size:10px;line-height:1.2} body{font-size:13.5px} td.perf .r{font-size:15px} td.perf .x{font-size:12px} .per,.st{font-size:10.5px} td.l span.id{display:block;margin:0;font-size:11px} td.rec{font-size:11px;line-height:1.3} .btn{padding:2px 6px;font-size:11px;white-space:nowrap;min-width:44px;min-height:36px} .one .small{display:block;margin:4px 0 0} }
 </style>
 </head>
 <body><div class="wrap">
 <h1>모델 성적표 <small id="asof">불러오는 중…</small></h1>
-<div class="one">상위 10을 다음 거래일에 사서 40거래일 보유 · 시장 평균과 비교 · 참고용 · <b>모델별 평가 기간이 다릅니다</b> <a class="q" href="#" onclick="document.getElementById('help').classList.toggle('on');return false">?</a> <span class="small" style="margin-left:8px">순서: <a href="#" id="sortExc" onclick="setSort('exc');return false">시장보다 더 번 순</a> · <a href="#" id="sortReg" onclick="setSort('reg');return false">등록순</a></span></div>
-<div class="help" id="help">모델이 고른 시장별 상위 10 종목을 <b>다음 거래일 종가</b>에 같은 금액씩 사서 <b>40거래일</b> 뒤 판 결과. <b>시장</b> = 같은 시장 전 종목을 같은 방식으로 산 평균. <b>차이</b> = 모델 − 시장(%p, 비용 0 — 왕복 0.35%를 빼면 각 −0.35%p). <b>기간·개수</b> = 결과가 확정된 목록 기준일(실제 매수는 다음 거래일)과 그 개수 — 모델마다 시작일이 달라 같은 기간 비교가 아니며, 창이 겹쳐 독립 표본은 개수보다 훨씬 적다. <b>시장보다 나은 목록 비율</b> = 평가한 목록(날짜) 중 40거래일 뒤 시장보다 많이 번 목록의 비율 — 종목 승률이 아니다. 목록이 10개 미만이거나 겹치지 않는 창이 1개 미만이면 회색 '참고 불가'로 표시한다. 큰 숫자는 모델 수익(%), 그 아래 줄은 시장 수익과 그 차이(%p) — 시장이 빠진 기간이면 모델도 손실이면서 '덜 잃음'일 수 있다. 순위 검증(시험 기록)은 다른 잣대라 상세와 '순위 검증'에 따로. <b>성적이 좋아도 채택은 아니다</b> — 채택은 미리 정한 절차로만.</div>
+<div class="one">상위 10을 다음 거래일에 사서 40거래일 보유 · 시장 평균과 비교 · 참고용 · <b>모델별 평가 기간이 다릅니다</b> <a class="q" href="#" onclick="document.getElementById('help').classList.toggle('on');return false">?</a> <span class="small" style="margin-left:8px">순서: <a href="#" id="sortExc" onclick="setSort('exc');return false">시장보다 나은 순 <span class="small">(각자 평가 기간 · 같은 기간 비교 아님)</span></a> · <a href="#" id="sortReg" onclick="setSort('reg');return false">등록순</a></span></div>
+<div class="help" id="help">모델이 고른 시장별 상위 10 종목을 <b>다음 거래일 종가</b>에 같은 금액씩 사서 <b>40거래일</b> 뒤 판 결과. <b>시장</b> = 같은 시장 전 종목을 같은 방식으로 산 평균. <b>차이</b> = 모델 − 시장(%p). 본표는 비용 미반영 — 상세의 20일 환산만 왕복 0.35% 를 뺀다. <b>기간·개수</b> = 결과가 확정된 목록 기준일(실제 매수는 다음 거래일)과 그 개수 — 모델마다 시작일이 달라 같은 기간 비교가 아니며, 창이 겹쳐 독립 표본은 개수보다 훨씬 적다. <b>시장보다 나은 목록 비율</b> = 평가한 목록(날짜) 중 40거래일 뒤 시장보다 많이 번 목록의 비율 — 종목 승률이 아니다. 목록이 10개 미만이거나 목록 수÷40 이 1 미만이면(표시용 근사치 — 실제로 겹치지 않는 창을 센 것이 아니다) 비율을 숨기고 회색 '참고 불가'로 표시한다. 작은 표의 칸도 10개 미만이면 회색이다. 큰 숫자는 모델 수익(%), 그 아래 줄은 시장 수익과 그 차이(%p) — 시장이 빠진 기간이면 모델도 손실이면서 '덜 잃음'일 수 있다. 순위 검증(시험 기록)은 다른 잣대라 상세와 '순위 검증'에 따로. <b>성적이 좋아도 채택은 아니다</b> — 채택은 미리 정한 절차로만.</div>
 
 <div class="card" id="todayBox" style="padding:10px 12px"></div>
 <div class="card"><table id="tblA">
@@ -44,11 +44,11 @@
 
 <details id="rg"><summary>국면별 · 지금 형세 (지난 일을 적은 것 — 앞으로를 말하지 않음)</summary>
   <div class="card"><div class="small" id="formHead" style="padding:8px 0 2px"></div>
-  <table id="tblF"><thead><tr><th class="l">모델</th><th>최근 40거래일<br><span class="small">끝난 매수 · 시장보다</span></th><th class="hm">KOSPI / KOSDAQ</th><th>약세에 산 날<br><span class="small">40일 시장보다 · 양수</span></th><th>상승에 산 날<br><span class="small">40일 시장보다 · 양수</span></th><th>코스피 A~D에 산 날<br><span class="small">급락 뒤 · 약세 · 강세 · 급등 뒤 (40일 시장보다 %p · 일수)</span></th><th class="hm">순위 상관<br><span class="small">약세 / 상승 (등록 후)</span></th></tr></thead><tbody></tbody></table>
+  <table id="tblF"><thead><tr><th class="l">모델</th><th>최근 40거래일에<br>평가 끝난 목록<br><span class="small">시장보다 · 목록 수</span></th><th class="hm">KOSPI / KOSDAQ</th><th>약세에 산 날<br><span class="small">40일 시장보다 · 나은 비율</span></th><th>상승에 산 날<br><span class="small">40일 시장보다 · 나은 비율</span></th><th>코스피 20일 등락 A~D에 산 날<br><span class="small">급락 뒤 · 약세 · 강세 · 급등 뒤 (40일 시장보다 %p · 일수)</span></th><th class="hm">순위 상관(×100)<br><span class="small">약세 / 상승 · 순위 맞힘 정도, 수익률 아님</span></th></tr></thead><tbody></tbody></table>
   <div class="foot" id="formFoot"></div></div>
 </details>
 <details id="mk"><summary>시장별로 보면 — KOSPI / KOSDAQ 따로</summary>
-  <div class="card"><table id="tblMk"><thead><tr><th class="l" rowspan="2">모델</th><th colspan="4">KOSPI</th><th colspan="4">KOSDAQ</th></tr><tr><th>모델</th><th>시장</th><th>차이</th><th>시장보다 나은 날</th><th>모델</th><th>시장</th><th>차이</th><th>시장보다 나은 날</th></tr></thead><tbody></tbody></table>
+  <div class="card"><table id="tblMk"><thead><tr><th class="l" rowspan="2">모델</th><th colspan="4">KOSPI</th><th colspan="4">KOSDAQ</th></tr><tr><th>모델</th><th>시장</th><th>차이</th><th>나은 목록 비율</th><th>모델</th><th>시장</th><th>차이</th><th>나은 목록 비율</th></tr></thead><tbody></tbody></table>
   <div class="foot">같은 매수분(40일 끝난 것)을 시장별로 나눈 것. 결론은 두 시장을 합쳐서만.</div></div>
 </details>
 <details id="ens"><summary>묶음 — 현재 멤버로 다시 본 과거 참고 기록</summary><div class="card" id="ensBox"></div></details>
@@ -56,9 +56,9 @@
   <div class="card"><table id="tblB"><thead><tr><th class="l">모델</th><th class="l">40거래일 성과<br><span class="small">모델 수익 · 후보군보다</span></th><th class="l">기록</th><th></th></tr></thead><tbody></tbody></table></div>
 </details>
 <details><summary>"모두 오늘까지 보유했다고 가정하면" · 참고 구간 · 은퇴 모델</summary>
-  <div class="card"><table id="tblNow"><thead><tr><th class="l">모델</th><th>매수한 날</th><th>수익 평균</th><th class="hm">중앙값</th><th>시장 평균</th><th>차이</th><th>시장보다 나은 날</th></tr></thead><tbody></tbody></table>
+  <div class="card"><table id="tblNow"><thead><tr><th class="l">모델</th><th>매수한 날</th><th>수익 평균</th><th class="hm">중앙값</th><th>시장 평균</th><th>차이</th><th>나은 목록 비율</th></tr></thead><tbody></tbody></table>
   <div class="foot">어제 산 것과 두 달 전 산 것이 한 평균에 섞인다(40일 지난 것도 계속 보유한 계산). 시장이 오르면 모두 좋아 보이므로 시장 평균 없이는 읽지 말 것.</div></div>
-  <div class="card"><table id="tblCI"><thead><tr><th class="l">모델</th><th>차이(평균)</th><th>참고 95% 구간</th><th>가장 나빴던 날</th><th>가장 좋았던 날</th><th>목록 기준일</th></tr></thead><tbody></tbody></table>
+  <div class="card"><table id="tblCI"><thead><tr><th class="l">모델</th><th>시장보다<br><span class="small">평균 %p</span></th><th>참고 95% 구간</th><th>가장 나빴던 목록<br><span class="small">시장 대비 %p</span></th><th>가장 좋았던 목록<br><span class="small">시장 대비 %p</span></th><th>목록 기준일</th></tr></thead><tbody></tbody></table>
   <div class="foot" id="cond2"></div></div>
 </details>
 <div class="foot" id="cond"></div>
@@ -71,9 +71,13 @@ const f1=(v,u='%')=>v==null?'—':(v>0?'+':'')+v.toFixed(1)+u;
 const cls=v=>v==null?'':v>0?'pos':v<0?'neg':'';
 const fd=d=>d?(+d.slice(4,6))+'/'+(+d.slice(6)):'';
 const pct=v=>v==null?'—':Math.round(v*100)+'%';
+// [2026-11-07 Codex 1-1·1-2] 작은 표본 = 칸의 n<10 (주표는 blocks<1 도) → 색 없이 회색 · 비율은 '참고 불가'
+const lowN=(n,bl)=>(n==null)||(n<10)||(bl!=null&&bl<1);
+const clsN=(v,n,bl)=>lowN(n,bl)?'m':cls(v);
+const pctN=(w,n,bl)=>lowN(n,bl)?'<span class="m">참고 불가</span>':pct(w);
 function openSec(id){const d=document.getElementById(id); if(d) d.open=true;}
 // [2026-11-07] 탭·목록 페이지는 '표시 기준' 모델(lv_b)인데 성적표엔 lv_e 가 있어 헷갈림 → 한 줄 안내(관측 계약: 교체 여부는 2차 창 뒤 ≈12/30 결정)
-const DISPLAY_NOTE={lv_e:'목록 탭은 lv_b(표시 기준) — 교체 여부는 2차 창 뒤(≈12/30)'};
+const DISPLAY_NOTE={lv_e:'목록 탭은 lv_b — lv_e 로 바꿀지는 2차 창 뒤(≈12/30) 결정'};   // [2026-11-07 Codex 2-3] '표시 기준' 은 용어집에 없는 말
 function nameCell(m){const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model], note=DISPLAY_NOTE[m.model];
   return `<td class="l">${p?`<a href="${p}">${nm}</a>`:`<b>${nm}</b>`}<span class="id">${m.model}</span>${m.retired?'<span class="role">은퇴</span>':''}${note?`<br><span class="small">${note}</span>`:''}</td>`;}
 function det(m){
@@ -82,19 +86,24 @@ function det(m){
   if(f){parts.push(`시장 수익 <b>${f1(f.bench_mean)}</b>`); parts.push(`중앙값 차이 <b>${f1(f.exc_median,'%p')}</b>`); if(f.ci_ref) parts.push(`참고 구간 <b>${f1(f.ci_ref[0],'')}~${f1(f.ci_ref[1],'%p')}</b>`);
     const mk=['kospi','kosdaq'].filter(k=>b[k]).map(k=>`${k==='kospi'?'KOSPI':'KOSDAQ'} ${f1(b[k].exc_mean,'%p')}`); if(mk.length) parts.push(mk.join(' / '));
     parts.push(`20거래일 단순 환산(비용 0.35% 뺀 뒤) ${f1((f.exc_mean-0.35)/2,'%p')} <span class="small">— 단위 환산일 뿐 매달 버는 수익이 아님</span>`);}
-  if(m.after) parts.push(`시험 뒤 매수 ${m.after.n}일 <b>${f1(m.after.exc_mean,'%p')}</b>`);
-  const rg=['약세','상승'].filter(k=>rm[k]).map(k=>`${k}에 산 날 ${f1(rm[k].exc_mean,'%p')}(${rm[k].n}일)`); if(rg.length) parts.push(rg.join(' · '));
-  if(st) parts.push(`매일 사서 계속 보유한 계좌(다른 방식): 지금 <b>${f1(st.last,'%p')}</b>, 시장보다 앞선 날 ${pct(st.days_above)}`);
+  if(f&&f.win!=null) parts.push(`시장보다 나은 목록 ${pct(f.win)}(${f.n}개 중 ${Math.round(f.win*f.n)}개${lowN(f.n,f.blocks)?' — 표본 부족, 참고 불가':''})`);
+  const rg=['약세','상승'].filter(k=>rm[k]).map(k=>`${k}에 산 날 ${f1(rm[k].exc_mean,'%p')}(${rm[k].n}개)`); if(rg.length) parts.push(rg.join(' · '));
+  // [2026-11-07 Codex 1-6] 40일 완료 기록과 다른 계산은 줄을 나눠 적는다.
+  const others=[];
+  if(m.after) others.push(`판정 뒤 목록을 자료 끝까지 보유한 참고 기록(보유 기간 제각각): ${m.after.n}개 <b>${f1(m.after.exc_mean,'%p')}</b>`);
+  if(st) others.push(`매일 같은 금액을 추가했다고 가정한 보유분 평균(돈 장부 아님): 지금 <b>${f1(st.last,'%p')}</b>, 시장보다 앞선 날 ${pct(st.days_above)}`);
   const flow=f?`날짜 흐름: 목록 ${fd(f.first)}~${fd(f.last)} → 각 목록을 <b>다음 거래일</b>에 사서 40거래일 뒤 평가(마지막 목록 ${fd(f.last)}은 다음 거래일 매수 → 자료 끝 ${DATA?fd(DATA.asof):''} 평가). 보유 기간이 서로 겹쳐 목록 개수는 독립 시험 횟수가 아니다.`:'';
-  const v=s?`순위 검증 ${s.date?fd(s.date):''}: <b>${LABEL[s.v]||s.v}</b>`:(l.oos_days!=null?`순위 검증 아직 전(${l.oos_days}/40일${m.verdict_eta?' · ~'+m.verdict_eta:''})`:'');
-  const ic=l.ic20!=null?` · 20일 순위 상관 ${(l.ic20).toFixed(3)} (${l.n}일)`:'';
-  return `<tr class="det" hidden><td colspan="4">${parts.join(' · ')}${parts.length?'<br>':''}${flow}${flow?'<br>':''}${v}${ic}${s?' <span class="small">— 순위 검증과 40거래일 보유 성적은 다른 질문</span>':''}</td></tr>`;}
+  // [2026-11-07 Codex 1-5] 2차 창 판정이 있으면(registry short 의 '2차 노이즈(10/18)' 꼴) 같이 쓴다 — 1차 정본을 덮지 않는다.
+  const w2=s&&s.short?String(s.short).match(/2차\s*([가-힣]+)\((\d{1,2}\/\d{1,2})\)/):null;
+  const v=s?`순위 검증 1차 ${s.date?fd(s.date):''}: <b>${LABEL[s.v]||s.v}</b>${w2?` · 2차 창 ${w2[2]}: <b>${LABEL[w2[1]]||w2[1]}</b>`:''}`:(l.oos_days!=null?`순위 검증 아직 전(${l.oos_days}/40일${m.verdict_eta?' · ~'+m.verdict_eta:''})`:'');
+  const ic=l.ic20!=null?`<br>지금 흐름: 20일 순위 상관 ${(l.ic20).toFixed(3)} (${l.n}일 · 순위 맞힘 정도, 수익률 아님 · 판정 아님)`:'';
+  return `<tr class="det" hidden><td colspan="4"><b>40일 완료 기록</b> · ${parts.join(' · ')}${others.length?'<br>'+others.join('<br>'):''}${flow?'<br>'+flow:''}<br>${v}${s?' <span class="small">— 순위 검증과 40거래일 보유 성적은 다른 질문</span>':''}${ic}</td></tr>`;}
 // [2026-11-07] 사용자 점검: 손실인데 녹색으로만 보이던 것 → 시장 수익을 같은 줄에 쓰고 '덜 잃음/더 벌음' 말로 · 목록 10개 미만 또는 겹치지 않는 창 1개 미만이면 비율을 회색 '참고 불가'로.
 function excWord(f,lab){const x=f.exc_mean; if(x==null) return lab+' —'; const w=x>0?(f.ret_mean<0?'덜 잃음':'더 벌음'):(x<0?(f.ret_mean>0?'덜 벌음':'더 잃음'):'같음'); return `${lab} ${f1(x,'%p')} <span class="small">(${w})</span>`;}
-function winCell(f){const small=(f.n<10)||(f.blocks!=null&&f.blocks<1); const t=`시장보다 나은 목록 ${pct(f.win)}`; return small?`<span class="m">${t} — ${f.n}개·창 겹침 → 참고 불가</span>`:t;}
+function winCell(f){return lowN(f.n,f.blocks)?`<span class="m">시장보다 나은 목록 — · 목록 ${f.n}개, 기간 겹침으로 참고 불가(숫자는 상세)</span>`:`시장보다 나은 목록 ${pct(f.win)}`;}
 function row(m,large){
   const f=m.fix, lab=large?'후보군보다':'시장보다', bl=large?'후보군':'시장';
-  return `<tr class="main">${nameCell(m)}<td class="perf"><span class="r">${f1(f.ret_mean)}</span> <span class="small">${bl} ${f1(f.bench_mean)}</span><br><span class="x ${cls(f.exc_mean)}">${excWord(f,lab)}</span></td><td class="l rec">목록 ${f.n}개 · ${fd(f.first)}~${fd(f.last)}<br><span class="small">${winCell(f)}</span></td><td><button class="btn" onclick="toggleDet(this)" aria-expanded="false">상세</button></td></tr>`+det(m);}
+  return `<tr class="main">${nameCell(m)}<td class="perf"><span class="r">${f1(f.ret_mean)}</span> <span class="small">${bl} ${f1(f.bench_mean)}</span><br><span class="x ${clsN(f.exc_mean,f.n,f.blocks)}">${excWord(f,lab)}</span></td><td class="l rec">목록 ${f.n}개 · ${fd(f.first)}~${fd(f.last)}<br><span class="small">${winCell(f)}</span></td><td><button class="btn" onclick="toggleDet(this)" aria-expanded="false">상세</button></td></tr>`+det(m);}
 function toggleDet(b){const tr=b.closest('tr'), d=tr.nextElementSibling; if(d&&d.classList.contains('det')){d.hidden=!d.hidden; b.setAttribute('aria-expanded', String(!d.hidden)); b.textContent=d.hidden?'상세':'닫기';}}
 function waitRow(m){const l=m.live||{}; return `<tr>${nameCell(m)}<td class="l m">${m.retired?'기록용(은퇴)':'첫 40거래일 결과 ~'+(m.first_done_eta||'곧')}${m.verdict_eta?' · 순위 판정 ~'+m.verdict_eta:''}${l.oos_days!=null&&!m.retired?' · 검증 '+l.oos_days+'/40일':''}</td></tr>`;}
 let SORT='exc', DATA=null;
@@ -126,46 +135,47 @@ function render(D){
     const h=`🧭 <b>${nm} ${sc10}${x>=0?'+':''}${x.toFixed(1)}%</b> (${lab} · 시장 전체 기준)`;
     if(!st) return h+'<br>&nbsp;&nbsp;&nbsp;과거 기록 아직 없음'; if(st.events_n<5) return h+`<br>&nbsp;&nbsp;&nbsp;비슷했던 때가 ${yrs}간 ${st.events_n}번뿐 → 과거 성적은 표본 부족`;
     const when=PWHEN[used]||((k==='A2'||k==='A1')?'이만큼 빠졌던 때':((k==='D1'||k==='D2')?'이만큼 올랐던 때':'이 정도일 때'));
-    let l2=`&nbsp;&nbsp;&nbsp;${when} ${yrs}간 ${st.events_n}번 → 다음날 사서 40일 뒤 평균 ${sg(st.mean)}, ${st.events_n}번 중 ${st.events_pos}번 플러스`; if(st.events_pos/st.events_n<0.5) l2+=' → 과거엔 좋은 자리 아니었음';   // 과반이 손해일 때만
+    let l2=`&nbsp;&nbsp;&nbsp;${when} ${yrs}간 ${st.events_n}번 → 다음날 사서 40일 뒤 평균 ${sg(st.mean)}, ${st.events_n}번 중 ${st.events_pos}번은 40일 뒤 수익 +`; if(st.events_pos/st.events_n<0.5) l2+=' → 과거엔 좋은 자리 아니었음';   // 과반이 손해일 때만
     let l3=''; if(st.further_n){l3=(st.further_then_up===st.further_n)?`<br>&nbsp;&nbsp;&nbsp;단 ${st.events_n}번 중 ${st.further_n}번은 사고 나서 더 떨어진 뒤 올랐음`:`<br>&nbsp;&nbsp;&nbsp;단 ${st.events_n}번 중 ${st.further_n}번은 사고 나서 더 떨어졌고 그중 ${st.further_then_up}번만 40일 뒤 플러스`;}
     return h+'<br>'+l2+l3;};
   const RANGE={A2:'≤−10%',A1:'−10~−5',B:'−5~0',C:'0~+5',D1:'+5~+10',D2:'>+10%'};   // th 안의 .small 은 좁은 화면 CSS 가 숨기므로 머리글은 맨글자로
   const bcTable=()=>{if(!BC) return ''; const ks=['A2','A1','B','C','D1','D2'];
-    const row=(mk,nm)=>{const v=NOW[mk], nowk=(v&&v.r20_pct!=null)?cell6(Number(v.r20_pct)):null; return `<tr><td class="l" style="white-space:nowrap">${nm}</td>`+ks.map(k=>{const s=(BC[mk]||{})[k], mark=k===nowk?'<br><b>◀ 지금</b>':''; if(!s) return `<td class="m">—${mark}</td>`; return `<td><span class="${cls(s.mean)}"><b>${sg(s.mean)}</b></span><br><span class="small">${s.events_pos}/${s.events_n}번</span><br><span class="small">더 빠짐 ${s.further_n}</span>${mark}</td>`;}).join('')+'</tr>';};
+    const row=(mk,nm)=>{const v=NOW[mk], nowk=(v&&v.r20_pct!=null)?cell6(Number(v.r20_pct)):null; return `<tr><td class="l" style="white-space:nowrap">${nm}</td>`+ks.map(k=>{const s=(BC[mk]||{})[k], mark=k===nowk?'<br><b>◀ 지금</b>':''; if(!s) return `<td class="m">—${mark}</td>`; return `<td><span class="${s.events_n<5?'m':cls(s.mean)}"><b>${sg(s.mean)}</b></span><br><span class="small">${s.events_pos}/${s.events_n}번${s.events_n<5?' · 부족':''}</span><br><span class="small">더 빠짐 ${s.further_n}</span>${mark}</td>`;}).join('')+'</tr>';};
     const legend=ks.map(k=>`${RANGE[k]} = ${(BC.cells&&BC.cells[k])||CL[k]}`).join(' · ');
     return `<div class="small" style="margin-top:8px">${legend}</div><table style="margin-top:4px"><thead><tr><th class="l">지수</th>${ks.map(k=>`<th>${RANGE[k]}</th>`).join('')}</tr></thead><tbody>${row('kospi','코스피')}${row('kosdaq','코스닥')}</tbody></table><div class="small" style="margin-top:4px">칸 = 그 지수의 20거래일 수익(≤−10 / −10~−5 / −5~0 / 0~+5 / +5~+10 / >+10). 값 = 그 칸이었던 날 다음날 <b>전 종목</b>을 똑같이 나눠 사서 40일 뒤 평균 · 사건(40거래일 간격) 중 플러스 수 · 사고 나서 20일 안에 지수가 5% 더 빠진 사건 수. <b>시장 전체 기준</b> — v30이 시장보다 얼마나 더 벌었나는 위 성적표. 과거 기록이지 매수 신호가 아니다. <a href="https://github.com/sj951027/dh-q7m3k/blob/main/research/RESEARCH_buy_score_prelim_20261020.md">근거</a></div>`;};
   // 맨 위 '오늘 자리' 카드 — 점수(0~10 = 3년 중 얼마나 빠진 자리) → 한 줄 근거 → 자세히(여섯 칸 표·뜻) 접힘. [사용자 요청 10/20 밤: 요점만]
   const bcShort=(mk,nm)=>{const v=NOW[mk]; if(!v||v.r20_pct==null||!isFinite(Number(v.r20_pct))) return ''; const x=Number(v.r20_pct), k=cell6(x), lab=(BC&&BC.cells&&BC.cells[k])||CL[k]||'', sc=(v.pos10!=null&&isFinite(Number(v.pos10)))?Number(v.pos10).toFixed(1):'—';
     let st=BC?(BC[mk]||{})[k]:null, used=k; if(BC&&(!st||st.events_n<5)){const pk=PARENT[k], pst=pk?(BC[mk]||{})[pk]:null; if(pst&&pst.events_n>=5){st=pst; used=pk;}}
     let why; if(!st) why='과거 기록 아직 없음'; else if(st.events_n<5) why=`비슷했던 때가 ${st.events_n}번뿐 — 표본 부족`;
-    else { const n=st.events_n, pz=st.events_pos, w=(used==='A')?'5% 넘게 빠졌던':(used==='D'?'5% 넘게 올랐던':'비슷했던'); why=(pz===n)?`${w} ${n}번 모두 40일 뒤 플러스(평균 ${sg(st.mean)}, ${n}번뿐)`:`${w} ${n}번 중 ${pz}번 플러스(평균 ${sg(st.mean)})`; if(pz/n<0.5) why+=' — 과거엔 좋은 자리 아니었음'; if(st.further_n) why+=(st.further_then_up===st.further_n)?` · ${n}번 중 ${st.further_n}번은 더 떨어진 뒤 회복`:` · ${n}번 중 ${st.further_n}번은 더 떨어졌고 ${st.further_then_up}번만 회복`; }
+    else { const n=st.events_n, pz=st.events_pos, w=(used==='A')?'5% 넘게 빠졌던':(used==='D'?'5% 넘게 올랐던':'비슷했던'); why=(pz===n)?`${w} ${n}번 모두 40일 뒤 수익 +(평균 ${sg(st.mean)}, ${n}번뿐)`:`${w} ${n}번 중 ${pz}번은 40일 뒤 수익 +(평균 ${sg(st.mean)})`; if(pz/n<0.5) why+=' — 과거엔 좋은 자리 아니었음'; if(st.further_n) why+=(st.further_then_up===st.further_n)?` · ${n}번 중 ${st.further_n}번은 더 떨어졌지만 40일 뒤 수익은 +`:` · ${n}번 중 ${st.further_n}번은 더 떨어졌고 ${st.further_then_up}번만 40일 뒤 수익 +`; }
     return `<div style="margin:4px 0"><span style="font-size:1.25em"><b>${nm} ${sc}</b><span class="small">/10</span></span> &nbsp;<span class="${cls(x)}">${x>=0?'+':''}${x.toFixed(1)}%</span> <span class="small">· ${lab}</span><br><span class="small">${why}</span></div>`;};
   try{const box=document.getElementById('todayBox'); const k1=bcShort('kospi','코스피'), q1=bcShort('kosdaq','코스닥');
-    box.innerHTML=(k1||q1)?`<div class="small" style="margin-bottom:2px">🧭 <b>오늘 자리</b> · 시장 전체 기준 · ${D.asof&&D.asof.length===8?D.asof.slice(0,4)+'-'+D.asof.slice(4,6)+'-'+D.asof.slice(6,8)+' 종가':fd(D.asof)} · <b>10에 가까울수록 3년 중 많이 빠진 자리</b> · 과거 기록일 뿐 매수 신호·규칙 아님</div>${k1}${q1}${BC?`<details style="margin-top:6px"><summary class="small">자세히 — 칸별 ${BC&&BC.years?BC.years:'3년'} 기록 · 뜻${BC&&BC.source?' · 자료 '+BC.source:''}</summary><div class="small" style="margin-top:6px">${bcLines('kospi','코스피')}${bcLines('kosdaq','코스닥')?'<br>'+bcLines('kosdaq','코스닥'):''}</div>${bcTable()}</details>`:''}`:'';}catch(e){try{document.getElementById('todayBox').innerHTML='';}catch(_){}}
+    box.innerHTML=(k1||q1)?`<div class="small" style="margin-bottom:2px">🧭 <b>오늘 자리</b> · 시장 전체 기준 · ${D.asof&&D.asof.length===8?D.asof.slice(0,4)+'-'+D.asof.slice(4,6)+'-'+D.asof.slice(6,8)+' 종가':fd(D.asof)} · <b>10에 가까울수록 3년 중 많이 빠진 자리</b>(하락 위치 점수 — 매력도·매수 점수 아님) · 아래 기록은 시장 전체 과거 사건이지 모델 성적이 아님 · 매수 신호·규칙 아님</div>${k1}${q1}${BC?`<details style="margin-top:6px"><summary class="small">자세히 — 칸별 ${BC&&BC.years?BC.years:'3년'} 기록 · 뜻${BC&&BC.source?' · 자료 '+BC.source:''}</summary><div class="small" style="margin-top:6px">${bcLines('kospi','코스피')}${bcLines('kosdaq','코스닥')?'<br>'+bcLines('kosdaq','코스닥'):''}</div>${bcTable()}</details>`:''}`:'';}catch(e){try{document.getElementById('todayBox').innerHTML='';}catch(_){}}
   // 국면별 · 지금 형세
-  const rgc=(g,k)=>{if(!g||!g[k]) return '<span class="m">—</span>'; const v=g[k]; return `<span class="${cls(v.exc_mean)}">${f1(v.exc_mean,'%p')}</span> <span class="small">${pct(v.win)} · ${v.n}일</span>`;};
+  const rgc=(g,k)=>{if(!g||!g[k]) return '<span class="m">—</span>'; const v=g[k]; return `<span class="${clsN(v.exc_mean,v.n)}">${f1(v.exc_mean,'%p')}</span> <span class="small">${pctN(v.win,v.n)} · ${v.n}개</span>`;};
   const icc=(g)=>{if(!g) return '—'; const f=k=>g[k]?`${(g[k].ic*100).toFixed(1)}<span class="small">(${g[k].n})</span>`:'—'; return `${f('약세')} / ${f('상승')}`;};
   // [2026-10-20] A~D(지수 20거래일 수익 칸) 병기 — 코스피 기준 네 칸, 4일 미만 칸은 —. 지금 칸은 머리글에.
-  const adc=(g)=>{if(!g||!g.kospi) return '<span class="m">—</span>'; const q=g.kospi; return ['A','B','C','D'].map(k=>q[k]?`<span class="${cls(q[k].exc_mean)}">${f1(q[k].exc_mean,'%p')}</span><span class="small">(${q[k].n})</span>`:'<span class="m">—</span>').join(' · ');};
+  const adc=(g)=>{if(!g||!g.kospi) return '<span class="m">—</span>'; const q=g.kospi; return ['A','B','C','D'].map(k=>q[k]?`<span class="${clsN(q[k].exc_mean,q[k].n)}">${f1(q[k].exc_mean,'%p')}</span><span class="small">(${q[k].n})</span>`:'<span class="m">—</span>').join(' · ');};
   const adn=v=>{if(!v||v.r20_pct==null) return '—'; const x=Number(v.r20_pct); return `${x>=0?'+':''}${x.toFixed(1)}% ${v.label||v.cell||''} ${v.days||'?'}일째`;};
   const adNow=D.regime_ad_now?` · A~D: 코스피 <b>${adn(D.regime_ad_now.kospi)}</b> · 코스닥 <b>${adn(D.regime_ad_now.kosdaq)}</b>`:'';
-  const bmx=r=>{if(!r||!r.by_market) return '—'; const b=r.by_market, f=k=>b[k]?`<span class="${cls(b[k].exc_mean)}">${f1(b[k].exc_mean,'%p')}</span>`:'—'; return `${f('kospi')} / ${f('kosdaq')}`;};
+  const lastDone=A.length?fd(A.map(m=>m.fix.last).sort().slice(-1)[0]):'—';
+  const bmx=r=>{if(!r||!r.by_market) return '—'; const b=r.by_market, f=k=>b[k]?`<span class="${clsN(b[k].exc_mean,b[k].n)}">${f1(b[k].exc_mean,'%p')}</span>`:'—'; return `${f('kospi')} / ${f('kosdaq')}`;};
   document.getElementById('formHead').innerHTML=`지금 국면: <b>${D.regime_now||'—'}</b>${D.regime_now?' (코스닥 20일선 '+(D.regime_now==='상승'?'위':'아래')+')':''} · ${fd(D.asof)} 기준 · 국면 = 목록 기준일의 코스닥 종가가 20일선 위(상승)/아래(약세)${adNow}`;
   document.querySelector('#tblF tbody').innerHTML=A.filter(m=>m.recent||m.regime_money||m.regime_ad_money).map(m=>{const r=m.recent, p=MODEL_PAGES[m.model], nm=p?`<a href="${p}">${m.name}</a>`:m.name;
-    return `<tr><td class="l">${nm}</td><td>${r?`<span class="${cls(r.exc_mean)}">${f1(r.exc_mean,'%p')}</span> <span class="small">${r.n}일 · ${r.weeks_pos}/${r.weeks}주</span>`:'<span class="m">4일 미만</span>'}</td><td class="hm">${bmx(r)}</td><td>${rgc(m.regime_money,'약세')}</td><td>${rgc(m.regime_money,'상승')}</td><td>${adc(m.regime_ad_money)}</td><td class="hm">${icc(m.regime)}</td></tr>`;}).join('')||'<tr><td colspan="7" class="l m">없음</td></tr>';
-  document.getElementById('formFoot').innerHTML=`<b>${D.persistence_note||''}</b><br>'약세/상승에 산 날' = 그 국면이었던 목록 기준일 매수분의 40일 시장 대비(%p)와 양수 비율 — 40일 끝난 것만(지금은 8/3 이전 목록이라 거의 '약세'뿐). 순위 상관은 등록 후 20일 기준(×100). '코스피 A~D' = 목록 기준일 코스피 20거래일 수익이 급락 뒤(≤−5%)/약세(−5~0)/강세(0~+5)/급등 뒤(>+5%)였던 매수분의 40일 시장 대비(%p)와 일수 — 3년 전 종목 조사에선 급락 뒤가 가장 좋고 급등 뒤가 가장 나빴다(<a href="https://github.com/sj951027/dh-q7m3k/blob/main/research/RESEARCH_entry_regime_deep_20261020.md">근거</a>, Codex 독립 재현 일치). 국면은 사후에 나눈 것이라 관측이며 판정은 국면을 나누지 않는다. 지금 자료에선 '아래'가 6~7월·'위'가 8~9월과 거의 같아 국면과 시기를 구분할 수 없다. <a href="https://github.com/sj951027/dh-q7m3k/blob/main/research/RESEARCH_form_signals_20261003.md">근거 조사</a>`;
+    return `<tr><td class="l">${nm}</td><td>${r?`<span class="${clsN(r.exc_mean,r.n)}">${f1(r.exc_mean,'%p')}</span> <span class="small">목록 ${r.n}개(${fd(r.first)}~${fd(r.last)}) · 나은 주 ${r.weeks_pos}/${r.weeks}${lowN(r.n)?' · 참고 불가':''}</span>`:'<span class="m">4개 미만</span>'}</td><td class="hm">${bmx(r)}</td><td>${rgc(m.regime_money,'약세')}</td><td>${rgc(m.regime_money,'상승')}</td><td>${adc(m.regime_ad_money)}</td><td class="hm">${icc(m.regime)}</td></tr>`;}).join('')||'<tr><td colspan="7" class="l m">없음</td></tr>';
+  document.getElementById('formFoot').innerHTML=`<b>${D.persistence_note||''}</b><br>'최근 40거래일에 평가 끝난 목록' = 오늘 산 목록의 흐름이 아니라 40일 보유가 최근에 끝난 목록(기준일은 칸에 표시). '약세/상승에 산 날' = 그 국면이었던 목록 기준일 매수분의 40일 시장 대비(%p)와 시장보다 나은 목록 비율 — 40일 끝난 것만(마지막 평가 완료 목록 ${lastDone}). 순위 상관 = 등록 후 20일 순위 맞힘 정도(×100, 수익률 아님). 10개 미만 칸은 회색 '참고 불가'. '코스피 A~D' = 목록 기준일 코스피 20거래일 수익이 급락 뒤(≤−5%)/약세(−5~0)/강세(0~+5)/급등 뒤(>+5%)였던 매수분의 40일 시장 대비(%p)와 일수 — 3년 전 종목 조사에선 급락 뒤가 가장 좋고 급등 뒤가 가장 나빴다(<a href="https://github.com/sj951027/dh-q7m3k/blob/main/research/RESEARCH_entry_regime_deep_20261020.md">근거</a>, Codex 독립 재현 일치). 국면은 사후에 나눈 것이라 관측이며 판정은 국면을 나누지 않는다. 지금 자료에선 '아래'가 6~7월·'위'가 8~9월과 거의 같아 국면과 시기를 구분할 수 없다. <a href="https://github.com/sj951027/dh-q7m3k/blob/main/research/RESEARCH_form_signals_20261003.md">근거 조사</a>`;
   // 시장별
-  const mkc=(b)=>b?`<td>${b.ret_mean!=null?f1(b.ret_mean):'—'}</td><td class="m">${b.bench_mean!=null?f1(b.bench_mean):'—'}</td><td class="${cls(b.exc_mean)}"><b>${f1(b.exc_mean,'%p')}</b></td><td>${pct(b.win)} <span class="small">(${b.n}일)</span></td>`:'<td colspan="4" class="m">—</td>';
+  const mkc=(b)=>b?`<td>${b.ret_mean!=null?f1(b.ret_mean):'—'}</td><td class="m">${b.bench_mean!=null?f1(b.bench_mean):'—'}</td><td class="${clsN(b.exc_mean,b.n)}"><b>${f1(b.exc_mean,'%p')}</b></td><td>${pctN(b.win,b.n)} <span class="small">(${b.n}개)</span></td>`:'<td colspan="4" class="m">—</td>';
   document.querySelector('#tblMk tbody').innerHTML=D.models.filter(m=>m.track!=='large'&&m.fix&&m.fix.by_market&&Object.keys(m.fix.by_market).length).map(m=>{const b=m.fix.by_market;return `<tr><td class="l">${m.name}${m.retired?'<span class="role">은퇴</span>':''}</td>${mkc(b.kospi)}${mkc(b.kosdaq)}</tr>`;}).join('')||'<tr><td colspan="9" class="l m">없음</td></tr>';
   // 묶음(과거 재구성)
   const e=D.ensemble;
-  document.getElementById('ensBox').innerHTML=e&&e.fix?`<div style="padding:8px 0">멤버 ${e.names.join(' · ')} 를 같은 매수일에 같은 금액씩: 시장보다 <b class="${cls(e.fix.exc_mean)}">${f1(e.fix.exc_mean,'%p')}</b> · 시장보다 나은 날 ${pct(e.fix.win)} · ${e.fix.n}일 (${fd(e.fix.first)}~${fd(e.fix.last)} 목록)<br><span class="small">멤버는 지금 시험 기록이 좋은 모델을 고른 것이고 기록은 그 시험 전 기간을 포함한다 — 미리 정해 두고 관찰한 전략의 성과가 아니다. 멤버 2개 이상이 끝난 날만. 참고 구간 ${e.fix.ci_ref?f1(e.fix.ci_ref[0],'')+'~'+f1(e.fix.ci_ref[1],'%p'):'—'}(겹치는 창을 따로따로인 것처럼 뽑아 좁음 — 차이를 확정하지 않는다).${Object.keys(e.pairs||{}).length?'<br>멤버와 비교(같은 날짜): '+Object.entries(e.pairs).map(([k,p])=>`묶음−${k} ${f1(p.diff_mean,'%p')}(${p.n}일)`).join(' · '):''}</span></div>`:'<div class="m" style="padding:8px 0">없음</div>';
+  document.getElementById('ensBox').innerHTML=e&&e.fix?`<div style="padding:8px 0">멤버 ${e.names.join(' · ')} 를 같은 매수일에 같은 금액씩: 시장보다 <b class="${clsN(e.fix.exc_mean,e.fix.n)}">${f1(e.fix.exc_mean,'%p')}</b> · 시장보다 나은 목록 ${pctN(e.fix.win,e.fix.n)} · ${e.fix.n}개 (${fd(e.fix.first)}~${fd(e.fix.last)} 목록)<br><span class="small">멤버는 지금 시험 기록이 좋은 모델을 고른 것이고 기록은 그 시험 전 기간을 포함한다 — 미리 정해 두고 관찰한 전략의 성과가 아니다. 멤버 2개 이상이 끝난 날만. 참고 구간 ${e.fix.ci_ref?f1(e.fix.ci_ref[0],'')+'~'+f1(e.fix.ci_ref[1],'%p'):'—'}(겹치는 창을 따로따로인 것처럼 뽑아 좁음 — 차이를 확정하지 않는다).${Object.keys(e.pairs||{}).length?'<br>멤버와 비교(같은 날짜): '+Object.entries(e.pairs).map(([k,p])=>`묶음−${k} ${f1(p.diff_mean,'%p')}(${p.n}일)`).join(' · '):''}</span></div>`:'<div class="m" style="padding:8px 0">없음</div>';
   // 오늘까지 보유 · 참고 구간 · 은퇴
-  const nowRows=D.models.filter(m=>m.now).map(m=>{const n=m.now;return `<tr><td class="l">${m.name}${m.retired?'<span class="role">은퇴</span>':''}</td><td>${n.n}</td><td>${f1(n.ret_mean)}</td><td class="hm">${f1(n.ret_median)}</td><td class="m">${f1(n.bench_mean)}</td><td class="${cls(n.exc_mean)}">${f1(n.exc_mean,'%p')}</td><td>${pct(n.win)}</td></tr>`;});
+  const nowRows=D.models.filter(m=>m.now).map(m=>{const n=m.now;return `<tr><td class="l">${m.name}${m.retired?'<span class="role">은퇴</span>':''}</td><td>${n.n}</td><td>${f1(n.ret_mean)}</td><td class="hm">${f1(n.ret_median)}</td><td class="m">${f1(n.bench_mean)}</td><td class="${clsN(n.exc_mean,n.n)}">${f1(n.exc_mean,'%p')}</td><td>${pctN(n.win,n.n)}</td></tr>`;});
   document.querySelector('#tblNow tbody').innerHTML=nowRows.join('')||'<tr><td colspan="7" class="l m">없음</td></tr>';
-  document.querySelector('#tblCI tbody').innerHTML=D.models.filter(m=>m.fix&&m.fix.ci_ref).map(m=>{const f=m.fix;return `<tr><td class="l">${m.name}${m.retired?'<span class="role">은퇴</span>':''}</td><td class="${cls(f.exc_mean)}">${f1(f.exc_mean,'%p')}</td><td>${f1(f.ci_ref[0],'')} ~ ${f1(f.ci_ref[1],'%p')}</td><td class="neg">${f1(f.worst,'%p')}</td><td class="pos">${f1(f.best,'%p')}</td><td class="small">${fd(f.first)}~${fd(f.last)}</td></tr>`;}).join('');
+  document.querySelector('#tblCI tbody').innerHTML=D.models.filter(m=>m.fix&&m.fix.ci_ref).map(m=>{const f=m.fix;return `<tr><td class="l">${m.name}${m.retired?'<span class="role">은퇴</span>':''}</td><td class="${clsN(f.exc_mean,f.n,f.blocks)}">${f1(f.exc_mean,'%p')}</td><td>${f1(f.ci_ref[0],'')} ~ ${f1(f.ci_ref[1],'%p')}${lowN(f.n,f.blocks)?' <span class="small">참고 불가</span>':''}</td><td class="${clsN(f.worst,f.n,f.blocks)}">${f1(f.worst,'%p')}</td><td class="${clsN(f.best,f.n,f.blocks)}">${f1(f.best,'%p')}</td><td class="small">${fd(f.first)}~${fd(f.last)}</td></tr>`;}).join('');
   document.getElementById('cond2').innerHTML=`참고 구간은 겹치는 40일 창을 따로따로인 것처럼 다시 뽑은 것이라 실제보다 좁다 — 정식 결론은 미리 정한 절차(PREREGISTER_ops_adoption, 2027-06)에서만. 은퇴 모델: ${R.map(m=>m.name).join(', ')||'없음'}.`;
-  document.getElementById('cond').innerHTML=`시장별 상위 ${D.TOP} · 다음 거래일 종가 매수 · ${D.H}거래일 보유 · 비용 0(왕복 ${D.COST}%) · 급등 제외 없음 · 배당 제외 · 가격 없는 종목은 바구니에서 제외 · 생성 ${(D.generated||'').slice(0,16).replace('T',' ')}`;
+  document.getElementById('cond').innerHTML=`시장별 상위 ${D.TOP} · 다음 거래일 종가 매수 · ${D.H}거래일 보유 · 본표 비용 미반영(상세의 20일 환산만 왕복 ${D.COST}% 차감) · 급등 제외 없음 · 배당 제외 · 가격 없는 종목은 바구니에서 제외 · 생성 ${(D.generated||'').slice(0,16).replace('T',' ')}`;
 }
 fetch('scoreboard.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(render)
   .catch(()=>{document.querySelector('#tblA tbody').innerHTML='<tr><td colspan="4" class="loading">데이터 없음 (scoreboard.json)</td></tr>';document.getElementById('asof').textContent='';});
