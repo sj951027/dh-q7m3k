@@ -187,7 +187,7 @@ const COLS = [
   ['earn_drop_60d','📉실적악화','ern','직전 60거래일 안에 접수된 최근 분기 보고서에서 영업이익이 전년 같은 분기보다 시총의 1% 이상 줄었음. 실측: 그 뒤 20거래일 같은 시장·시총 대비 −1.0%p(3년), 모델 목록 상위 10 안에서는 −3.2%p(2026-06~09 넉 달 — 단서). 사람이 보고 판단. 점수·순위에는 미반영'],
   ['earn_recent_20d','정기보고서 접수','recentern','정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우. 부호가 없거나 결측이어도 표시. 점수·순위 미반영.'],
   ['ticker','코드','str',''],
-  ['sector','업종','str','업종(sector_cache 기준)'],
+  ['sector','업종','sector','업종(sector_cache 기준) · 옆 회색 숫자 = 그 업종 동일가중 지수의 20거래일 고점 대비 낙폭(사실 표시 — 경고·위험 아님, 앞으로의 수익과의 관계 미확인, 점수·순위 미반영)'],
   ['realized_vol','변동성21','num4','최근21일 일수익 표준편차. 작을수록 차분(0.025≈하루±2.5%). 낮을수록 점수↑'],
   ['roe_value','ROE%','num1','자기자본이익률(EPS/BPS). 높을수록 우량=점수↑'],
   ['return_1w_%','1주%','signed','최근 1주 등락(참고 — lv_b 점수에는 미반영)'],
@@ -202,6 +202,15 @@ const COLS = [
   ['quarterly_yoy_%','분기YoY%','signed','분기 영업이익 전년동기比'],
 ];
 
+// [2026-11-08] 업종 낙폭 사실 배지 — docs/sector_dd.json(build_sector_dd.py). 표시 전용, 점수·순위 무관. 근거 research/SECTOR_DRAWDOWN_20261108.md
+let SECTOR_DD=null;
+fetch('sector_dd.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{SECTOR_DD=j; if(allRows.length) applyFilters();}).catch(()=>{});
+function sectorDDBadge(sec){
+  const s=SECTOR_DD&&SECTOR_DD.sectors&&SECTOR_DD.sectors[sec]; if(!s||s.dd20===undefined||s.dd20===null) return '';
+  const d60=(s.dd60===null||s.dd60===undefined)?'—':s.dd60.toFixed(1)+'%';
+  const asof=SECTOR_DD.asof?(+SECTOR_DD.asof.slice(4,6))+'/'+(+SECTOR_DD.asof.slice(6)):'';
+  return '<span style="margin-left:4px;font-size:10.5px;color:var(--sub);background:#232833;border-radius:3px;padding:1px 4px;white-space:nowrap" title="업종 '+sec+'('+s.n+'종목 동일가중 지수)이 최근 20거래일 고점 대비 '+s.dd20.toFixed(1)+'% (60일 고점 대비 '+d60+') · '+asof+' 종가 기준 · 사실 표시 — 경고·위험 아님, 앞으로의 수익과의 관계는 미확인 · 점수·순위 미반영">20일↓ '+s.dd20.toFixed(1)+'%</span>';
+}
 let curMkt = 'kospi';
 let sortKey = 'rank', sortAsc = true;
 let allRows = [];                 // 필터 전 전체 행
@@ -236,6 +245,7 @@ function fmt(v, type){
   if(type==='ern') return v?'<span style="color:#b7791f;font-weight:600" title="실적 악화 60거래일 내(접수일)">📉 '+v+'</span>':'';
   if(type==='recentern') return /^접수 \d+일(?:\([↑↓]\))?$/.test(v)?'<span style="color:#4a5568;background:#edf2f7;border-radius:3px;padding:2px 4px;white-space:nowrap" title="정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우(주가 방향 아님). 부호가 없거나 결측이어도 표시. 점수·순위 미반영.">'+v.replace(/^접수 (\d+)일/,'접수 후 $1거래일')+'</span>':'';
   if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
+  if(type==='sector') return v+sectorDDBadge(v);
   if(type==='int') return parseInt(v);
   if(type==='score') return '<span class="score">'+parseFloat(v).toFixed(3)+'</span>';
   if(type==='num1'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(1)}

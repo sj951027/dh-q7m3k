@@ -302,6 +302,12 @@ def main():
     if (HERE / "observe_acuteness.py").exists():
         run_script(["observe_acuteness.py"], "2.74단계: 급락 급성도 관측 컬럼 (점수 불변)")
 
+    # 2.75) [2026-11-08] 업종 캐시 날짜별 스냅샷(../dh-q7m3k-data/sector_snapshots/) + 업종 낙폭 docs/sector_dd.json
+    #        — 표시 전용(목록 페이지 업종 옆 '20일 고점 대비 %'), 점수·게이트·판정·선정 무접촉. 비치명(스크립트 안에서 exit 0).
+    #        근거 research/SECTOR_DRAWDOWN_20261108.md · handoff/CHECK_20261108 §5 결정 1·2.
+    if (HERE / "build_sector_dd.py").exists():
+        run_script(["build_sector_dd.py"], "2.75단계: 업종 캐시 스냅샷 + 업종 낙폭 (표시 전용)")
+
     # 2.5) 점수 적중도(IC) 계산 → 폰 대시보드 카드용 (실패해도 무해)
     if (HERE / "compute_ic.py").exists():
         run_script(["compute_ic.py"], "2.5단계: 점수 적중도(IC) 계산")
