@@ -84,9 +84,15 @@ s_gap = mo.summarize(net_gap, T, calendar=cal_full)
 check("창 안 하루 결손 → w20 None · 빠진 날짜 기록", s_gap["w20"] is None and s_gap.get("w20_missing") == [net.index[-3]])
 check("달력 없이 부르면 종전대로(행 기준) 값이 나옴 — 호환", mo.summarize(net_gap, T)["w20"] is not None)
 check("결손이 60일 창 밖이면 w20 유지", mo.summarize(net.drop(net.index[0]), T, calendar=cal_full)["w20"] is not None)
+net_sat = pd.concat([net, pd.DataFrame({"외국인": [100.0], "연기금": [0.0], "개인": [0.0], "전체": [0.0]}, index=["20260131"])]).sort_index()   # 달력 밖(토요일 꼴) 행
+T_sat = pd.concat([T, pd.Series([1000.0], index=["20260131"])]).sort_index()
+check("[중간점검 F4①] 달력 밖 행이 끼어도 달력 날짜 행만 합산(−2000 유지)", mo.summarize(net_sat, T_sat, calendar=cal_full)["w20"]["외국인"]["sum"] == -2000)
+s_col = mo.summarize(net.drop(columns=["연기금"]), T, calendar=cal_full, required_cols=["외국인", "연기금", "개인", "전체"])
+check("[중간점검 F4②] 필수 투자자 열이 통째로 빠지면 None + 열 이름 기록", s_col["w20"] is None and "연기금" in s_col["w20_missing"])
 
 print("D. [2026-11-07 F1] refresh_status — 두 시장 모두 ok 일 때만 ok, 한쪽만이면 partial")
-check("둘 다 ok → ok", mo.refresh_status({"KOSPI": {"ok": True}, "KOSDAQ": {"ok": True}}) == "ok")
+check("둘 다 ok·같은 마지막 날짜 → ok", mo.refresh_status({"KOSPI": {"ok": True, "last": "20261106"}, "KOSDAQ": {"ok": True, "last": "20261106"}}) == "ok")
+check("[중간점검 F1] 둘 다 ok 지만 마지막 날짜가 다르면 partial", mo.refresh_status({"KOSPI": {"ok": True, "last": "20261106"}, "KOSDAQ": {"ok": True, "last": "20261105"}}) == "partial")
 check("한쪽만 → partial", mo.refresh_status({"KOSPI": {"ok": True}, "KOSDAQ": {"ok": False, "why": "x"}}) == "partial" and mo.refresh_status({"KOSPI": {"ok": True}}) == "partial")
 check("둘 다 실패/비어 있음 → failed", mo.refresh_status({"KOSPI": {"ok": False}}) == "failed" and mo.refresh_status({}) == "failed")
 

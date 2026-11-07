@@ -276,14 +276,18 @@ def collect(ohlcv_db=OHLCV_DB, history_db=HISTORY_DB, earnings_db=EARNINGS_DB, a
             mk = j.get("markets") or {}
             dates = [str((mk.get(m) or {}).get("data_as_of") or "") for m in ("KOSPI", "KOSDAQ")]
             st = str((j.get("refresh_status") or {}).get("status") or "")
+            cal_txt = str(j.get("calendar") or "")
+            st_txt = (f"수급 갱신 {st}" if st not in ("ok", "skipped") else "") or ("달력 없이 행 기준 계산" if cal_txt.startswith("달력 없음") else "")   # [중간점검 F4③]
             out["flows_json"] = {"last": min(dates) if all(dates) else (max(dates) if any(dates) else None), "n_last": None, "n_hist": [],
-                                 "parts_last": {"KOSPI": dates[0] or None, "KOSDAQ": dates[1] or None},
-                                 "state": (f"수급 갱신 {st}" if st not in ("ok", "skipped") else "")}
+                                 "parts_last": {"KOSPI": dates[0] or None, "KOSDAQ": dates[1] or None}, "state": st_txt}
         except Exception:
             pass
         try:
             j = json.loads((DOCS_DIR / "paper_account.json").read_text(encoding="utf-8"))
-            out["paper_json"] = {"last": str(j.get("end") or "") or None, "n_last": len(j.get("accounts") or {}), "n_hist": [], "state": ""}
+            n_acc = len(j.get("accounts") or {}); gen = str(j.get("generated") or "")[:10].replace("-", ""); end = str(j.get("end") or "")
+            # [중간점검 F3 잔여] 날짜만 같고 내용이 빈 산출, 또는 생성일이 기준일보다 앞선(전날 산출이 남은) 경우를 잡는다
+            st_txt = ("계좌 0장" if n_acc == 0 else "") or (f"생성일 {gen} < 기준 {end}" if gen and end and gen < end else "")
+            out["paper_json"] = {"last": end or None, "n_last": n_acc, "n_hist": [], "state": st_txt}
         except Exception:
             pass
     return out, ref, cal

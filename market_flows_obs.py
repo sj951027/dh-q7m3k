@@ -19,7 +19,7 @@ MARKETS = ["KOSPI", "KOSDAQ"]
 TIMEOUT_S = 300
 
 
-def summarize(net, T, windows=(20, 60), calendar=None):
+def summarize(net, T, windows=(20, 60), calendar=None, required_cols=None):
     """net: DataFrame(index=date 오름차순, columns=투자자, 순매수 원) · T: Series(index=date, 그날 거래대금 원).
     → {"date", "w20": {투자자: {"sum", "pct"}} 또는 None, "T20", ...}. 창 w 는 **마지막 w 행이 모두 유효하고 거래대금 > 0** 일 때만 값, 아니면 None(결측을 건너뛰어 19일을 20일로 내지 않음).
     calendar(선택, [2026-11-07 F4]): 거래일 날짜 목록(오름차순). 주어지면 창 = **마지막 날짜 이하 달력의 마지막 w 거래일**이어야 하고 그중 하나라도 net 에 없으면 None
@@ -31,14 +31,18 @@ def summarize(net, T, windows=(20, 60), calendar=None):
     cols = [c for c in net.columns if c != "전체"]
     out = {"date": str(net.index[-1])}
     cal = [str(d) for d in calendar if str(d) <= str(net.index[-1])] if calendar is not None else None
+    expected_cols = [c for c in (required_cols or []) if c != "전체"]                 # required_cols(선택): 빠지면 None 으로 낼 투자자 열(운영은 DETAIL)
     for w in windows:
         if cal is not None:
             exp = cal[-w:]
-            if len(exp) < w or any(d not in net.index for d in exp):
-                out[f"w{w}"] = None; out[f"T{w}"] = None; out[f"w{w}_missing"] = [d for d in exp if d not in net.index][:5]; continue
-        if len(net) < w:
-            out[f"w{w}"] = None; out[f"T{w}"] = None; continue
-        z = net[cols].iloc[-w:].to_numpy(dtype=float); tw = T.iloc[-w:].to_numpy(dtype=float)
+            missing_cols = [c for c in expected_cols if c not in net.columns]          # [F4 잔여 ②] 투자자 열이 통째로 빠지면 None
+            if len(exp) < w or any(d not in net.index for d in exp) or missing_cols:
+                out[f"w{w}"] = None; out[f"T{w}"] = None; out[f"w{w}_missing"] = [d for d in exp if d not in net.index][:5] + missing_cols[:3]; continue
+            z = net.loc[exp, cols].to_numpy(dtype=float); tw = T.reindex(exp).to_numpy(dtype=float)   # [F4 잔여 ①] 달력 날짜 행만 합산(달력 밖 행 배제)
+        else:
+            if len(net) < w:
+                out[f"w{w}"] = None; out[f"T{w}"] = None; continue
+            z = net[cols].iloc[-w:].to_numpy(dtype=float); tw = T.iloc[-w:].to_numpy(dtype=float)
         if not (np.isfinite(z).all() and np.isfinite(tw).all() and (tw > 0).all()):
             out[f"w{w}"] = None; out[f"T{w}"] = None; continue
         tsum = float(tw.sum()); sums = z.sum(axis=0)
@@ -174,10 +178,16 @@ def worker(days, db_path):
 
 
 def refresh_status(markets):
-    """[2026-11-07 F1] 시장별 결과 → 'ok'(두 시장 모두 저장) · 'partial'(한쪽만) · 'failed'(없음). 순수 함수.
-    종전엔 any(ok) 로 'ok' 를 내서 한 시장만 갱신돼도 정상으로 보였다(Codex 운영 검토 F1)."""
-    oks = [bool((markets or {}).get(mk, {}).get("ok")) for mk in MARKETS]
-    return "ok" if all(oks) else ("partial" if any(oks) else "failed")
+    """[2026-11-07 F1 · 중간점검 교정] 시장별 결과 → 'ok'(두 시장 모두 저장 **그리고 마지막 날짜가 같음**) · 'partial'(한쪽만, 또는 마지막 날짜가 다름) · 'failed'(없음). 순수 함수.
+    종전엔 any(ok) 로 'ok' 를 내서 한 시장만 갱신돼도 정상으로 보였고, 11/7 1차 교정은 날짜를 안 봐 두 시장이 다른 날짜로 저장돼도 ok 였다(Codex 중간점검 F1)."""
+    ms = markets or {}
+    oks = [bool(ms.get(mk, {}).get("ok")) for mk in MARKETS]
+    if not any(oks):
+        return "failed"
+    if not all(oks):
+        return "partial"
+    lasts = {str(ms[mk].get("last") or "") for mk in MARKETS}
+    return "ok" if len(lasts) == 1 else "partial"
 
 
 def build_json(con, refresh):
@@ -206,7 +216,7 @@ def build_json(con, refresh):
         net = f.pivot(index="date", columns="investor", values="net_val").sort_index().tail(80)
         net = net[[c for c in DETAIL if c in net.columns]]
         T = f[f.investor == "전체"].set_index("date").buy_val.sort_index()
-        s = summarize(net, T, calendar=calendar); s["data_as_of"] = s["date"]; out["markets"][mk] = s
+        s = summarize(net, T, calendar=calendar, required_cols=DETAIL); s["data_as_of"] = s["date"]; out["markets"][mk] = s
     return out
 
 

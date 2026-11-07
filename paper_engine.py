@@ -108,28 +108,30 @@ def switch_picks(dates, cells, picks_a, picks_other, a_cells=("A",)):
 
 
 def mix_picks(dates, picks_a, picks_b):
-    """[관측 계약 2026-11-07 · E3 비교군] 정적 50/50 혼합 — 날마다 두 목록을 **이어 붙인다**(중복 종목은 한 번, 앞 목록 순서 유지).
-    simulate 는 그날 예산(NAV/slots)을 목록 길이로 나누므로, 두 목록이 다 있는 날은 각 목록이 예산의 절반을 받는다(= 같은 투입액으로 반반).
-    한쪽만 있는 날은 있는 쪽 목록 전부(예산 전부) — 그 날 수를 days_only_a/b 로 센다. 둘 다 없으면 현금(days_missing). 순수 함수."""
+    """[관측 계약 2026-11-07 · E3 비교군 · 11/7 M1 교정] 정적 50/50 혼합 — 날마다 **목록별 예산을 절반씩 먼저 고정**하고 종목 가중치를 합산한다:
+    가중치 = 0.5/nA (A 목록 종목) + 0.5/nB (B 목록 종목), 두 목록에 다 있는 종목은 두 몫을 더한다 → {date: {ticker: 가중치}} (합 1).
+    종전(이어 붙여 동일가중)은 A 20개·B 10개면 2/3·1/3 이 되고 중복 종목의 출처가 사라졌다(Codex 중간점검 M1). 한쪽만 있는 날은 그 목록이 예산 전부(1/n),
+    빈 목록은 없는 것으로 친다. 둘 다 없으면 현금(days_missing). 순수 함수."""
     out = {}
     n_both = n_a = n_b = n_m = 0
     for d in dates:
         d = str(d)
-        pa, pb = picks_a.get(d), picks_b.get(d)
-        if pa is None and pb is None:
+        pa = [t for t in (picks_a.get(d) or [])]; pb = [t for t in (picks_b.get(d) or [])]
+        if not pa and not pb:
             n_m += 1
             continue
-        merged, seen = [], set()
-        for t in list(pa or []) + list(pb or []):
-            if t not in seen:
-                seen.add(t); merged.append(t)
-        out[d] = merged
-        if pa is not None and pb is not None:
+        w = {}
+        if pa and pb:
+            for t in pa: w[t] = w.get(t, 0.0) + 0.5 / len(pa)
+            for t in pb: w[t] = w.get(t, 0.0) + 0.5 / len(pb)
             n_both += 1
-        elif pa is not None:
+        elif pa:
+            for t in pa: w[t] = w.get(t, 0.0) + 1.0 / len(pa)
             n_a += 1
         else:
+            for t in pb: w[t] = w.get(t, 0.0) + 1.0 / len(pb)
             n_b += 1
+        out[d] = w
     return out, dict(days_both=n_both, days_only_a=n_a, days_only_b=n_b, days_missing=n_m)
 
 
@@ -202,7 +204,7 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
             continue
         e = t + entry_lag
         if e < N:
-            sched.setdefault(e, []).append((str(rid), list(lst), ratio_of(str(rid))))
+            sched.setdefault(e, []).append((str(rid), (dict(lst) if isinstance(lst, dict) else list(lst)), ratio_of(str(rid))))   # [M1] dict 가중치 보존
 
     cash = float(start_nav)
     pend = {}          # [2026-11-01 J11] 매도대금 결제 대기: {현금이 되는 날 i: 금액}. settle_days=0 이면 같은 날 바로 현금(종전과 동일)
@@ -234,8 +236,10 @@ def simulate(dates, close, picks, *, slots=SLOTS, hold=HOLD, cost=COST_MAIN, new
             budget = min(cash, prev_nav / slots * ratio) if ratio > 0 else 0.0
             if budget <= 0 or not lst:
                 continue
-            per = budget / len(lst)
-            for tk in lst:
+            # [2026-11-07 M1] 목록이 dict 면 {ticker: 가중치}(합 1) — 정적 반반 계좌용. 목록(list)이면 종전대로 동일가중 → 기존 계좌 0-diff.
+            #   list 는 종전 식(budget / len) 그대로 — budget * (1/len) 으로 바꾸면 부동소수점 끝자리가 달라져 0-diff 가 깨진다(11/7 실측).
+            items = [(tk, budget * w) for tk, w in lst.items()] if isinstance(lst, dict) else [(tk, budget / len(lst)) for tk in lst]
+            for tk, per in items:
                 c = cols.get(tk)
                 if c is None:
                     continue                                # 시세표에 없음 → 현금

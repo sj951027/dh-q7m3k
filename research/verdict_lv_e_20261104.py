@@ -247,7 +247,10 @@ def money_table(mid, reg, cost):
         if rid in excl or rid not in keep: continue
         t = lb.anchor(rid, didx)
         if t is None or t + lb.ENTRY_LAG + H40 >= N: continue
-        r40 = close.iloc[t + lb.ENTRY_LAG + H40] / close.iloc[t + lb.ENTRY_LAG] - 1
+        # [중간점검 N1 교정] 만기일 가격이 없는 종목(정지·상폐)은 '마지막 유효 종가'로 청산(엔진·운용 채택 정본과 같게) — dropna 로 빼면 손실 종목이 사라진다
+        ent = close.iloc[t + lb.ENTRY_LAG]
+        ex_px = close.iloc[t + lb.ENTRY_LAG: t + lb.ENTRY_LAG + H40 + 1].ffill().iloc[-1]
+        r40 = (ex_px / ent - 1).where(ent > 0)                       # 진입일 가격 없음 → 못 삼(제외)
         dil = _dil_of(rid) if _dil_of else set(); ex = []
         for mk, gm in g.groupby("market"):
             gm = gm.dropna(subset=["score"]); gm = gm[~gm.ticker.isin(dil)]

@@ -106,6 +106,8 @@ br3 = {"flows_json": {"last": "20261106", "n_last": None, "n_hist": [], "parts_l
 check("F3: 입력은 최신이어도 산출 상태 플래그 → state 경고", {r["key"]: r for r in dh.assess(br3, "20261106", cal_e)}["flows_json"]["status"] == "state"
       and any("산출 상태" in w for w in dh.warning_lines(dh.assess(br3, "20261106", cal_e), "20261106")))
 check("갈래 19개(flows_json·paper_json 추가)", len(dh.BRANCHES) == 19 and {"flows_json", "paper_json"} <= set(dh.ALLOWED))
+br4 = {"paper_json": {"last": "20261106", "n_last": 0, "n_hist": [], "state": "계좌 0장"}}
+check("[중간점검 F3] 날짜는 같은데 계좌 0장 → state 경고", {r["key"]: r for r in dh.assess(br4, "20261106", cal_e)}["paper_json"]["status"] == "state")
 if os.path.exists(dh.OHLCV_DB) and os.path.exists(dh.MARKET_FLOWS_DB):
     rb, _, _ = dh.collect(asof="20261030_2359")
     check("F5 되감기(실 DB): 10/30 시점 시장 수급 마지막 날짜 ≤ 20261030(종전엔 11/2 적재분이 섞였음)", (rb.get("mkt_flows") or {}).get("last", "99999999") <= "20261030")
