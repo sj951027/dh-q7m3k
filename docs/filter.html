@@ -437,7 +437,7 @@
     <ul>
       <li>저녁에 뽑힌 종목은 <b>다음 거래일</b>에 산다(시가·종가 차이 없음).</li>
       <li><b>시장별 상위 10</b>(코스피 10·코스닥 10)이 데이터상 유리했다. 아래 표의 <span class="reco">권고10</span> 표시가 그 종목이다(V3점수 순, 위험·주의·이중적자·밸류트랩 제외 — 텔레그램 추천과 같은 기준).</li>
-      <li id="listsNote" style="color:#4a5568"><b>같은 '상위 10'이라도 셋이 다르다</b> — <b>화면 권고10</b> = 재무 위험 조건(주의·위험·이중적자·밸류트랩) 제외 뒤 V3점수 상위 10 · <b>성적표 상위10</b> = 조건 없이 V3점수 상위 10(동점은 코드 순 — 판정·성적표·되감기가 쓰는 목록) · <b>모의 계좌</b> = 성적표 상위10에서 💧희석 배지만 제외. <span id="listsDiff"></span></li>
+      <li id="listsNote" style="color:#4a5568"><b>같은 '상위 10'이라도 셋이 다르다</b> — <b>화면 권고10</b> = 재무 위험 조건(주의·위험·이중적자·밸류트랩) 제외 뒤 V3점수 상위 10 · <b>성적표 상위10</b> = 조건 없이 V3점수 상위 10(동점은 코드 순 — 판정·성적표·되감기가 쓰는 목록) · <b>모의 계좌</b> = 전체 후보에서 💧희석 배지를 뺀 뒤 다시 V3점수 상위 10(이 화면 CSV 기준 재구성). <span id="listsDiff"></span></li>
       <li>⚠️ 희석공시 배지 종목은 피하는 게 유리했다.</li>
       <li>한 번에 다 사지 말고 <b>4번에 나눠</b>(주 1회 1/4), 종목마다 같은 금액.</li>
       <li>산 뒤 <b>40거래일</b>은 둔화·익절·RSI 급락 신호가 떠도 들고 간다. 손절 없음. 40일째에 그날 상위 10으로 교체.</li>
@@ -481,7 +481,7 @@
   <div class="dtabs" id="dtabs"></div>
   <div id="histPanel" hidden>
     <div class="dnote" id="dnote"></div>
-    <details style="font-size:12px;color:#4a5568;margin:4px 0"><summary style="cursor:pointer">배지 뜻</summary>⚠️ 떨어지는 칼날(5일 신저가+양봉 0개+5일선&lt;20일선) · 💧 희석 공시 60거래일 내(유상증자·CB·BW·EB) · 📉 실적 악화 60거래일 내(영업이익 감소분 ≥ 시총 1%) · 접수 후 N거래일 = 정기보고서 접수일(0)부터 센 거래일, ↑↓는 영업이익 전년 대비(시총 ±1% 이상)이지 주가 방향이 아님 · 모두 점수·순위에 미반영, 사람이 보고 판단 · 빈칸 = 해당 공시 없음 또는 자료 미확인(구분 안 됨) · 업종 옆 회색 숫자 = 그 업종(동일가중 지수)이 최근 20거래일 고점 대비 얼마나 빠졌나 — <b>사실 표시일 뿐 경고·위험이 아니며 앞으로의 수익과의 관계는 미확인</b>(2026-06~09 실측: 20% 넘게 빠진 업종의 추천 종목이 나머지보다 나쁘지 않았음, 차이 구간이 0을 걸침)</details>
+    <details style="font-size:12px;color:#4a5568;margin:4px 0"><summary style="cursor:pointer">배지 뜻</summary>⚠️ 떨어지는 칼날(5일 신저가+양봉 0개+5일선&lt;20일선) · 💧 희석 공시 60거래일 내(유상증자·CB·BW·EB) · 📉 실적 악화 60거래일 내(영업이익 감소분 ≥ 시총 1%) · 접수 후 N거래일 = 정기보고서 접수일(0)부터 센 거래일, ↑↓는 영업이익 전년 대비(시총 ±1% 이상)이지 주가 방향이 아님 · 모두 점수·순위에 미반영, 사람이 보고 판단 · 빈칸 = 해당 공시 없음 또는 자료 미확인(구분 안 됨) · 업종 옆 회색 숫자 = 그 업종(동일가중 지수)이 최근 20거래일 고점 대비 얼마나 빠졌나 — <b>사실 표시일 뿐 경고·위험이 아니며 앞으로의 수익과의 관계는 미확인</b>(2026-06~09 실측: 20% 넘게 빠진 업종의 추천 종목이 나머지보다 <b>더 나쁘다는 근거는 확인 못 함</b> — 차이 구간이 0을 포함, 더 좋다는 뜻도 아님)</details>
     <div style="overflow-x:auto"><table class="hist-table"><thead id="histHead"></thead><tbody id="histBody"></tbody></table></div>
   </div>
   <div class="main-content" id="mainContent">
@@ -793,10 +793,10 @@ function renderListsNote() {
     .sort((a, b) => (parseFloat(b.final_score_v3) - parseFloat(a.final_score_v3)) || String(a.ticker).localeCompare(String(b.ticker)));
   scored.slice(0, 10).forEach(r => TOP10_PLAIN.add(String(r.ticker)));
   scored.filter(r => !(r.dilution_60d && r.dilution_60d !== 'nan')).slice(0, 10).forEach(r => PAPER10.add(String(r.ticker)));
-  const nRecoDiff = [...RECO10].filter(t => !TOP10_PLAIN.has(t)).length;
-  const nPaperDiff = [...PAPER10].filter(t => !TOP10_PLAIN.has(t)).length;
+  // [Codex 11/8 ③] 한쪽만 세면 목록이 10개 미만일 때 '다른데 0개' 가 됨 → 양쪽(빠짐·더함)과 목록 크기를 함께
+  const cmp = (A, B) => { const miss = [...B].filter(t => !A.has(t)).length, add = [...A].filter(t => !B.has(t)).length; return `${miss + add}개(상위10에서 빠짐 ${miss}·더함 ${add}, ${A.size}종목)`; };
   const mk = (window.curMktV3 || 'kospi').toUpperCase();
-  el.innerHTML = `오늘 ${mk}: 화면 권고10 과 성적표 상위10 이 다른 종목 <b>${nRecoDiff}개</b> · 모의 계좌와 다른 종목 <b>${nPaperDiff}개</b>(이 화면 자료 기준).`;
+  el.innerHTML = `오늘 ${mk}(성적표 상위10 ${TOP10_PLAIN.size}종목 기준): 화면 권고10 과 다른 종목 <b>${cmp(RECO10, TOP10_PLAIN)}</b> · 모의 계좌와 다른 종목 <b>${cmp(PAPER10, TOP10_PLAIN)}</b> — 이 화면 CSV 로 다시 만든 값이지 실제 계좌 기록이 아님.`;
 }
 
 function applyCSVText(text) {
@@ -833,11 +833,12 @@ function loadFile(file) {
 }
 
 // [2026-11-08] 업종 낙폭 사실 배지 — docs/sector_dd.json(build_sector_dd.py). 표시 전용: 점수·순위·권고10 무관.
-//   근거 research/SECTOR_DRAWDOWN_20261108.md: 깊은 업종(20일 고점 대비 −20% 이하)의 추천이 나머지보다 나쁘지 않았음(차이 구간이 0 걸침) → '위험' 이라 쓰지 않는다.
+//   근거 research/SECTOR_DRAWDOWN_20261108.md: 깊은 업종(20일 고점 대비 −20% 이하)의 추천이 나머지보다 더 나쁘다는 근거를 확인 못 함(차이 구간이 0 포함) → '위험' 이라 쓰지 않는다.
 let SECTOR_DD = null;
 fetch('sector_dd.json?ts=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { SECTOR_DD = j; if (allData.length) applyFilters(); }).catch(() => {});
 function sectorDDBadge(sec, withName) {   // withName: 업종 열이 숨겨진 보기에서는 종목명 옆에 '업종명 20일↓ %' 로
   const s = SECTOR_DD && SECTOR_DD.sectors && SECTOR_DD.sectors[sec]; if (!s || s.dd20 === undefined || s.dd20 === null) return '';
+  if (s.last_date && SECTOR_DD.asof && s.last_date !== SECTOR_DD.asof) return '';   // [Codex 11/8 ⑥] 낡은 업종 값을 오늘 날짜로 보이지 않음
   const d = s.dd20, d60 = (s.dd60 === null || s.dd60 === undefined) ? '—' : s.dd60.toFixed(1) + '%';
   const asof = SECTOR_DD.asof ? (+SECTOR_DD.asof.slice(4, 6)) + '/' + (+SECTOR_DD.asof.slice(6)) : '';
   return `<span style="margin-left:4px;font-size:10.5px;color:#718096;background:#edf2f7;border-radius:3px;padding:1px 4px" title="업종 ${sec}(${s.n}종목 동일가중 지수)이 최근 20거래일 고점 대비 ${d.toFixed(1)}% (60일 고점 대비 ${d60}) · ${asof} 종가 기준 · 사실 표시 — 경고·위험 아님, 앞으로의 수익과의 관계는 미확인 · 점수·순위·권고10 미반영">${withName ? sec + ' ' : ''}20일↓ ${d.toFixed(1)}%</span>`;

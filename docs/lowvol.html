@@ -207,6 +207,7 @@ let SECTOR_DD=null;
 fetch('sector_dd.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{SECTOR_DD=j; if(allRows.length) applyFilters();}).catch(()=>{});
 function sectorDDBadge(sec){
   const s=SECTOR_DD&&SECTOR_DD.sectors&&SECTOR_DD.sectors[sec]; if(!s||s.dd20===undefined||s.dd20===null) return '';
+  if(s.last_date&&SECTOR_DD.asof&&s.last_date!==SECTOR_DD.asof) return '';   // [Codex 11/8 ⑥] 낡은 업종 값을 오늘 날짜로 보이지 않음
   const d60=(s.dd60===null||s.dd60===undefined)?'—':s.dd60.toFixed(1)+'%';
   const asof=SECTOR_DD.asof?(+SECTOR_DD.asof.slice(4,6))+'/'+(+SECTOR_DD.asof.slice(6)):'';
   return '<span style="margin-left:4px;font-size:10.5px;color:var(--sub);background:#232833;border-radius:3px;padding:1px 4px;white-space:nowrap" title="업종 '+sec+'('+s.n+'종목 동일가중 지수)이 최근 20거래일 고점 대비 '+s.dd20.toFixed(1)+'% (60일 고점 대비 '+d60+') · '+asof+' 종가 기준 · 사실 표시 — 경고·위험 아님, 앞으로의 수익과의 관계는 미확인 · 점수·순위 미반영">20일↓ '+s.dd20.toFixed(1)+'%</span>';
