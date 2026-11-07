@@ -270,7 +270,9 @@ def run(start=START_DEFAULT, write=True, n_draws=N_DRAWS_DEFAULT, out_dir=None):
             if isinstance(x, (list, tuple)): return [_clean(v) for v in x]
             if isinstance(x, float) and not math.isfinite(x): return None
             return x
-        json_path.write_text(json.dumps(_clean(payload), ensure_ascii=False, allow_nan=False), encoding="utf-8")
+        import tempfile                                   # [2026-11-07 F3] 임시 파일 → os.replace: 쓰다 끊겨도 반쪽 JSON 이 남지 않는다
+        fd, tmpname = tempfile.mkstemp(prefix=json_path.name + ".", dir=str(json_path.parent)); os.close(fd)
+        Path(tmpname).write_text(json.dumps(_clean(payload), ensure_ascii=False, allow_nan=False), encoding="utf-8"); os.replace(tmpname, json_path)
         print(f"  ✓ {db_path.name} · {json_path.name} ({time.time()-t0:.0f}s)")
     return summary
 

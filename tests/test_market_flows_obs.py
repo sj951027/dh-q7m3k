@@ -76,5 +76,10 @@ g = snap(0, 0)
 check("전체 매수 0(빈 응답 꼴) → 거부", not mo.valid_snapshot(g)[0])
 check("순매수 표 자체가 없음 → 거부", not mo.valid_snapshot({})[0])
 
+print("D. [2026-11-07 F1] refresh_status — 두 시장 모두 ok 일 때만 ok, 한쪽만이면 partial")
+check("둘 다 ok → ok", mo.refresh_status({"KOSPI": {"ok": True}, "KOSDAQ": {"ok": True}}) == "ok")
+check("한쪽만 → partial", mo.refresh_status({"KOSPI": {"ok": True}, "KOSDAQ": {"ok": False, "why": "x"}}) == "partial" and mo.refresh_status({"KOSPI": {"ok": True}}) == "partial")
+check("둘 다 실패/비어 있음 → failed", mo.refresh_status({"KOSPI": {"ok": False}}) == "failed" and mo.refresh_status({}) == "failed")
+
 print("\n" + ("❌ 실패 %d" % fails if fails else "✅ test_market_flows_obs 통과"))
 sys.exit(1 if fails else 0)

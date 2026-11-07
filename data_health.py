@@ -61,7 +61,12 @@ BRANCHES = [
     # [2026-11-01 추가 J14] 시장 수급(KRX 투자자별 11구분, market_flows_10y.db — market_flows_obs.py 가 배치에서 매일 덧붙임). 하루 = 2시장 × 12행 = 24.
     #   같은 배치 안에서 시세 뒤에 받으므로 허용 지연 0. 조용히 멈추면(로그인·KRX 변경) 이 갈래가 lag 로 잡힌다 — 비치명 단계라 로그 ⚠ 줄만으론 놓치기 쉽다.
     ("mkt_flows",  "시장 수급(KRX)",   0, True),
+    # [2026-11-07 F3] 산출물 자체의 상태 — 입력 DB 가 최신이어도 JSON 쓰기 실패·오래된 산출을 못 잡던 공백(Codex 운영 검토 F3).
+    #   배치 순서: 수급 JSON(66행) → … → 모의 계좌 JSON(128행) → 이 점검표(129행) 이므로 같은 배치 안에서 검사할 수 있다. 건수 검사 없음.
+    ("flows_json", "수급 산출(JSON)",  0, False),
+    ("paper_json", "모의 계좌 산출(JSON)", 0, False),
 ]
+DOCS_DIR = HERE / "docs"
 MARKET_FLOWS_DB = os.environ.get("MARKET_FLOWS_DB", str(HERE / ".." / "dh-q7m3k-data" / "market_flows_10y.db"))
 SECTOR_CACHE = HERE / "sector_cache.json"
 COVER_MIN = 0.9
@@ -92,11 +97,19 @@ def assess(branches, ref_date, calendar):
         hist = [x for x in (b.get("n_hist") or []) if x is not None]
         n_med = sorted(hist)[len(hist) // 2] if hist else None
         lag = trading_lag(last, ref_date, calendar)
+        # [2026-11-07 F1] 부분(시장별) 마지막 날짜 — 한쪽만 멈추면 전체 마지막 날짜·건수로는 못 잡는다(24행 중 12행 = 정확히 절반이라 '절반 미만'에 안 걸림)
+        parts = {k: v for k, v in (b.get("parts_last") or {}).items()}
+        part_lags = {k: trading_lag(v, ref_date, calendar) for k, v in parts.items()}
+        stale_parts = [k for k, lg in part_lags.items() if lg is None or lg > allowed]
         status, note = "ok", ""
         if last is None:
             status, note = "missing", "자료 없음(표가 비었거나 읽기 실패)"
         elif lag is not None and lag > allowed:
             status, note = "lag", f"{lag}거래일 뒤처짐(허용 {allowed})"
+        elif stale_parts:
+            status, note = "lag", "일부만 갱신 — " + " · ".join(f"{k} 마지막 {parts.get(k) or '없음'}" for k in stale_parts)
+        elif b.get("state"):                                     # [F3] 산출물 상태 플래그(예: 수급 갱신 partial/failed)
+            status, note = "state", str(b["state"])
         elif check_count and n_last is not None and n_med and n_last < COUNT_DROP * n_med:
             status, note = "count", f"마지막 날 건수 {n_last} — 평소 {n_med}의 절반 미만"
         elif b.get("cover") is not None and float(b["cover"]) < COVER_MIN:
@@ -120,14 +133,25 @@ def warning_lines(rows, ref_date):
             out.append(f"⚠️ 자료 건수 급감: {r['name']} {r['note']} ({_md(r['last'])})")
         elif r["status"] == "missing":
             out.append(f"⚠️ 자료 없음: {r['name']}")
+        elif r["status"] == "state":
+            out.append(f"⚠️ 산출 상태: {r['name']} {r['note']} ({_md(r['last'])})")
     return out
+
+
+def _asof_ts(asof):
+    """[2026-11-07 F5] 되감기 인자 'YYYYMMDD_HHMM' → 'YYYY-MM-DD HH:MM:59' (fetched_at 이 그 형식인 표용).
+    종전엔 형식이 달라 문자열 비교가 어긋나 미래 적재분이 과거 조회에 섞였다(Codex 운영 검토 F5). 형식이 아니면 None."""
+    s = str(asof or "")
+    if len(s) >= 13 and s[8] == "_" and s[:8].isdigit() and s[9:13].isdigit():
+        return f"{s[:4]}-{s[4:6]}-{s[6:8]} {s[9:11]}:{s[11:13]}:59"
+    return None
 
 
 def to_markdown(rows, ref_date, asof_text):
     lines = [f"# 자료 건강 점검표 — 기준 시세 {ref_date} (생성 {asof_text})", "",
              "갈래마다 마지막 날짜가 시세 본표보다 몇 거래일 뒤처졌는지(허용값 초과 = ⚠️)와 마지막 날 건수가 평소(직전 10일 중앙값)의 절반 밑인지를 본다. 표시·알림 전용.",
              "", "| 갈래 | 마지막 날짜 | 지연(허용) | 건수(마지막일 / 평소) | 상태 |", "|---|---|---|---|---|"]
-    mark = {"ok": "✅", "lag": "⚠️ 뒤처짐", "count": "⚠️ 건수 급감", "missing": "⚠️ 없음"}
+    mark = {"ok": "✅", "lag": "⚠️ 뒤처짐", "count": "⚠️ 건수 급감", "missing": "⚠️ 없음", "state": "⚠️ 산출 상태"}
     for r in rows:
         lag = "—" if r["lag"] is None else f"{r['lag']}({r['allowed']})"
         cnt = ("—" if r["n_last"] is None else f"{r['n_last']:,}") + (f" / {r['n_med']:,}" if r["n_med"] else "")
@@ -234,12 +258,34 @@ def collect(ohlcv_db=OHLCV_DB, history_db=HISTORY_DB, earnings_db=EARNINGS_DB, a
     try:                                                     # [J14] 시장 수급(KRX) — 파일이 없거나 표가 없으면 비워 둠(missing)
         con = _ro(MARKET_FLOWS_DB)
         try:
-            fa = " AND fetched_at <= ?" if asof else ""
-            out["mkt_flows"] = _hist(con, f"SELECT date, COUNT(*) FROM investor_daily WHERE date >= ?{fa} GROUP BY date ORDER BY date DESC", (lower, asof) if asof else (lower,))
+            ts = _asof_ts(asof)                                 # [F5] fetched_at 은 'YYYY-MM-DD HH:MM:SS' 형식 → 되감기 인자를 같은 형식으로, date 상한도 함께
+            fa = " AND fetched_at <= ? AND date <= ?" if ts else ""
+            prm = (lower, ts, asof_d) if ts else (lower,)
+            out["mkt_flows"] = _hist(con, f"SELECT date, COUNT(*) FROM investor_daily WHERE date >= ?{fa} GROUP BY date ORDER BY date DESC", prm)
+            if out.get("mkt_flows"):                            # [F1] 시장별 마지막 날짜 — 한쪽만 멈춘 것을 잡는다
+                parts = dict(con.execute(f"SELECT market, MAX(date) FROM investor_daily WHERE date >= ?{fa} GROUP BY market", prm).fetchall())
+                out["mkt_flows"]["parts_last"] = {mk: parts.get(mk) for mk in ("KOSPI", "KOSDAQ")}
         finally:
             con.close()
     except Exception:
         pass
+    # [F3] 산출물 상태 — docs/market_flows_obs.json · docs/paper_account.json (되감기 땐 검사하지 않음: 파일은 현재 상태뿐)
+    if not asof:
+        try:
+            j = json.loads((DOCS_DIR / "market_flows_obs.json").read_text(encoding="utf-8"))
+            mk = j.get("markets") or {}
+            dates = [str((mk.get(m) or {}).get("data_as_of") or "") for m in ("KOSPI", "KOSDAQ")]
+            st = str((j.get("refresh_status") or {}).get("status") or "")
+            out["flows_json"] = {"last": min(dates) if all(dates) else (max(dates) if any(dates) else None), "n_last": None, "n_hist": [],
+                                 "parts_last": {"KOSPI": dates[0] or None, "KOSDAQ": dates[1] or None},
+                                 "state": (f"수급 갱신 {st}" if st not in ("ok", "skipped") else "")}
+        except Exception:
+            pass
+        try:
+            j = json.loads((DOCS_DIR / "paper_account.json").read_text(encoding="utf-8"))
+            out["paper_json"] = {"last": str(j.get("end") or "") or None, "n_last": len(j.get("accounts") or {}), "n_hist": [], "state": ""}
+        except Exception:
+            pass
     return out, ref, cal
 
 

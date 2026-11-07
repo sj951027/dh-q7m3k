@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06 21:08",
+ "generated": "2026-11-07 11:33",
  "ref_date": "20261106",
  "rows": [
   {
@@ -186,6 +186,28 @@
    "allowed": 0,
    "n_last": 24,
    "n_med": 24,
+   "status": "ok",
+   "note": ""
+  },
+  {
+   "key": "flows_json",
+   "name": "수급 산출(JSON)",
+   "last": "20261106",
+   "lag": 0,
+   "allowed": 0,
+   "n_last": null,
+   "n_med": null,
+   "status": "ok",
+   "note": ""
+  },
+  {
+   "key": "paper_json",
+   "name": "모의 계좌 산출(JSON)",
+   "last": "20261106",
+   "lag": 0,
+   "allowed": 0,
+   "n_last": 14,
+   "n_med": null,
    "status": "ok",
    "note": ""
   }

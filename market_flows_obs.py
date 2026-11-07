@@ -156,10 +156,21 @@ def worker(days, db_path):
         rows = to_rows(mk, got, fetched_at, qty_ok=qok)
         n, nrev = store_rows(con, rows, fetched_at)
         status["markets"][mk] = {"ok": True, "rows": n, "days": n // len(DETAIL), "revision": nrev, "qty": qok, "note": why, "last": str(pd.Timestamp(got[("val", "순매수")].index[-1]).strftime("%Y%m%d"))}
-    if any(v.get("ok") for v in status["markets"].values()):
-        con.execute("INSERT OR REPLACE INTO meta VALUES('last_success_at',?)", (fetched_at,)); con.commit()
-    con.close()
+    # [2026-11-07 F1] 전역 성공 시각은 **두 시장 모두** 저장했을 때만. 시장별 성공 시각은 따로 남긴다(한 시장만 성공 = partial).
+    for mk, v in status["markets"].items():
+        if v.get("ok"):
+            con.execute("INSERT OR REPLACE INTO meta VALUES(?,?)", (f"last_success_{mk}", fetched_at))
+    if refresh_status(status["markets"]) == "ok":
+        con.execute("INSERT OR REPLACE INTO meta VALUES('last_success_at',?)", (fetched_at,))
+    con.commit(); con.close()
     print("STATUS " + json.dumps(status, ensure_ascii=False))
+
+
+def refresh_status(markets):
+    """[2026-11-07 F1] 시장별 결과 → 'ok'(두 시장 모두 저장) · 'partial'(한쪽만) · 'failed'(없음). 순수 함수.
+    종전엔 any(ok) 로 'ok' 를 내서 한 시장만 갱신돼도 정상으로 보였다(Codex 운영 검토 F1)."""
+    oks = [bool((markets or {}).get(mk, {}).get("ok")) for mk in MARKETS]
+    return "ok" if all(oks) else ("partial" if any(oks) else "failed")
 
 
 def build_json(con, refresh):
@@ -198,7 +209,7 @@ def main():
             r = subprocess.run([sys.executable, "-X", "utf8", str(Path(__file__).resolve()), "--worker", "--days", str(a.days)], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=a.timeout)
             line = next((ln for ln in reversed((r.stdout or "").splitlines()) if ln.startswith("STATUS ")), None)
             if line:
-                refresh = json.loads(line[7:]); refresh["status"] = "ok" if any(v.get("ok") for v in refresh.get("markets", {}).values()) else "failed"
+                refresh = json.loads(line[7:]); refresh["status"] = refresh_status(refresh.get("markets", {}))     # [F1] ok/partial/failed
                 for mk, v in refresh.get("markets", {}).items():
                     print(f"  {mk}: " + (f"{v.get('days')}일 덧붙임(~{v.get('last')}) · revision {v.get('revision')}" + (f" · {v.get('note')}" if v.get("note") else "") if v.get("ok") else f"저장 안 함 — {v.get('why') or v.get('err')}"))
             else:

@@ -94,6 +94,22 @@ if os.path.exists(dh.OHLCV_DB):
 else:
     print("   (DB 없음 — 건너뜀)")
 
+print("[E] [2026-11-07 F1·F5·F3] 시장별 부분 갱신 · 되감기 시각 형식 · 산출 상태")
+cal_e = [f"202611{d:02d}" for d in (2, 3, 4, 5, 6)]
+br = {"mkt_flows": {"last": "20261106", "n_last": 12, "n_hist": [24] * 10, "parts_last": {"KOSPI": "20261106", "KOSDAQ": "20261104"}}}
+re_ = {r["key"]: r for r in dh.assess(br, "20261106", cal_e)}
+check("F1: 전체 마지막 날짜는 최신인데 코스닥만 2일 멈춤 → lag(일부만 갱신)", re_["mkt_flows"]["status"] == "lag" and "KOSDAQ" in re_["mkt_flows"]["note"])
+br2 = {"mkt_flows": {"last": "20261106", "n_last": 24, "n_hist": [24] * 10, "parts_last": {"KOSPI": "20261106", "KOSDAQ": "20261106"}}}
+check("F1: 두 시장 다 최신 → ok", {r["key"]: r for r in dh.assess(br2, "20261106", cal_e)}["mkt_flows"]["status"] == "ok")
+check("F5: 되감기 인자 형식 변환", dh._asof_ts("20261030_2359") == "2026-10-30 23:59:59" and dh._asof_ts(None) is None and dh._asof_ts("20261030") is None)
+br3 = {"flows_json": {"last": "20261106", "n_last": None, "n_hist": [], "parts_last": {"KOSPI": "20261106", "KOSDAQ": "20261106"}, "state": "수급 갱신 partial"}}
+check("F3: 입력은 최신이어도 산출 상태 플래그 → state 경고", {r["key"]: r for r in dh.assess(br3, "20261106", cal_e)}["flows_json"]["status"] == "state"
+      and any("산출 상태" in w for w in dh.warning_lines(dh.assess(br3, "20261106", cal_e), "20261106")))
+check("갈래 19개(flows_json·paper_json 추가)", len(dh.BRANCHES) == 19 and {"flows_json", "paper_json"} <= set(dh.ALLOWED))
+if os.path.exists(dh.OHLCV_DB) and os.path.exists(dh.MARKET_FLOWS_DB):
+    rb, _, _ = dh.collect(asof="20261030_2359")
+    check("F5 되감기(실 DB): 10/30 시점 시장 수급 마지막 날짜 ≤ 20261030(종전엔 11/2 적재분이 섞였음)", (rb.get("mkt_flows") or {}).get("last", "99999999") <= "20261030")
+
 print("[D] telegram_lines 예외 없음")
 check("목록 반환", isinstance(dh.telegram_lines(), list))
 
