@@ -19,6 +19,9 @@
 - 사용자가 설계 문서 대신 전수 실험을 택함 → `research/EARLY_RISE_SCAN_20261108.md` §0 에 틀(성공 정의 T1 5일 초과·T2 Codex 정의, 분모 고정, 변수 목록, Bonferroni 0.05/(2M), 앞/뒤 반 부호, T4 대가 확인)을 결과 전에 적음 → A 5개월 stage3 92변수(`early_rise_scan_20261108.py`) + B 11년 가격 20변수(`early_rise_scan_10y_20261108.py`, 보조 세션). 결과: **첫 주 전용 신호 없음**(통과 변수 = 전부 40일을 더 세게 예측하는 저변동 계열). 부산물: 수급 외국인 음/기관 양(산 20종목 T4 −0.162/+0.129) → 챌린저 후보 기록(11/13 뒤 PREREGISTER), 과매도 반복 횟수 + → 깔때기 관측 후보. 지도 ③ 두 행·§10.
 - 산출 `research/out_early_rise_scan/`(panel.pkl 153MB 는 커밋 제외).
 
+- (낮) 사용자 "시기에 따라 외인·기관 손바뀜 있을 텐데 등록해도 되나" → 월별 되감기 `research/supply_sign_monthly_20261108.py`(패널 재사용, mode=ro) → 메모 §5: 외국인 음은 6~8월, **9월 뒤집힘**(산 20종목 20일 +0.115, 기관 20일 −0.173) → **등록 보류**, 읽기 전용 월별 추적 + 사전 조건(외국인 순매수 달에서도 같은 음이면 PREREGISTER). 지도 ③ 행 🟡 문구 갱신. Codex 독립 재계산 요청서 `research/handoff/REQUEST_20261108_supply_sign_review.md`(사용자가 Codex 에 붙여 넣음).
+- 별도 세션(표시 3건) 완료 확인: 3659218 구현 → Codex 검토(REPLY_20261108_sector_badge_review) 5건 전부 맞아 964e3e9 로 수정·푸시, 테스트 24건 통과, 보류 1건(텔레그램 폴백 정렬 기준은 종전 차이). 본 세션이 코드를 직접 읽지는 않음(그 세션 CHECK 기준).
+
 ## 바뀐 것
 - 새 파일: `research/HOLD_EARLY_EXIT_20261108.md` · `research/hold_early_exit_20261108.py` · `research/hold_early_exit_10y_20261108.py` · `research/out_hold_early_exit/`(csv·stdout).
 - `research/IDEA_MAP_20261030.md` ⑤ "목표 수익 도달 시 청산" 행 ✅ 닫음 + §10 한 줄. 코드·docs·DB·점수·판정 무변경, 새 model_id 없음.
@@ -28,6 +31,7 @@
 
 ## 남은 일
 - 표시 3건 세션 결과 확인(커밋 해시·테스트 통과·375px).
+- 수급 외국인 부호: 매달 1회 `supply_sign_monthly_20261108.py` 돌려 §5 조건 확인(등록은 조건 충족 때만) · Codex 답(REPLY_20261108_supply_sign_review) 오면 대조.
 - 익절선 20% 모의 관측 계좌 1장 — 돈 장부(`auto/ledger.py`) 뒤, 사전등록 문서부터. 지금 등록 안 함(11/13 sv_b 판정 분모).
 - 이전 세션의 결정 대기 목록은 `worklog/2026-11-08_full_review_sector.md` 와 CHECK §5 그대로.
 
