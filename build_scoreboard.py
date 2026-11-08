@@ -115,6 +115,9 @@ def observe(con, m, close, mk, dates, didx, excl, reg_json):
         out["first_done_eta"] = _eta(dates[-1], need) if need > 0 else None   # [2026-10-03] 거래일 달력(주말·skip_dates 제외)으로
         w_end = dates[min(t_reg + H, N - 1)]
         out["verdict_window"] = f"{reg[4:6]}/{reg[6:]}~{w_end[4:6]}/{w_end[6:]}"
+    # [2026-11-08] 사용자: "확정된 기간만 보이면 헷갈린다 — 쌓인 날도 보여 달라" → 40거래일이 아직 안 찬 목록(보유 중)의 개수·기간을 따로 싣는다(표시 전용, 기존 값 불변).
+    dp = df[~df.done.astype(bool)].dropna(subset=["ret_now"])
+    out["pending"] = ({"n": int(len(dp)), "first": dp.date.min(), "last": dp.date.max()} if len(dp) else None)
     dn = df.dropna(subset=["ret_now"])
     if len(dn):
         exn = (dn.ret_now - dn.bench_now).values

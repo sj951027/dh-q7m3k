@@ -22,6 +22,9 @@
 - (낮) 사용자 "시기에 따라 외인·기관 손바뀜 있을 텐데 등록해도 되나" → 월별 되감기 `research/supply_sign_monthly_20261108.py`(패널 재사용, mode=ro) → 메모 §5: 외국인 음은 6~8월, **9월 뒤집힘**(산 20종목 20일 +0.115, 기관 20일 −0.173) → **등록 보류**, 읽기 전용 월별 추적 + 사전 조건(외국인 순매수 달에서도 같은 음이면 PREREGISTER). 지도 ③ 행 🟡 문구 갱신. Codex 독립 재계산 요청서 `research/handoff/REQUEST_20261108_supply_sign_review.md`(사용자가 Codex 에 붙여 넣음) → **Codex 답(12:39) 대조 `CHECK_20261108_supply_sign_review.md`: 지적 3건 전부 맞음** — 9월 완결은 4일·80행뿐, 상위20 은 두 시장 혼합이라 시장별로 내면 9월 외국인 20일 −0.077(뒤집힘 사라짐), 변수는 stage3 저장값(수량×종가 근사). "9월 뒤집힘" 철회(메모 §5-1), 스크립트 분모·집계 수정, 등록 보류 유지·추적 규칙 고정.
 - 별도 세션(표시 3건) 완료 확인: 3659218 구현 → Codex 검토(REPLY_20261108_sector_badge_review) 5건 전부 맞아 964e3e9 로 수정·푸시, 테스트 24건 통과, 보류 1건(텔레그램 폴백 정렬 기준은 종전 차이). 본 세션이 코드를 직접 읽지는 않음(그 세션 CHECK 기준).
 
+- (오후) 사용자: 성적표 끝 날짜가 왜 9/4 냐 → "40거래일 확정된 마지막 추천일"(9/4 추천→9/7 매수→11/6 평가, DB 로 확인). "쌓인 날도 보여 달라" → `build_scoreboard.py` `pending` 키(보유 중 n·기간) 추가(기존 키 0-diff 실측) + `docs/leaderboard.html` 기록 칸 세 줄(확정/쌓인·보유 중/비율) · 대기 표 쌓인 목록 · 도움말. patch_note `20261108_scoreboard_pending.md`(2026.11.8).
+- 사용자: px_a +4.8·lv_e +3.2 가 v30 +3.0 보다 큰데 회색이라 이상함 → 원인 = 11/6 규칙(확정 10개 미만 또는 목록÷40<1 이면 색 없음; px_a 19개=0.5창, lv_e 4개). 규칙은 두고 숫자 옆에 "표본 부족, 색 없음" 명시 + 기록 칸 잘림(종전부터) 수정. 색 규칙·정렬·낱말은 **Codex 사용성 검토 요청** `REQUEST_20261108_scoreboard_readability.md`(사용자가 붙여 넣음) → 답 뒤 사용자 결정.
+
 ## 바뀐 것
 - 새 파일: `research/HOLD_EARLY_EXIT_20261108.md` · `research/hold_early_exit_20261108.py` · `research/hold_early_exit_10y_20261108.py` · `research/out_hold_early_exit/`(csv·stdout).
 - `research/IDEA_MAP_20261030.md` ⑤ "목표 수익 도달 시 청산" 행 ✅ 닫음 + §10 한 줄. 코드·docs·DB·점수·판정 무변경, 새 model_id 없음.
@@ -30,6 +33,7 @@
 - 두 스크립트 모두 mode=ro. v30 쪽은 leaderboard.py 의 게이트(6/08·7/03 제외)·앵커 중복 제거·REG_DATE 그대로, 목록은 paper_engine.picks_from_scores(희석 제외 없음). 11년 쪽은 pick_exec_hold_10y 틀 그대로. 부트스트랩 seed 7 고정, 재실행 재현.
 
 ## 남은 일
+- Codex 답 `REPLY_20261108_scoreboard_readability.md` 오면 대조 → 색 규칙(회색 유지/배지/정렬) 사용자 결정 → 반영.
 - 표시 3건 세션 결과 확인(커밋 해시·테스트 통과·375px).
 - 수급 외국인 부호: 다음 완결 월(10월분, 12월 초)에 `supply_sign_monthly_20261108.py`(수정판) 1회 — §5-1 규칙(완결 행·시장별·유효 날짜)으로 읽고 등록 여부는 그때 다시 질문.
 - 익절선 20% 모의 관측 계좌 1장 — 돈 장부(`auto/ledger.py`) 뒤, 사전등록 문서부터. 지금 등록 안 함(11/13 sv_b 판정 분모).
