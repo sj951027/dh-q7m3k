@@ -92,7 +92,7 @@ function det(m){
   const others=[];
   if(m.after) others.push(`판정 뒤 목록을 자료 끝까지 보유한 참고 기록(보유 기간 제각각): ${m.after.n}개 <b>${f1(m.after.exc_mean,'%p')}</b>`);
   if(st) others.push(`매일 같은 금액을 추가했다고 가정한 보유분 평균(돈 장부 아님): 지금 <b>${f1(st.last,'%p')}</b>, 시장보다 앞선 날 ${pct(st.days_above)}`);
-  const flow=f?`날짜 흐름: 확정 목록 ${fd(f.first)}~${fd(f.last)} → 각 목록을 <b>다음 거래일</b>에 사서 40거래일 뒤 평가(마지막 확정 목록 ${fd(f.last)}은 다음 거래일 매수 → 자료 끝 ${DATA?fd(DATA.asof):''} 평가).${m.pending&&m.pending.n?` 그 뒤 ${fd(m.pending.first)}~${fd(m.pending.last)} 목록 ${m.pending.n}개는 보유 중(40거래일 안 됨 · 오늘 가격 기준은 '지금 형세' 표).`:''} 보유 기간이 서로 겹쳐 목록 개수는 독립 시험 횟수가 아니다.`:'';
+  const flow=f?`날짜 흐름: 확정 목록 ${fd(f.first)}~${fd(f.last)} → 각 목록을 <b>다음 거래일</b>에 사서 40거래일 뒤 평가(마지막 확정 목록 ${fd(f.last)}은 다음 거래일 매수 → 자료 끝 ${DATA?fd(DATA.asof):''} 평가).${m.pending&&m.pending.n?` 그 뒤 ${fd(m.pending.first)}~${fd(m.pending.last)} 목록 ${m.pending.n}개는 보유 중(40거래일 안 됨 · 성적은 아직 싣지 않음 — '지금 형세' 표는 최근에 평가가 끝난 목록이지 이 목록이 아님).`:''} 보유 기간이 서로 겹쳐 목록 개수는 독립 시험 횟수가 아니다.`:'';
   // [2026-11-07 Codex 1-5] 2차 창 판정이 있으면(registry short 의 '2차 노이즈(10/18)' 꼴) 같이 쓴다 — 1차 정본을 덮지 않는다.
   const w2=s&&s.short?String(s.short).match(/2차\s*([가-힣]+)\((\d{1,2}\/\d{1,2})\)/):null;
   const v=s?`순위 검증 1차 ${s.date?fd(s.date):''}: <b>${LABEL[s.v]||s.v}</b>${w2?` · 2차 창 ${w2[2]}: <b>${LABEL[w2[1]]||w2[1]}</b>`:''}`:(l.oos_days!=null?`순위 검증 아직 전(${l.oos_days}/40일${m.verdict_eta?' · ~'+m.verdict_eta:''})`:'');
