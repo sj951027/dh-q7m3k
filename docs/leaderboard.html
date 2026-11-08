@@ -20,22 +20,23 @@
   .btn{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:3px 9px;font-size:12px;color:var(--blue);cursor:pointer}
   tr.det td{white-space:normal;text-align:left;color:var(--sub);font-size:13px;background:#fafbfe;padding:8px 10px;line-height:1.6}
   tr.det b{color:var(--txt);font-weight:600}
-  .role{display:inline-block;font-size:11px;border:1px solid #ccc;border-radius:5px;padding:0 5px;margin-left:4px;color:#999}
+  .role{display:inline-block;font-size:11px;border:1px solid #ccc;border-radius:5px;padding:0 5px;margin-left:4px;color:#999} .role.low{color:var(--warn);border-color:#e0d3a2;background:var(--warnbg)}
   .next{font-size:13px;color:var(--sub);margin:0 0 10px} .more{font-size:13px;display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px} .more a{color:var(--blue);text-decoration:none}
   details{margin:8px 0} summary{cursor:pointer;color:var(--blue);font-size:13px}
   .foot{color:var(--sub);font-size:12px;margin-top:8px;line-height:1.6} .small{font-size:11.5px;color:var(--sub)}
   tr.ens td{background:#f3f6ff} .loading{color:var(--sub);text-align:center;padding:20px}
-  @media(max-width:600px){ .hm{display:none} .wrap{padding:12px 8px} .card{padding:4px 8px} td,th{padding:9px 3px;white-space:normal} th .small{display:block;font-size:10px;line-height:1.2} body{font-size:13.5px} td.perf .r{font-size:15px} td.perf .x{font-size:12px} .per,.st{font-size:10.5px} td.l span.id{display:block;margin:0;font-size:11px} td.rec{font-size:11px;line-height:1.3} .btn{padding:2px 6px;font-size:11px;white-space:nowrap;min-width:44px;min-height:36px} .one .small{display:block;margin:4px 0 0} }
+  @media(max-width:600px){ .hm{display:none} .wrap{padding:12px 8px} .card{padding:4px 8px} td,th{padding:9px 3px;white-space:normal} th .small{display:block;font-size:10px;line-height:1.2} body{font-size:13.5px} td.perf .r{font-size:15px} td.perf .x{font-size:12px} .per,.st{font-size:10.5px} td.l span.id{display:block;margin:0;font-size:11px} td.rec{font-size:11px;line-height:1.3} .btn{padding:2px 6px;font-size:11px;white-space:nowrap;min-width:44px;min-height:36px} .one .small{display:block;margin:4px 0 0} #tblA,#tblB,#tblA tbody,#tblB tbody,#tblA tr,#tblB tr,#tblA td,#tblB td{display:block} #tblA thead,#tblB thead,#tblA tr[hidden],#tblB tr[hidden]{display:none} #tblA tr.main,#tblB tr.main{display:grid;grid-template-columns:1fr auto;column-gap:8px;border-bottom:1px solid var(--line);padding:6px 0} #tblA tr.main td,#tblB tr.main td{border-bottom:0;text-align:left;padding:3px 3px} #tblA tr.main td:first-child,#tblB tr.main td:first-child{grid-column:1;grid-row:1} #tblA tr.main td:last-child,#tblB tr.main td:last-child{grid-column:2;grid-row:1;text-align:right} #tblA tr.main td.perf,#tblA tr.main td.rec,#tblB tr.main td.perf,#tblB tr.main td.rec{grid-column:1/-1} #tblA tr.det td,#tblB tr.det td{border-bottom:1px solid var(--line)} .win{display:none} }
 </style>
 </head>
 <body><div class="wrap">
 <h1>모델 성적표 <small id="asof">불러오는 중…</small></h1>
-<div class="one">상위 10을 다음 거래일에 사서 40거래일 보유 · 시장 평균과 비교 · 참고용 · <b>모델별 평가 기간이 다릅니다</b> <a class="q" href="#" onclick="document.getElementById('help').classList.toggle('on');return false">?</a> <span class="small" style="margin-left:8px">순서: <a href="#" id="sortExc" onclick="setSort('exc');return false">시장보다 나은 순 <span class="small">(각자 평가 기간 · 같은 기간 비교 아님)</span></a> · <a href="#" id="sortReg" onclick="setSort('reg');return false">등록순</a></span></div>
-<div class="help" id="help">모델이 고른 시장별 상위 10 종목을 <b>다음 거래일 종가</b>에 같은 금액씩 사서 <b>40거래일</b> 뒤 판 결과. <b>시장</b> = 같은 시장 전 종목을 같은 방식으로 산 평균. <b>차이</b> = 모델 − 시장(%p). 본표는 비용 미반영 — 상세의 20일 환산만 왕복 0.35% 를 뺀다. <b>확정</b> = 40거래일 결과가 나온 목록의 개수와 기준일 범위(실제 매수는 다음 거래일) — 끝 날짜가 오늘보다 두 달쯤 앞서는 것은 그 뒤 목록이 아직 보유 중이기 때문. <b>쌓인 목록</b> = 등록 뒤 지금까지 만든 목록 전부, <b>보유 중</b> = 그중 40거래일이 안 찬 것(배치가 돌 때마다 하나씩 확정으로 옮겨감; 오늘 목록은 아직 안 샀으니 둘 다에 없음). 모델마다 시작일이 달라 같은 기간 비교가 아니며, 창이 겹쳐 독립 표본은 개수보다 훨씬 적다. <b>시장보다 나은 목록 비율</b> = 평가한 목록(날짜) 중 40거래일 뒤 시장보다 많이 번 목록의 비율 — 종목 승률이 아니다. 목록이 10개 미만이거나 목록 수÷40 이 1 미만이면(표시용 근사치 — 실제로 겹치지 않는 창을 센 것이 아니다) 비율을 숨기고 회색 '참고 불가'로 표시한다. 작은 표의 칸도 10개 미만이면 회색이다. 큰 숫자는 모델 수익(%), 그 아래 줄은 시장 수익과 그 차이(%p) — 시장이 빠진 기간이면 모델도 손실이면서 '덜 잃음'일 수 있다. 순위 검증(시험 기록)은 다른 잣대라 상세와 '순위 검증'에 따로. <b>성적이 좋아도 채택은 아니다</b> — 채택은 미리 정한 절차로만. <b>여기의 상위 10</b> = 조건 없이 점수 상위 10(동점은 종목코드 순). v30 목록 화면의 '권고10'(재무 위험 조건 제외)과 모의 계좌(💧희석 배지 제외)는 같은 날에도 종목이 다를 수 있다 — 세 목록의 이름·오늘 차이는 <a href="filter.html">과매도 v30 목록</a> 상단 권고 상자.</div>
+<div class="one">40거래일 평가를 마친 목록의 성적 · 날짜는 <b>추천일</b>(다음 거래일에 산 것으로 계산) · 참고용 · <b>모델별 평가 기간이 다릅니다</b> <a class="q" href="#" onclick="document.getElementById('help').classList.toggle('on');return false">?</a> <span class="small" style="margin-left:8px">순서: <a href="#" id="sortExc" onclick="setSort('exc');return false">시장보다 나은 순 <span class="small">(각자 평가 기간 · 같은 기간 비교 아님)</span></a> · <a href="#" id="sortReg" onclick="setSort('reg');return false">등록순</a></span></div>
+<div class="one" style="margin-top:-8px"><b>평가 대기</b> = 아직 40거래일이 지나지 않은 추천 목록(실제 계좌의 보유 목록이 아님) · <b>자료 적음</b> = 성과를 판단할 기록이 부족(숫자는 회색)</div>
+<div class="help" id="help">모델이 고른 시장별 상위 10 종목을 <b>다음 거래일 종가</b>에 같은 금액씩 사서 <b>40거래일</b> 뒤 판 결과. <b>시장</b> = 같은 시장 전 종목을 같은 방식으로 산 평균. <b>차이</b> = 모델 − 시장(%p). 본표는 비용 미반영 — 상세의 20일 환산만 왕복 0.35% 를 뺀다. <b>평가 완료</b> = 40거래일 결과가 나온 목록의 개수와 추천일 범위(실제 매수는 다음 거래일) — 끝 날짜가 오늘보다 두 달쯤 앞서는 것은 그 뒤 목록이 아직 평가 대기이기 때문. <b>평가 대기</b> = 40거래일이 안 찬 목록(배치가 돌 때마다 하나씩 평가 완료로 옮겨감; 실제 계좌의 보유 목록이 아님). 상세의 <b>집계 대상</b> = 둘을 합친 수(오늘 목록은 아직 안 샀으니 제외). 모델마다 시작일이 달라 같은 기간 비교가 아니며, 창이 겹쳐 독립 표본은 개수보다 훨씬 적다. <b>시장보다 나은 목록 비율</b> = 평가한 목록(날짜) 중 40거래일 뒤 시장보다 많이 번 목록의 비율 — 종목 승률이 아니다. 목록이 10개 미만이거나 목록 수÷40 이 1 미만이면(표시용 근사치 — 실제로 겹치지 않는 창을 센 것이 아니다) 비율을 숨기고 모델명 옆에 '자료 적음' 배지를 붙이며 숫자는 회색이다. 작은 표의 칸도 10개 미만이면 회색 '참고 불가'다. 큰 숫자는 모델 수익(%), 그 아래 줄은 시장 수익과 그 차이(%p) — 시장이 빠진 기간이면 모델도 손실이면서 '덜 잃음'일 수 있다. 순위 검증(시험 기록)은 다른 잣대라 상세와 '순위 검증'에 따로. <b>성적이 좋아도 채택은 아니다</b> — 채택은 미리 정한 절차로만. <b>여기의 상위 10</b> = 조건 없이 점수 상위 10(동점은 종목코드 순). v30 목록 화면의 '권고10'(재무 위험 조건 제외)과 모의 계좌(💧희석 배지 제외)는 같은 날에도 종목이 다를 수 있다 — 세 목록의 이름·오늘 차이는 <a href="filter.html">과매도 v30 목록</a> 상단 권고 상자.</div>
 
 <div class="card" id="todayBox" style="padding:10px 12px"></div>
 <div class="card"><table id="tblA">
-<thead><tr><th class="l">모델</th><th class="l">40거래일 성과<br><span class="small">모델 수익 · 시장보다</span></th><th class="l">기록<br><span class="small">평가한 목록 · 기간 · 시장보다 나은 목록 비율</span></th><th></th></tr></thead>
+<thead><tr><th class="l">모델</th><th class="l">40거래일 성과<br><span class="small">모델 수익 · 시장보다</span></th><th class="l">기록<br><span class="small">평가 완료 · 평가 대기 · 추천일 범위</span></th><th></th></tr></thead>
 <tbody><tr><td colspan="4" class="loading">불러오는 중…</td></tr></tbody></table></div>
 <details id="wait"><summary id="waitSum">결과 대기</summary><div class="card"><table id="tblW"><tbody></tbody></table></div></details>
 
@@ -79,36 +80,36 @@ function openSec(id){const d=document.getElementById(id); if(d) d.open=true;}
 // [2026-11-07] 탭·목록 페이지는 '표시 기준' 모델(lv_b)인데 성적표엔 lv_e 가 있어 헷갈림 → 한 줄 안내(관측 계약: 교체 여부는 2차 창 뒤 ≈12/30 결정)
 const DISPLAY_NOTE={lv_e:'목록 탭은 lv_b — lv_e 로 바꿀지는 2차 창 뒤(≈12/30) 결정'};   // [2026-11-07 Codex 2-3] '표시 기준' 은 용어집에 없는 말
 function nameCell(m){const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model], note=DISPLAY_NOTE[m.model];
-  return `<td class="l">${p?`<a href="${p}">${nm}</a>`:`<b>${nm}</b>`}<span class="id">${m.model}</span>${m.retired?'<span class="role">은퇴</span>':''}${note?`<br><span class="small">${note}</span>`:''}</td>`;}
+  return `<td class="l">${p?`<a href="${p}">${nm}</a>`:`<b>${nm}</b>`}<span class="id">${m.model}</span>${m.retired?'<span class="role">은퇴</span>':''}${m.fix&&m.fix.n>=4&&!m.retired&&lowN(m.fix.n,m.fix.blocks)?'<span class="role low" title="평가 완료 목록 10개 미만 또는 겹치지 않는 창 1개 미만">자료 적음</span>':''}${note?`<br><span class="small">${note}</span>`:''}</td>`;}
 function det(m){
   const f=m.fix, s=m.sealed, l=m.live||{}, b=f&&f.by_market?f.by_market:{}, rm=m.regime_money||{}, st=m.steady;
   const parts=[];
   if(f){parts.push(`시장 수익 <b>${f1(f.bench_mean)}</b>`); parts.push(`중앙값 차이 <b>${f1(f.exc_median,'%p')}</b>`); if(f.ci_ref) parts.push(`참고 구간 <b>${f1(f.ci_ref[0],'')}~${f1(f.ci_ref[1],'%p')}</b>`);
     const mk=['kospi','kosdaq'].filter(k=>b[k]).map(k=>`${k==='kospi'?'KOSPI':'KOSDAQ'} ${f1(b[k].exc_mean,'%p')}`); if(mk.length) parts.push(mk.join(' / '));
     parts.push(`20거래일 단순 환산(비용 0.35% 뺀 뒤) ${f1((f.exc_mean-0.35)/2,'%p')} <span class="small">— 단위 환산일 뿐 매달 버는 수익이 아님</span>`);}
-  if(f&&f.win!=null) parts.push(`시장보다 나은 목록 ${pct(f.win)}(${f.n}개 중 ${Math.round(f.win*f.n)}개${lowN(f.n,f.blocks)?' — 표본 부족, 참고 불가':''})`);
+  if(f&&f.win!=null) parts.push(`시장보다 나은 목록 ${pct(f.win)}(${f.n}개 중 ${Math.round(f.win*f.n)}개${lowN(f.n,f.blocks)?' — 자료 적음: 목록 10개 미만 또는 겹치지 않는 창 '+(f.blocks!=null?f.blocks:'—')+'개(1개 미만)라 색 없음':''})`);
   const rg=['약세','상승'].filter(k=>rm[k]).map(k=>`${k}에 산 날 ${f1(rm[k].exc_mean,'%p')}(${rm[k].n}개)`); if(rg.length) parts.push(rg.join(' · '));
   // [2026-11-07 Codex 1-6] 40일 완료 기록과 다른 계산은 줄을 나눠 적는다.
   const others=[];
   if(m.after) others.push(`판정 뒤 목록을 자료 끝까지 보유한 참고 기록(보유 기간 제각각): ${m.after.n}개 <b>${f1(m.after.exc_mean,'%p')}</b>`);
   if(st) others.push(`매일 같은 금액을 추가했다고 가정한 보유분 평균(돈 장부 아님): 지금 <b>${f1(st.last,'%p')}</b>, 시장보다 앞선 날 ${pct(st.days_above)}`);
-  const flow=f?`날짜 흐름: 확정 목록 ${fd(f.first)}~${fd(f.last)} → 각 목록을 <b>다음 거래일</b>에 사서 40거래일 뒤 평가(마지막 확정 목록 ${fd(f.last)}은 다음 거래일 매수 → 자료 끝 ${DATA?fd(DATA.asof):''} 평가).${m.pending&&m.pending.n?` 그 뒤 ${fd(m.pending.first)}~${fd(m.pending.last)} 목록 ${m.pending.n}개는 보유 중(40거래일 안 됨 · 성적은 아직 싣지 않음 — '지금 형세' 표는 최근에 평가가 끝난 목록이지 이 목록이 아님).`:''} 보유 기간이 서로 겹쳐 목록 개수는 독립 시험 횟수가 아니다.`:'';
+  const flow=f?`날짜 흐름: 평가 완료 목록 ${fd(f.first)}~${fd(f.last)}(추천일) → 각 목록을 <b>다음 거래일</b>에 사서 40거래일 뒤 평가(마지막 ${fd(f.last)} 목록은 다음 거래일 매수 → 자료 끝 ${DATA?fd(DATA.asof):''} 평가).${m.pending&&m.pending.n?` 그 뒤 ${fd(m.pending.first)}~${fd(m.pending.last)} 목록 ${m.pending.n}개는 평가 대기(40거래일 안 됨 · 성적은 아직 싣지 않음 · 실제 계좌의 보유 목록이 아님).`:''}${m.n_anchors!=null?` 집계 대상 ${m.n_anchors}개(당일 추천 제외).`:''} 보유 기간이 서로 겹쳐 목록 개수는 독립 시험 횟수가 아니다.`:'';
   // [2026-11-07 Codex 1-5] 2차 창 판정이 있으면(registry short 의 '2차 노이즈(10/18)' 꼴) 같이 쓴다 — 1차 정본을 덮지 않는다.
   const w2=s&&s.short?String(s.short).match(/2차\s*([가-힣]+)\((\d{1,2}\/\d{1,2})\)/):null;
   const v=s?`순위 검증 1차 ${s.date?fd(s.date):''}: <b>${LABEL[s.v]||s.v}</b>${w2?` · 2차 창 ${w2[2]}: <b>${LABEL[w2[1]]||w2[1]}</b>`:''}`:(l.oos_days!=null?`순위 검증 아직 전(${l.oos_days}/40일${m.verdict_eta?' · ~'+m.verdict_eta:''})`:'');
   const ic=l.ic20!=null?`<br>지금 흐름: 20일 순위 상관 ${(l.ic20).toFixed(3)} (${l.n}일 · 순위 맞힘 정도, 수익률 아님 · 판정 아님)`:'';
   return `<tr class="det" hidden><td colspan="4"><b>40일 완료 기록</b> · ${parts.join(' · ')}${others.length?'<br>'+others.join('<br>'):''}${flow?'<br>'+flow:''}<br>${v}${s?' <span class="small">— 순위 검증과 40거래일 보유 성적은 다른 질문</span>':''}${ic}</td></tr>`;}
 // [2026-11-07] 사용자 점검: 손실인데 녹색으로만 보이던 것 → 시장 수익을 같은 줄에 쓰고 '덜 잃음/더 벌음' 말로 · 목록 10개 미만 또는 겹치지 않는 창 1개 미만이면 비율을 회색 '참고 불가'로.
-// [2026-11-08] 사용자: 더 큰 +%p 가 회색이라 이상해 보임 → 회색인 이유(표본 부족)를 숫자 옆에 바로 쓴다. 색 규칙 자체는 11/7 그대로(목록 10개 미만 또는 겹치지 않는 창 1개 미만이면 회색).
-function excWord(f,lab){const x=f.exc_mean; if(x==null) return lab+' —'; const w=x>0?(f.ret_mean<0?'덜 잃음':'더 벌음'):(x<0?(f.ret_mean>0?'덜 벌음':'더 잃음'):'같음'); const why=lowN(f.n,f.blocks)?` <span class="m">· 표본 부족, 색 없음</span>`:''; return `${lab} ${f1(x,'%p')} <span class="small">(${w})${why}</span>`;}
-// [2026-11-08] 사용자: 끝 날짜가 왜 9/4 인지 헷갈림 → 확정(40거래일 끝남)과 보유 중(아직 안 끝남)을 나눠 쓴다. pending 이 없는 옛 JSON 이면 개수만.
-function stackCell(m,f){const p=m.pending, tot=m.n_anchors; if(tot==null) return ''; if(p&&p.n) return `쌓인 목록 ${tot}개 · 보유 중 ${p.n}개 ${fd(p.first)}~${fd(p.last)} <span class="m">(40거래일 안 됨)</span>`; const k=tot-(f?f.n:0); return k>0?`쌓인 목록 ${tot}개 · 보유 중 ${k}개`:`쌓인 목록 ${tot}개 · 보유 중 없음`;}
-function winCell(f){return lowN(f.n,f.blocks)?`<span class="m">시장보다 나은 목록 — · 확정 ${f.n}개, 겹치지 않는 창 ${f.blocks!=null?f.blocks:'—'}개라 참고 불가(숫자는 상세)</span>`:`시장보다 나은 목록 ${pct(f.win)}`;}
+// [2026-11-08] 사용자: 더 큰 +%p 가 회색이라 이상해 보임 → 낮에는 이유를 숫자 옆에 썼고, 오후 Codex 검토(REPLY_20261108_scoreboard_readability) 뒤 모델명 옆 '자료 적음' 배지 1회로 바꿈. 색 규칙 자체는 11/7 그대로(목록 10개 미만 또는 겹치지 않는 창 1개 미만이면 회색).
+function excWord(f,lab){const x=f.exc_mean; if(x==null) return lab+' —'; const w=x>0?(f.ret_mean<0?'덜 잃음':'더 벌음'):(x<0?(f.ret_mean>0?'덜 벌음':'더 잃음'):'같음'); return `${lab} ${f1(x,'%p')} <span class="small">(${w})</span>`;}
+// [2026-11-08] 사용자: 끝 날짜가 왜 9/4 인지 헷갈림 → 평가 완료(40거래일 끝남)·평가 대기(아직 안 끝남) 두 줄 + '추천일'. 낱말은 Codex 검토(보유 중 = 실제 계좌로 읽힘). 총개수(집계 대상)는 상세로. pending 이 없는 옛 JSON 이면 개수만.
+function pendCell(m,f){const p=m.pending; if(p&&p.n) return `평가 대기 ${p.n}개 · 추천일 ${fd(p.first)}~${fd(p.last)}`; const tot=m.n_anchors; if(tot==null) return ''; const k=tot-(f?f.n:0); return k>0?`평가 대기 ${k}개`:`평가 대기 없음`;}
+function winCell(f){return lowN(f.n,f.blocks)?`<span class="m">시장보다 나은 목록 — (자료 적음 · 숫자는 상세)</span>`:`시장보다 나은 목록 ${pct(f.win)}`;}
 function row(m,large){
   const f=m.fix, lab=large?'후보군보다':'시장보다', bl=large?'후보군':'시장';
-  return `<tr class="main">${nameCell(m)}<td class="perf"><span class="r">${f1(f.ret_mean)}</span> <span class="small">${bl} ${f1(f.bench_mean)}</span><br><span class="x ${clsN(f.exc_mean,f.n,f.blocks)}">${excWord(f,lab)}</span></td><td class="l rec">확정 ${f.n}개 · ${fd(f.first)}~${fd(f.last)}<br><span class="small">${stackCell(m,f)}</span><br><span class="small">${winCell(f)}</span></td><td><button class="btn" onclick="toggleDet(this)" aria-expanded="false">상세</button></td></tr>`+det(m);}
+  return `<tr class="main">${nameCell(m)}<td class="perf"><span class="r">${f1(f.ret_mean)}</span> <span class="small">${bl} ${f1(f.bench_mean)}</span><br><span class="x ${clsN(f.exc_mean,f.n,f.blocks)}">${excWord(f,lab)}</span></td><td class="l rec">평가 완료 ${f.n}개 · 추천일 ${fd(f.first)}~${fd(f.last)}<br><span class="small">${pendCell(m,f)}</span><span class="small win"><br>${winCell(f)}</span></td><td><button class="btn" onclick="toggleDet(this)" aria-expanded="false">상세</button></td></tr>`+det(m);}
 function toggleDet(b){const tr=b.closest('tr'), d=tr.nextElementSibling; if(d&&d.classList.contains('det')){d.hidden=!d.hidden; b.setAttribute('aria-expanded', String(!d.hidden)); b.textContent=d.hidden?'상세':'닫기';}}
-function waitRow(m){const l=m.live||{}; return `<tr>${nameCell(m)}<td class="l m">${m.n_anchors!=null?'쌓인 목록 '+m.n_anchors+'개 · ':''}${m.retired?'기록용(은퇴)':'첫 40거래일 결과 ~'+(m.first_done_eta||'곧')}${m.verdict_eta?' · 순위 판정 ~'+m.verdict_eta:''}${l.oos_days!=null&&!m.retired?' · 검증 '+l.oos_days+'/40일':''}</td></tr>`;}
+function waitRow(m){const l=m.live||{}; return `<tr>${nameCell(m)}<td class="l m">${m.n_anchors!=null?(m.retired?'집계 대상 ':'평가 대기 ')+m.n_anchors+'개 · ':''}${m.retired?'기록용(은퇴)':'첫 40거래일 결과 ~'+(m.first_done_eta||'곧')}${m.verdict_eta?' · 순위 판정 ~'+m.verdict_eta:''}${l.oos_days!=null&&!m.retired?' · 검증 '+l.oos_days+'/40일':''}</td></tr>`;}
 let SORT='exc', DATA=null;
 function setSort(k){SORT=k; try{localStorage.setItem('sb_sort',k)}catch(e){} if(DATA) render(DATA);}
 function render(D){

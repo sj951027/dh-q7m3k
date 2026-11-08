@@ -27,6 +27,8 @@
 
 - (오후 2차) Codex 답 옴 → 대조: 지적 전부 맞음(실측). 특히 **오늘 내가 넣은 상세 문구 "오늘 가격 기준은 '지금 형세' 표"가 틀림** — 지금 형세 = 최근 40거래일 안에 평가 끝난 목록(v30 7/9~9/4), 보유 중 목록(9/7~11/5)과 개수(38)만 우연히 같음. 바로 정정. `n_anchors` 는 당일 목록 제외(실측). Codex 제안 A~E 는 CHECK §3 에 내 의견 병기, 사용자 결정 대기.
 
+- (오후 3차) 사용자 "다섯 건 반영" → `docs/leaderboard.html` 만 수정: A 자료 적음 배지(숫자 옆 긴 문구 제거) · B 평가 완료/평가 대기 + 추천일 · C 총개수는 상세로, 비율은 휴대폰만 숨김(내 의견대로) · D ≤600px grid 세로 배치 · E 첫 표 위 안내 2줄. 시안 중 두 가지 잡음: td.l 선택자가 기록 칸까지 잡아 1행에 겹침 → :first-child, block 규칙이 [hidden] 을 이겨 상세가 열려 보임 → tr[hidden]{display:none}. 375px 넘침 없음·상세 토글 정상·테스트 통과. 은퇴 모델은 '집계 대상 N개'.
+
 ## 바뀐 것
 - 새 파일: `research/HOLD_EARLY_EXIT_20261108.md` · `research/hold_early_exit_20261108.py` · `research/hold_early_exit_10y_20261108.py` · `research/out_hold_early_exit/`(csv·stdout).
 - `research/IDEA_MAP_20261030.md` ⑤ "목표 수익 도달 시 청산" 행 ✅ 닫음 + §10 한 줄. 코드·docs·DB·점수·판정 무변경, 새 model_id 없음.
@@ -35,7 +37,7 @@
 - 두 스크립트 모두 mode=ro. v30 쪽은 leaderboard.py 의 게이트(6/08·7/03 제외)·앵커 중복 제거·REG_DATE 그대로, 목록은 paper_engine.picks_from_scores(희석 제외 없음). 11년 쪽은 pick_exec_hold_10y 틀 그대로. 부트스트랩 seed 7 고정, 재실행 재현.
 
 ## 남은 일
-- Codex 답 `REPLY_20261108_scoreboard_readability.md` 대조 끝(`CHECK_20261108_scoreboard_readability.md`): 색·정렬 유지 + `자료 적음` 배지 / 낱말 `평가 완료·평가 대기 · 추천일` / 비율·총개수 상세로 / 375px 세로 배치 / 안내 3줄 — **사용자 결정 대기(A~E)** → 승인 시 표시 전용 반영 + patch_note.
+- Codex 답 `REPLY_20261108_scoreboard_readability.md` 대조 끝(`CHECK_20261108_scoreboard_readability.md`): 색·정렬 유지 + `자료 적음` 배지 / 낱말 `평가 완료·평가 대기 · 추천일` / 비율·총개수 상세로 / 375px 세로 배치 / 안내 3줄 — 사용자 "다섯 건 반영" → 반영 완료(patch_note `20261108_scoreboard_readability.md`, 2026.11.9). 월요일 배치 뒤 공개 화면 확인.
 - 표시 3건 세션 결과 확인(커밋 해시·테스트 통과·375px).
 - 수급 외국인 부호: 다음 완결 월(10월분, 12월 초)에 `supply_sign_monthly_20261108.py`(수정판) 1회 — §5-1 규칙(완결 행·시장별·유효 날짜)으로 읽고 등록 여부는 그때 다시 질문.
 - 익절선 20% 모의 관측 계좌 1장 — 돈 장부(`auto/ledger.py`) 뒤, 사전등록 문서부터. 지금 등록 안 함(11/13 sv_b 판정 분모).
