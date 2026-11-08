@@ -432,6 +432,8 @@
   <h1>📊 과매도 v30 목록 <span style="font-size:14px; color:#4299e1; font-weight:500;">필터·정렬·검색</span></h1>
   <p class="subtitle">최신 스크리너 결과를 필터/정렬/검색할 수 있어요. 시장을 고르면 자동으로 최신 데이터를 불러옵니다. 표시 점수·등급·버킷은 챔피언 모델 <b>v30</b> 기준입니다.</p>
   <!-- [2026-09-13] 운영 권고 상자 — OPS_GUIDE.md §0·§1 요약. 표시 전용, 강제 아님. -->
+  <!-- [2026-11-08] 오늘 한 줄(모델×장세×업종) — docs/signal_board.js, 표시 전용. 근거 research/SIGNAL_BOARD_20261108.md -->
+  <div id="signalBox"></div>
   <div class="howto-box">
     <b>📌 어떻게 사나 (운영 권고 — 강제 아님)</b>
     <ul>
@@ -1685,5 +1687,7 @@ function exportFiltered() {
 }
 </script>
 <script src="common.js" defer></script>
+<script src="signal_board.js"></script>
+<script>try{SignalBoard.mount('#signalBox',{model:'v30'});}catch(e){}</script>
 </body>
 </html>

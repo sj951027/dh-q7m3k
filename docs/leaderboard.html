@@ -34,6 +34,8 @@
 <div class="one" style="margin-top:-8px"><b>평가 대기</b> = 아직 40거래일이 지나지 않은 추천 목록(실제 계좌의 보유 목록이 아님) · <b>자료 적음</b> = 성과를 판단할 기록이 부족(숫자는 회색)</div>
 <div class="help" id="help">모델이 고른 시장별 상위 10 종목을 <b>다음 거래일 종가</b>에 같은 금액씩 사서 <b>40거래일</b> 뒤 판 결과. <b>시장</b> = 같은 시장 전 종목을 같은 방식으로 산 평균. <b>차이</b> = 모델 − 시장(%p). 본표는 비용 미반영 — 상세의 20일 환산만 왕복 0.35% 를 뺀다. <b>평가 완료</b> = 40거래일 결과가 나온 목록의 개수와 추천일 범위(실제 매수는 다음 거래일) — 끝 날짜가 오늘보다 두 달쯤 앞서는 것은 그 뒤 목록이 아직 평가 대기이기 때문. <b>평가 대기</b> = 40거래일이 안 찬 목록(배치가 돌 때마다 하나씩 평가 완료로 옮겨감; 실제 계좌의 보유 목록이 아님). 상세의 <b>집계 대상</b> = 둘을 합친 수(오늘 목록은 아직 안 샀으니 제외). 모델마다 시작일이 달라 같은 기간 비교가 아니며, 창이 겹쳐 독립 표본은 개수보다 훨씬 적다. <b>시장보다 나은 목록 비율</b> = 평가한 목록(날짜) 중 40거래일 뒤 시장보다 많이 번 목록의 비율 — 종목 승률이 아니다. 목록이 10개 미만이거나 목록 수÷40 이 1 미만이면(표시용 근사치 — 실제로 겹치지 않는 창을 센 것이 아니다) 비율을 숨기고 모델명 옆에 '자료 적음' 배지를 붙이며 숫자는 회색이다. 작은 표의 칸도 10개 미만이면 회색 '참고 불가'다. 큰 숫자는 모델 수익(%), 그 아래 줄은 시장 수익과 그 차이(%p) — 시장이 빠진 기간이면 모델도 손실이면서 '덜 잃음'일 수 있다. 순위 검증(시험 기록)은 다른 잣대라 상세와 '순위 검증'에 따로. <b>성적이 좋아도 채택은 아니다</b> — 채택은 미리 정한 절차로만. <b>여기의 상위 10</b> = 조건 없이 점수 상위 10(동점은 종목코드 순). v30 목록 화면의 '권고10'(재무 위험 조건 제외)과 모의 계좌(💧희석 배지 제외)는 같은 날에도 종목이 다를 수 있다 — 세 목록의 이름·오늘 차이는 <a href="filter.html">과매도 v30 목록</a> 상단 권고 상자.</div>
 
+<!-- [2026-11-08] 오늘 한 줄(모델×장세×업종) — docs/signal_board.js, 표시 전용. 근거 research/SIGNAL_BOARD_20261108.md -->
+<div id="signalBox"></div>
 <div class="card" id="todayBox" style="padding:10px 12px"></div>
 <div class="card"><table id="tblA">
 <thead><tr><th class="l">모델</th><th class="l">40거래일 성과<br><span class="small">모델 수익 · 시장보다</span></th><th class="l">기록<br><span class="small">평가 완료 · 평가 대기 · 추천일 범위</span></th><th></th></tr></thead>
@@ -181,9 +183,10 @@ function render(D){
   document.getElementById('cond2').innerHTML=`참고 구간은 겹치는 40일 창을 따로따로인 것처럼 다시 뽑은 것이라 실제보다 좁다 — 정식 결론은 미리 정한 절차(PREREGISTER_ops_adoption, 2027-06)에서만. 은퇴 모델: ${R.map(m=>m.name).join(', ')||'없음'}.`;
   document.getElementById('cond').innerHTML=`시장별 상위 ${D.TOP} · 다음 거래일 종가 매수 · ${D.H}거래일 보유 · 본표 비용 미반영(상세의 20일 환산만 왕복 ${D.COST}% 차감) · 급등 제외 없음 · 배당 제외 · 가격 없는 종목은 바구니에서 제외 · 생성 ${(D.generated||'').slice(0,16).replace('T',' ')}`;
 }
-fetch('scoreboard.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(render)
+fetch('scoreboard.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(D=>{render(D); try{window.SignalBoard&&SignalBoard.mount('#signalBox',{scoreboard:D,model:'v30'});}catch(e){}})
   .catch(()=>{document.querySelector('#tblA tbody').innerHTML='<tr><td colspan="4" class="loading">데이터 없음 (scoreboard.json)</td></tr>';document.getElementById('asof').textContent='';});
 </script>
 <script src="common.js" defer></script>
+<script src="signal_board.js"></script>
 </body>
 </html>
