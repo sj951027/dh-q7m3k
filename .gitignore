@@ -124,3 +124,9 @@ research/**/*.db
 research/**/*.db.gz
 research/**/fullgrid/
 research/handoff/**/baseline/
+
+# Claude Code hook stamp (knowledge_guard)
+.claude/guard/
+
+# 연구 중간 패널(153MB 등) — 재생성 가능
+research/**/*.pkl

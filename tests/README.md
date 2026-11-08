@@ -12,6 +12,8 @@
   에서 읽는다 — 원천(FDR)이 과거 시세를 정정해도(감자 재조정·권리락 정정) 테스트가 흔들리지 않게.
   스냅샷 재생성은 `make_frozen_snapshot.py`(시세 정정이 확인된 경우에만, patch_note 동반).
   ⚠ JUMP_CAP·ENTRY_LAG·H 는 스냅샷에 구워져 있으므로 [4] 프로토콜 상수 체크가 그 변경을 잡는다.
+- `test_tenyr_lib.py` — 10년 DB(읽기 전용, ~1분, `run_tests.py` 에는 안 넣음): `research/lib/tenyr.py`(11년 대리 공통 틀) 가
+  `research/out_signal_board/{tenyr_days,e1_cells}.csv`(2026-11-08) 와 0-diff 인지. 틀을 고치면 이 테스트부터.
 - `run_tests.py` — 일괄 실행, 실패 시 종료코드 1.
 
 규칙: **골든이 깨지면 골든을 고치지 말 것.** 로직 변경이 의도된 것인지(전/후 비교 + 사용자

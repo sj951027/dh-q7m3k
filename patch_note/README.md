@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.11.10** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.11.13** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -25,6 +25,9 @@
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
 - [20261108_scoreboard_pending.md](20261108_scoreboard_pending.md) — **2026.11.8** 성적표 기록 칸 확정/쌓인/보유 중 구분(끝 날짜 9/4 혼동) · 회색 숫자 옆 "표본 부족, 색 없음" · 기록 칸 잘림 수정 — `pending` 키 추가뿐, 판정·점수 0-diff
+- [20261108_knowledge_guard.md](20261108_knowledge_guard.md) — **2026.11.13** 지식 세 층 자동 감시 hook(`.claude/settings.json` SessionStart·Stop → `tests/knowledge_guard.py`): 시작 때 세 장 검사·정리 주기·정리할 거리, 끝날 때 기록 층만 바뀌면 한 번 막음(`지식 층: 변경 없음` 선언으로 통과) — 0.3초·읽기 전용·오류는 통과
+- [20261108_signal_board_codex.md](20261108_signal_board_codex.md) — **2026.11.12** 🚦 카드 문구·표시 오류 개정(Codex 검토 9건 반영: 조합 아님 명시·모델 다섯 상태·업종 자료 없음·게이트 등호 제거·코스닥 병기, 375px 420px) + 지식 세 장 정정(lv_e 돈 조건 범위·스냅샷 완료·국면 용어 표·ID) + 검사 보강(원장 읽기 → 빠진 모델 5개 보강) — 표시 전용 0-diff
+- [20261108_knowledge_layers.md](20261108_knowledge_layers.md) — **2026.11.11** 지식 세 층 구조: `KNOWLEDGE.md`(확정 결론)·`DECISIONS.md`(사용자 결정)·`PITFALLS.md`(함정) + `research/lib/tenyr.py`(11년 대리 공통 틀, 기존 결과 0-diff) + 테스트 2건 + CLAUDE.md 읽기 순서·마무리 7·8 — 문서·테스트만, 점수·판정·배치 무변경
 - [20261108_signal_board.md](20261108_signal_board.md) — **2026.11.10** 🚦 오늘 한 줄 카드(모델×장세×업종 세 등불, 조합 문장, 모의 계좌 각주) 성적표·v30 목록 상단 — `docs/signal_board.js` 표시 전용, 규칙은 결과 전 고정(SIGNAL_BOARD_20261108), 11년 칸별 근거 · 변동성 축 닫음 · 판정·점수 0-diff
 - [20261108_scoreboard_readability.md](20261108_scoreboard_readability.md) — **2026.11.9** Codex 사용성 검토 2차 반영: 자료 적음 배지 · 평가 완료/평가 대기 · 추천일 · 휴대폰 세로 배치(표시 전용, 0-diff)
 - [20261108_sector_badge_lists.md](20261108_sector_badge_lists.md) — **2026.11.7** 업종 낙폭 사실 배지(v30·lv_b 목록, '20일↓ −21.7%' · 경고 아님 · `build_sector_dd.py` → `docs/sector_dd.json`, 배치 2.75단계) · 업종 캐시 날짜별 스냅샷(`../dh-q7m3k-data/sector_snapshots/`) · 세 목록 이름(화면 권고10 · 성적표 상위10 · 모의 계좌)과 오늘 차이 수(권고 상자·성적표 도움말) — 표시·자료 전용, 판정·점수 0-diff
