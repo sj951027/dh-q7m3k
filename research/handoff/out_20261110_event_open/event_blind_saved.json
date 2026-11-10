@@ -1,0 +1,20 @@
+{
+  "started": "2026-11-10T22:05:38.565793+09:00",
+  "completed": "2026-11-10T22:06:06.329816+09:00",
+  "claude_results_opened": false,
+  "files": {
+    "event_records_blind.csv": "a73ff20a9632feeff36e90a1f3b2aa169e9f63ce66c0ba9dd0b0e5e6569ffb0a",
+    "event_days_blind.csv": "34251a91a82091bec88a88db57bc0006b389caff55da35d757ac9f7a7a8ac470",
+    "event_summary_blind.csv": "b4091e14d1d61107b90b0ff0743fff20eb913acc54038c4a42162393c4da6933",
+    "event_cells_blind.csv": "d8037821f717689a150c7ba8331c6434482a3ebf6cc8a4a4481833d044c9f4fc",
+    "event_funnel_blind.csv": "ecd650bad85715224e6d20fb9d2d0023b3526fdd5787bb086db4dda4d9e53ae4"
+  },
+  "price_start": "20230626",
+  "price_end": "20261110",
+  "calendar_days": 822,
+  "tickers": 2800,
+  "source_code_sha256": "59ebfa45a08b0a1c2d9fb6f5aa8920a80cec854dcd0e569afd59e072edb6833b",
+  "interpretation": "main precedence; no forward fill; suspension t and t+1 must equal 0; horizon-specific universes; event-date regime; all-universe T4 baseline within subgroups",
+  "time_exception": "User explicitly confirmed batch finished and authorized proceeding during time restriction",
+  "saved_at": "2026-11-10T22:06:06.330582+09:00"
+}

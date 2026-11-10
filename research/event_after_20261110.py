@@ -90,7 +90,11 @@ say(f"시세 {C.shape} · {dates[0]}~{dates[-1]} · 유니버스 유효일 {len(
 # 사건
 dts = pd.to_datetime(dates)
 def to_i(d):
-    pos = dts.searchsorted(pd.Timestamp(str(d)))
+    # [11/10 22:40 정정 — Codex 대조] 시세 시작일(2023-06-26)보다 앞선 공시는 제외한다. 하한을 안 보면 searchsorted 가 전부 첫 시세일로 몰아넣는다(원공시 83건).
+    ts = pd.Timestamp(str(d))
+    if ts < dts[0]:
+        return None
+    pos = dts.searchsorted(ts)
     return int(pos) if pos < N else None
 ev["cls"] = [classify(a, b or "") for a, b in zip(ev.event_type, ev.report_nm.fillna(""))]
 ev = ev.dropna(subset=["cls"])

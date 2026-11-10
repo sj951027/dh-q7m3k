@@ -1,0 +1,30 @@
+{
+  "schema": {
+    "earnings_q": [
+      "ticker",
+      "year",
+      "reprt",
+      "reprt_ord",
+      "rcept_dt",
+      "q_op",
+      "q_op_prev",
+      "mcap_prev",
+      "sue",
+      "source",
+      "shares_at",
+      "px_dt"
+    ]
+  },
+  "rows": 30790,
+  "rcept_dt": [
+    "20230802",
+    "20261110",
+    286
+  ],
+  "year": [
+    2023,
+    2026,
+    4
+  ],
+  "saved_at": "2026-11-10T22:16:08.387700+09:00"
+}

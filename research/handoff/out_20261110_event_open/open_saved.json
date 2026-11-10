@@ -1,0 +1,10 @@
+{
+  "completed": "2026-11-10T22:07:39.937599+09:00",
+  "methods": 2,
+  "price_start": "20150102",
+  "price_end": "20261021",
+  "tickers": 2763,
+  "prereg_sha256": "5a35e1445f38878954f79cd79da0b293d64b1a81090dcfb7d632eceb78f2db02",
+  "summary_sha256": "2c1c63e3a8540ba622abbbc5cc0568a9c8dd9ab936e6972acba6150488f621f6",
+  "saved_at": "2026-11-10T22:07:39.960914+09:00"
+}

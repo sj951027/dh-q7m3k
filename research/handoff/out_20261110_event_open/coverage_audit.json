@@ -1,0 +1,41 @@
+{
+  "daily_ohlcv": {
+    "rows": 2087655,
+    "dates": 822,
+    "first": "20230626",
+    "last": "20261110"
+  },
+  "daily_flows": {
+    "rows": 332931,
+    "dates": 131,
+    "first": "20260428",
+    "last": "20261110"
+  },
+  "short_flows": {
+    "rows": 391571,
+    "dates": 717,
+    "first": "20210511",
+    "last": "20261110"
+  },
+  "dart_events": {
+    "rows": 16522,
+    "dates": 841,
+    "first": "20230601",
+    "last": "20261110"
+  },
+  "universe_events": {
+    "rows": 2666,
+    "dates": 730,
+    "first": "20230629",
+    "last": "20261110"
+  },
+  "maturity": {
+    "latest_price": "20261110",
+    "last_signal_h5": "20261102",
+    "last_signal_h40": "20260908"
+  },
+  "pre_calendar_events": 192,
+  "overlap_main_extra": 0,
+  "positive_volume_suspended_entry": 0,
+  "saved_at": "2026-11-10T22:10:37.971968+09:00"
+}

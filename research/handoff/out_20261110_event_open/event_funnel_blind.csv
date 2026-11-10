@@ -1,0 +1,17 @@
+﻿sensitivity,kind,original_rows,dedup_rows
+original,bb_trust_new,1056,1054
+original,bb_trust_end,671,629
+original,bb_direct,740,740
+original,bb_sell,1536,1509
+original,paid_in,1475,1348
+original,cb,2121,1868
+original,bonus,171,171
+original,reduction,237,229
+include_corrections,bb_trust_new,1409,1331
+include_corrections,bb_trust_end,690,636
+include_corrections,bb_direct,878,772
+include_corrections,bb_sell,1808,1727
+include_corrections,paid_in,5032,4428
+include_corrections,cb,5026,4069
+include_corrections,bonus,218,209
+include_corrections,reduction,506,456

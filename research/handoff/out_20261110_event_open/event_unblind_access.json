@@ -1,0 +1,11 @@
+{
+  "blind_completed": "2026-11-10T22:06:06.329816+09:00",
+  "verified_before_opening": true,
+  "first_opening_at": "2026-11-10T22:07:52.054842+09:00",
+  "allowed_paths": [
+    "research/EVENT_AFTER_RESULT_20261110.md",
+    "research/out_event_after/",
+    "research/event_after_20261110.py"
+  ],
+  "saved_at": "2026-11-10T22:07:52.054842+09:00"
+}

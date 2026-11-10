@@ -44,6 +44,7 @@ RET = {h: (sh(C, 1 + h) / C1 - 1) * 100 for h in HS}
 REACT = (C1 / Cm1 - 1) * 100            # t−1 종가 → t+1 종가(공시 반응, 진입 전에 이미 오른 몫)
 dts = pd.to_datetime(dates)
 ev = ev[ev.report_nm.fillna("").str.contains("신탁계약체결") & ~ev.report_nm.fillna("").str.strip().str.startswith("[")]
+ev = ev[pd.to_datetime(ev.rcept_dt.astype(str)) >= dts[0]]      # [11/10 22:40 정정 — Codex 대조] 시세 시작일 이전 공시 제외(첫 시세일로 몰리는 오류)
 ev["i"] = [int(p) if p < N else None for p in dts.searchsorted(pd.to_datetime(ev.rcept_dt.astype(str)))]
 ev = ev.dropna(subset=["i"]); ev["i"] = ev.i.astype(int); ev = ev[ev.ticker.isin(col)].drop_duplicates(["ticker", "i"]).sort_values(["ticker", "i"])
 ev["prev_gap"] = ev.groupby("ticker").i.diff()
