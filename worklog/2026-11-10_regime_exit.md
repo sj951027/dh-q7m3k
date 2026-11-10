@@ -42,7 +42,10 @@
 - "lv_e 는 왜 html 이 없지? 만들어 줘" → `docs/lve.html` 신설(patch_note `20261110_lve_page.md`, 2026.11.14). 틀은 lowvol.html, 배선은 lva 와 같은 꼴(build_daily_lists MODELS · run_and_diversify 2.87d · common.js PAGE · leaderboard MODEL_PAGES/DISPLAY_NOTE · .gitignore). CSV·hist 수동 생성(run 20261109), 로컬 서버로 렌더 확인. 메뉴(MENU)는 lv_b 유지.
 - "반등·상승장 때 어떤 모델이 좋은지" → 성적표 `regime_money`(추천일 코스닥 20일선 위=상승 / 아래=약세, 완결 앵커 40일 초과)로 답함: 상승 칸에서 양(+)인 모델은 px_a +3.81 (n=15, 이김 87%) · ls_t1 +1.55(대형, 별도) · v30 +1.52 (n=17, 65%) · mom_a +1.1 (59%) 뿐이고 lv_b −0.46 · lv_a −1.01 · sv_a −1.17 · qs_a −1.87 · le_a −4.27 은 음. lv_e 는 상승 칸 완결 앵커 0(약세 5개 +3.28 뿐) — 상승장 성적은 아직 없음. 11년 대리(K21·E1)와 같은 그림: 급락 뒤(A)엔 과매도, 많이 오른 뒤(D)엔 저변동 +2.2. 지금은 코스피·코스닥 모두 A(급락 뒤, 20일 −20%).
 - 검증: `tests/run_tests.py` 전체 통과(19:37) · 표시 전용이라 점수·판정 0-diff.
-- 지식 반영: DECISIONS D36(lv_e 관측 페이지 · 운용 목록 lv_b 유지). KNOWLEDGE·PITFALLS 추가 없음(국면별 숫자는 성적표가 이미 담음).
+- 지식 반영: DECISIONS D36(lv_e 관측 페이지 · 운용 목록 lv_b 유지). PITFALLS 추가 없음.
+- 19:51 커밋·푸시 e781c5e(사용자 요청) — lve 페이지·CSV·hist·연구·지식 세 장. Codex 파일(`code_20261110_first_week_*`·`out_20261110_first_week/`·REPLY)은 미커밋.
+- **Codex 답 도착(19:40)** `REPLY_20261110_first_week_round2.md`: A 일치 · B 후보 없음 · D 사후 신호(수급 5일·보험 비중)는 n·크기·사후라 후보 아님 · 의견 (가) C 만 남음. K32·지도 §10 에 반영. **다음**: C(사건 뒤 5일) Claude 실행 → 못 넘으면 첫 주 고르기 닫음(K32). REPLY 의 D 는 11/8 panel.pkl 고정본 기준(현재 DB 와 값 차이 열 10개 공개) — 재현 시 유의.
+- PTW 전략 태그 질문(lv_e·px_a): `app/model_label.py` BUY_MODELS=(v30, lv_b, ls_t1, le_a, ld_a), MODEL_DEFAULT_TAG 에 lv_e·px_a 없음 — 답변·제안은 이 세션 대화, 반영은 사용자 결정 뒤 PTW 저장소에서.
 
 ## 다음 세션 시작점
 세 장 → 이 기록 → 11/10 배치 로그 → 11/13 sv_b 판정 준비(`VERDICT_RULES.md` + `PREREGISTER_sv_b.md`, 유효 앵커 수 확인) → 사용자 결정 §B.
