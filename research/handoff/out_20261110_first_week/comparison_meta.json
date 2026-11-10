@@ -1,0 +1,6 @@
+{
+  "max_abs_point_difference": 2.842170943040401e-14,
+  "max_abs_CI_difference_after_rng_alignment": 1.4210854715202004e-14,
+  "note": "Independent primary CIs reset RNG per statistic; original advances up/diff/excess/path.",
+  "calculated_at": "2026-11-10T19:30:03.229703+09:00"
+}

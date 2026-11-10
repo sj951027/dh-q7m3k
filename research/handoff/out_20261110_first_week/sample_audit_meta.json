@@ -1,0 +1,18 @@
+{
+  "same_row_keys": true,
+  "compared_rows": 89972,
+  "compared_variables": 92,
+  "differences": {
+    "short_vol_ratio": 7,
+    "credit_bal_rate": 1688,
+    "ret_t": 46,
+    "range_t": 46,
+    "close_pos_t": 44,
+    "rv5": 46,
+    "vol_t_vs20": 69,
+    "vs_low20_%": 18,
+    "sector_dd20": 1242,
+    "T4": 792
+  },
+  "calculated_at": "2026-11-10T19:33:40.136409+09:00"
+}

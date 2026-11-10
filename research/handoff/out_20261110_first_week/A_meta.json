@@ -1,0 +1,14 @@
+{
+  "price_start": "20230626",
+  "price_end": "20261109",
+  "partial": [
+    "20260608"
+  ],
+  "double": [
+    "20260703"
+  ],
+  "models": 26,
+  "tie_groups": 54,
+  "read_only": true,
+  "calculated_at": "2026-11-10T19:28:30.521465+09:00"
+}

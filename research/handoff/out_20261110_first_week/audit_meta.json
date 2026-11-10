@@ -1,0 +1,32 @@
+{
+  "original_panel": {
+    "rows": 89972,
+    "anchors": 100,
+    "run_min": "20260602",
+    "run_max": "20261106",
+    "T1_rows": 82328,
+    "T4_rows": 54430,
+    "top10_rows": 2000,
+    "duplicates": 0
+  },
+  "rebuilt": [
+    {
+      "sample": "stage3",
+      "rows": 89972,
+      "anchors": 100,
+      "path_rows": 82328,
+      "T4_rows": 54430,
+      "path_base": 21.374090192568794
+    },
+    {
+      "sample": "v30_top10",
+      "rows": 2000,
+      "anchors": 100,
+      "path_rows": 1880,
+      "T4_rows": 1220,
+      "path_base": 23.351063829787233
+    }
+  ],
+  "checks": "26 models; 8/92/20 variables; rates/ranges/paired differences passed",
+  "calculated_at": "2026-11-10T19:32:41.436868+09:00"
+}
