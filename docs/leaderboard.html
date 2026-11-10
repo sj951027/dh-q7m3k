@@ -67,7 +67,7 @@
 <div class="foot" id="cond"></div>
 </div>
 <script>
-const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',le_a:'le.html',ls_t1:'_large_test.html'};
+const MODEL_PAGES={v30:'filter.html',lv_b:'lowvol.html',lv_a:'lva.html',lv_e:'lve.html',mom_a:'mom.html',mom_b:'mom_b.html',qs_a:'qs.html',px_a:'px.html',sv_a:'sv.html',le_a:'le.html',ls_t1:'_large_test.html'};
 // [2026-10-03] 쉬운 말(Codex REPLY_006 §4): 어떤 질문에 대한 당시 결과인지가 드러나게. 원래 용어는 괄호.
 const LABEL={'유의':'당시 순위 검증 기준 통과(유의)','기움':'순위 예측 효과 확정 못 함(기움)','노이즈':'순위 예측 효과 확인 못 함(노이즈)','역작동':'점수 높은 종목이 오히려 못함(역작동)'};
 const f1=(v,u='%')=>v==null?'—':(v>0?'+':'')+v.toFixed(1)+u;
@@ -80,7 +80,7 @@ const clsN=(v,n,bl)=>lowN(n,bl)?'m':cls(v);
 const pctN=(w,n,bl)=>lowN(n,bl)?'<span class="m">참고 불가</span>':pct(w);
 function openSec(id){const d=document.getElementById(id); if(d) d.open=true;}
 // [2026-11-07] 탭·목록 페이지는 '표시 기준' 모델(lv_b)인데 성적표엔 lv_e 가 있어 헷갈림 → 한 줄 안내(관측 계약: 교체 여부는 2차 창 뒤 ≈12/30 결정)
-const DISPLAY_NOTE={lv_e:'목록 탭은 lv_b — lv_e 로 바꿀지는 2차 창 뒤(≈12/30) 결정'};   // [2026-11-07 Codex 2-3] '표시 기준' 은 용어집에 없는 말
+const DISPLAY_NOTE={lv_e:'운용 목록은 lv_b — lv_e 목록은 관측용(lve.html), 바꿀지는 2차 창 뒤(≈12/30) 결정'};   // [2026-11-07 Codex 2-3] '표시 기준' 은 용어집에 없는 말
 function nameCell(m){const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model], note=DISPLAY_NOTE[m.model];
   return `<td class="l">${p?`<a href="${p}">${nm}</a>`:`<b>${nm}</b>`}<span class="id">${m.model}</span>${m.retired?'<span class="role">은퇴</span>':''}${m.fix&&m.fix.n>=4&&!m.retired&&lowN(m.fix.n,m.fix.blocks)?'<span class="role low" title="평가 완료 목록 10개 미만 또는 겹치지 않는 창 1개 미만">자료 적음</span>':''}${note?`<br><span class="small">${note}</span>`:''}</td>`;}
 function det(m){

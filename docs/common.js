@@ -17,6 +17,7 @@
     'sv.html': ['sv_a', '공매도비중 sv_a', 'list'],
     'px.html': ['px_a', '가격4팩터 px_a', 'list'],
     'lva.html': ['lv_a', '저변동+반전 lv_a', 'list'],
+    'lve.html': ['lv_e', '저변동+저회전 lv_e', 'list'],
     'mom.html': ['mom_a', '모멘텀 mom_a', 'list'],
     'qs.html': ['qs_a', '조용한강자 qs_a', 'list'],
     'wu.html': ['wu_a', '전체종목 wu_a', 'list'],

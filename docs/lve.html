@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>저변동+저회전 lv_e</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e6e8ec; --sub:#9aa3b2;
+    --accent:#2dd4a7; --warn:#f0b429; --warnbg:#2a230f; --good:#2dd4a7; --bad:#f0997b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    font-size:14px;line-height:1.5}
+  .wrap{max-width:1600px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:12px;margin-bottom:14px}
+  .warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px}
+  .warn b{color:var(--warn)}
+  .explain{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:0 14px;margin-bottom:16px;font-size:12.5px}
+  .explain summary{cursor:pointer;padding:12px 0;color:var(--accent);font-weight:600;
+    list-style:none;user-select:none}
+  .explain summary::-webkit-details-marker{display:none}
+  .explain-body{padding:0 0 12px}
+  .explain-body p{margin:8px 0;color:#c9cfda;line-height:1.65}
+  .explain-body b{color:var(--txt)}
+  .explain .hl{background:#1f2a26;color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600}
+  .explain .note{color:var(--sub);font-size:11.5px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  .explain .warnp{background:#1f1a0c;border-left:3px solid var(--warn);border-radius:0;
+    padding:9px 12px;color:#e8dcc0}
+  .explain .warnp b{color:var(--warn)}
+  .explain .note2{color:var(--sub);font-size:11.5px;line-height:1.6;margin-top:6px}
+  .explain .note2 b{color:#c9cfda}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 10px;font-size:12px;color:var(--sub)}
+  .chip b{color:var(--txt)}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:8px 16px;cursor:pointer;font-size:13px;color:var(--sub)}
+  .tab.active{border-color:var(--accent);color:var(--accent)}
+  .dtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center}
+  .dtab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px;color:var(--sub)}
+  .dtab.active{border-color:var(--accent);color:var(--accent)}.dtab.more{color:var(--sub);opacity:.8}
+  .dnote{font-size:12px;color:var(--sub);margin:0 0 8px}.pos{color:#2dd4a7}.neg{color:#f0997b}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+  .filters .flabel{color:var(--sub);font-size:12px;margin-right:2px}
+  .fbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;color:var(--sub);user-select:none}
+  .fbtn.on{border-color:var(--accent);color:var(--accent);background:#16201c}
+  .fcount{color:var(--sub);font-size:12px;margin-left:auto}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;min-width:0}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{background:var(--card);color:var(--sub);font-weight:600;position:sticky;top:0;cursor:pointer}
+  th:first-child,td:first-child,th:nth-child(3),td:nth-child(3){text-align:left}
+  .top10row td{background:#16201c}
+  .top10row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .top10row td:nth-child(2){color:var(--accent);font-weight:700}
+  tr:hover td{background:#1b1f28}
+  .score{color:var(--accent);font-weight:700}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .v3{color:var(--sub);font-size:11px}
+  .foot{color:var(--sub);font-size:11px;margin-top:14px;line-height:1.7}
+  .loading{padding:40px;text-align:center;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>저변동+저회전 <span style="color:var(--accent)">lv_e</span> <small style="font-size:.55em;opacity:.75">관측 챌린저</small></h1>
+  <div class="sub">저변동 + ROE + 저회전(to20) 순위합 · lv_b 와 같은 유니버스 · 가중 0 관측 · <a href="lowvol.html" style="color:var(--accent)">lv_b 목록</a> · <a href="leaderboard.html" style="color:var(--accent)">성적표</a></div>
+  <div id="freshness" style="display:none;margin:8px 0;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6"></div>
+  <script>
+  // [2026-11-10] 목록 신선도 배지 — lve_meta.json 의 run_id 기준(lowvol.html 과 동일 패턴).
+  //   갱신이 안 된 날에도 옛 CSV가 그대로 남는 구조라(8/04~10 동결 사건),
+  //   기준일이 오래되면 경고를 띄운다. 주말·공휴일 오탐을 줄이려 '주중일 수'로 계산.
+  fetch('lve_meta.json?ts='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json();}).then(m=>{
+    const el=document.getElementById('freshness');
+    const rid=String(m.run_id||''); if(rid.length!==8) return;
+    const run=new Date(+rid.slice(0,4), +rid.slice(4,6)-1, +rid.slice(6,8));
+    const today=new Date(); today.setHours(0,0,0,0);
+    let wd=0; for(let d=new Date(run); d<today; d.setDate(d.getDate()+1)){
+      d.setHours(0,0,0,0); const w=new Date(d); w.setDate(w.getDate()+1);
+      if(w.getDay()!==0 && w.getDay()!==6) wd++;
+    }
+    const ds=rid.slice(0,4)+'-'+rid.slice(4,6)+'-'+rid.slice(6,8);
+    el.style.display='block';
+    if(wd>=2){
+      el.style.background='#3a1f1f'; el.style.border='1px solid #b45555'; el.style.color='#f0b0b0';
+      el.innerHTML='⚠️ <b>이 목록은 '+ds+' 기준</b> — 주중 기준 약 '+wd+'일 전 자료입니다. '
+        +'파이프라인 미실행·적재 제외(유니버스 고갈 등)로 갱신이 지연됐을 수 있으니, '
+        +'<b>최신 목록이 아님을 감안</b>하고 매수 근거로 쓰지 마세요. (공휴일이면 정상일 수 있음)';
+    }else{
+      el.style.background='var(--card,#1c1f26)'; el.style.border='1px solid #2c3440'; el.style.color='var(--sub,#8a93a5)';
+      el.textContent='목록 기준일: '+ds+' (정상 범위)';
+    }
+  }).catch(()=>{});
+  </script>
+
+  <div class="warn">
+    ⚠️ <b>매수신호 아님 — 관측 챌린저(가중 0).</b> §11 판정(2026-11-04 정본 VERDICT_20261104_lv_e.md): <b>유의</b>(h20 IC +0.198 [+0.114, +0.280] n=20 · lv_b 짝 우위 +0.040 [+0.022, +0.058] · Codex 독립 재현 일치). 다만 판정 창(9/1~)이 <b>10월 급락 뒤 반등 한 국면</b>이고 완결 앵커가 20개라, 운용 목록(저변동 페이지)은 아직 lv_b 입니다. <b>lv_e 로 바꿀지는 2차 창(11/4 run~, 결정 ≈12/30) 뒤</b>에 정합니다(관측 계약 OBSERVATION_CONTRACT_20261104). 점수가 높을수록 "선호"지 "사라" 가 아닙니다.
+  </div>
+
+  <details class="explain">
+    <summary>📖 점수·지표 읽는 법 (눌러서 펼치기)</summary>
+    <div class="explain-body">
+      <p><b>lv_e점수 (lowvol_score)</b> — 세 가지를 "그날 전체 종목 중 몇 등인지"(백분위)로
+      바꿔 더한 값입니다. <b>0~3 범위</b>(3개 항 각 0~1)이고 <b>높을수록 선호</b>. 절대값 자체보다
+      <b>같은 날 종목 간 순위</b>가 의미입니다(날마다 분포가 달라 어제 2.3과 오늘 2.3은 다름).
+      세 항 = ①저변동(변동성 낮을수록↑) ②ROE(높을수록↑) ③<b>저회전 to20</b>(최근 20거래일 평균 거래량÷상장주식수, <b>낮을수록↑</b> — 조용히 거래되는 종목).
+      to20 값 자체는 적재 때 따로 저장하지 않아 이 표에 열이 없습니다(점수에는 들어가 있음).</p>
+
+      <p><b>lv_e 는 무엇이 다른가</b> — lv_b(저변동+ROE)에 <b>저회전 항 하나만</b> 더한 모델입니다(변수 1개 원칙, PREREGISTER_lv_e.md).
+      유니버스·순위합 방식은 lv_b 와 완전히 같아서 두 목록의 차이가 곧 "조용히 거래되는 종목을 앞세운 효과"입니다.
+      2026-09-01 등록(가중 0 관측) → 11/04 첫 판정 <b>유의</b>. 운용 목록은 여전히 <a href="lowvol.html" style="color:var(--accent)">lv_b 페이지</a>이고,
+      이 페이지는 "lv_e 가 오늘 무엇을 고르는지" 보는 관측용입니다. 모델 간 비교는 <a href="leaderboard.html" style="color:var(--accent)">성적표</a>에서.</p>
+
+      <p class="warnp">❓ <b>점수 높으면 오르나? — 시장 방향대로 작동합니다.</b> (구 lv_a 기준) 18일 분석 기준,
+      lv점수는 한쪽이 아니라 <b>양방향</b>으로 움직입니다(점수 높을수록 더 뚜렷):<br>
+      • 📈 <b>상승장</b>(5일): 점수 최고그룹 1일 상승확률 <b>~73%</b>, 평균 <b>+2.0%</b> — 점수 높을수록 <b>더 오릅니다.</b><br>
+      • 📉 <b>하락장</b>(18일): 점수 최고그룹 평균 <b>−1.6%</b>(최저그룹 −2.6%) — 점수 높을수록 <b>덜 떨어집니다.</b><br>
+      즉 "시장이 가는 방향으로 더 세게 가는" 종목을 고릅니다. 단 이 기간은 <b>하락장이 압도적</b>(23일 중 18일
+      하락)이라 전체 평균은 마이너스로 보입니다 — 점수 탓이 아니라 장 탓입니다.</p>
+
+      <p class="note2">⚠️ <b>유보</b>: 상승장 표본이 5일뿐이라 +2.0%가 견고하다 단정 못 합니다. 또 상승장의
+      반등이 lv점수(저변동·반전) 덕인지 과매도 종목이 원래 크게 튀는 것인지 아직 못 가립니다. <b>매수신호
+      아니며</b>, 진짜 판정은 등록일 이후 OOS 40거래일(상승·하락 국면이 섞인 뒤) 누적 후입니다.</p>
+
+      <p><b>변동성21 (realized_vol)</b> — 최근 21거래일 일간수익률의 표준편차. <b>작을수록 차분한 주가</b>(=lv점수↑).
+      예: <span class="hl">0.025 = 하루 평균 ±2.5% 안팎</span> 흔들림(낮음), 0.06 = ±6%(높음).
+      이 트랙은 "덜 출렁이는" 종목을 선호합니다 — 18일 분석에서 저변동일수록 5일 뒤 수익이 나았기 때문(가설).</p>
+
+      <p><b>수급 (외인·기관 5일/20일)</b> — 외국인·기관의 순매수 금액(억). <b>+면 사들이는 중, −면 파는 중</b>.
+      lv점수에는 <b>안 들어가는 참고 지표</b>지만, "기관이 팔고 있는데 저변동인 건지" 같은 맥락 판단에 씁니다.
+      예: 외인20일 +135 = 한 달간 외국인이 135억 순매수. 단 순매수(flow)는 지분율 자체와는 다름에 유의.</p>
+
+      <p><b>나머지 컬럼</b>: <b>1주%/1개월%</b>=그 기간 등락(참고용 — lv_e 점수에는 안 들어감).
+      <b>52주고점대비%</b>=1년 최고가 대비 낙폭. <b>과매도</b>=v3 과매도 점수(30~70 구간만 이 트랙 대상).
+      <b>거래대금억</b>=1개월 평균 일거래대금(5억 미만은 제외=유동성 하한). <b>분기YoY%</b>=분기 영업이익 전년比.</p>
+
+      <p class="note">⚙️ 유니버스 = 과매도 30~70 + 거래대금 ≥5억 (적당히 빠진 + 거래되는 종목). 컬럼 클릭 시 정렬.</p>
+    </div>
+  </details>
+
+
+  <div class="meta" id="meta"></div>
+  <!-- [2026-11-10] 지난 날짜 리스트 탭 — docs/hist/lv_e.json (당시 동결 점수 · 표시 전용) -->
+  <div class="dtabs" id="dtabs"></div>
+  <div class="dnote" id="dnote" hidden></div>
+  <div class="tabs">
+    <div class="tab active" data-mkt="kospi">🔵 KOSPI</div>
+    <div class="tab" data-mkt="kosdaq">🟠 KOSDAQ</div>
+  </div>
+
+  <div class="filters" id="filters">
+    <span class="flabel">필터:</span>
+    <span class="fbtn" data-f="top10" title="점수 상위 10% — 성적표의 '시장별 상위 10종목'과 다름">★ 점수 상위 10%만</span>
+    <span class="fbtn" data-f="f5pos">외인5일 &gt; 0</span>
+    <span class="fbtn" data-f="i5pos">기관5일 &gt; 0</span>
+    <span class="fbtn" data-f="any5pos">외인/기관 中 매수</span>
+    <span class="fbtn" data-f="roe10">ROE ≥ 10</span>
+    <span class="fbtn" data-f="rev">지난주 하락</span>
+    <span class="fbtn" data-f="nh3rd" title="52주고점대비% 상위 1/3 (0에 가까운 = 신고가 근접). 2026-08-11 탐색 관측 — 검증 전 가설, 참고용">신고가 근접 ⅓</span>
+    <span class="fcount" id="fcount"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="tbl"><thead></thead><tbody>
+      <tr><td colspan="20" class="loading">데이터 불러오는 중…</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+// 표시 컬럼 정의: [CSV키, 라벨, 타입, 툴팁]
+const COLS = [
+  ['rank','#','int','그날 lv_e점수 순위 (★강조·상위10% 필터도 이 순위 기준)'],
+  ['lowvol_score','lv_e점수','score','저변동+ROE+저회전 순위합(0~3). 높을수록 선호. 같은 날 종목 간 순위가 핵심'],
+  ['name','종목','str',''],
+  ['dilution_60d','⚠️희석공시','dil','직전 60거래일 내 유상증자·CB·BW·EB 결정 공시(정정 제외). 3년 실측: 같은 유니버스 대비 −1.4~−6.6%p/60일 — 사람이 보고 제외 판단. 점수·순위에는 미반영'],
+  ['earn_drop_60d','📉실적악화','ern','직전 60거래일 안에 접수된 최근 분기 보고서에서 영업이익이 전년 같은 분기보다 시총의 1% 이상 줄었음. 실측: 그 뒤 20거래일 같은 시장·시총 대비 −1.0%p(3년), 모델 목록 상위 10 안에서는 −3.2%p(2026-06~09 넉 달 — 단서). 사람이 보고 판단. 점수·순위에는 미반영'],
+  ['earn_recent_20d','정기보고서 접수','recentern','정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우. 부호가 없거나 결측이어도 표시. 점수·순위 미반영.'],
+  ['ticker','코드','str',''],
+  ['sector','업종','sector','업종(sector_cache 기준) · 옆 회색 숫자 = 그 업종 동일가중 지수의 20거래일 고점 대비 낙폭(사실 표시 — 경고·위험 아님, 앞으로의 수익과의 관계 미확인, 점수·순위 미반영)'],
+  ['realized_vol','변동성21','num4','최근21일 일수익 표준편차. 작을수록 차분(0.025≈하루±2.5%). 낮을수록 점수↑'],
+  ['roe_value','ROE%','num1','자기자본이익률(EPS/BPS). 높을수록 우량=점수↑'],
+  ['return_1w_%','1주%','signed','최근 1주 등락(참고 — lv_e 점수에는 미반영)'],
+  ['return_1m_%','1개월%','signed','최근 1개월 등락(참고)'],
+  ['drawdown_52w_high_%','52주고점대비%','signed','1년 최고가 대비 낙폭'],
+  ['oversold_score','과매도','num1','v3 과매도 점수. 이 트랙은 30~70 구간만 대상(극단 제외)'],
+  ['amt_avg_1m_억','거래대금억','num1','1개월 평균 일거래대금. 5억 미만은 제외(유동성 하한)'],
+  ['foreign_5d_억','외인5일','signed','외국인 최근5일 순매수(억). +면 사들임, −면 팖'],
+  ['foreign_20d_억','외인20일','signed','외국인 최근20일 순매수(억)'],
+  ['inst_5d_억','기관5일','signed','기관 최근5일 순매수(억). +면 사들임, −면 팖'],
+  ['inst_20d_억','기관20일','signed','기관 최근20일 순매수(억)'],
+  ['quarterly_yoy_%','분기YoY%','signed','분기 영업이익 전년동기比'],
+];
+
+// [2026-11-08] 업종 낙폭 사실 배지 — docs/sector_dd.json(build_sector_dd.py). 표시 전용, 점수·순위 무관. 근거 research/SECTOR_DRAWDOWN_20261108.md
+let SECTOR_DD=null;
+fetch('sector_dd.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{SECTOR_DD=j; if(allRows.length) applyFilters();}).catch(()=>{});
+function sectorDDBadge(sec){
+  const s=SECTOR_DD&&SECTOR_DD.sectors&&SECTOR_DD.sectors[sec]; if(!s||s.dd20===undefined||s.dd20===null) return '';
+  if(s.last_date&&SECTOR_DD.asof&&s.last_date!==SECTOR_DD.asof) return '';   // [Codex 11/8 ⑥] 낡은 업종 값을 오늘 날짜로 보이지 않음
+  const d60=(s.dd60===null||s.dd60===undefined)?'—':s.dd60.toFixed(1)+'%';
+  const asof=SECTOR_DD.asof?(+SECTOR_DD.asof.slice(4,6))+'/'+(+SECTOR_DD.asof.slice(6)):'';
+  return '<span style="margin-left:4px;font-size:10.5px;color:var(--sub);background:#232833;border-radius:3px;padding:1px 4px;white-space:nowrap" title="업종 '+sec+'('+s.n+'종목 동일가중 지수)이 최근 20거래일 고점 대비 '+s.dd20.toFixed(1)+'% (60일 고점 대비 '+d60+') · '+asof+' 종가 기준 · 사실 표시 — 경고·위험 아님, 앞으로의 수익과의 관계는 미확인 · 점수·순위 미반영">20일↓ '+s.dd20.toFixed(1)+'%</span>';
+}
+let curMkt = 'kospi';
+let sortKey = 'rank', sortAsc = true;
+let allRows = [];                 // 필터 전 전체 행
+let nhCut = null;                 // 신고가근접 상위⅓ 컷(로드 시 분위 계산 — 고정 임계값 없음)
+let activeF = new Set();          // 활성 필터 id
+
+// 필터 정의: id → 행 통과 판정
+const FILTERS = {
+  f5pos:   r => parseFloat(r['foreign_5d_억']) > 0,
+  i5pos:   r => parseFloat(r['inst_5d_억']) > 0,
+  any5pos: r => parseFloat(r['foreign_5d_억']) > 0 || parseFloat(r['inst_5d_억']) > 0,
+  roe10:   r => parseFloat(r['roe_value']) >= 10,
+  rev:     r => parseFloat(r['return_1w_%']) < 0,
+  top10:   r => parseInt(r['top10pct']) === 1,
+  nh3rd:   r => nhCut !== null && parseFloat(r['drawdown_52w_high_%']) >= nhCut,
+};
+
+function applyFilters(){
+  const rows = allRows.filter(r => [...activeF].every(f => {
+    const fn = FILTERS[f]; if(!fn) return true;
+    const ok = fn(r); return ok === true;  // NaN 비교는 false → 제외
+  }));
+  render(rows);
+  const fc = document.getElementById('fcount');
+  if(fc) fc.textContent = activeF.size
+    ? `${rows.length} / ${allRows.length} 종목 (필터 적용)`
+    : `${allRows.length} 종목`;
+}
+
+function fmt(v, type){
+  if(type==='dil') return v?'<span style="color:#e53e3e;font-weight:600" title="희석 공시 60거래일 내">⚠️ '+v+'</span>':'';
+  if(type==='ern') return v?'<span style="color:#b7791f;font-weight:600" title="실적 악화 60거래일 내(접수일)">📉 '+v+'</span>':'';
+  if(type==='recentern') return /^접수 \d+일(?:\([↑↓]\))?$/.test(v)?'<span style="color:#4a5568;background:#edf2f7;border-radius:3px;padding:2px 4px;white-space:nowrap" title="정기보고서 접수 후 N거래일(접수일 0일). 최근 20거래일 안 최신 접수 기준. ↑/↓는 전년 동기 대비 영업이익 변화가 시총의 ±1% 이상인 경우(주가 방향 아님). 부호가 없거나 결측이어도 표시. 점수·순위 미반영.">'+v.replace(/^접수 (\d+)일/,'접수 후 $1거래일')+'</span>':'';
+  if(v===undefined||v===null||v==='') return '<span class="v3">-</span>';
+  if(type==='sector') return v+sectorDDBadge(v);
+  if(type==='int') return parseInt(v);
+  if(type==='score') return '<span class="score">'+parseFloat(v).toFixed(3)+'</span>';
+  if(type==='num1'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(1)}
+  if(type==='num4'){const n=parseFloat(v);return isNaN(n)?'-':n.toFixed(4)}
+  if(type==='signed'){const n=parseFloat(v);if(isNaN(n))return '-';
+    return '<span class="'+(n>=0?'pos':'neg')+'">'+(n>=0?'+':'')+n.toFixed(1)+'</span>'}
+  if(type==='v3') return '<span class="v3">'+v+'</span>';
+  return v;
+}
+
+function parseCSV(txt){
+  const lines = txt.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.length);
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line=>{
+    // 간단 CSV 파서 (값에 콤마 없다고 가정 — 숫자/코드/종목명 위주)
+    const vals = line.split(',');
+    const row = {};
+    headers.forEach((h,i)=> row[h.trim()] = (vals[i]??'').trim());
+    return row;
+  });
+}
+
+function render(rows){
+  const thead = document.querySelector('#tbl thead');
+  const tbody = document.querySelector('#tbl tbody');
+  thead.innerHTML = '<tr>' + COLS.map(c=>
+    `<th data-key="${c[0]}"${c[3]?` title="${c[3]}"`:''}>${c[1]}${sortKey===c[0]?(sortAsc?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+  // 정렬
+  rows.sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    const nx=parseFloat(x), ny=parseFloat(y);
+    if(!isNaN(nx)&&!isNaN(ny)){x=nx;y=ny}
+    if(x<y)return sortAsc?-1:1; if(x>y)return sortAsc?1:-1; return 0;
+  });
+  tbody.innerHTML = rows.map(r=>{
+    const isTop = parseInt(r['top10pct']) === 1;
+    return '<tr'+(isTop?' class="top10row"':'')+'>'+COLS.map(c=>`<td>${fmt(r[c[0]],c[2])}</td>`).join('')+'</tr>';
+  }).join('');
+  thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.key; if(k===sortKey){sortAsc=!sortAsc}else{sortKey=k;sortAsc=(k==='rank')}
+    render(rows);
+  });
+}
+
+function load(mkt){
+  curMkt = mkt; curDate=null; document.getElementById('filters').style.display=''; const _n=document.getElementById('dnote'); if(_n) _n.hidden=true;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.mkt===mkt));
+  document.querySelector('#tbl tbody').innerHTML='<tr><td colspan="20" class="loading">불러오는 중…</td></tr>';
+  fetch('latest_'+mkt+'_lve.csv?ts='+Date.now())
+    .then(r=>{if(!r.ok)throw 0;return r.text()})
+    .then(txt=>{
+      const rows = parseCSV(txt);
+      allRows = rows;
+      const dd = rows.map(r=>parseFloat(r['drawdown_52w_high_%'])).filter(Number.isFinite).sort((a,b)=>a-b);
+      nhCut = dd.length ? dd[Math.floor(dd.length*2/3)] : null;
+      sortKey='rank'; sortAsc=true;
+      applyFilters();
+      const nuni = rows.length? rows[0]['n_universe']:'-';
+      document.getElementById('meta').innerHTML =
+        `<div class="chip">모델 <b>lv_e</b> (관측·가중 0)</div>`+
+        `<div class="chip">종목 <b>${rows.length}</b></div>`+
+        `<div class="chip">유니버스 <b>${nuni}</b></div>`+
+        `<div class="chip">구성 <b>저변동+ROE+저회전</b></div>`+
+        `<div class="chip">유니버스컷 <b>과매도30~70·유동≥5억</b></div>`;
+      // [2026-09-06] 유니버스 고갈 경고(표시 전용) — 시장별 8종목 미만이면 그날 IC 앵커가 안 쌓이고,
+      //   10종목 미만이면 '시장별 상위 10' 권고(OPS_GUIDE)를 채울 수 없다. 점수·순위 무영향.
+      try{
+        const nrow=rows.length;
+        if(nrow<10){
+          const sev=nrow<8;
+          document.getElementById('meta').insertAdjacentHTML('beforeend',
+            `<div class="chip" style="background:${sev?'#3a1f1f':'#3a3218'};border:1px solid ${sev?'#b45555':'#a08a3a'};color:${sev?'#f0b0b0':'#f0dca0'}">`
+            +`⚠️ 유니버스 고갈 — 이 시장 ${nrow}종목`
+            +(sev?' (8 미만: 오늘 IC 앵커 없음)':' (10 미만: 상위10 권고 못 채움)')
+            +`. 장세 함수라 정상 — 억지로 채우지 말 것</div>`);
+        }
+      }catch(_e){}
+    })
+    .catch(()=>{
+      document.querySelector('#tbl tbody').innerHTML=
+        '<tr><td colspan="20" class="loading">데이터 없음 (latest_'+mkt+'_lve.csv)</td></tr>';
+    });
+}
+
+// ---- [2026-11-10] 지난 날짜 탭 (hist/lv_e.json) ----
+let histData=null, curDate=null, showMore=false;
+const HIST_COLS=[['rank','그날 순위'],['name','종목'],['ticker','코드'],['score','점수'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
+function fmtD(d){return d? (+d.slice(4,6))+'/'+(+d.slice(6)) : '';}
+function renderDtabs(){
+  const box=document.getElementById('dtabs'); if(!histData){box.innerHTML='';return;}
+  const days=histData.days; const vis=showMore? days : days.slice(0,3);
+  box.innerHTML = vis.map((d,i)=>`<div class="dtab${(curDate===null&&i===0)||curDate===d.date?' active':''}" data-date="${i===0?'':d.date}">${i===0?'오늘('+fmtD(d.date)+')':fmtD(d.date)}</div>`).join('')
+    + (days.length>3? `<div class="dtab more" id="dmore">${showMore?'접기 ▴':'더 보기 ▾ ('+(days.length-3)+'일)'}</div>`:'');
+  box.querySelectorAll('.dtab[data-date]').forEach(t=>t.onclick=()=>{ curDate=t.dataset.date||null; if(curDate===null){load(curMkt);} else {renderHist();} renderDtabs(); });
+  const m=document.getElementById('dmore'); if(m) m.onclick=()=>{showMore=!showMore; renderDtabs();};
+}
+function renderHist(){
+  const day=histData.days.find(d=>d.date===curDate); if(!day) return;
+  document.getElementById('filters').style.display='none';
+  const note=document.getElementById('dnote'); note.hidden=false;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 표시 전용, 매수신호 아님`;
+  const rows=day.rows.filter(r=>r.market===curMkt);
+  const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
+  thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
+  tbody.innerHTML=rows.map(r=>'<tr'+(r.rank<=10?' class="top10row"':'')+'>'+HIST_COLS.map(c=>{
+    const v=r[c[0]]; if(v===null||v===undefined) return '<td>—</td>';
+    if(c[0]==='chg_pct') return `<td class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(1)}%</td>`;
+    if(c[0]==='px_then'||c[0]==='px_now') return `<td>${Math.round(v).toLocaleString()}</td>`;
+    return `<td>${v}</td>`; }).join('')+'</tr>').join('') || '<tr><td colspan="8" class="loading">이 시장 자료 없음</td></tr>';
+  document.getElementById('fcount').textContent='';
+}
+fetch('hist/lv_e.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(h=>{histData=h; renderDtabs();}).catch(()=>{});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ if(curDate===null){load(t.dataset.mkt);} else {curMkt=t.dataset.mkt; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.mkt===curMkt)); renderHist();} });
+document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
+  const f=b.dataset.f;
+  if(activeF.has(f)){activeF.delete(f); b.classList.remove('on');}
+  else{activeF.add(f); b.classList.add('on');}
+  sortKey='rank'; sortAsc=true;
+  applyFilters();
+});
+document.getElementById('foot').innerHTML =
+  '※ <b>관측 챌린저(유의 · 11/04, 2차 창 ≈12/30 결정)</b> 페이지 · lowvol_score 높을수록 선호(매수 아님) · 운용 목록은 lv_b<br>'+
+  '변동성21 낮을수록 / ROE 높을수록 / 회전율 낮을수록 점수↑ (= lv_e) · 컬럼 클릭 시 정렬 · 비교 틀: 시장별 상위 10 · 40거래일 보유';
+load('kospi');
+</script>
+<script src="common.js" defer></script>
+</body>
+</html>

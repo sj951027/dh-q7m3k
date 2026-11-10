@@ -28,6 +28,8 @@ MODELS = {
     # [2026-09-21] mom.html·lva.html 날짜 탭용 — 둘 다 §11 '노이즈'(8/29) 확정 모델이라 기록·관찰용 표시.
     "mom_a": ("lowvol_scores", "lowvol_score", None, "20260627"),
     "lv_a": ("lowvol_scores", "lowvol_score", None, "20260625"),
+    # [2026-11-10] lve.html 날짜 탭용 — §11 '유의'(11/04) 관측 챌린저, 운용 목록은 lv_b(2차 창 ≈12/30 뒤 결정).
+    "lv_e": ("lowvol_scores", "lowvol_score", None, "20260901"),
     # [2026-09-24] le.html 날짜 탭용 — §11 노이즈(9/13) 확정 모델, 기록·관찰용 표시.
     "le_a": ("wu_scores", "wu_score", None, "20260715"),
 }

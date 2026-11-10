@@ -345,6 +345,13 @@ def main():
         run_script(["build_lowvol_filter.py", "--model", "lv_a", "--suffix", "lva"],
                    "2.87c단계: 저변동 원본 lv_a 관측 CSV (섀도우)")
 
+    # 2.87d) 저변동 챌린저(lv_e) 관측 CSV — lve.html 이 fetch할 docs/latest_*_lve.csv 갱신.
+    #        2026-11-10 사용자 요청: 성적표 1위인데 볼 페이지가 없음. 표시 전용(가중 0·적재 불변), 실패해도 비치명.
+    #        운용 목록은 lv_b(lowvol.html) 그대로 — 교체 여부는 2차 창 뒤(≈12/30, 관측 계약).
+    if (HERE / "build_lowvol_filter.py").exists():
+        run_script(["build_lowvol_filter.py", "--model", "lv_e", "--suffix", "lve"],
+                   "2.87d단계: 저변동 챌린저 lv_e 관측 CSV (섀도우)")
+
     # 2.87b) 모멘텀 대조 모델(mom_a) 관측 CSV — mom.html 이 fetch할 docs/latest_*_mom.csv 갱신.
     #        점수 적재는 2.86(lowvol_score)이 이미 처리(mom_a 는 lowvol_scores 공유, §15).
     #        표시 전용 신규 파일만 생성 — v3·large·lv_a 산출물 0-diff. 실패해도 비치명.
