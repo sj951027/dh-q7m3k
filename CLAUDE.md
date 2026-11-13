@@ -14,8 +14,9 @@
 - 자매 프로젝트 `../Position-Tracker-Web`(실거래 소비자)는 그쪽 `CLAUDE.md`·`PTW_PROJECT_HANDBOOK.md` 기준. us-screener·div-tracker는 별개 — 여기서 다루지 않는다.
 
 ## 트랙
-- (A) v3 과매도: 챔피언 **v30**(§11 유의, VERDICT_20260809). 2차 창 W2b 재판정 사전등록(PREREGISTER_v30_w2, ~10/07).
-  파생 lowvol(**lv_b** 표시 기준, 기움 — VERDICT_20260829_lowvol) · wu(sv_a·le_a·qs_a·px_a 관측 중).
+- (A) v3 과매도: 챔피언 **v30**(§11 유의 8/09 · 2차 창 노이즈 10/18 — 챔피언 유지, VERDICT_20261018_v30_w2) · 챌린저 v32a(관측, 판정 ≈12월 말~1월).
+  파생 lowvol(**lv_b** 저변동 페이지 목록·기움 / **lv_e** 유의 11/04 — 목록 교체는 2차 창 ≈12/30 뒤) · wu(sv_a 기움 · le_a·qs_a·sv_b 노이즈 · px_a 역작동 — 전부 판정 끝, 가중 0 관측) · lead(ld_a, 120일 보유·별도 잣대, 판정 ≈2028-03).
+  (2026-11-13 갱신 — 모델별 현재 상태의 정본은 `MODELS_LEDGER.md`·`docs/models_registry.json`. 이 줄은 요약이라 어긋나면 정본이 이긴다.)
 - (B) 대형 가치: 별도 유니버스·`large_final`, ls_t1은 테스트(h60~120). v3와 절대 섞지 않는다.
 - 트랙 간·프로젝트 간 점수/유니버스/IC 절대값 비교 금지.
 
@@ -35,11 +36,11 @@
 - 부분실행 run 정리: `python research/clean_partial_run.py YYYYMMDD [--yes] [--force]`(백업 자동). 같은 날 재실행 전 필수(이중실행 게이트).
 - 읽기는 자유: `history.db`·`../dh-q7m3k-data/ohlcv.db`는 `mode=ro`로 열기.
 - FDR 상장목록이 404면 `listing_cache.py`(예비 캐시)가 자동 대체 — 텔레그램 🔔 줄의 신선도 경고로 확인.
-- (PITFALLS 에서 승격 2026-11-13 — 두 번 넘게 당함) 코드·긴 한글 문서는 **Bash heredoc 대신 Write 도구로 파일을 만든 뒤 실행**(heredoc 은 역슬래시·`\n` 을 먹고 길면 통째 실패). `taskkill /IM python.exe` **금지** — 포트·PID 로 그 프로세스만.
+- (PITFALLS 에서 승격 2026-11-13 — 두 번 넘게 당함) 코드·긴 한글 문서는 **Bash heredoc 대신 Write 도구로 파일을 만든 뒤 실행**(heredoc 은 역슬래시·`\n` 을 먹고 길면 통째 실패). `taskkill /IM python.exe` **금지** — 포트·PID 로 그 프로세스만. 한글·'−' 를 출력하는 python 은 항상 `PYTHONIOENCODING=utf-8`(또는 `-X utf8`) — 콘솔 cp949 오류로 패치가 중간에 끊긴다(11/13 세 번째).
 
 ## 세션 마무리 체크리스트
 1. 코드·표시·파이프라인·운영이 바뀌었으면 `patch_note/YYYYMMDD_주제.md` 1건(뭐가/왜/어떻게+검증/영향범위, "판정·점수 0-diff" 명시) + `patch_note/README.md` 버전(CalVer 연도.월.차수).
-2. 모델 등록/판정/은퇴가 있으면 같은 세션에서 `MODELS_LEDGER.md` + `docs/models_registry.json`(리더보드·텔레그램·주간 리캡의 표시 단일 소스) 갱신.
+2. 모델 등록/판정/은퇴가 있으면 같은 세션에서 `MODELS_LEDGER.md` + `docs/models_registry.json`(리더보드·텔레그램·주간 리캡의 표시 단일 소스) 갱신. **그 모델 이름으로 `docs/`·`CLAUDE.md`·연구 지도를 검색해 '판정 전·판정 예정' 문장도 같이 고친다**(2026-11-13 점검에서 낡은 문구 42곳 — `research/AUDIT_20261113.md`).
 3. 점수·판정·게이트를 만졌으면 `python tests/run_tests.py`.
 4. 커밋은 사용자가(GitHub Desktop). `docs/`는 배치가 스스로 push하니 코드 파일만 골라 커밋하도록 안내. 줄바꿈만 바뀐 파일은 커밋하지 않는다.
 5. `worklog/YYYY-MM-DD_주제.md` 1건 + `worklog/README.md` 목록 맨 위에 한 줄(양식은 그 README) — 다음 세션이 이어받을 수 있게 흐름·사용자 결정·남은 일·시작점을 적는다. PTW 작업도 같은 기록에.

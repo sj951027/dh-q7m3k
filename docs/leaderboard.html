@@ -80,7 +80,7 @@ const clsN=(v,n,bl)=>lowN(n,bl)?'m':cls(v);
 const pctN=(w,n,bl)=>lowN(n,bl)?'<span class="m">참고 불가</span>':pct(w);
 function openSec(id){const d=document.getElementById(id); if(d) d.open=true;}
 // [2026-11-07] 탭·목록 페이지는 '표시 기준' 모델(lv_b)인데 성적표엔 lv_e 가 있어 헷갈림 → 한 줄 안내(관측 계약: 교체 여부는 2차 창 뒤 ≈12/30 결정)
-const DISPLAY_NOTE={lv_e:'운용 목록은 lv_b — lv_e 목록은 관측용(lve.html), 바꿀지는 2차 창 뒤(≈12/30) 결정'};   // [2026-11-07 Codex 2-3] '표시 기준' 은 용어집에 없는 말
+const DISPLAY_NOTE={lv_e:'저변동 페이지 목록은 lv_b — lv_e 목록은 관측용(lve.html), 바꿀지는 2차 창 뒤(≈12/30) 결정'};   // [2026-11-07 Codex 2-3] '표시 기준' 은 용어집에 없는 말
 function nameCell(m){const nm=m.name.replace(m.model,'').trim(), p=MODEL_PAGES[m.model], note=DISPLAY_NOTE[m.model];
   return `<td class="l">${p?`<a href="${p}">${nm}</a>`:`<b>${nm}</b>`}<span class="id">${m.model}</span>${m.retired?'<span class="role">은퇴</span>':''}${m.fix&&m.fix.n>=4&&!m.retired&&lowN(m.fix.n,m.fix.blocks)?'<span class="role low" title="평가 완료 목록 10개 미만 또는 겹치지 않는 창 1개 미만">자료 적음</span>':''}${note?`<br><span class="small">${note}</span>`:''}</td>`;}
 function det(m){

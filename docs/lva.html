@@ -99,7 +99,7 @@
   </script>
 
   <div class="warn">
-    ⚠️ <b>§11 판정 완료(2026-08-29 정본): 노이즈 — 매수신호 아님.</b> lv_a 는 OOS 40거래일 판정에서 <b>노이즈</b>(IC +0.017, CI 0 걸침)였고, 같은 앵커 짝비교에서 lv_b 대비 열위라 7/25 부터 저변동 페이지에서 내려갔습니다. 적재는 계속되지만(관측) 운용·추천 기준이 아닙니다. 운용 기준은 lv_b 페이지.
+    ⚠️ <b>§11 판정 완료(2026-08-29 정본): 노이즈 — 매수신호 아님.</b> lv_a 는 OOS 40거래일 판정에서 <b>노이즈</b>(IC +0.017, CI 0 걸침)였고, 같은 앵커 짝비교에서 lv_b 대비 열위라 7/25 부터 저변동 페이지에서 내려갔습니다. 적재는 계속되지만(관측) 운용·추천 기준이 아닙니다. 저변동 페이지의 목록은 lv_b 입니다.
     점수가 높을수록 "선호"지 "사라" 가 아닙니다.
   </div>
 
@@ -116,7 +116,7 @@
       lv_b가 앞서지만, 리더보드의 모의계좌에서는 반등장에 반전 항이 튀는 종목을 잡아 lv_a의 수익이
       더 높게 나오는 국면이 관측돼(변동성·낙폭도 더 큼 — 공짜 아님) <b>비교 열람용</b>으로 이 페이지를
       둡니다. 어느 쪽이 진짜인지는 <a href="leaderboard.html" style="color:var(--accent)">리더보드</a>의
-      §11 판정이 가립니다. ⚠️ lv_a 도 검증 전 — 매수신호 아닙니다.</p>
+      §11 판정이 가립니다. ⚠️ lv_a 는 8/29 판정 노이즈 — 매수신호 아닙니다.</p>
 
       <p class="warnp">❓ <b>점수 높으면 오르나? — 시장 방향대로 작동합니다.</b> (구 lv_a 기준) 18일 분석 기준,
       lv점수는 한쪽이 아니라 <b>양방향</b>으로 움직입니다(점수 높을수록 더 뚜렷):<br>
@@ -127,7 +127,7 @@
 
       <p class="note2">⚠️ <b>유보</b>: 상승장 표본이 5일뿐이라 +2.0%가 견고하다 단정 못 합니다. 또 상승장의
       반등이 lv점수(저변동·반전) 덕인지 과매도 종목이 원래 크게 튀는 것인지 아직 못 가립니다. <b>매수신호
-      아니며</b>, 진짜 판정은 등록일 이후 OOS 40거래일(상승·하락 국면이 섞인 뒤) 누적 후입니다.</p>
+      아니며</b>, 이 문단은 판정 전에 쓴 설명입니다 — 판정 결과는 맨 위 노란 상자를 보세요.</p>
 
       <p><b>변동성21 (realized_vol)</b> — 최근 21거래일 일간수익률의 표준편차. <b>작을수록 차분한 주가</b>(=lv점수↑).
       예: <span class="hl">0.025 = 하루 평균 ±2.5% 안팎</span> 흔들림(낮음), 0.06 = ±6%(높음).
@@ -335,7 +335,7 @@ function renderHist(){
   const day=histData.days.find(d=>d.date===curDate); if(!day) return;
   document.getElementById('filters').style.display='none';
   const note=document.getElementById('dnote'); note.hidden=false;
-  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(lv_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 검증 결론 '차이 없음' 모델의 기록, 매수신호 아님`;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(lv_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 판정 '노이즈'(순위 예측 효과 확인 못 함) 모델의 기록, 매수신호 아님`;
   const rows=day.rows.filter(r=>r.market===curMkt);
   const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
   thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';

@@ -52,7 +52,11 @@ ok_all = (close >= 1000) & (vol.fillna(0) > 0) & (vol.shift(-1).fillna(0) > 0) &
 # 공시 → 거래일 인덱스(접수일이 휴장일이면 다음 거래일)
 dser = pd.Series(range(N), index=pd.to_datetime(dates))
 def to_i(d):
-    t = pd.Timestamp(d); pos = dser.index.searchsorted(t)
+    # [2026-11-13 정정] 시세 시작일보다 앞선 공시는 제외 — 하한을 안 보면 searchsorted 가 첫 시세일로 몰아넣는다(11/10 Codex 발견, EVENT_AFTER 와 같은 오류).
+    t = pd.Timestamp(d)
+    if t < dser.index[0]:
+        return None
+    pos = dser.index.searchsorted(t)
     return int(dser.iloc[pos]) if pos < N else None
 ev["i"] = ev.rcept_dt.map(to_i); ev = ev.dropna(subset=["i"]); ev["i"] = ev.i.astype(int)
 ev["kind"] = np.where(ev.report_nm.str.contains("신탁"), "trust", "direct")

@@ -1,5 +1,7 @@
 # 2026-11-10(화) — C5 국면 전환 시 조기 청산(D 칸 진입하면 팔기) 11년 대리 → 닫음 · .codex/hooks.json 출처 확인
 
+> **읽는 법(11/13 덧붙임)**: 이 기록은 하루 동안 여러 번 이어 썼다. 위쪽 '남은 일'에 있는 커밋·Codex 요청 전송·C(사건 뒤) 연구는 아래 '추가' 절들에서 같은 날 끝났다 — 최신 상태는 맨 아래 '세션 마감 점검'과 `2026-11-13_sv_b_verdict_knowledge.md`. 요일 정정: 11/13 은 금요일, `.codex` 결정은 11/8(일) 밤.
+
 ## 요청
 - (오후) 사용자 "작업이나 실험 할거는?" → 후보 4(C5 조기 청산 · os_count 관측 · 돈 장부 엔진 · 자사주 배지) 중 **"D칸 조기 청산 연구"** 선택. 직전 두 연구가 시장 갈래라 돈·운용(보유) 차례.
 - (일요일 밤 이어서) `.codex/hooks.json` 정체 → Codex 데스크톱 앱 '외부 에이전트 가져오기 동기화'가 `.claude/settings.json` 을 복사한 앱 산출물(21:25:50 동기화 ↔ 21:25:54 생성, JSON 동일). **사용자 "그대로 둬"** → .gitignore 에 안 넣음, 커밋 안 함. PITFALLS 한 줄.
@@ -33,7 +35,7 @@
 - Codex 요청서 전송(사용자) → 답 오면 A 대조·B·D 판정 → C(사건 뒤 5일) Claude.
 - 커밋(사용자, GitHub Desktop): (저녁 추가) `docs/lve.html`·`build_daily_lists.py`·`run_and_diversify.py`·`docs/common.js`·`docs/leaderboard.html`·`.gitignore`·patch_note 2건·DECISIONS — docs/ 의 CSV·hist·meta 는 배치가 push. 오늘 새 파일(연구 2건·스크립트 2·out 2·요청서 1) + 지도·KNOWLEDGE·PITFALLS·worklog 2건 + 일요일 밤 고친 `PITFALLS.md`·`worklog/2026-11-08_hold_early_exit.md`. `research/large_verdict_status.md`(배치 산출물)·`.codex/` 는 빼기.
 - 공개 화면 🚦 카드 11/9·11/10 기준 확인(사용자 또는 다음 세션).
-- 11/13(목) sv_b 판정(등록 9/14 + 40거래일). 그 뒤 챌린저 후보 등록 질문.
+- 11/13(금) sv_b 판정(등록 9/14 + 40거래일). 그 뒤 챌린저 후보 등록 질문.
 - 사용자 결정 대기: 자본 사다리(§B 1·2) → 돈 장부 엔진 숫자 · 버릴 것 6건(§B 6) · 익절선 모의 계좌 사전등록(§B 5).
 - 다음 연구 차례(갈래 번갈아): 종목(os_count_20d 깔때기 관측, 11년 대리 가능) 또는 돈·운용(깊이 가속 C4 · 변동성 역가중 H3). 시장 갈래는 11/8 두 건으로 쉼.
 

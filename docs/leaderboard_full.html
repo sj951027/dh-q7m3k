@@ -297,9 +297,9 @@
     // 요약 카드 + 판정 캘린더
     try{
       const v30=all.find(m=>m.model==='v30');
-      const champ='🏆 <b>지금 기준</b> — 챔피언 <b>v30</b> <span class="badge b-sig">유의(8/09 정본)</span>'
+      const champ='🏆 <b>지금 기준</b> — 챔피언 <b>v30</b> <span class="badge b-sig">유의(8/09)</span> <span class="badge b-noise">2차 창 노이즈(10/18)</span>'
         +(v30?' <span class="ci">(OOS '+v30.oos_days+'일 · 지금 누적 h20 IC '+(v30.h20&&v30.h20.ic!=null?(v30.h20.ic>0?'+':'')+v30.h20.ic.toFixed(3):'-')+')</span>':'')
-        +' · 저변동 <b>lv_b</b> <span class="badge b-lean">기움(8/29 정본)</span>';
+        +' · 저변동 <b>lv_b</b> <span class="badge b-lean">기움(8/29 정본)</span> · <b>lv_e</b> <span class="badge b-sig">유의(11/04 · 관측)</span>';
       const wait=act.filter(m=>(m.oos_days||0)<need(m)).map(m=>({m:m.model,t:m.track,d:need(m)-(m.oos_days||0)})).sort((a,b)=>a.d-b.d);
       const cal='📅 <b>판정 캘린더</b> — '+(wait.map(x=>'<b>'+x.m+'</b> D-'+x.d+(x.t==='large'?'<span class="ci">(h60)</span>':'')).join(' · ')||'대기 중인 모델 없음');
       document.getElementById('summary').innerHTML=champ+'<br>'+cal; document.getElementById('summary').style.display='block';

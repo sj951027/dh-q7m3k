@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """지식 세 장(KNOWLEDGE.md · DECISIONS.md · PITFALLS.md) 자동 검사 — 2026-11-08 도입, 같은 날 저녁 Codex 지적 반영. DB 불필요·즉시.
 [1] 세 장이 있고 KNOWLEDGE·DECISIONS 머리말에 '마지막 정리 YYYY-MM-DD'(날짜 형식)가 있다 — 30일 넘으면 경고(실패 아님).
-[2] 크기 상한(KNOWLEDGE 20KB · DECISIONS 15KB · PITFALLS 5KB — CLAUDE.md 마무리 8).
+[2] 크기 상한(KNOWLEDGE 24KB · DECISIONS 15KB · PITFALLS 5KB — CLAUDE.md 마무리 8; 값은 아래 CAPS 가 정본).
 [3] 세 장이 가리키는 정본이 실재한다: .md/.py 경로 + 확장자 없는 축약 정본 이름(RESEARCH_*, VERDICT_*, PREREGISTER_*, 대문자_날짜 메모)도 접두 glob 으로 찾는다(PTW 파일 제외).
 [4] 원장 `MODELS_LEDGER.md` 현역 표의 model_id 가 KNOWLEDGE 어딘가에 한 번은 나온다(고정 목록 아님 — 원장을 읽는다). 은퇴·대조 모델은 제외하지 않음(지식에 라벨이 있어야 하므로).
 [5] 행 ID 중복 없음(K##·D##)."""

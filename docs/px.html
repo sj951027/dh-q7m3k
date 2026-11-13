@@ -293,8 +293,8 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
   applyFilters();
 });
 document.getElementById('foot').innerHTML =
-  '※ <b>테스트·관측</b> 페이지 · px점수 높을수록 선호(매수 아님) · v3·large·lowvol·wu_a 와 별개 관측 모델<br>'+
-  '발견은 walk-forward 스캔(post-hoc) — 판정은 첫 적재(2026-08-10) 후 OOS 40거래일(§11, h10 재현 포함) · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
+  '※ <b>역작동(유의 아님 · 10/09)</b> 페이지 · px점수 높을수록 선호(매수 아님) · v3·large·lowvol·wu_a 와 별개 관측 모델<br>'+
+  '발견은 walk-forward 스캔(post-hoc) — §11 판정 2026-10-09: 역작동(유의 아님) · 적재 유지·미채택 · 컬럼 클릭 시 정렬 · top50=연구 시뮬 바스켓 기준';
 // ---- [2026-09-30] 지난 날짜 리스트 탭 (당시 동결 점수 · 표시 전용 · le.html 과 동일) ----
 let histData=null, curDate=null, showMore=false;
 const HIST_COLS=[['rank','그날 순위'],['market','시장'],['name','종목'],['ticker','코드'],['score','px점수'],['px_then','그날 종가'],['px_now','오늘 종가'],['chg_pct','이후 등락'],['rank_today','오늘 순위']];
@@ -311,7 +311,7 @@ function renderHist(){
   const day=histData.days.find(d=>d.date===curDate); if(!day) return;
   document.getElementById('filters').style.display='none';
   const note=document.getElementById('dnote'); note.hidden=false;
-  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(px_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 검증 전 관측 모델, 매수신호 아님`;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(px_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 판정 '역작동(유의 아님)' 모델의 기록, 매수신호 아님`;
   const rows=day.rows.filter(r=>curMkt==='all' || (r.market||'').toUpperCase()===curMkt);
   const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
   thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';

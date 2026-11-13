@@ -97,11 +97,11 @@
   </script>
 
   <div class="warn">
-    ⚠️ <b>검증 전 관측 모델 — 매수신호 아님.</b> mom_a 는 사후(post-hoc) 발견이라 forward-only 로만
+    ⚠️ <b>관측 모델(판정 노이즈 · 8/29) — 매수신호 아님.</b> mom_a 는 사후(post-hoc) 발견이라 forward-only 로만
     판정하며, 등록일(2026-06-27) 이후 <b>OOS 40거래일 + 상승장 표본</b> 누적 후 §11 판정(2026-08-29 정본): <b>노이즈</b> — 채택 아님.
     특히 유니버스가 <b>과매도(30~70) 종목</b>이라 진짜 상승 주도주는 애초에 풀에 없습니다 — 하락장에선
     이 점수가 '상승포착'이 아니라 <b>"그나마 덜 빠진 종목"(상대방어)</b>로 작동합니다(§15 실측).
-    §11 판정 완료(2026-08-29 정본): <b>노이즈</b>(IC +0.006, CI 0 걸침) — 관측은 계속되나 운용·추천 기준이 아닙니다. 운용 기준은 lv_b 페이지.
+    §11 판정 완료(2026-08-29 정본): <b>노이즈</b>(IC +0.006, CI 0 걸침) — 관측은 계속되나 운용·추천 기준이 아닙니다. 저변동 페이지의 목록은 lv_b 입니다.
   </div>
 
   <details class="explain">
@@ -129,14 +129,14 @@
       <p><b>1개월% / 거래량팽창</b> — 1개월 등락(오를수록 점수↑)과 std5/std21 비율(1보다 크면 최근 1주가
       최근 1달보다 출렁임=에너지 유입 가설). 둘은 보조 팩터(결측 시 0.5 중립).</p>
 
-      <p><b>mom_b순위</b> — mom_b(=mom_a+지난주 눌림 우대) 챌린저가 매긴 순위(등록 20260717,
+      <p><b>mom_b순위</b> — mom_b(=mom_a+지난주 눌림 우대) 챌린저(9/17 은퇴)가 매긴 순위(등록 20260717,
       PREREGISTER_mom_b.md). mom순위(#)보다 낮으면 "지난주 급하게 눌린 종목"이 우대된 것.
-      관측 병기이며 매수신호 아님 — 판정은 OOS 40거래일 후.</p>
+      관측 병기이며 매수신호 아님 — mom_b 는 9/17 판정 역작동으로 은퇴했습니다(적재 중지).</p>
 
       <p><b>수급 (외인·기관 5일/20일)</b> — 순매수 금액(억). 점수에 <b>안 들어가는 참고 지표</b>입니다.</p>
 
       <p class="note">⚙️ 유니버스 = 과매도 30~70 + 거래대금 ≥5억 (lowvol 과 동일 — 대조 목적).
-      컬럼 클릭 시 정렬. 판정: 등록 20260627 이후 OOS 40거래일 + 상승장 표본, h=20d 주지표.</p>
+      컬럼 클릭 시 정렬. 판정(8/29 정본): 노이즈 — 등록 20260627 이후 OOS 40거래일, h=20d 주지표.</p>
     </div>
   </details>
 
@@ -192,7 +192,7 @@ const COLS = [
   ['inst_5d_억','기관5일','signed','기관 최근5일 순매수(억)'],
   ['inst_20d_억','기관20일','signed','기관 최근20일 순매수(억)'],
   ['quarterly_yoy_%','분기YoY%','signed','분기 영업이익 전년동기比(참고)'],
-  ['mom_b_rank','mom_b순위','int','mom_b(=mom_a+지난주 눌림 우대) 챌린저 순위 — 관측 병기, 매수신호 아님. 등록 20260717, 판정은 OOS 40거래일 후'],
+  ['mom_b_rank','mom_b순위','int','mom_b(=mom_a+지난주 눌림 우대) 챌린저 순위 — 관측 병기, 매수신호 아님. 등록 20260717, 9/17 판정 역작동 → 은퇴'],
 ];
 
 let curMkt = 'kospi';
@@ -322,7 +322,7 @@ function renderHist(){
   const day=histData.days.find(d=>d.date===curDate); if(!day) return;
   document.getElementById('filters').style.display='none';
   const note=document.getElementById('dnote'); note.hidden=false;
-  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(mom_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 검증 결론 '차이 없음' 모델의 기록, 매수신호 아님`;
+  note.innerHTML=`📅 <b>${fmtD(day.date)}</b> 리스트 — 당시 동결 점수(mom_a) 기준 시장별 상위 ${Math.max(...day.rows.map(r=>r.rank))} · 등락은 그날 종가→오늘(${fmtD(histData.asof)}) 종가 · '—' = 가격 자료 없음 · 판정 '노이즈'(순위 예측 효과 확인 못 함) 모델의 기록, 매수신호 아님`;
   const rows=day.rows.filter(r=>r.market===curMkt);
   const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
   thead.innerHTML='<tr>'+HIST_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
@@ -344,7 +344,7 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
 });
 document.getElementById('foot').innerHTML =
   '※ <b>판정 완료(노이즈) · 기록·관찰용</b> 페이지 · mom_score 높을수록 선호(매수 아님) · v3·large·lv_a 와 별개 표시<br>'+
-  '20일선 위·1개월 상승·거래량 터질수록 점수↑ · 하락장에선 "덜 빠진 종목"으로 작동(§15) · 판정은 OOS 40거래일+상승장 표본';
+  '20일선 위·1개월 상승·거래량 터질수록 점수↑ · 하락장에선 "덜 빠진 종목"으로 작동(§15) · 판정 8/29: 노이즈';
 load('kospi');
 </script>
 <script src="common.js" defer></script>
