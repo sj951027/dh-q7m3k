@@ -99,6 +99,52 @@ def tidy_backlog(since):
     return items, wl
 
 
+def todo_lines():
+    """[2026-11-13] 세션 시작에 챙길 것(알림일 뿐, 판단은 사람·정본): 다음 ID · 사용자 결정 대기 수 · 판정 도래 모델 · 답 없는 Codex 요청.
+    전부 읽기 전용. 한 항목이 실패하면 그 줄만 빠진다."""
+    out = []
+    try:
+        k = (REPO / "KNOWLEDGE.md").read_text(encoding="utf-8"); d = (REPO / "DECISIONS.md").read_text(encoding="utf-8")
+        nk = max([int(x) for x in re.findall(r"^\| K(\d{2}) ", k, re.M)] or [0]) + 1
+        nd = max([int(x) for x in re.findall(r"^\| D(\d{2}) ", d, re.M)] or [0]) + 1
+        wait = len(re.findall(r"^\d+\. ", d.split("## B.", 1)[1], re.M)) if "## B." in d else 0
+        out.append(f"다음 번호 K{nk:02d} · D{nd:02d} (새 행은 이 번호로) · 사용자 결정 대기 {wait}묶음(DECISIONS §B)")
+    except Exception:
+        pass
+    try:  # 판정 도래: 리더보드 유효 앵커 ≥40 인데 등록 표(sealed·retired)에 판정이 없는 모델. 대형·주도주는 잣대가 달라 제외.
+        lbj = json.loads((REPO / "docs" / "leaderboard.json").read_text(encoding="utf-8"))
+        reg = json.loads((REPO / "docs" / "models_registry.json").read_text(encoding="utf-8"))
+        done = set(reg.get("sealed") or {}) | set(reg.get("retired") or {})
+        due = [f"{m.get('model')}(유효 앵커 {m.get('oos_days')})" for m in lbj.get("models", [])
+               if m.get("track") not in ("large", "lead") and not m.get("retired") and (m.get("oos_days") or 0) >= 40 and m.get("model") not in done]
+        if due:
+            out.append("판정 도래 — 유효 앵커 ≥40 인데 판정 기록이 없음: " + ", ".join(due) + " (VERDICT_RULES 대로 1회 · 사전등록 확인)")
+    except Exception:
+        pass
+    try:  # 최근 30일 안 Codex 요청 중 같은 이름의 답이 없는 것
+        h = REPO / "research" / "handoff"; today = dt.date.today(); miss = []
+        for p in sorted(h.glob("REQUEST_20*.md")):
+            m = re.match(r"REQUEST_(20\d{6})_(.+)\.md$", p.name)
+            if not m:
+                continue
+            d0 = dt.date(int(m.group(1)[:4]), int(m.group(1)[4:6]), int(m.group(1)[6:8]))
+            core = re.sub(r"_blind$", "", m.group(2))  # 답 파일은 날짜·'_blind' 꼬리가 달라도 같은 주제 이름이면 인정
+            if (today - d0).days > 30:
+                continue
+            answered = False
+            for r in h.glob(f"REPLY_*{core}*.md"):  # 날짜 없는 답은 인정, 날짜가 있으면 요청일 이후여야 함(옛 답과 이름이 겹치는 경우 제외)
+                rd = re.search(r"(20\d{6})", r.name)
+                if not rd or rd.group(1) >= m.group(1):
+                    answered = True
+            if not answered:
+                miss.append(p.name)
+        if miss:
+            out.append("답 없는 Codex 요청(30일 안): " + ", ".join(miss[:5]) + (" …" if len(miss) > 5 else "") + " — 안 보냈거나 답 파일 이름이 다를 수 있음")
+    except Exception:
+        pass
+    return out
+
+
 def start(payload):
     st = load_state(payload)
     if "sheets" not in st:  # resume·compact 로 다시 불려도 처음 값 유지
@@ -122,6 +168,7 @@ def start(payload):
         lines.append(f"마지막 정리 {since} ({age}일 전) · 그 뒤 worklog 파일 {len(wl)}건 · 정리 날짜 뒤 파일명 기준·세 장에 명시 참조 없는 후보 {len(items)}건(누락 확정 아님)" + (": " + ", ".join(items[:8]) + (" …" if len(items) > 8 else "") if items else ""))
         if age >= TIDY_DAYS or len(wl) >= TIDY_LOGS:
             lines.append("→ 정리 주기가 됐습니다(CLAUDE.md 마무리 8). 이번 요청이 문서 수정을 허용하고 배치 시간 밖이면, 현재 요청을 방해하지 않는 시점에 바뀐 기록과 연결된 지식 행을 대조·압축하세요. 읽기 전용 요청·긴급 작업엔 미룹니다. 완료한 범위와 남긴 범위를 worklog 에 적고, 전체를 마쳤을 때만 '마지막 정리' 날짜를 갱신합니다. 새 결정·판정·등록은 하지 않습니다.")
+    lines.extend(todo_lines())
     lines.append("규칙: 결론·사용자 결정·당한 함정이 생기면 같은 세션에 세 장에 한 줄(마무리 7), worklog 엔 '지식 반영: K##/D##' 로 잇는다. 정말 없었으면 worklog 에 독립된 한 줄 '지식 층: 변경 없음(이유)' — 없으면 세션 끝에서 한 번 막힌다.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "\n".join(lines)}}, ensure_ascii=False))
 
