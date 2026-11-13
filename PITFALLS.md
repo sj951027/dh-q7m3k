@@ -9,6 +9,7 @@
 - **`leaderboard.py` 를 점검용으로 돌리면 `docs/leaderboard*.json` 을 덮어쓴다** → `lb.model_ic` 를 직접 불러 계산, 돌렸으면 `git checkout -- docs/`. 9/13.
 - **`git diff --stat` 줄바꿈 착시**: CRLF/LF 차이로 수백 줄처럼 보임 → `git diff -c core.autocrlf=false` 로 실제 diff 확인, 줄바꿈만 바뀐 파일은 커밋 안 함. 11/8.
 - **커밋에서 빼는 것**: `panel.pkl`(153MB) · `docs/`(배치가 push). `research/large_verdict_status.md` 는 배치가 매일 다시 써서 늘 변경으로 뜬다(무해).
+- **배치가 다시 만드는 `docs/` 페이지(index·_large_obs 등)는 산출물만 고치면 그날 밤 되돌아간다** → 생성 코드(`build_*.py`)의 문구를 고친다. 11/13.
 - **텔레그램·DB 쓰기**는 드라이런으로만 확인, 실제 발송은 배치에.
 - **세션 중간에 만든 hook(`.claude/settings.json`)은 그 세션엔 안 실린다** — 새 세션이나 긴 문맥 뒤 resume 부터(11/8 실측). 시나리오 시험 통과 ≠ 실림 확인.
 - **`.codex/hooks.json`** = Codex 앱이 만드는 `.claude/settings.json` 사본(지워도 다시 생김). 커밋하지 않고 그대로 둔다(사용자 11/8).
