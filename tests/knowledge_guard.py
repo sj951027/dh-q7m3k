@@ -27,6 +27,7 @@ TIDY_DAYS, TIDY_LOGS = 30, 10
 LOG_DIR = REPO / "logs"
 BATCH_FROM, BATCH_TO = 20 * 60 + 10, 22 * 60 + 30  # 배치 창: 평일 20:10~22:30
 PROMISES = REPO / "PROMISES.md"
+CARD_DIR = REPO / "knowledge"  # [2026-11-15] 결론 카드(K42~ 부터) — 카드가 바뀌면 지식 층이 바뀐 것으로 본다
 DUE_SOON_DAYS = 14
 
 
@@ -147,8 +148,8 @@ def todo_lines():
     out = []
     try:
         k = (REPO / "KNOWLEDGE.md").read_text(encoding="utf-8"); d = (REPO / "DECISIONS.md").read_text(encoding="utf-8")
-        nk = max([int(x) for x in re.findall(r"^\| K(\d{2}) ", k, re.M)] or [0]) + 1
-        nd = max([int(x) for x in re.findall(r"^\| D(\d{2}) ", d, re.M)] or [0]) + 1
+        nk = max([int(x) for x in re.findall(r"^\| K(\d{2,3}) ", k, re.M)] + [int(p.stem[1:]) for p in CARD_DIR.glob("K[0-9]*.md") if p.stem[1:].isdigit()] or [0]) + 1
+        nd = max([int(x) for x in re.findall(r"^\| D(\d{2,3}) ", d, re.M)] or [0]) + 1
         wait = len(re.findall(r"^\d+\. ", d.split("## B.", 1)[1], re.M)) if "## B." in d else 0
         out.append(f"다음 번호 K{nk:02d} · D{nd:02d} (새 행은 이 번호로) · 사용자 결정 대기 {wait}묶음(DECISIONS §B)")
     except Exception:
@@ -285,6 +286,8 @@ def stop(payload):
         if any(sha(s) != st["sheets"].get(s) for s in SHEETS):
             return
     elif any(s in ch for s in SHEETS):  # 시작 해시가 없으면 git 작업본 기준
+        return
+    if any(p.startswith("knowledge/") for p in ch):  # 결론 카드가 바뀌었으면 지식 층 갱신으로 본다
         return
     for p in records:
         if p.startswith("worklog/"):

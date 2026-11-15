@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.11.17** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.11.18** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -24,7 +24,7 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
-- [20261115_promises_checklist_guard.md](20261115_promises_checklist_guard.md) — **2026.11.17** 약속 장부 `PROMISES.md`·판정 절차서 `VERDICT_CHECKLIST.md` + 감시 장치 저녁 읽기 전용 알림·약속 기한 알림 + 배치 시간 규칙 변경(D39: 배치 종료 확인 뒤엔 작업 가능) + 대형 페이지 낡은 문구 1곳(판정·점수 0-diff)
+- [20261115_promises_checklist_guard.md](20261115_promises_checklist_guard.md) — **2026.11.17·18** (18 = 같은 날 오후: 분야 안내 `WHERE.md`·결론 카드 양식·시험 묶음·원리 비교 메모·검사 장치 세 자리 번호) 약속 장부 `PROMISES.md`·판정 절차서 `VERDICT_CHECKLIST.md` + 감시 장치 저녁 읽기 전용 알림·약속 기한 알림 + 배치 시간 규칙 변경(D39: 배치 종료 확인 뒤엔 작업 가능) + 대형 페이지 낡은 문구 1곳(판정·점수 0-diff)
 - [20261113_audit_followup.md](20261113_audit_followup.md) — **2026.11.16** 기록 점검 후속: 배치가 되돌린 공개 문구 3곳을 생성 코드(`build_dashboard.py`·`build_large_report.py`)에서 고침 + `wu.html` 문구(표시 전용, 판정·점수 0-diff)
 - [20261113_knowledge_archive.md](20261113_knowledge_archive.md) — **2026.11.15** 지식 층 구조 개선: 보관소 `KNOWLEDGE_ARCHIVE.md`(압축 = 옮기기) · 세션 시작 알림에 다음 ID·판정 도래·답 없는 Codex 요청·결정 대기 수 · 기대 기록 `research/FORECASTS.md` · 함정 2건 CLAUDE.md 승격 · 세 장 정리(11/13) — 판정·점수 0-diff
 - [20261110_lve_page.md](20261110_lve_page.md) — **2026.11.14** lv_e 관측 페이지 `docs/lve.html` 신설(lowvol.html 틀 · 날짜 탭 `hist/lv_e.json` · 배치 2.87d · 성적표 링크) — 운용 목록은 lv_b 그대로, 표시 전용 0-diff

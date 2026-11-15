@@ -78,7 +78,7 @@ def main():
     for mid in sorted(ids):
         if not re.search(rf"(?<![A-Za-z0-9_]){re.escape(mid)}(?![A-Za-z0-9_])", k):
             bad.append(f"[4] KNOWLEDGE 에 원장 모델 {mid} 없음")
-    for f, pat in (("KNOWLEDGE.md", r"^\| (K\d{2}) "), ("DECISIONS.md", r"^\| (D\d{2}) ")):
+    for f, pat in (("KNOWLEDGE.md", r"^\| (K\d{2,3}) "), ("DECISIONS.md", r"^\| (D\d{2,3}) ")):
         found = re.findall(pat, texts.get(f, ""), re.M)
         dup = {x for x in found if found.count(x) > 1}
         if dup:
