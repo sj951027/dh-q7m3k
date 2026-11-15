@@ -6,6 +6,7 @@
 ## 먼저 읽을 것 (순서)
 0. `worklog/README.md` → 목록 맨 위(가장 최근) 기록 1건 — 지난 세션에 무엇을 왜 어떻게 했고 무엇이 남았는지. "다음 세션 시작점"부터 따른다.
 0-1. **세 장(매 세션 전부 읽는다, 2026-11-08~ · 압축 전 원문은 `KNOWLEDGE_ARCHIVE.md` — 필요할 때만)**: `KNOWLEDGE.md`(확정 결론 — 무엇이 참인가) · `DECISIONS.md`(사용자 결정 — 다시 묻거나 뒤집지 않기) · `PITFALLS.md`(당한 함정). 세 층 구조: 규칙(CLAUDE.md) / 지식(세 장) / 기록(worklog·patch_note·research 메모 — 덧붙이기만, 전부 읽지 않음). 지식 층에 없는 결론은 아직 결론이 아니다.
+0-2. **약속 장부 `PROMISES.md`**(2026-11-15~): 날짜·조건이 붙은 "나중에 할 것"의 원본. 새 약속은 여기에 먼저 쓰고 다른 문서는 `P##` 로 가리킨다. 세션 시작 알림이 지난 것·임박한 것을 띄운다. 모델을 판정하기 전에는 `VERDICT_CHECKLIST.md`(판정 절차서 — 약속·의무 항목 대조표)를 따른다.
 1. `MODELS_LEDGER.md` — 전 모델 현황·골대·판정 예정(원장). 원장과 정본(PREREGISTER_*/VERDICT_*)이 어긋나면 정본이 이긴다. 판정 규약은 `VERDICT_RULES.md` 한 장(2026-10-20~; 각 모델 PREREGISTER 가 우선).
 2. 요청이 어느 트랙인지 분간한 뒤 그 설계 문서만: v3·lowvol·wu → `PROJECT_KNOWLEDGE.md`(크다 — 필요한 절만 grep), lowvol → `LOWVOL_TRACK_DESIGN.md`, 대형 → `LARGE_SCORE_DESIGN.md`.
 3. 작업 대상에 해당하는 것만: 운영 권고 `OPS_GUIDE.md`(운용·PTW 를 다룰 때, 강제 아님) · `patch_note/`(작업 대상 모듈의 최근 것; 최신 worklog 가 가리키는 변경) · 연구 `research/`. 세 장은 입구이지 정본을 대체하지 않는다 — 판정은 사전등록·판정문·규약, 자동화는 장부·설계, 새 연구는 지도의 후보·금지 범위를 반드시 확인.
@@ -31,7 +32,7 @@
 - 연구 스크립트의 공통 틀(11년 대리·월 블록 부트스트랩·정리 유니버스)은 `research/lib/`(tenyr.py)를 import 한다 — 복사 금지. 틀을 고치면 `tests/test_tenyr_lib.py` 0-diff 부터.
 
 ## 실행 주의 (Claude Code는 네트워크가 된다 — 그래서 더 조심)
-- **평일(월~금) 20:10~22:30(KST)엔 파일·DB를 건드리지 않는다** — 작업 스케줄러 배치(`run_auto_logged.bat`, 월~금만 등록)가 도는 시간. 로그는 `logs/auto_run_YYYYMMDD_2010.log`. 토·일엔 배치가 없으니 이 제한도 없다(일요일 20:00 주간 리캡 `notify_weekly.py`만 1~2분). 평일 공휴일에도 배치는 돈다 — 단 `skip_dates.txt`에 그 날짜(YYYYMMDD, 한 줄에 하나)를 적어 두면 건너뛴다(`logs/auto_run_*_SKIPPED.log`가 남음). 애매하면 그날 로그 파일이 있는지로 판단.
+- **평일(월~금) 20:10~22:30(KST)엔 파일·DB를 건드리지 않는다** — 작업 스케줄러 배치(`run_auto_logged.bat`, 월~금만 등록)가 도는 시간. 로그는 `logs/auto_run_YYYYMMDD_2010.log`. 토·일엔 배치가 없으니 이 제한도 없다(일요일 20:00 주간 리캡 `notify_weekly.py`만 1~2분). 평일 공휴일에도 배치는 돈다 — 단 `skip_dates.txt`에 그 날짜(YYYYMMDD, 한 줄에 하나)를 적어 두면 건너뛴다(`logs/auto_run_*_SKIPPED.log`가 남음). 애매하면 그날 로그 파일이 있는지로 판단. **(2026-11-15 사용자 결정 D39) 그날 배치가 끝난 것을 확인한 뒤에는 이 시간대에도 작업해도 된다** — 확인 = 그날 로그 꼬리에 끝 줄 `[OK] Done.  End:` 가 있고 배치의 python 프로세스가 없음(또는 그날 것이 `_SKIPPED.log` 뿐). 끝 줄이 없거나 로그가 아직 없으면 도는 중으로 보고 22:30 까지 읽기만. 세션 시작 알림이 이 상태를 첫 줄에 알려 준다.
 - 전체 배치·DART/KRX/KIS 수집기(`run_manual_logged.bat`, `dart_events.py`, `kis_flows.py` 등)는 **사용자가 명시적으로 시킬 때만** 실행. 재실행은 09:00 이전이면 run_id가 전 거래일로 자동 잡힘(09:00~19:59 재실행 금지 — 장중 가격 오염).
 - 부분실행 run 정리: `python research/clean_partial_run.py YYYYMMDD [--yes] [--force]`(백업 자동). 같은 날 재실행 전 필수(이중실행 게이트).
 - 읽기는 자유: `history.db`·`../dh-q7m3k-data/ohlcv.db`는 `mode=ro`로 열기.

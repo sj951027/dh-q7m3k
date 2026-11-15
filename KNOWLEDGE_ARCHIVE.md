@@ -157,3 +157,23 @@
 ## 2026-11-13 · PITFALLS.md · 골든 테스트가 깨지면 골든이 아니라 (CLAUDE.md 불변 규칙과 중복이라 뺌)
 
 - **골든 테스트가 깨지면 골든이 아니라 코드를 의심**(tests/README).
+
+## 2026-11-15 · DECISIONS.md · D37
+
+| D37 2026-11-13 | sv_b = 노이즈(11/13 정본) 🔒 · 적재 유지(은퇴는 미정) · 보류 조건(crb5 커버리지 — 창 앞 7 run 미달)은 **예외로 두고** 판정 진행(감도 동일 — 사전등록 원문은 그대로, 다른 모델의 선례 아님) · Codex 독립 계산 일치(사후 대조, 같은 날) · 등록 금지 기간 종료 | "판정문은 노이즈로 하자" | VERDICT_20261113_sv_b | worklog 11-13 |
+
+## 2026-11-15 · DECISIONS.md · D38
+
+| D38 2026-11-13 | 지식 구조 개선 🔁: 보관소 `KNOWLEDGE_ARCHIVE.md`(압축 = 옮기기) · 세션 시작 알림에 다음 번호·판정 도래·Codex 미답·결정 대기 수 · 기대 기록 `research/FORECASTS.md` · 두 번 넘게 당한 함정 2건 CLAUDE.md 승격 | "계속 쌓고 잘 정리하고 지속적으로 발전하고 똑똑해졌으면" | patch_note 20261113_knowledge_archive | worklog 11-13 |
+
+## 2026-11-15 · PITFALLS.md · heredoc
+
+- **Bash heredoc**: 역슬래시·`\n` 을 먹고 긴 것은 통째 실패 — **네 번 당해 CLAUDE.md '실행 주의'로 승격(11/13)**. 코드·긴 문서는 Write 도구로 파일을 만든 뒤 실행, 글자 치환으로 만든 스크립트는 `py_compile` 먼저.
+
+## 2026-11-15 · PITFALLS.md · taskkill
+
+- **`taskkill /IM python.exe` 금지** — 두 번 시도해 CLAUDE.md 로 승격(11/13). 포트로 PID 를 찾아 그것만.
+
+## 2026-11-15 · PITFALLS.md · .codex/hooks.json
+
+- **`.codex/hooks.json`** = Codex 앱이 만드는 `.claude/settings.json` 사본(지워도 다시 생김). 커밋하지 않고 그대로 둔다(사용자 11/8).

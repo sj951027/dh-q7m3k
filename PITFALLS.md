@@ -4,15 +4,13 @@
 
 ## 환경·도구
 - **콘솔 cp949**: 한글·'−' 출력에서 UnicodeEncodeError → `python -X utf8` 또는 `PYTHONIOENCODING=utf-8`(run_tests.py 는 이미 설정). 11/8.
-- **Bash heredoc**: 역슬래시·`\n` 을 먹고 긴 것은 통째 실패 — **네 번 당해 CLAUDE.md '실행 주의'로 승격(11/13)**. 코드·긴 문서는 Write 도구로 파일을 만든 뒤 실행, 글자 치환으로 만든 스크립트는 `py_compile` 먼저.
-- **`taskkill /IM python.exe` 금지** — 두 번 시도해 CLAUDE.md 로 승격(11/13). 포트로 PID 를 찾아 그것만.
+- **heredoc·`taskkill /IM python.exe` 금지**는 CLAUDE.md 로 승격(11/13) — 그 뒤에도 heredoc 을 두 번 썼다. 스크립트는 Write 도구로 파일부터.
 - **`leaderboard.py` 를 점검용으로 돌리면 `docs/leaderboard*.json` 을 덮어쓴다** → `lb.model_ic` 를 직접 불러 계산, 돌렸으면 `git checkout -- docs/`. 9/13.
 - **`git diff --stat` 줄바꿈 착시**: CRLF/LF 차이로 수백 줄처럼 보임 → `git diff -c core.autocrlf=false` 로 실제 diff 확인, 줄바꿈만 바뀐 파일은 커밋 안 함. 11/8.
 - **커밋에서 빼는 것**: `panel.pkl`(153MB) · `docs/`(배치가 push). `research/large_verdict_status.md` 는 배치가 매일 다시 써서 늘 변경으로 뜬다(무해).
 - **배치가 다시 만드는 `docs/` 페이지(index·_large_obs 등)는 산출물만 고치면 그날 밤 되돌아간다** → 생성 코드(`build_*.py`)의 문구를 고친다. 11/13.
 - **텔레그램·DB 쓰기**는 드라이런으로만 확인, 실제 발송은 배치에.
 - **세션 중간에 만든 hook(`.claude/settings.json`)은 그 세션엔 안 실린다** — 새 세션이나 긴 문맥 뒤 resume 부터(11/8 실측). 시나리오 시험 통과 ≠ 실림 확인.
-- **`.codex/hooks.json`** = Codex 앱이 만드는 `.claude/settings.json` 사본(지워도 다시 생김). 커밋하지 않고 그대로 둔다(사용자 11/8).
 
 ## 자료 한계 (연구 결론을 흔드는 것)
 - **업종 분류는 '현재' 뿐**(`sector_cache.json`, 2026-11-08 부터 날짜별 스냅샷 보관 `build_sector_dd.py snapshot()` — 과거 10년 당시 분류는 여전히 없음) → 10년 업종 연구는 사후 편향·폐지 종목 누락. 11/8.
@@ -31,3 +29,5 @@
 - **`dart_events`**: '신탁' 포함으로 묶으면 체결(1,064)+해지(677) 혼재 → '신탁계약체결/해지' 로 가른다 · **접수일이 시세 시작일보다 앞이면 `searchsorted` 가 첫 시세일로 몰아넣는다**(83건, Codex 발견) → 하한 확인 · `universe_events` 는 상장·정지 표(지수 편입 아님) · "자료가 쌓였다"는 완결 창 끝 날짜로 확인(11/10 의 40일 완결은 9/8 까지). 11/10.
 - **설계가 다른 재측정으로 예전 결론을 '잡음이었다·뒤집혔다'고 쓰지 않는다** — '재확인 못 함'까지. 평균이 좋으면 중앙값과 '살 수 있는 종목만' 값을 같이 적는다(Codex 지적 11/10).
 - **지식 ID 는 세션 시작 알림의 '다음 번호'를 쓴다** — 11/10 이미 있는 K33·K40 으로 넣으려다 두 번 막혔다.
+- **결과를 본 뒤 의무 항목을 빼지 않는다**(sv_b 판정문 자리바꿈·10/14 병기 누락 · `--perm` 기본 0) → `VERDICT_CHECKLIST.md` 대조표. 11/15.
+- **낱말로 기계 분류한 표를 단정하지 않는다**('닫음' 14행 중 K11·K37 은 안 닫힘, Codex) → 행을 읽는다. 11/15.
