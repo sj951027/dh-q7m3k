@@ -8,8 +8,9 @@
 - 이 에이전트의 기본 산출물은 `research/handoff/REPLY_*.md` 다. 사용자 승인으로 저장소 파일을 직접 고친 세션이었다면, 끝날 때 `worklog/README.md` 의 양식대로 기록 1건을 쓰고 목록에 한 줄 추가한다(검토·재현만 했다면 REPLY 로 충분하다).
 
 ## 절대 규칙
-- **평일(월~금) 20:10~22:30(KST)에는 파일·DB를 건드리지 않는다.** 작업 스케줄러 배치가 도는 시간이다(월~금만 등록). 토·일은 배치가 없으므로 이 제한이 없다. 애매하면 `logs/auto_run_YYYYMMDD_2010.log`가 그날 생겼는지로 판단한다. (2026-11-15 사용자 결정) 그날 로그 꼬리에 끝 줄 `[OK] Done.  End:` 가 찍혀 배치가 끝난 것을 확인한 뒤에는 이 시간대에도 작업해도 된다 — 끝 줄이 없으면 도는 중으로 보고 22:30 까지 읽기만.
+- **평일(월~금) 20:10~22:30(KST)에는 파일·DB를 건드리지 않는다.** 작업 스케줄러 배치가 도는 시간이다(월~금만 등록). 토·일은 배치가 없으므로 이 제한이 없다. 애매하면 `logs/auto_run_YYYYMMDD_2010.log`가 그날 생겼는지로 판단한다. (2026-11-15 사용자 결정) 그날 로그(자동 `auto_run_*`·수동 `manual_run_*` 모두)의 **마지막 실행**에 끝 줄 `[OK] Done.  End:` 가 찍히고 배치의 python 프로세스가 없음을 확인한 뒤에는 이 시간대에도 작업해도 된다 — 끝 줄이 없거나 애매하면 도는 중으로 보고 22:30 까지 읽기만.
 - (2026-11-15) 무엇을 먼저 읽을지는 `WHERE.md`(분야 안내 — 일의 종류 → K·D·P 번호와 정본, 같이 볼 한계). 날짜·조건이 붙은 약속은 `PROMISES.md`, 판정 전 대조는 `VERDICT_CHECKLIST.md`. 검색 0건은 '결론 없음'이 아니라 '미확인'으로 적는다.
+- (2026-11-15, D40) 사용자 결정의 원문은 `DECISIONS_LOG.md`(번호로 찾아봄 — 덧붙이기만), `DECISIONS.md` 에는 짧은 한 줄. D01~D39 는 아직 `DECISIONS.md`·`KNOWLEDGE_ARCHIVE.md` 가 원문. `python tests/test_knowledge_sheets.py` 가 번호 어긋남(FAIL)·자리 부족(WARN)을 알린다 — 보이면 사용자에게 알린다.
 - `history.db`·`../dh-q7m3k-data/ohlcv.db`는 **읽기 전용**으로만 연다: `sqlite3.connect("file:...?mode=ro", uri=True)`. 쓰기·스키마 변경 금지.
 - `.env`·`kis_token.json`·토큰·키는 읽지도 출력하지도 않는다.
 - 배치·수집기(`run_*.bat`, `dart_events.py`, `kis_flows.py`, `universe_ohlcv.py` 등)는 사용자가 명시적으로 시킬 때만 실행한다.

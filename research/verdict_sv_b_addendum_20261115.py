@@ -57,6 +57,10 @@ b = base["sv_b"]; a = base["sv_a(9/14~)"]
 ok = len(b) == EXPECT_N and abs(round(float(b.mean()), 4) - EXPECT_IC) < 1e-9
 print("\n=== 보충 ① 재현 확인(자료를 %s 까지로 자름) ===" % CUT)
 print(f"  sv_b h20: n={len(b)} 평균 {b.mean():+.4f} — 판정문 n={EXPECT_N} {EXPECT_IC:+.4f} → {'일치' if ok else '불일치(보충 값 사용 금지)'}")
+print(f"  분모(트랙 표 distinct model_id) = {g['DEN_LV']} — 이 값은 직접 SQL 이라 잘리지 않는다(CUT 뒤에 새 모델이 생겼으면 판정 당시와 다르다; 사전등록 값 {g['DEN_PRE']} 과 대조)")
+print("  한계: 가격·run 만 판정 당시로 자른다 — 그 뒤 고쳐진 과거 행·신용 적재 마스크는 되돌리지 못한다(당시 DB 전체의 복원이 아님)")
+if not ok or g["DEN_LV"] != g["DEN_PRE"]:
+    sys.exit("재현 불일치 또는 분모 변화 — 보충 값을 내지 않는다")
 
 print("\n=== 보충 ② 10/14 앵커(사후 적재) 포함/제외 ===")
 for name, sr in (("sv_b", b), ("sv_a", a)):

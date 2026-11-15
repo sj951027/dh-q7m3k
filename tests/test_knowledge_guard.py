@@ -55,6 +55,23 @@ with tempfile.TemporaryDirectory() as td:
     log.write_bytes(b"step 1\r\n")
     check("어제 로그의 끝 줄은 오늘에 안 쓴다 → readonly", g.run_mode(FRI, d) == "readonly")
     check("주말은 로그와 무관하게 full", g.run_mode(SUN, d) == "full")
+    DONE = b"========\r\n  Start: 2026-11-13 20:10:00.00\r\nstep\r\n  [OK] Done.  End: 2026-11-13 21:06:10.80\r\n"
+    log.write_bytes(DONE)
+    check("시작 → 끝 줄 → full", g.run_mode(FRI, d) == "full")
+    log.write_bytes(DONE + b"========\r\n  Start: 2026-11-13 21:10:00.00\r\nstep 1\r\n")
+    check("같은 로그에 재실행이 덧붙어 도는 중 → readonly", g.run_mode(FRI, d) == "readonly")
+    log.write_bytes(DONE)
+    man = d / "manual_run_20261113_2112.log"
+    man.write_bytes(b"========\r\n  Start: 2026-11-13 21:12:00.00\r\nstep 1\r\n")
+    check("자동은 끝났지만 수동 실행이 도는 중 → readonly", g.run_mode(FRI, d) == "readonly")
+    man.write_bytes(DONE)
+    check("자동·수동 둘 다 끝남 → full", g.run_mode(FRI, d) == "full")
+    check("로그는 끝났지만 다른 python 이 돈다 → readonly", g.run_mode(FRI, d, proc_check=lambda: True) == "readonly")
+    check("로그 끝 + 다른 python 없음 → full", g.run_mode(FRI, d, proc_check=lambda: False) == "full")
+    check("로그 끝 + 프로세스 확인 실패(None) → 로그 판단대로 full", g.run_mode(FRI, d, proc_check=lambda: None) == "full")
+    log.write_bytes(b"step 1\r\n")
+    check("로그가 안 끝났으면 프로세스가 없어도 readonly", g.run_mode(FRI, d, proc_check=lambda: False) == "readonly")
+check("프로세스 확인은 True/False/None 중 하나를 돌려준다(예외 없음)", g.other_python_running() in (True, False, None))
 with tempfile.TemporaryDirectory() as td:
     d = Path(td)
     (d / "auto_run_20261113_2010_SKIPPED.log").write_bytes(b"[skip_dates] 20261113 is listed\r\n")
@@ -95,6 +112,10 @@ p = REPO / "PROMISES.md"
 if p.exists():
     real = g.parse_promises(p.read_text(encoding="utf-8"))
     check("행 1개 이상", len(real) >= 1)
+    raw = [ln for ln in p.read_text(encoding="utf-8").splitlines() if ln.startswith("| P")]
+    check(f"'| P' 로 시작하는 줄({len(raw)})이 전부 읽힌다 — 칸이 모자라거나 밀리면 여기서 걸린다", len(raw) == len(real))
+    cols = [ln for ln in raw if ln.count("|") != 7]
+    check("모든 행이 6칸(세로줄 7개) — 글 안에 세로줄 금지" + (f" — 어긋남 {[c[:8] for c in cols]}" if cols else ""), not cols)
     check("ID 중복 없음", len({r["id"] for r in real}) == len(real))
     bad = [r["id"] for r in real if not r["status"].startswith(("열림", "완료", "취소"))]
     check("상태는 열림/완료/취소 로 시작" + (f" — 어긋남 {bad}" if bad else ""), not bad)
@@ -102,6 +123,56 @@ if p.exists():
     check("완료 행은 근거 칸이 있다" + (f" — 빈 행 {np_}" if np_ else ""), not np_)
 else:
     check("PROMISES.md 가 있다", False)
+
+print("F. 결론 카드와 색인(카드 0장이면 통과)")
+import re  # noqa: E402
+ktxt = (REPO / "KNOWLEDGE.md").read_text(encoding="utf-8")
+cards = sorted((REPO / "knowledge").glob("K*.md")) if (REPO / "knowledge").exists() else []
+badname = [c.name for c in cards if not re.fullmatch(r"K\d{2,3}\.md", c.name)]
+check("카드 파일 이름은 K##.md" + (f" — {badname}" if badname else ""), not badname)
+orphan = []; nohead = []
+for c in cards:
+    cid = c.stem
+    rows = re.findall(rf"^\| {cid} .*$", ktxt, re.M)
+    if len(rows) != 1 or f"knowledge/{cid}.md" not in rows[0]:
+        orphan.append(cid)
+    if not c.read_text(encoding="utf-8").lstrip().startswith(f"# {cid} "):
+        nohead.append(cid)
+check("카드마다 KNOWLEDGE 색인 줄이 정확히 하나이고 카드 경로를 가리킨다" + (f" — {orphan}" if orphan else ""), not orphan)
+check("카드 첫 줄 제목의 번호가 파일 이름과 같다" + (f" — {nohead}" if nohead else ""), not nohead)
+dangling = [m for m in re.findall(r"knowledge/(K\d{2,3})\.md", ktxt) if not (REPO / "knowledge" / f"{m}.md").exists()]
+check("색인이 가리키는 카드가 실제로 있다" + (f" — {dangling}" if dangling else ""), not dangling)
+
+# ── G. 결정 번호(2026-11-15, D40): 묶음 안 번호·결정 이력까지 본다 ──
+import test_knowledge_sheets as ts  # noqa: E402
+
+
+def _rows(ns):
+    return "\n".join(f"| D{n:02d} 2026-01-01 | x | | | |" for n in ns)
+
+
+nx, pb = ts.decision_ids("| D01 외 2026-10 | 묶음: 가(D01) · 나(D02, 끝) | | | |\n" + _rows([3]))
+check("묶음 안 번호도 정의로 센다 → 다음 D04·문제 없음", nx == 4 and not pb)
+nx, pb = ts.decision_ids(_rows([1, 3]))
+check("번호가 빠지면 알린다", any("빠짐" in x for x in pb))
+nx, pb = ts.decision_ids(_rows([1, 2, 2]))
+check("장부 행 번호 중복을 알린다", any("중복" in x for x in pb))
+nx, pb = ts.decision_ids(_rows(range(1, 40)), "## D40 · 2026-11-15 · x\n")
+check("이력에만 있고 장부에 요약이 없으면 알린다(다음 번호는 D41)", nx == 41 and any("요약" in x for x in pb))
+nx, pb = ts.decision_ids(_rows(range(1, 41)))
+check("D40 부터 장부 줄만 있고 이력 원문이 없으면 알린다", any("원문" in x for x in pb))
+nx, pb = ts.decision_ids(_rows(range(1, 41)), "## D40 · 2026-11-15 · x\n")
+check("장부 한 줄 + 이력 원문 → 문제 없음·다음 D41", nx == 41 and not pb)
+nx, pb = ts.decision_ids(_rows(range(1, 40)) + "\n요약 D40", "## D40 · a\n## D40 · b\n")
+check("이력 절 번호 중복을 알린다", any("이력 절" in x and "중복" in x for x in pb))
+big = _rows(range(1, 40)) + "\n| 요약 | " + " ".join(f"D{n}" for n in range(40, 300)) + " |"
+nx, pb = ts.decision_ids(big, "".join(f"## D{n:02d} · x\n" for n in range(40, 300)))
+check("세 자리 번호(D99→D100 · D299→D300)", nx == 300 and not pb)
+droot = (REPO / "DECISIONS.md").read_text(encoding="utf-8"); dlp = REPO / ts.LOG_FILE
+nx, pb = ts.decision_ids(droot, dlp.read_text(encoding="utf-8") if dlp.exists() else "")
+check("실제 장부·이력: 번호 문제 없음" + (f" — {pb}" if pb else ""), not pb)
+check(f"시작 알림의 다음 번호가 이력까지 본 값(D{nx:02d})과 같다", any(f"D{nx:02d} " in x for x in g.todo_lines()))
+check("이력 훼손 확인은 목록을 돌려준다(예외 없음)", isinstance(g.log_tamper_lines(), list))
 
 print("\n" + ("✅ test_knowledge_guard 통과" if not fails else f"❌ 실패 {fails}건"))
 sys.exit(1 if fails else 0)

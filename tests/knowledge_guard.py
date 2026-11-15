@@ -41,8 +41,8 @@ def batch_done(now=None, log_dir=None):
     끝남 = 오늘 날짜의 `auto_run_YYYYMMDD_*.log`(SKIPPED 아닌 것) 꼬리에 끝 줄 'Done.  End:' 가 있거나, 오늘 것이 SKIPPED 로그뿐일 때.
     로그가 아직 없거나 끝 줄이 없으면 False(도는 중으로 본다 — 애매하면 막는 쪽)."""
     now = now or dt.datetime.now(); log_dir = Path(log_dir) if log_dir else LOG_DIR
-    try:
-        logs = sorted(log_dir.glob(f"auto_run_{now:%Y%m%d}_*.log"))
+    try:  # [2026-11-15 Codex 점검] 수동 실행 로그(manual_run_*)도 본다 — 자동 배치가 끝난 뒤 수동 재실행이 돌 수 있다
+        logs = sorted(log_dir.glob(f"auto_run_{now:%Y%m%d}_*.log")) + sorted(log_dir.glob(f"manual_run_{now:%Y%m%d}_*.log"))
     except Exception:
         return False
     runs = [p for p in logs if not p.name.endswith("_SKIPPED.log")]
@@ -50,23 +50,47 @@ def batch_done(now=None, log_dir=None):
         return bool(logs)  # SKIPPED 로그만 있으면 오늘 배치는 없다
     for p in runs:
         try:
-            with open(p, "rb") as f:
-                f.seek(0, 2); n = f.tell(); f.seek(max(0, n - 4096)); tail = f.read()
+            data = p.read_bytes()
         except Exception:
             return False
-        if b"Done.  End:" not in tail:
+        # 같은 로그에 재실행이 덧붙는다(>>) → '마지막 시작 표식 뒤에' 끝 줄이 있어야 끝난 것. 실패한 단계가 있어도 끝 줄은 찍힌다(끝남 = 멈춤이지 성공이 아님).
+        if data.rfind(b"Done.  End:") <= data.rfind(b"  Start: "):
             return False
     return True
 
 
-def run_mode(now=None, log_dir=None):
+def other_python_running():
+    """[2026-11-15] 이 감시 장치(와 그 부모) 말고 python.exe 가 돌고 있나 — True / False / None(확인 못 함).
+    배치의 python 은 명령줄에 저장소 경로가 없어(`python run_and_diversify.py`) 가려낼 수 없다 → 다른 python 이 하나라도 있으면 '돌고 있을 수 있다'로 본다(막는 쪽).
+    tasklist 한 번(읽기만 — 이 PC 실측 약 5초, hook 제한 30초 안). 배치 창 안에서 로그가 끝났다고 나올 때만 부른다."""
+    try:
+        r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq python.exe", "/FO", "CSV", "/NH"], capture_output=True, text=True, errors="replace", timeout=5)
+        if r.returncode != 0:
+            return None
+        pids = set()
+        for ln in r.stdout.splitlines():
+            parts = [x.strip('"') for x in ln.split('","')]
+            if len(parts) >= 2 and parts[0].strip('"').lower() == "python.exe" and parts[1].isdigit():
+                pids.add(int(parts[1]))
+        return bool(pids - {os.getpid(), os.getppid()})
+    except Exception:
+        return None
+
+
+def run_mode(now=None, log_dir=None, proc_check=None):
     """'off' = 아무것도 안 함 · 'readonly' = 시작 알림만(상태 파일·git 없이 읽고 출력만) · 'full' = 시작 알림 + 상태 저장 + 끝 검사.
     배치 창 안이라도 그날 배치가 끝났으면 'full'(2026-11-15 규칙 변경), 도는 중이면 'readonly'."""
     if os.environ.get("KNOWLEDGE_GUARD_OFF") == "1":
         return "off"
     if not in_batch_window(now):
         return "full"
-    return "full" if batch_done(now, log_dir) else "readonly"
+    if not batch_done(now, log_dir):
+        return "readonly"
+    if proc_check is None and log_dir is None:  # 실제 사용 때만 프로세스를 본다(시험은 임시 폴더 — 필요하면 proc_check 를 넘긴다)
+        proc_check = other_python_running
+    if proc_check is not None and proc_check() is True:  # 확인 못 함(None)은 로그 판단을 따른다 — 프로세스 확인은 '도는 것이 보일 때만' 막는다
+        return "readonly"
+    return "full"
 
 
 def off():  # 옛 이름(다른 스크립트가 부를 수 있어 남김): 끝 검사·상태 쓰기를 하면 안 되는 때
@@ -150,6 +174,14 @@ def todo_lines():
         k = (REPO / "KNOWLEDGE.md").read_text(encoding="utf-8"); d = (REPO / "DECISIONS.md").read_text(encoding="utf-8")
         nk = max([int(x) for x in re.findall(r"^\| K(\d{2,3}) ", k, re.M)] + [int(p.stem[1:]) for p in CARD_DIR.glob("K[0-9]*.md") if p.stem[1:].isdigit()] or [0]) + 1
         nd = max([int(x) for x in re.findall(r"^\| D(\d{2,3}) ", d, re.M)] or [0]) + 1
+        try:  # [2026-11-15] 묶음 안 번호·결정 이력(DECISIONS_LOG.md)까지 본 다음 번호 — 실패하면 위의 옛 계산 그대로
+            if str(REPO / "tests") not in sys.path:
+                sys.path.insert(0, str(REPO / "tests"))
+            import test_knowledge_sheets as _t
+            _lp = REPO / _t.LOG_FILE
+            nd = max(nd, _t.decision_ids(d, _lp.read_text(encoding="utf-8") if _lp.exists() else "")[0])
+        except Exception:
+            pass
         wait = len(re.findall(r"^\d+\. ", d.split("## B.", 1)[1], re.M)) if "## B." in d else 0
         out.append(f"다음 번호 K{nk:02d} · D{nd:02d} (새 행은 이 번호로) · 사용자 결정 대기 {wait}묶음(DECISIONS §B)")
     except Exception:
@@ -240,6 +272,17 @@ def promise_lines(text=None, today=None):
     return out
 
 
+def log_tamper_lines():
+    """[2026-11-15] 결정 이력(DECISIONS_LOG.md)은 덧붙이기 전용 — 커밋된 줄이 지워지거나 바뀌었으면 알린다(git 읽기만, 파일이 아직 커밋 전이면 조용)."""
+    try:
+        parts = git("diff", "--numstat", "HEAD", "--", "DECISIONS_LOG.md").split()
+        if len(parts) >= 2 and parts[1].isdigit() and int(parts[1]) > 0:
+            return [f"⚠ 결정 이력 `DECISIONS_LOG.md` 에서 커밋된 줄 {parts[1]}개가 지워지거나 바뀌었습니다 — 덧붙이기 전용 파일(정정은 그 절 끝에 '정정(날짜):'). `git diff HEAD -- DECISIONS_LOG.md` 로 보고 원문을 되살릴 것."]
+    except Exception:
+        pass
+    return []
+
+
 def start(payload, readonly=False):
     if not readonly:
         st = load_state(payload)
@@ -259,9 +302,9 @@ def start(payload, readonly=False):
     since = last_tidy()
     lines = ["[지식 세 층 감시 · 세션 시작 — 누락 후보 알림이지 반영 보증이 아님]"]
     if readonly:  # 배치 도는 중: 읽고 출력만(상태 파일·git 없음). 끝 검사도 이 세션엔 꺼져 있다
-        lines.append("⚠ 지금은 평일 배치 시간대(20:10~22:30)이고 오늘 배치가 아직 끝나지 않았습니다(로그 끝 줄 없음) — 파일·DB 를 고치지 말고 읽기만. 로그 `logs/auto_run_YYYYMMDD_*.log` 꼬리에 'Done.  End:' 가 찍힌 뒤에는 작업해도 됩니다(CLAUDE.md 실행 주의).")
+        lines.append("⚠ 지금은 평일 배치 시간대(20:10~22:30)이고 오늘 배치가 아직 끝나지 않았거나(로그 끝 줄 없음) 다른 python 프로세스가 돌고 있습니다 — 파일·DB 를 고치지 말고 읽기만. 로그 `logs/auto_run_YYYYMMDD_*.log` 의 마지막 실행에 끝 줄 'Done.  End:' 가 찍히고 배치의 python 프로세스가 없을 때부터 작업해도 됩니다(CLAUDE.md 실행 주의).")
     elif in_batch_window():
-        lines.append("평일 배치 시간대지만 오늘 배치는 끝났습니다(로그 끝 줄 확인) — 작업 가능.")
+        lines.append("평일 배치 시간대지만 오늘 배치 로그는 끝 줄까지 찍혔고(수동 실행 로그 포함) 다른 python 프로세스도 보이지 않습니다 — 작업 가능(프로세스 확인이 실패했으면 로그만 본 것이니 한 번 더 볼 것).")
     lines.append(("OK " if rc == 0 else "FAIL ") + sheet.replace("\n", " / "))
     if since:
         age = (dt.date.today() - since).days
@@ -270,6 +313,10 @@ def start(payload, readonly=False):
         if age >= TIDY_DAYS or len(wl) >= TIDY_LOGS:
             lines.append("→ 정리 주기가 됐습니다(CLAUDE.md 마무리 8). 이번 요청이 문서 수정을 허용하고 배치 시간 밖이면, 현재 요청을 방해하지 않는 시점에 바뀐 기록과 연결된 지식 행을 대조·압축하세요. 읽기 전용 요청·긴급 작업엔 미룹니다. 완료한 범위와 남긴 범위를 worklog 에 적고, 전체를 마쳤을 때만 '마지막 정리' 날짜를 갱신합니다. 새 결정·판정·등록은 하지 않습니다.")
     lines.extend(todo_lines())
+    if not readonly:
+        lines.extend(log_tamper_lines())
+    if any(("FAIL" in x or "WARN" in x or "⚠" in x or "기한 지남" in x) for x in lines[1:]):  # [2026-11-15, D40] 문제는 조용히 넘기지 않는다
+        lines.append("→ 위의 FAIL·WARN·⚠·'기한 지남' 줄은 **첫 답에서 사용자에게 쉬운 말로 알린다**(무엇이 문제이고 무엇을 하면 되는지 한두 줄). 결정 번호 어긋남·이력 훼손은 다른 작업보다 먼저 고친다.")
     lines.append("규칙: 결론·사용자 결정·당한 함정이 생기면 같은 세션에 세 장에 한 줄(마무리 7), worklog 엔 '지식 반영: K##/D##' 로 잇는다. 정말 없었으면 worklog 에 독립된 한 줄 '지식 층: 변경 없음(이유)' — 없으면 세션 끝에서 한 번 막힌다.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "\n".join(lines)}}, ensure_ascii=False))
 
@@ -287,7 +334,7 @@ def stop(payload):
             return
     elif any(s in ch for s in SHEETS):  # 시작 해시가 없으면 git 작업본 기준
         return
-    if any(p.startswith("knowledge/") for p in ch):  # 결론 카드가 바뀌었으면 지식 층 갱신으로 본다
+    if any(re.match(r"knowledge/K\d{2,3}\.md$", p) for p in ch):  # 결론 카드(K##.md)가 바뀌었으면 지식 층 갱신으로 본다 — README 등은 아님
         return
     for p in records:
         if p.startswith("worklog/"):
