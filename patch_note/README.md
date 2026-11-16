@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.11.19** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.11.20** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -24,6 +24,7 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
+- [20261116_large_verdict_two_definitions.md](20261116_large_verdict_two_definitions.md) — **2026.11.20** 대형 ls_t1 판정: 순위 상관을 전 유니버스·시장별 평균 두 가지로 각각 판정해 낮은 쪽 라벨(D44) · `large_verdict.py` 에 `pooled_ic`·`label_one`·`combine`·감도·참고 줄 · 전후 비교 시장별 줄 6개 같음·라벨 '대기' 불변 · 점수·다른 모델 0-diff
 - [20261115_decisions_log.md](20261115_decisions_log.md) — **2026.11.19** 결정 이력 `DECISIONS_LOG.md`(D40~ 원문) · 기준표 · 결정 번호 검사(묶음 안 번호·이력까지) · 문제 알림(자리 부족·이력 훼손·사용자에게 알리기) — 문서·검사 장치·테스트만, 판정·점수 0-diff
 - [20261115_promises_checklist_guard.md](20261115_promises_checklist_guard.md) — **2026.11.17·18** (18 = 같은 날 오후: 분야 안내 `WHERE.md`·결론 카드 양식·시험 묶음·원리 비교 메모·검사 장치 세 자리 번호) 약속 장부 `PROMISES.md`·판정 절차서 `VERDICT_CHECKLIST.md` + 감시 장치 저녁 읽기 전용 알림·약속 기한 알림 + 배치 시간 규칙 변경(D39: 배치 종료 확인 뒤엔 작업 가능) + 대형 페이지 낡은 문구 1곳(판정·점수 0-diff)
 - [20261113_audit_followup.md](20261113_audit_followup.md) — **2026.11.16** 기록 점검 후속: 배치가 되돌린 공개 문구 3곳을 생성 코드(`build_dashboard.py`·`build_large_report.py`)에서 고침 + `wu.html` 문구(표시 전용, 판정·점수 0-diff)
