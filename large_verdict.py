@@ -103,6 +103,16 @@ def closed_count(rids, didx, N, h):
     return sum(1 for r in rids if L.anchor(r, didx) + L.ENTRY_LAG + h < N)
 
 
+def pre_decision_set(rids, didx, dates, N, h, decision=DECISION_DATE):
+    """[D44 규칙 6] 정의를 정한 날 종가까지 h 창이 닫힌 앵커(창 끝 날짜 ≤ 정한 날 — 그날 끝나는 것도 '정하기 전에 닫힌 것')."""
+    out = set()
+    for r in rids:
+        end = L.anchor(r, didx) + L.ENTRY_LAG + h
+        if end < N and dates[end] <= decision:
+            out.add(r)
+    return out
+
+
 def _boot_stat(vals):
     """leaderboard.model_ic 의 IC 요약과 같은 식(씨앗 7 · BOOT 회 · 소수 4자리)."""
     arr = np.array(vals)
@@ -216,7 +226,7 @@ def run(check=False):
              "- 규칙은 이 파일 머리말(2026-10-03 고정). 판정은 h60·h120 주간 앵커, 라벨은 §11 과 같은 규칙(분모 1) + 주간 앵커 8개 미만이면 '대기'.",
              f"- 순위 상관은 두 가지를 각각 판정해 **낮은 쪽 라벨**을 준다(2026-11-16 결정 D44 — 원문 DECISIONS_LOG.md). "
              f"전 유니버스 = 시장 구분 없이 한 순위(설계 §9 문구, 앞에 내세우는 값) · 시장별 평균 = 시장 안 상관의 평균(리더보드와 같은 방식).", ""]
-    lines += ["| h | 기준 | 창 닫힌 앵커 n | IC | 95% CI | 주별 양(+) | 라벨 |", "|---|---|---|---|---|---|---|"]
+    lines += ["| h | 기준 | 창 닫힌 앵커 n · 계산분 | IC | 95% CI | 주별 양(+) | 라벨 |", "|---|---|---|---|---|---|---|"]
     verdicts = {}
     for h in HS:
         for tag, st, pst, rids in (("일간(참고)", daily[h], p_daily["pooled"][h], keep_daily),
@@ -230,7 +240,8 @@ def run(check=False):
                 lab_m = lab_p = "참고" if h == 20 else ("대기" if nclosed < MIN_WEEKLY else "참고")
             for name, x, lab in (("전 유니버스", pst, lab_p), ("시장별 평균", st, lab_m)):
                 icx, cix, posx = _fmt(x)
-                lines.append(f"| h{h} | {tag} · {name} | {nclosed}/{len(rids)} | {icx} | {cix} | {posx} | {lab} |")
+                # [2026-11-16 Codex 점검] 날짜상 닫힌 수와 실제 계산된 수를 같이 적는다(공통 앵커·시세 결손으로 두 정의의 표본이 갈릴 수 있다)
+                lines.append(f"| h{h} | {tag} · {name} | {nclosed}/{len(rids)} · 계산 {x['n']} | {icx} | {cix} | {posx} | {lab} |")
     lines.append("")
     for h in (60, 120):
         no_st, no_n = nonov[h]
@@ -251,8 +262,7 @@ def run(check=False):
     # [D44 규칙 6] 정의를 정하기 전에 창이 닫힌 주간 앵커를 뺀 감도 — 같이 적기만 한다(대신 쓰지 않는다)
     lines += ["", f"## 감도 — 정의를 정한 날({DECISION_DATE}) 종가까지 창이 닫힌 주간 앵커를 뺀 값"]
     for h in (60, 120):
-        pre = {r for r in keep_weekly
-               if L.anchor(r, didx) + L.ENTRY_LAG + h < N and dates[L.anchor(r, didx) + L.ENTRY_LAG + h] <= DECISION_DATE}
+        pre = pre_decision_set(keep_weekly, didx, dates, N, h)
         rest = keep_weekly - pre
         nclosed = closed_count(rest, didx, N, h)
         w_st = L.model_ic(sub(rest), close, N, didx, excl, reg=reg)[h]
