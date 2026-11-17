@@ -39,10 +39,28 @@
 
 추가로 생긴 파일(밤): `research/RESEARCH_funnel_stages_20261117.md` · `research/funnel_stages_20261117.py` · `research/out_funnel_stages/` · `knowledge/K43.md` · `research/handoff/CHECK_20261117_research_candidates.md`(Codex 답 `REPLY_20261117_research_candidates.md` 대조).
 
-## 남은 일 (19:50 사용자 "배치 돌아야 하니 나중에 진행하도록 정리만" — 여기서 멈춤. 아래는 이어받을 순서)
-1. **커밋·푸시(사용자 승인 뒤)** — 11/17 변경분 전부 미커밋. 넣을 것: 연구 2건(`research/RESEARCH_invvol_weight_20261117.md` · `invvol_weight_10y_20261117.py` · `invvol_reconcile_k26_20261117.py` · `out_invvol_weight/` · `RESEARCH_funnel_stages_20261117.md` · `funnel_stages_20261117.py` · `out_funnel_stages/`) · `knowledge/K42.md`·`K43.md` · `KNOWLEDGE.md`·`KNOWLEDGE_ARCHIVE.md`·`DECISIONS.md`·`WHERE.md` · 지도·`FORECASTS.md` · `research/handoff/REPLY_20261117_research_candidates.md`(Codex)·`CHECK_20261117_research_candidates.md` · worklog 2개. 빼는 것: `.codex/`. 코드·표시 변경이 없어 패치 노트는 없다.
+## 배치 뒤 확인 (21:38 — 아래 '남은 일' 1·2번은 끝남)
+- (19:59) 사용자 "배치 도는 데 문제없는지 확인하고 커밋 푸시" → 배치 전 점검(python 프로세스 0 · 건너뛰기 목록에 오늘 없음 · 오늘 바뀐 파일을 배치가 부르지 않음 — 작업 스케줄러 예약 상태는 조회가 안 돼 미확인) · **커밋 `290295e` 푸시(19:59, 26개 파일 · `.codex/` 제외)**.
+- 배치 `logs/auto_run_20261117_2010.log`: 20:10:03 시작 → **21:37:14 끝 줄** · `[OK] all python steps exited 0` · Traceback 0건 · 배치 python 프로세스 없음.
+- **바뀐 `large_verdict.py` 의 첫 배치 실행 정상**: `research/large_verdict_status.md` 가 새 표(`창 닫힌 앵커 n · 계산분` — 예: `3/16 · 계산 3`)로 나옴 · 기준일 20261117 · 생성 21:23. 일간 앵커 65 · 주간 16 · h60 닫힌 주간 앵커 **3/8**(어제 2/8 — 한 개 더 닫힘) · h60·h120 라벨 '대기' 그대로. 감도 줄: 뺀 앵커 2개 · 남은 것 중 닫힘 1/14 → 대기. 이 파일은 배치가 커밋하지 않아 작업본에 수정 상태로 남아 있다(다음 커밋 때 같이).
+- 지식 층: 배치 확인에서는 변경 없음(확인만 — 새 결론·결정·함정 없음).
+
+## 밤 3 (21:45~) — 종목별 환율 반응: Claude 와 Codex 가 같은 조건표로 따로 계산(눈가림 — 진행 중)
+- 사용자 "(Codex 3번) 이거 진행할까? 너도 하고 코덱스도 하면 좋을 듯" → 겹치는 기존 연구를 한 번 더 찾음(`research/`·handoff·지식 층·보관소·`PROJECT_KNOWLEDGE.md` 에서 0건, 시장 전체 판은 K11 로 닫힘) → 조건표를 식까지 적음(`research/RESEARCH_fx_exposure_20261117.md` §0 — 크기 문턱 1.0%p 를 조건에 넣음: 같은 날 K42 에서 배운 것) → Codex 요청서 `research/handoff/REQUEST_20261117_fx_exposure_blind.md`(사용자가 Codex 에 한 줄로 전달).
+- Claude 계산 `research/fx_exposure_10y_20261117.py` 실행·회귀 점검(시장 계수는 이어지고 종목별로 따로 푼 값과 일치)까지 끝. **숫자와 결론은 이 기록·지도·지식 층에 적지 않는다 — Codex 가 필수로 읽는 문서라서.** 결과는 메모 §1 이후와 `research/out_fx_exposure/` 에만 있다(Codex 에게는 답을 쓴 뒤 열라고 요청).
+- Codex 답(`REPLY_20261117_fx_exposure_blind.md`)이 오면: 대조 `CHECK_…` → 메모 §6 → 그때 `FORECASTS.md`·지도 §12·`knowledge/K44.md`(+ KNOWLEDGE 색인 — **자리 300B 남짓이라 먼저 정리 필요**)·이 기록에 숫자를 적는다.
+- 이번 주 Codex 요청 네 번째(11/16 둘 · 11/17 사용자 직접 하나 · 이것) — 사용자가 직접 정함.
+- **(22:10) Codex 답 `REPLY_20261117_fx_exposure_blind.md`(21:56) → 대조 `CHECK_20261117_fx_exposure_blind.md`**: 두 독립 계산이 같은 결론·같은 숫자 — 주지표 Claude **+0.27 [−0.25, +0.81]** ↔ Codex +0.266 [−0.250, +0.809](n=519) → 사전 조건(|차| ≥ 1.0 · 구간 0 밖 · 일관) 미달 **닫음**. 날짜별 차이는 5분위 경계 규칙 하나에서 옴(Codex 의 '정렬 뒤 다섯 등분' 판은 내 값과 519일 전부 차이 0). Codex 코드를 다시 돌려 `summary.json` 바이트 동일 확인.
+  - 까닭: 종목별 환율 계수가 1년 뒤 안 남는다(순위 상관 나 0.00 · Codex 0.033 — 재는 창이 2주 겹침), 같은 회귀의 시장 계수는 0.30(회귀 점검 — 종목별로 따로 푼 값과 최대 차 0).
+  - 남는 관찰: 환율 60거래일 판만 +0.65 [+0.09, +1.27](두 계산 모두) — 크기 문턱 미달·다른 판과 안 맞아 조건 불변.
+  - Codex 가 짚은 틀의 구멍(받아들임 · 이번 결론 불변): 공통 틀 `ok` 가 다음 날 거래량·진입가와 40일 뒤 가격의 존재를 본다(0.1% 남짓 — 11년 대리 연구 공통) · 폐지 종목 마지막 가격 청산 · 조건표에 분위 경계·난수 순서·초기 창이 비어 있었다 → 다음 눈가림 조건표부터 미리 적는다.
+  - 기록: 메모 §6 · `knowledge/K44.md` · `KNOWLEDGE.md`(K44 색인 — 자리는 '열린 것' 3번의 연구 후보 나열(지도와 겹침 · 둘은 오늘 끝남)을 보관소로 옮겨 확보) · 지도 §0·§12 · `FORECASTS.md`(✔) · `WHERE.md`.
+  - 지식 반영(밤 3): K44(새 카드 — 닫음 · 독립 재현 있음).
+
+## 남은 일 (19:50 사용자 "배치 돌아야 하니 나중에 진행하도록 정리만" — 여기서 멈춤. 아래는 이어받을 순서 · 1·2번은 위 '배치 뒤 확인'에서 끝남)
+1. ~~커밋·푸시~~ — **끝남**: `290295e`(19:59 — 낮·저녁 연구 2건) + 밤 변경분(배치 확인·환율 연구·Codex 눈가림 대조·K44)은 22:30 에 한 번 더(사용자 "커밋하고 푸시할 거 다 정리"). 작업본에 남는 것은 `.codex/` 뿐. (아래는 19:50 당시 목록) 넣을 것: 연구 2건(`research/RESEARCH_invvol_weight_20261117.md` · `invvol_weight_10y_20261117.py` · `invvol_reconcile_k26_20261117.py` · `out_invvol_weight/` · `RESEARCH_funnel_stages_20261117.md` · `funnel_stages_20261117.py` · `out_funnel_stages/`) · `knowledge/K42.md`·`K43.md` · `KNOWLEDGE.md`·`KNOWLEDGE_ARCHIVE.md`·`DECISIONS.md`·`WHERE.md` · 지도·`FORECASTS.md` · `research/handoff/REPLY_20261117_research_candidates.md`(Codex)·`CHECK_20261117_research_candidates.md` · worklog 2개. 빼는 것: `.codex/`. 코드·표시 변경이 없어 패치 노트는 없다.
 2. **11/17 배치 뒤 확인**(11/16 약속): 바뀐 `large_verdict.py` 가 배치에서 처음 돈다 — `logs/auto_run_20261117_2010.log` 에 `[OK] all python steps exited 0` 이 있는지, `research/large_verdict_status.md` 가 새 표(`· 계산 n`)·기준일 20261117 인지. 19:10 에 읽기 전용 대기를 걸어 둠(끝 줄이 찍히면 이 세션이 다시 불린다 — 세션이 닫혀 있으면 다음 세션 첫 일로).
-3. **사용자 결정 2건**(둘 다 답 전): ① 역가중 관측 계좌를 언제 열지(Claude 권장 = 12월 판정 뒤에 다시 · `DECISIONS.md` §B 5 · K42). 열면 변수 1개(금액만 1/σ60 · 같은 v30 목록) + 대조(= v30 계좌) + 사전등록 메모부터. ② Codex 후보 3(종목별 환율 반응)을 다음 연구로 할지 — 하면 시작 전에 겹치는 기존 연구가 정말 없는지 한 번 더 찾고, 조건(반응을 재는 창·시장 움직임 빼는 법·합치는 식)을 좁게 적은 뒤.
+3. **사용자 결정 2건**(둘 다 답 전): ① 역가중 관측 계좌를 언제 열지(Claude 권장 = 12월 판정 뒤에 다시 · `DECISIONS.md` §B 5 · K42). 열면 변수 1개(금액만 1/σ60 · 같은 v30 목록) + 대조(= v30 계좌) + 사전등록 메모부터. ② ~~Codex 후보 3(종목별 환율 반응)~~ — 같은 날 밤에 함: K44 닫음(위 '밤 3').
 4. **12월 판정 뒤로 미룬 연구 후보**(오늘 숫자를 근거로 쓰지 말고 조건부터): 적격 종목 안 점수 10분위별 수익·큰 손실 모양(K43) · 상위 10 → 20·30 넓히기(§B 6 'K 축소판 되감기') · 과매도 안에서 가장 요동친 5분위 빼기(K42 축 2 — 실제 상위 10 에서는 이미 절반이 걸러져 있음).
 5. **지식 장 여유**: `KNOWLEDGE.md` 23,678/24,000 · `DECISIONS.md` 14,690/15,000 — 둘 다 남은 자리 300B 남짓. 다음 새 줄 전에 정리 주기(옛 행을 보관소·카드로 옮기기)가 필요하다. 마지막 정리 11/13.
 6. 날짜 약속: P17·P18(≈11/30 — P18 은 `research/lib/verdict_util.py` 로 계산 가능) · P03·P20(≈12/07) · 판정 3건(12월 — 도구는 11/16 에 준비).
