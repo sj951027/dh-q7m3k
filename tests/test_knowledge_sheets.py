@@ -97,7 +97,11 @@ def main():
             bad.append(f"[2] {f} {n:,}B > 상한 {cap:,}B — 압축·정정할 때")
         elif cap - n < ROOM_WARN:
             warn.append(f"[2] {f} 자리 {cap - n:,}B 남음(상한 {cap:,}B) — 새 줄 하나가 안 들어갈 수 있다. 적기 전에 자리부터")
-    for f, s in texts.items():
+    # [2026-11-21] 결론 카드(knowledge/K##.md)의 정본 링크도 같이 본다 — 옛 행을 카드로 옮기면 그 링크가 세 장 밖으로 나가므로
+    linked = dict(texts)
+    for c in sorted((REPO / "knowledge").glob("K*.md")):
+        linked[f"knowledge/{c.name}"] = c.read_text(encoding="utf-8")
+    for f, s in linked.items():
         for m in set(re.findall(r"[A-Za-z0-9_./\-]+\.(?:md|py)", s)):
             base = m.split("/")[-1]
             if base in PTW_FILES or m.startswith("http"):
@@ -126,7 +130,7 @@ def main():
         print("WARN " + w)
     if bad:
         print("\n".join(bad)); return 1
-    print("OK 지식 세 장: 크기 " + " · ".join(f"{f} {len(texts[f].encode()):,}B" for f in CAPS) + f" · 링크·축약 정본 확인 · 원장 모델 {len(ids)}개 모두 KNOWLEDGE 에 있음")
+    print("OK 지식 세 장: 크기 " + " · ".join(f"{f} {len(texts[f].encode()):,}B" for f in CAPS) + f" · 링크·축약 정본 확인(카드 {len(linked) - len(texts)}장 포함) · 원장 모델 {len(ids)}개 모두 KNOWLEDGE 에 있음")
     return 0
 
 

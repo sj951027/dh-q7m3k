@@ -1,6 +1,6 @@
 # WHERE.md — 분야 안내: 무슨 일이면 무엇을 먼저 보나 (2026-11-15 시작 · Claude·Codex 공통 · 짧게 유지)
 
-**지위**: 결론을 담지 않는다 — **가리키기만** 한다. 번호(K·D·P)의 내용은 `KNOWLEDGE.md`·`DECISIONS.md`·`PROMISES.md`(K42 부터는 `knowledge/K##.md` 카드)가 정본이다.
+**지위**: 결론을 담지 않는다 — **가리키기만** 한다. 번호(K·D·P)의 내용은 `KNOWLEDGE.md`·`DECISIONS.md`·`PROMISES.md`(`KNOWLEDGE.md` 의 줄이 `knowledge/K##.md` 를 가리키면 그 카드 — K42~ 와 11/21 에 옮긴 옛 행 25개)가 정본이다.
 **찾는 법**: ① 아래 표에서 일의 종류를 찾아 '먼저 볼 것'과 '꼭 같이 볼 한계'를 연다. ② 표에 없거나 모자라면 낱말로 저장소를 검색한다(세 장 → `KNOWLEDGE_ARCHIVE.md` → 지도 §10·§12 → `research/` 파일 이름·본문 → `worklog/`). ③ **검색 0건은 '결론 없음'이 아니라 '미확인'**이다 — 다른 낱말·옛 이름으로 한 번 더 찾고, 그래도 없으면 "찾지 못했다"고 적는다. ④ 놓쳤던 낱말은 이 표의 '낱말' 칸에 보탠다.
 
 | 일의 종류 | 먼저 볼 것 | 꼭 같이 볼 한계 | 낱말(별칭) |
@@ -19,3 +19,11 @@
 | PTW | `../Position-Tracker-Web/CLAUDE.md`·핸드북 · D09 · D36 · D24('샀을 때 시장' 시점 = 매수 전 거래일 종가 — 'D18 외' 묶음) · DECISIONS §B 8 · P15 | 스크리너와 독립 · 로그인은 하드 경계 | PTW, 출처, 전략 태그, 매수 폼, 샀을 때 시장, 기준 시점 |
 | 용량·파일 정리 | D10(정리는 휴지통까지만 — 'D01 외' 묶음) · `AGENTS.md` 용량 규칙 | 휴지통 비우기·영구 삭제·`git gc --prune` 은 사용자가 | 휴지통, 디스크, 용량, 삭제, 비우기, 중간 파일 |
 | 지식 구조·기록 정리 | `CLAUDE.md` 마무리 7~10 · `DECISIONS_LOG.md`(결정 원문, D40~) · `research/DECISIONS_BASELINE_20261115.md` · P19 · `research/DESIGN_20261115_knowledge_scale.md` §7 · `research/RECALL_TESTSET_20261115.md` | 판정에 걸린 행은 12월 판정 뒤에 옮긴다 | 세 장, 보관소, 카드, 약속 장부, 정리 주기, 결정 이력, 결정 원문, 자리 부족 |
+
+## 이웃 폴더 — 경로 (2026-11-21 · Claude·Codex 공통 · 이 저장소 = `C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k`)
+저장소 밖 두 폴더를 쓴다. 코드·문서에는 상대 경로(`../…`)로 적는다. 아래 목록은 11/21 에 폴더를 열어 본 것(실측)이고, 표 안 내용 설명은 `KNOWLEDGE.md` K39·지도 §11 이 정본.
+
+| 폴더 | 절대 경로 | 무엇이 있나 | 지킬 것 |
+|---|---|---|---|
+| 자료 `../dh-q7m3k-data/` | `C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k-data` | `ohlcv.db`(운영 시세·수급 — 배치가 매일 씀) · `ohlcv_10y.db`(10년 시세, 연구용) · `market_flows_10y.db`(시장 수급 11년) · `macro_10y.db`(환율·미국 지수·금리) · `earnings.db`(실적 접수) · `paper_account.db`(모의 계좌) · `listing_cache.json`(상장 목록 예비) · `sector_snapshots/`(업종 날짜별, 11/8~) | **읽기 전용**(`sqlite3.connect("file:…?mode=ro", uri=True)`) · 쓰는 것은 배치·수집기뿐(사용자가 시킬 때만 실행) · 평일 배치 시간 규칙은 이 폴더에도 같다 · git 저장소가 아니다(되돌릴 수 없음) |
+| PTW `../Position-Tracker-Web/` | `C:\Users\SAMSUNG\Documents\GitHub\Position-Tracker-Web` | 실거래 포지션 트래커(별도 git 저장소). 입구 = 그쪽 `CLAUDE.md` → `PTW_PROJECT_HANDBOOK.md` → 최신 `PATCH_NOTES_v5.xx.md`(11/21 기준 v5.47) · 회귀 `python run_all_tests.py` | 스크리너와 **독립**(D09 — 서로 부르지 않는다) · `.env` 는 읽지 않는다 · `trades.csv`·`data/` 의 개인 매매·자산 수치는 기록·공유 문서에 옮기지 않는다 · 로그인 뒤 화면은 사용자가 본다(하드 경계) · 줄바꿈 LF · 작업 기록은 이 저장소 `worklog/` 에 같이 |
