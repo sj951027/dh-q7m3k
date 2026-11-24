@@ -1,14 +1,14 @@
 {
- "generated": "2026-11-23 21:19",
- "ref_date": "20261123",
+ "generated": "2026-11-24 21:05",
+ "ref_date": "20261124",
  "rows": [
   {
    "key": "ohlcv",
    "name": "시세 본표",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2625,
+   "n_last": 2626,
    "n_med": 2625,
    "status": "ok",
    "note": ""
@@ -16,7 +16,7 @@
   {
    "key": "extra",
    "name": "보충표(대형 136)",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
    "n_last": 136,
@@ -27,10 +27,10 @@
   {
    "key": "flows",
    "name": "수급(KIS)",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2647,
+   "n_last": 2648,
    "n_med": 2764,
    "status": "ok",
    "note": ""
@@ -38,7 +38,7 @@
   {
    "key": "flows_extra",
    "name": "수급(보충표 종목)",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
    "n_last": 136,
@@ -49,32 +49,32 @@
   {
    "key": "short",
    "name": "공매도",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2493,
-   "n_med": 2520,
+   "n_last": 2508,
+   "n_med": 2519,
    "status": "ok",
    "note": ""
   },
   {
    "key": "loan",
    "name": "대차잔고",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2472,
-   "n_med": 2498,
+   "n_last": 2488,
+   "n_med": 2497,
    "status": "ok",
    "note": ""
   },
   {
    "key": "credit",
    "name": "신용잔고",
-   "last": "20261118",
+   "last": "20261119",
    "lag": 3,
    "allowed": 4,
-   "n_last": 2401,
+   "n_last": 2416,
    "n_med": 2427,
    "status": "ok",
    "note": ""
@@ -82,18 +82,18 @@
   {
    "key": "valuation",
    "name": "PER/PBR",
-   "last": "20261120",
-   "lag": 1,
+   "last": "20261124",
+   "lag": 0,
    "allowed": 0,
-   "n_last": 2724,
-   "n_med": 2722,
-   "status": "lag",
-   "note": "1거래일 뒤처짐(허용 0)"
+   "n_last": 2725,
+   "n_med": 2723,
+   "status": "ok",
+   "note": ""
   },
   {
    "key": "idx_kospi",
    "name": "지수 코스피",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
    "n_last": 1,
@@ -104,7 +104,7 @@
   {
    "key": "idx_kosdaq",
    "name": "지수 코스닥",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
    "n_last": 1,
@@ -116,7 +116,7 @@
    "key": "consensus",
    "name": "컨센서스",
    "last": "20261123",
-   "lag": 0,
+   "lag": 1,
    "allowed": 10,
    "n_last": 2511,
    "n_med": 2515,
@@ -126,21 +126,21 @@
   {
    "key": "dart",
    "name": "DART 공시",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 1,
-   "n_last": 21,
-   "n_med": 22,
+   "n_last": 22,
+   "n_med": 21,
    "status": "ok",
    "note": ""
   },
   {
    "key": "uni_events",
    "name": "상장 변화",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 1,
-   "n_last": 5,
+   "n_last": 7,
    "n_med": 4,
    "status": "ok",
    "note": ""
@@ -149,7 +149,7 @@
    "key": "earn_fetch",
    "name": "실적 증분 수집",
    "last": "20261123",
-   "lag": 0,
+   "lag": 1,
    "allowed": 1,
    "n_last": 4,
    "n_med": 54,
@@ -159,10 +159,10 @@
   {
    "key": "runs",
    "name": "점수 run",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
-   "n_last": 2316,
+   "n_last": 2317,
    "n_med": 2338,
    "status": "ok",
    "note": ""
@@ -170,7 +170,7 @@
   {
    "key": "sector",
    "name": "업종 분류",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 30,
    "n_last": 2357,
@@ -181,29 +181,29 @@
   {
    "key": "mkt_flows",
    "name": "시장 수급(KRX)",
-   "last": "20261120",
-   "lag": 1,
+   "last": "20261124",
+   "lag": 0,
    "allowed": 0,
    "n_last": 24,
    "n_med": 24,
-   "status": "lag",
-   "note": "1거래일 뒤처짐(허용 0)"
+   "status": "ok",
+   "note": ""
   },
   {
    "key": "flows_json",
    "name": "수급 산출(JSON)",
-   "last": "20261120",
-   "lag": 1,
+   "last": "20261124",
+   "lag": 0,
    "allowed": 0,
    "n_last": null,
    "n_med": null,
-   "status": "lag",
-   "note": "1거래일 뒤처짐(허용 0)"
+   "status": "ok",
+   "note": ""
   },
   {
    "key": "paper_json",
    "name": "모의 계좌 산출(JSON)",
-   "last": "20261123",
+   "last": "20261124",
    "lag": 0,
    "allowed": 0,
    "n_last": 14,
@@ -212,9 +212,5 @@
    "note": ""
   }
  ],
- "warnings": [
-  "⚠️ 자료 뒤처짐: PER/PBR 마지막 11/20 (시세 11/23 · 1거래일 뒤처짐(허용 0))",
-  "⚠️ 자료 뒤처짐: 시장 수급(KRX) 마지막 11/20 (시세 11/23 · 1거래일 뒤처짐(허용 0))",
-  "⚠️ 자료 뒤처짐: 수급 산출(JSON) 마지막 11/20 (시세 11/23 · 1거래일 뒤처짐(허용 0))"
- ]
+ "warnings": []
 }
