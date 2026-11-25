@@ -45,6 +45,11 @@ jobs:
         with:
           path: docs
 
+      # 2026-11-25: 올린 직후(1초 안)에 배포 단계가 묶음 파일을 못 찾고 실패
+      # ("Found 0 artifact(s)") 하는 일이 11/24 부터 거듭됨 — 목록에 뜰 때까지 잠깐 기다린다.
+      - name: Wait for artifact to be listed
+        run: sleep 20
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
