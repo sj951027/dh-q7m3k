@@ -18,6 +18,11 @@ on:
     paths:
       - 'docs/**'          # docs 폴더가 바뀔 때만 배포
   workflow_dispatch:        # 수동 실행 버튼
+    inputs:
+      test_alert:
+        description: 'Send a test Telegram alert (deploy still runs)'
+        type: boolean
+        default: false
 
 permissions:
   pages: write
@@ -55,3 +60,41 @@ jobs:
         uses: actions/deploy-pages@v5
         # 참고(2026-08-06): timeout 파라미터는 상한 600000ms(10분)로 클램프됨 —
         # 상향 무의미(실측 #147 경고). 큐 지연 실패 시 재실행/브랜치 배포로 대응.
+
+      # 2026-11-25: 배포가 실패하면 텔레그램으로 한 줄(배치의 "이상 없음"은 배포 성공을 뜻하지 않는다 —
+      # 11/25 두 번 실패했는데 아무 알림이 없어 공개 페이지가 하루 묵었다).
+      # secrets 는 batch_watch.yml 과 같은 것(TELEGRAM_BOT_TOKEN · TELEGRAM_CHAT_ID). 없으면 경고만 찍고 끝.
+      # 시험: Actions -> Run workflow -> test_alert 체크.
+      - name: Telegram alert (deploy failed, or test)
+        if: ${{ failure() || inputs.test_alert == true }}
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          KIND: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ] || [ -z "${CHAT:-}" ]; then
+            echo "::warning::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID secret 이 없어 알림을 못 보냄"; exit 0
+          fi
+          if [ "$KIND" = "failure" ]; then
+            MSG=$(printf '%s\n' \
+              "⚠️ 스크리너 페이지 배포 실패" \
+              "" \
+              "· 공개 성적표가 어제 것에 머물러 있을 수 있어요" \
+              "· 자료는 저장소에 올라가 있고 배포만 안 된 상태" \
+              "· 고치기: 아래 주소 → Re-run all jobs" \
+              "" \
+              "${RUN_URL}")
+          else
+            MSG=$(printf '%s\n' \
+              "(시험) 스크리너 페이지 배포 실패 알림" \
+              "" \
+              "· 알림 통로 확인용 — 실제 실패 아님" \
+              "" \
+              "${RUN_URL}")
+          fi
+          curl -sS -o /dev/null -w 'telegram http %{http_code}\n' \
+            --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" \
+            "https://api.telegram.org/bot${TOKEN}/sendMessage"

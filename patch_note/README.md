@@ -24,7 +24,7 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
-- [20261125_deploy_pages_action_versions.md](20261125_deploy_pages_action_versions.md) — **2026.11.23** 페이지 배포 설정의 도구 버전 네 줄 올림(checkout v7 · configure-pages v6 · upload-pages-artifact v5 · deploy-pages v5) — 11/24~25 배포 6번 중 5번 실패("Found 0 artifact(s)") 대응 · 고쳐지는지는 푸시 뒤 확인 · 판정·점수 0-diff
+- [20261125_deploy_pages_action_versions.md](20261125_deploy_pages_action_versions.md) — **2026.11.23** 페이지 배포 설정: **올리기와 배포 사이 20초 대기**(이걸로 고쳐짐 — 11/25 23:21 성공, 공개 페이지 11/25 확인) + 도구 버전 네 줄 올림(이것만으로는 안 고쳐짐) — 11/24~25 "Found 0 artifact(s)" 거듭 실패 대응 · 배포 실패 텔레그램 알림 + 시험 스위치(`test_alert`) · 11/26 자동 배포로 재확인 · 판정·점수 0-diff
 - [20261121_knowledge_cards_move.md](20261121_knowledge_cards_move.md) — **2026.11.22** 지식 장 옛 행 25개(12월 판정 3건과 무관한 것)를 카드로 옮김(D45 · 원문 글자 그대로, 색인 한 줄만 남김 · 23,665B → 20.6KB) · 지식 검사가 카드 링크도 봄 — 판정·점수 0-diff(문서만)
 - [20261116_verdict_tools_prep.md](20261116_verdict_tools_prep.md) — **2026.11.21** 12월 판정 3건의 도구 준비(결과 전): ls_t1 경계 테스트 30개 · v32a 판정 도구(D20·해석표·체결 한도·자리바꿈, 40개 전엔 값 숨김) · lv_e 2차 창 도구(창 시작 20261104·시총 5분위 감도) · 공용 `research/lib/verdict_util.py` · 리허설 대조 차이 0 · `large_verdict.py` 표에 계산분 병기(전후 차이 0 줄) · 판정·점수 0-diff
 - [20261116_large_verdict_two_definitions.md](20261116_large_verdict_two_definitions.md) — **2026.11.20** 대형 ls_t1 판정: 순위 상관을 전 유니버스·시장별 평균 두 가지로 각각 판정해 낮은 쪽 라벨(D44) · `large_verdict.py` 에 `pooled_ic`·`label_one`·`combine`·감도·참고 줄 · 전후 비교 시장별 줄 6개 같음·라벨 '대기' 불변 · 점수·다른 모델 0-diff

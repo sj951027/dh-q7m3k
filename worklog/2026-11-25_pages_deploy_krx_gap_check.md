@@ -32,14 +32,17 @@
 ## 배포 재실행 뒤 (23:16~)
 - 사용자가 GitHub 화면에서 Run workflow 두 번 → 둘 다 같은 오류로 실패("Found 0 artifact(s)" — 그런데 GitHub 에 물으면 그 실행의 묶음 파일은 있음). 일시 문제가 아님.
 - Claude 쪽 `gh`·크롬 프로필은 저장소 주인 계정이 아니라 실행 버튼이 없음 → 배포 실행은 사용자가.
-- `.github/workflows/deploy-pages.yml` 도구 버전 네 줄 올림(패치노트 2026.11.23). **고쳐지는지는 미확인** — 커밋·푸시 → Run workflow → 공개 scoreboard.json asof 20261125 확인이 남음. 안 되면 네 줄 되돌림.
+- `.github/workflows/deploy-pages.yml` 도구 버전 네 줄 올림(패치노트 2026.11.23). 커밋 8ad3fae(문서 7개 포함) → **같은 오류로 실패 — 버전 탓이라는 추정은 틀림**.
+- 올리기 끝난 0.8초 뒤에 배포 단계가 조회하는 것을 보고 `sleep 20` 한 단계 추가(6950c80) → **23:21 실행 성공**, 공개 `scoreboard.json` asof 20261125 · `data_health.json` ref_date 20261125 확인(실측). 성공은 한 번 — 11/26 배치의 자동 배포로 다시 본다.
+
+- 사용자 "배포 실패 텔레그램으로 알려야 할 것 같은데" → `deploy-pages.yml` 에 실패 알림 단계 + 시험 스위치 `test_alert` 추가. 실제 수신은 푸시 뒤 시험으로 확인(미확인이면 남은 일).
 
 ## 바뀐 것
 - `ohlcv.db` `valuation_daily` 11/23 2,724행(관측 축적 — 점수·판정 무관). `DECISIONS_LOG.md` D48 · `DECISIONS.md` 번호 · `VERDICT_CHECKLIST.md` 3-1 · 이 기록 · `worklog/README.md`. `history.db` `large_final` 11/23 500행(뒤늦게 적재). 코드·docs 무변경. 판정·점수 0-diff(건드리지 않음).
 
 ## 남은 일 · 다음 세션 시작점
 - 위 결정 1~4 → 2번은 `VERDICT_CHECKLIST.md`·P04(v32a)·ls_t1 판정문에 반영, 결정되면 `DECISIONS_LOG.md` D48.
-- 11/26 배치 뒤: 배포 성공 여부(`gh run list`) · `daily_flows` 11/25 가 2,762 로 찼는지.
+- 11/26 배치 뒤: 자동 배포 두 번이 20초 대기로 성공하는지(`gh run list`) · `daily_flows` 11/25 가 2,762 로 찼는지.
 - 세션 시작 알림: `DECISIONS.md` 자리 33B(D46 방식대로 번호만 잇기) · P17(≈11/30) 임박.
 
-지식 반영: D48(11/23 앵커 처리 · 자료 보충 · 배포 재시도 보류)
+지식 반영: D48(11/23 앵커 처리 · 자료 보충 · 배포 대기 단계) · PITFALLS 한 줄(배포 "Found 0 artifact(s)")
