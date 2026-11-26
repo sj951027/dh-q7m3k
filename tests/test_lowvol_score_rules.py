@@ -58,4 +58,40 @@ GOLDEN = {  # 2026-08-29 동결 (변경되면 스펙 드리프트 — 절대 이
 for m, h in GOLDEN.items():
     check(f"spec_hash({m})", lv.spec_hash(m) == h, lv.spec_hash(m))
 
+print("\n[5] 보호 run(20261123) — --run/--full/증분 어느 길로도 지우지도 새로 쓰지도 않는다 (2026-11-26, D50)")
+import os, sqlite3, tempfile, io, contextlib
+check("20261123 이 PROTECTED_RUNS 에 있음", "20261123" in lv.PROTECTED_RUNS)
+_td = tempfile.mkdtemp()
+_db = os.path.join(_td, "t.db")
+_c = sqlite3.connect(_db)
+_rows = []
+for rid in ("20261123", "20261124"):
+    for mkt in ("kospi", "kosdaq"):
+        for i in range(12):
+            _rows.append({"market": mkt, "run_id": rid, "ticker": f"{i:06d}", "oversold_score": 50.0,
+                          "amt_avg_1m_억": 50.0, "realized_vol": 10.0 + i, "roe_value": float(i),
+                          "drawdown_52w_high_%": -20.0, "return_1w_%": 1.0, "vs_SMA20_%": 0.0,
+                          "return_1m_%": 1.0, "vol_1w_vs_1m_ratio": 1.0})
+pd.DataFrame(_rows).to_sql("stage3_final", _c, index=False)
+lv.ensure_table(_c)
+_c.execute("INSERT INTO lowvol_scores VALUES ('20261123','kospi','000000','lv_b','x',9.99,12,'FROZEN')")
+_c.commit(); _c.close()
+_old = (lv.DB, lv.OHLCV_DB)
+lv.DB, lv.OHLCV_DB = _db, os.path.join(_td, "none.db")
+def _state():
+    c = sqlite3.connect(_db)
+    r = c.execute("SELECT run_id, COUNT(*) FROM lowvol_scores GROUP BY run_id ORDER BY run_id").fetchall()
+    s = c.execute("SELECT lowvol_score, frozen_at FROM lowvol_scores WHERE run_id='20261123'").fetchall()
+    c.close()
+    return dict(r), s
+try:
+    for label, kw in (("--run 20261123", {"only_run": "20261123"}), ("증분", {}), ("--full", {"mode_full": True})):
+        with contextlib.redirect_stdout(io.StringIO()):
+            lv.run(**kw)
+        cnt, s = _state()
+        check(f"{label}: 11/23 행 그대로(1행·점수·동결시각)", s == [(9.99, "FROZEN")], f"{cnt}")
+    check("다른 날(20261124)은 평소대로 적재됨", _state()[0].get("20261124", 0) > 0)
+finally:
+    lv.DB, lv.OHLCV_DB = _old
+
 print(f"\n✅ lowvol_score 규칙 {P}개 체크 통과")

@@ -152,6 +152,14 @@ MODELS = {
 #   [2026-09-17] mom_b 역작동(유의)·은퇴 — VERDICT_20260917_mom_b_qs_a.md (기존 행 보존, 분모 11 불변).
 RETIRED = {"lv_c", "lv_d", "lv_a3", "lv_short", "hv_a", "mom_b"}
 
+# [2026-11-26] 다시 쓰지 않는 run — 그날 동결된 점수가 지금 stage3_final 로는 재현되지 않는 날.
+#   20261123: KRX 로그인 실패로 ROE 가 전부 빈 채(보조 팩터 → 0.5 중립) 채점·동결됐고, 11/26 배치의
+#   관측 채움이 그날 roe_value 를 뒤늦게 채웠다. 다시 계산하면 점수가 바뀐다(Codex 실측 lv_b 276/279행).
+#   --run / --full / 증분 어느 길로도 이 run 의 행은 지우지도 새로 쓰지도 않는다(새 모델 백필 포함).
+#   근거: DECISIONS_LOG D50 · research/handoff/REPLY_20261126b_roe_backfill.md ·
+#   원래 값 사본 research/frozen_snapshots/lowvol_scores_20261123.csv. 풀려면 이 집합에서 지운다(사용자 결정 필요).
+PROTECTED_RUNS = {"20261123"}
+
 def spec_hash(model_id):
     """모델별 spec_hash. 원본 모델은 변형 추가와 무관하게 항상 동일 해시.
     payload에 그 모델의 팩터·유니버스·방식만 포함(전역 MODELS 미포함)."""
@@ -294,6 +302,16 @@ def run(mode_full=False, only_run=None):
         print(f"[완전성] 부분실행 의심 run 제외(stage1 기준): {sorted(bad)}")
     df = df[~df.run_id.isin(bad)].copy()
 
+    # [2026-11-26] 보호 run: 지우지도 새로 쓰지도 않는다(PROTECTED_RUNS 설명 참조).
+    if only_run and str(only_run) in PROTECTED_RUNS:
+        print(f"[보호] --run {only_run}: 동결 점수를 다시 쓰지 않는 날 — 아무것도 하지 않음 "
+              f"(PROTECTED_RUNS · D50)")
+        con.close()
+        return
+    prot = sorted(PROTECTED_RUNS & set(df.run_id.astype(str).unique()))
+    if prot:
+        df = df[~df.run_id.astype(str).isin(PROTECTED_RUNS)].copy()
+
     if only_run:
         df = df[df.run_id == only_run].copy()
 
@@ -316,10 +334,12 @@ def run(mode_full=False, only_run=None):
     else:
         done_set = set()
         if only_run is None:
-            con.execute("DELETE FROM lowvol_scores WHERE model_id NOT IN (%s)"
-                        % ",".join("?" * len(RETIRED)), sorted(RETIRED))
+            con.execute("DELETE FROM lowvol_scores WHERE model_id NOT IN (%s) AND run_id NOT IN (%s)"
+                        % (",".join("?" * len(RETIRED)), ",".join("?" * len(PROTECTED_RUNS))),
+                        (*sorted(RETIRED), *sorted(PROTECTED_RUNS)))
             con.commit()
-            print("[--full] lowvol_scores 전체 재적재(은퇴 모델 행은 보존)")
+            print("[--full] lowvol_scores 전체 재적재(은퇴 모델 행·보호 run "
+                  f"{sorted(PROTECTED_RUNS)} 은 보존)")
 
     universe_col = 'oversold_score'
     liq_col = 'amt_avg_1m_억'

@@ -20,10 +20,24 @@
 | 용량·파일 정리 | D10(정리는 휴지통까지만 — 'D01 외' 묶음) · `AGENTS.md` 용량 규칙 | 휴지통 비우기·영구 삭제·`git gc --prune` 은 사용자가 | 휴지통, 디스크, 용량, 삭제, 비우기, 중간 파일 |
 | 지식 구조·기록 정리 | `CLAUDE.md` 마무리 7~10 · `DECISIONS_LOG.md`(결정 원문, D40~) · `research/DECISIONS_BASELINE_20261115.md` · P19 · `research/DESIGN_20261115_knowledge_scale.md` §7 · `research/RECALL_TESTSET_20261115.md` | 판정에 걸린 행은 12월 판정 뒤에 옮긴다 | 세 장, 보관소, 카드, 약속 장부, 정리 주기, 결정 이력, 결정 원문, 자리 부족 |
 
+동결 점수·재적재·뒤늦게 채워진 칸(11/23)을 다룰 땐 먼저 `knowledge/K45.md` · `VERDICT_CHECKLIST.md` 3-1 · D48·D50·D51 · P23 — 손으로 돌리면 안 되는 명령 목록이 카드에 있다(낱말: 동결 점수, 재적재, --full, 보호 run, 사본, 11/23).
+
 ## 이웃 폴더 — 경로 (2026-11-21 · Claude·Codex 공통 · 이 저장소 = `C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k`)
 저장소 밖 두 폴더를 쓴다. 코드·문서에는 상대 경로(`../…`)로 적는다. 아래 목록은 11/21 에 폴더를 열어 본 것(실측)이고, 표 안 내용 설명은 `KNOWLEDGE.md` K39·지도 §11 이 정본.
 
 | 폴더 | 절대 경로 | 무엇이 있나 | 지킬 것 |
 |---|---|---|---|
+| 이 저장소 안 DB | `C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k\history.db` · 백업 `history_YYYYMMDD.db.gz`(배치가 매일, 최근 10개 — 폴더는 `.env` 의 `BACKUP_DIR`, 없으면 `backup\`. `.env` 는 읽지 않으니 위치가 필요하면 사용자에게 묻는다) | `history.db`(점수·판정 원본 — `stage3_final` · `v3_scores` · `lowvol_scores` · `large_final` 등, 약 570MB · git 에 올리지 않음) | **읽기 전용**으로 연다 · 동결 점수 행은 고치지 않는다 · 평일 배치 시간 규칙 |
 | 자료 `../dh-q7m3k-data/` | `C:\Users\SAMSUNG\Documents\GitHub\dh-q7m3k-data` | `ohlcv.db`(운영 시세·수급 — 배치가 매일 씀) · `ohlcv_10y.db`(10년 시세, 연구용) · `market_flows_10y.db`(시장 수급 11년) · `macro_10y.db`(환율·미국 지수·금리) · `earnings.db`(실적 접수) · `paper_account.db`(모의 계좌) · `listing_cache.json`(상장 목록 예비) · `sector_snapshots/`(업종 날짜별, 11/8~) | **읽기 전용**(`sqlite3.connect("file:…?mode=ro", uri=True)`) · 쓰는 것은 배치·수집기뿐(사용자가 시킬 때만 실행) · 평일 배치 시간 규칙은 이 폴더에도 같다 · git 저장소가 아니다(되돌릴 수 없음) |
 | PTW `../Position-Tracker-Web/` | `C:\Users\SAMSUNG\Documents\GitHub\Position-Tracker-Web` | 실거래 포지션 트래커(별도 git 저장소). 입구 = 그쪽 `CLAUDE.md` → `PTW_PROJECT_HANDBOOK.md` → 최신 `PATCH_NOTES_v5.xx.md`(11/21 기준 v5.47) · 회귀 `python run_all_tests.py` | 스크리너와 **독립**(D09 — 서로 부르지 않는다) · `.env` 는 읽지 않는다 · `trades.csv`·`data/` 의 개인 매매·자산 수치는 기록·공유 문서에 옮기지 않는다 · 로그인 뒤 화면은 사용자가 본다(하드 경계) · 줄바꿈 LF · 작업 기록은 이 저장소 `worklog/` 에 같이 |
+
+## GitHub — 무엇이 되고 무엇이 안 되나 (2026-11-26 실측 · Claude·Codex 공통)
+| 무엇 | 내용 |
+|---|---|
+| 저장소 | 스크리너 `https://github.com/sj951027/dh-q7m3k`(공개 · 가지 `main`) · PTW `https://github.com/sj951027/Position-Tracker-Web`(가지 `main`) · 자료 폴더 `../dh-q7m3k-data/` 는 git 저장소가 아니다 |
+| 공개 페이지 | `https://sj951027.github.io/dh-q7m3k/` — `docs/` 가 올라간다. 최신인지 보려면 `scoreboard.json` 의 `asof` |
+| 누가 올리나 | `docs/` 는 배치가 스스로 커밋·푸시("Auto update 날짜 시각", 하루 두 번쯤). 코드·문서는 사용자가(GitHub Desktop) 또는 사용자가 시킬 때 Claude 가 `git push` — 코드 파일만 골라서, 줄바꿈만 바뀐 파일·`research/large_verdict_status.md`(배치가 바꿈)·`.codex/` 는 빼고 |
+| 자동 작업 | `.github/workflows/deploy-pages.yml`(푸시에 `docs/` 변경이 있으면 페이지 배포 · 실패하면 텔레그램 알림 · 손으로 돌리면 `test_alert` 로 알림 시험) · `batch_watch.yml`(배치가 안 돌았을 때 알림) |
+| 이 PC 의 `gh` 도구 | 저장소 주인이 아닌 계정으로 로그인돼 있다 → **읽기는 된다**(`gh run list` · `gh run view` · `gh repo view`), **작업 실행·다시 돌리기는 안 된다**(403 "Must have admin rights"). `git push` 는 된다. 계정·권한을 바꾸는 것은 하드 경계 — 우회하지 않는다 |
+| 사용자가 직접 할 것 | 배포 다시 돌리기·알림 시험: GitHub 사이트 → 저장소 → Actions → "Deploy Pages (lightweight)" → Run workflow(또는 실패한 실행의 Re-run all jobs). 로그인·secret 설정·권한도 사용자 |
+| 푸시와 배포 | 푸시에 `docs/` 변경이 없으면 배포는 돌지 않는다. 배포 확인 = `gh run list --limit 5` 의 "Deploy Pages" 줄 |

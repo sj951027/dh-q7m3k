@@ -12,7 +12,7 @@
 - (2026-11-15) 무엇을 먼저 읽을지는 `WHERE.md`(분야 안내 — 일의 종류 → K·D·P 번호와 정본, 같이 볼 한계). 날짜·조건이 붙은 약속은 `PROMISES.md`, 판정 전 대조는 `VERDICT_CHECKLIST.md`. 검색 0건은 '결론 없음'이 아니라 '미확인'으로 적는다.
 - (2026-11-15, D40) 사용자 결정의 원문은 `DECISIONS_LOG.md`(번호로 찾아봄 — 덧붙이기만), `DECISIONS.md` 에는 짧은 한 줄. D01~D39 는 아직 `DECISIONS.md`·`KNOWLEDGE_ARCHIVE.md` 가 원문. `python tests/test_knowledge_sheets.py` 가 번호 어긋남(FAIL)·자리 부족(WARN)을 알린다 — 보이면 사용자에게 알린다.
 - `history.db`·`../dh-q7m3k-data/ohlcv.db`는 **읽기 전용**으로만 연다: `sqlite3.connect("file:...?mode=ro", uri=True)`. 쓰기·스키마 변경 금지.
-- (2026-11-21) 이웃 폴더 두 곳(`../dh-q7m3k-data/` 자료 · `../Position-Tracker-Web/` PTW)의 절대 경로·들어 있는 것·지킬 것은 `WHERE.md` 맨 아래 '이웃 폴더' 표.
+- (2026-11-21) 이웃 폴더 두 곳(`../dh-q7m3k-data/` 자료 · `../Position-Tracker-Web/` PTW)의 절대 경로·들어 있는 것·지킬 것은 `WHERE.md` 맨 아래 '이웃 폴더' 표. (2026-11-26) 같은 표에 `history.db` 행, 그 아래 'GitHub' 표(저장소 주소·공개 페이지·`gh` 로 되는 것/안 되는 것)를 더했다.
 - `.env`·`kis_token.json`·토큰·키는 읽지도 출력하지도 않는다.
 - 배치·수집기(`run_*.bat`, `dart_events.py`, `kis_flows.py`, `universe_ohlcv.py` 등)는 사용자가 명시적으로 시킬 때만 실행한다.
 - 점수·판정·게이트 코드(`v3_rescore.py`, `lowvol_score.py`, `wu_score.py`, `leaderboard.py`, `freeze_scores.py`, `run_and_diversify.py`의 게이트)는 **고치지 않는다.** 필요하면 제안만 문서로.

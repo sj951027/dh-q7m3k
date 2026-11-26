@@ -36,7 +36,7 @@
 - **평일(월~금) 20:10~22:30(KST)엔 파일·DB를 건드리지 않는다** — 작업 스케줄러 배치(`run_auto_logged.bat`, 월~금만 등록)가 도는 시간. 로그는 `logs/auto_run_YYYYMMDD_2010.log`. 토·일엔 배치가 없으니 이 제한도 없다(일요일 20:00 주간 리캡 `notify_weekly.py`만 1~2분). 평일 공휴일에도 배치는 돈다 — 단 `skip_dates.txt`에 그 날짜(YYYYMMDD, 한 줄에 하나)를 적어 두면 건너뛴다(`logs/auto_run_*_SKIPPED.log`가 남음). 애매하면 그날 로그 파일이 있는지로 판단. **(2026-11-15 사용자 결정 D39) 그날 배치가 끝난 것을 확인한 뒤에는 이 시간대에도 작업해도 된다** — 확인 = 그날 로그(자동 `auto_run_*`·수동 `manual_run_*` 모두)의 **마지막 실행**에 끝 줄 `[OK] Done.  End:` 가 있고 배치의 python 프로세스가 없음(또는 그날 것이 `_SKIPPED.log` 뿐). 끝 줄은 실패한 단계가 있어도 찍힌다 — '끝났다'이지 '성공했다'가 아니다. 끝 줄이 없거나 로그가 아직 없으면 도는 중으로 보고 22:30 까지 읽기만. 세션 시작 알림이 이 상태를 첫 줄에 알려 준다.
 - 전체 배치·DART/KRX/KIS 수집기(`run_manual_logged.bat`, `dart_events.py`, `kis_flows.py` 등)는 **사용자가 명시적으로 시킬 때만** 실행. 재실행은 09:00 이전이면 run_id가 전 거래일로 자동 잡힘(09:00~19:59 재실행 금지 — 장중 가격 오염).
 - 부분실행 run 정리: `python research/clean_partial_run.py YYYYMMDD [--yes] [--force]`(백업 자동). 같은 날 재실행 전 필수(이중실행 게이트).
-- 읽기는 자유: `history.db`·`../dh-q7m3k-data/ohlcv.db`는 `mode=ro`로 열기.
+- 읽기는 자유: `history.db`·`../dh-q7m3k-data/ohlcv.db`는 `mode=ro`로 열기. **DB·자료 폴더·PTW 의 절대 경로와 GitHub(저장소 주소·공개 페이지·`gh` 로 되는 것/안 되는 것)는 `WHERE.md` 맨 아래 두 표**(2026-11-26~) — 경로를 사용자에게 다시 묻지 않는다.
 - FDR 상장목록이 404면 `listing_cache.py`(예비 캐시)가 자동 대체 — 텔레그램 🔔 줄의 신선도 경고로 확인.
 - (PITFALLS 에서 승격 2026-11-13 — 두 번 넘게 당함) 코드·긴 한글 문서는 **Bash heredoc 대신 Write 도구로 파일을 만든 뒤 실행**(heredoc 은 역슬래시·`\n` 을 먹고 길면 통째 실패). `taskkill /IM python.exe` **금지** — 포트·PID 로 그 프로세스만. 한글·'−' 를 출력하는 python 은 항상 `PYTHONIOENCODING=utf-8`(또는 `-X utf8`) — 콘솔 cp949 오류로 패치가 중간에 끊긴다(11/13 세 번째).
 
