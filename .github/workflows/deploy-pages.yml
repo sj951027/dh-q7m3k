@@ -75,16 +75,18 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
+          # 2026-11-26(Codex 점검): 알림이 못 나가면 이 단계가 빨간불이 되게 한다 — 전에는 secret 이 없거나
+          # 텔레그램이 오류를 돌려줘도 초록불이라 시험이 시험 구실을 못 했다. 문구는 본 것만(원인 단정 없음).
           if [ -z "${TOKEN:-}" ] || [ -z "${CHAT:-}" ]; then
-            echo "::warning::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID secret 이 없어 알림을 못 보냄"; exit 0
+            echo "::error::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID secret 이 없어 알림을 못 보냄"; exit 1
           fi
           if [ "$KIND" = "failure" ]; then
             MSG=$(printf '%s\n' \
-              "⚠️ 스크리너 페이지 배포 실패" \
+              "⚠️ 스크리너 페이지 갱신 작업 실패" \
               "" \
               "· 공개 성적표가 어제 것에 머물러 있을 수 있어요" \
-              "· 자료는 저장소에 올라가 있고 배포만 안 된 상태" \
-              "· 고치기: 아래 주소 → Re-run all jobs" \
+              "· 아래 실행 기록에서 실패한 단계 확인" \
+              "· 다시 돌리기: 그 화면의 Re-run all jobs" \
               "" \
               "${RUN_URL}")
           else
@@ -95,6 +97,7 @@ jobs:
               "" \
               "${RUN_URL}")
           fi
-          curl -sS -o /dev/null -w 'telegram http %{http_code}\n' \
+          # --fail: 텔레그램이 4xx/5xx 를 돌려주면 0 이 아닌 값으로 끝난다(응답 본문은 버린다 — 로그에 남기지 않음).
+          curl -sS --fail --connect-timeout 10 --max-time 30 -o /dev/null -w 'telegram http %{http_code}\n' \
             --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" \
             "https://api.telegram.org/bot${TOKEN}/sendMessage"

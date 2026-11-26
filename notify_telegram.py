@@ -795,7 +795,7 @@ def _regime_ad_text(info):
 
 
 def _regime_block():
-    """[2026-10-20 밤] 🧭 블록 — docs/scoreboard.json 의 buy_context(칸별 과거 성적)가 있으면 사용자 확정 3줄 형식
+    """[2026-10-20 밤] 🧭 블록 — docs/scoreboard.json 의 buy_context(칸별 과거 성적)가 있으면 사용자 확정 형식(2026-11-26 D49 짧은 네 줄)
     (buy_context.block), 없으면 종전 한 줄(_regime_ad_text). 실패하면 None. 과거형·숫자만 — 매수 신호 아님."""
     info = None
     try:

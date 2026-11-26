@@ -100,11 +100,14 @@ def pick(stats_mkt, k):
 
 
 def lines(mkt, r20_pct, st, years="3년", used=None, pos10=None):
-    """한 시장의 세 줄(사용자 확정 형식 2026-10-20). st = stats()[cell]. 표본 부족이면 두 줄.
+    """한 시장의 네 줄(사용자 확정 형식 2026-11-26 D49 — 10/20 의 긴 세 줄은 텔레그램에서 꺾여 들쭉날쭉했다).
+    한 줄이 꺾이지 않게 짧게, 줄 머리는 '· '. st = stats()[cell]. 표본 부족이면 세 줄. 숫자·뜻은 10/20 형식과 같다
+    (평균 = '다음날 종가에 사서 40거래일 뒤', '더 떨어진' = 산 뒤 20일 안 지수 −5% — 모듈 머리말).
     예)
-    🧭 코스피 -17.3% (3년 중 가장 많이 빠진 축)
-       이만큼 빠졌던 때 3년간 6번 → 다음날 사서 40일 뒤 평균 +12%, 6번 중 5번 플러스
-       단 6번 중 2번은 사고 나서 더 떨어진 뒤 올랐음
+    🧭 코스피 9.9/10 · -21.9%
+    가장 많이 빠진 축 · 시장 전체 기준
+    · 12년간 10번 → 40일 뒤 평균 +8% · 10번 다 플러스
+    · 단 3번은 더 떨어진 뒤 올랐음
     """
     k = cell6(r20_pct)
     if k is None:
@@ -116,27 +119,25 @@ def lines(mkt, r20_pct, st, years="3년", used=None, pos10=None):
             score = f"{float(pos10):.1f}/10 · "          # 0~10 자리 점수(10 = 3년 중 가장 많이 빠진 쪽) — 좋다/나쁘다가 아니라 위치
     except (TypeError, ValueError):
         score = ""
-    head = f"🧭 {nm} {score}{float(r20_pct):+.1f}% ({LABEL6[k]} · 시장 전체 기준)"   # [사용자 결정 10/20] v30 아님을 분명히
+    head = [f"🧭 {nm} {score}{float(r20_pct):+.1f}%",
+            f"{LABEL6[k]} · 시장 전체 기준"]                    # [사용자 결정 10/20] v30 아님을 분명히
     if not st:
-        return [head, "   과거 기록 아직 없음"]                      # 통계 자체가 없을 때(배선 전·계산 실패)
+        return head + ["· 과거 기록 아직 없음"]                  # 통계 자체가 없을 때(배선 전·계산 실패)
     if st.get("events_n", 0) < MIN_EVENTS:
         n = st.get("events_n", 0)
-        return [head, f"   비슷했던 때가 {years}간 {n}번뿐 → 과거 성적은 표본 부족"]
+        return head + [f"· 비슷했던 때가 {years}간 {n}번뿐 → 표본 부족"]
     n, pos, mean = st["events_n"], st["events_pos"], st["mean"]
-    if used in PARENT_WHEN:                                   # 부모 칸으로 대체된 경우 말도 넓힌다
-        when = PARENT_WHEN[used]
-    else:
-        when = "이만큼 빠졌던 때" if k in ("A2", "A1") else ("이만큼 올랐던 때" if k in ("D1", "D2") else "이 정도일 때")
-    second = f"   {when} {years}간 {n}번 → 다음날 사서 40일 뒤 평균 {_sign(mean)}, {n}번 중 {pos}번 플러스"
-    out = [head, second]
+    when = f"{PARENT_WHEN[used]} " if used in PARENT_WHEN else ""   # 부모 칸으로 대체된 경우만 범위를 말로 밝힌다(둘째 줄 라벨과 다르므로)
+    tail = f"{n}번 다 플러스" if pos == n else f"{pos}번 플러스"
+    out = head + [f"· {when}{years}간 {n}번 → 40일 뒤 평균 {_sign(mean)} · {tail}"]
     if pos / n < 0.5:                                         # 과반이 손해였을 때만(평균만 마이너스면 숫자가 말하게 둔다)
-        out[-1] += " → 과거엔 좋은 자리 아니었음"
+        out.append("· 과거엔 좋은 자리 아니었음")
     if st.get("further_n", 0):
         fu, fn = st["further_then_up"], st["further_n"]
         if fu == fn:
-            out.append(f"   단 {n}번 중 {fn}번은 사고 나서 더 떨어진 뒤 올랐음")
+            out.append(f"· 단 {fn}번은 더 떨어진 뒤 올랐음")
         else:
-            out.append(f"   단 {n}번 중 {fn}번은 사고 나서 더 떨어졌고 그중 {fu}번만 40일 뒤 플러스")
+            out.append(f"· 단 {fn}번은 더 떨어졌고 그중 {fu}번만 플러스")
     return out
 
 
@@ -151,5 +152,7 @@ def block(info_ad, stats_by_mkt, years="3년"):
         st, used = pick((stats_by_mkt or {}).get(mkt, {}), k) if k else (None, None)
         ls = lines(mkt, v["r20_pct"], st, years=years, used=used, pos10=v.get("pos10"))
         if ls:
+            if out:
+                out.append("")                                # 두 시장 사이 빈 줄(D49)
             out += ls
     return out
