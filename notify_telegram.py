@@ -560,6 +560,28 @@ SCOREBOARD_DAILY_V3 = False
 CALENDAR_NEAR_DAYS = 3
 
 
+LARGE_STATUS_MD = HERE / "research" / "large_verdict_status.md"   # 배치가 매일 다시 쓰는 대형 트랙 판정 상태(large_verdict.py)
+
+
+def _large_h60_state(text=None):
+    """[2026-11-27] 대형 트랙(ls_t1) h60 판정 상태를 상태 파일에서 읽는다 → (라벨, 창 닫힌 주간 앵커, 필요 수) 또는 None.
+    왜: 판정 일정 줄이 대형 트랙을 '등록 뒤 60거래일'로만 봐서 11/11 부터 매일 "판정 가능"을 띄웠다. 실제 잣대는
+    창 닫힌 주간 앵커 8개(large_verdict.py — 8개 미만이면 '대기')이고 11/27 기준 4/8 이었다. 표시 전용 — 판정은 large_verdict.py 가 한다.
+    두 정의(전 유니버스·시장별) 가운데 적게 닫힌 쪽을 돌려준다. 파일이 없거나 못 읽으면 None(그러면 줄을 띄우지 않는다)."""
+    try:
+        s = LARGE_STATUS_MD.read_text(encoding="utf-8") if text is None else text
+        m = re.search(r"^- \*\*h60: ([^*]+)\*\*(.*)$", s, re.M)
+        if not m:
+            return None
+        pairs = [(int(a), int(b)) for a, b in re.findall(r"창 닫힌 주간 앵커 (\d+)/(\d+)", m.group(2))]
+        if not pairs:
+            return None
+        a, b = min(pairs)
+        return m.group(1).strip(), a, b
+    except Exception:
+        return None
+
+
 def _status_lines_v3():
     """[2026-09-12] 섹션형 본문. 모델 줄(SHOW_V3 순서, 운용 모델 있으면 첫 줄) → 돈 → 판정 일정 → (있을 때만) 달라진 것.
     한 줄에 정보를 몰아넣지 않는다 — 폰에서 줄바꿈으로 접히던 것을 없애려는 것. 표시 전용."""
@@ -610,10 +632,14 @@ def _status_lines_v3():
             out += rb
 
         # ③ 판정 캘린더(먼저 계산 — ②의 '판정 임박' 모델에 필요)
-        wait = sorted([m for m in act if (m.get("oos_days") or 0) < need(m)],
+        #   [2026-11-27] 대형 트랙은 거래일 수로 세지 않는다 — 상태 파일의 h60 라벨이 '대기'가 아닐 때(창 닫힌 주간 앵커 8개)만
+        #   '판정 가능'. 그 전에는 줄을 띄우지 않는다(_large_h60_state 머리말). 다른 트랙은 종전 그대로.
+        _lg = _large_h60_state()
+        _is_lg = lambda m: m.get("track") == "large"   # noqa: E731
+        wait = sorted([m for m in act if not _is_lg(m) and (m.get("oos_days") or 0) < need(m)],
                       key=lambda m: need(m) - (m.get("oos_days") or 0))
-        reached = [m for m in act if (m.get("oos_days") or 0) >= need(m)
-                   and m["model"] not in SEALED_V2]
+        reached = [m for m in act if m["model"] not in SEALED_V2
+                   and ((_lg is not None and _lg[0] != "대기") if _is_lg(m) else (m.get("oos_days") or 0) >= need(m))]
         soon = wait[0]["model"] if wait else None
 
         # ② [2026-10-02] '💰 최근 1개월' 블록은 매일 알림에서 뺐다(위 ① 주석). MONEY_DAILY_V3 를 True 로 바꾸면 종전대로 나온다.
@@ -745,7 +771,7 @@ def _change_events_v3(act, min_oos, need):
                     continue
                 q = prev[mid]
                 nd = 60 if x.get("t") == "large" else min_oos
-                if (q.get("o") or 0) < nd <= (x.get("o") or 0):
+                if x.get("t") != "large" and (q.get("o") or 0) < nd <= (x.get("o") or 0):   # [2026-11-27] 대형 트랙은 거래일 수가 잣대가 아니다(주간 앵커 8개) — '도달' 알림 안 냄
                     ev.append(f"{mid} 판정 표본 {nd}일 도달")
                 if q.get("v") != x.get("v") and mid not in SEALED_V2:
                     ev.append(f"{mid} 자동 라벨 {q.get('v')}→{x.get('v')}(참고)")

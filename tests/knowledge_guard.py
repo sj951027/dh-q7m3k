@@ -182,8 +182,10 @@ def todo_lines():
             nd = max(nd, _t.decision_ids(d, _lp.read_text(encoding="utf-8") if _lp.exists() else "")[0])
         except Exception:
             pass
-        wait = len(re.findall(r"^\d+\. ", d.split("## B.", 1)[1], re.M)) if "## B." in d else 0
-        out.append(f"다음 번호 K{nk:02d} · D{nd:02d} (새 행은 이 번호로) · 사용자 결정 대기 {wait}묶음(DECISIONS §B)")
+        pend = REPO / "DECISIONS_PENDING.md"  # [2026-11-27] 대기 목록은 별도 파일로 옮김(D53) — 없으면 옛 자리(DECISIONS.md §B)에서 센다
+        src, where = (pend.read_text(encoding="utf-8"), "DECISIONS_PENDING.md") if pend.exists() else (d, "DECISIONS §B")
+        wait = len(re.findall(r"^\d+\. ", src.split("## B.", 1)[1], re.M)) if "## B." in src else 0
+        out.append(f"다음 번호 K{nk:02d} · D{nd:02d} (새 행은 이 번호로) · 사용자 결정 대기 {wait}묶음({where})")
     except Exception:
         pass
     try:  # 판정 도래: 리더보드 유효 앵커 ≥40 인데 등록 표(sealed·retired)에 판정이 없는 모델. 대형·주도주는 잣대가 달라 제외.
@@ -335,6 +337,8 @@ def stop(payload):
     elif any(s in ch for s in SHEETS):  # 시작 해시가 없으면 git 작업본 기준
         return
     if any(re.match(r"knowledge/K\d{2,3}\.md$", p) for p in ch):  # 결론 카드(K##.md)가 바뀌었으면 지식 층 갱신으로 본다 — README 등은 아님
+        return
+    if any(re.match(r"pitfalls/(?!README\.md$)[A-Za-z0-9_]+\.md$", p) for p in ch):  # [2026-11-27] 함정 주제 파일이 바뀌었으면 지식 층 갱신으로 본다(D52) — README 는 아님
         return
     for p in records:
         if p.startswith("worklog/"):

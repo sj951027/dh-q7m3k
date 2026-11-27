@@ -1,6 +1,6 @@
 # patch_note/ — 변경 이력 (2026-08-16 도입)
 
-**현재 버전: 2026.11.25** (버전 = 최신 패치노트의 버전)
+**현재 버전: 2026.11.27** (버전 = 최신 패치노트의 버전)
 
 > **역할 분담**: 지식 문서(PROJECT_KNOWLEDGE 등)는 "현재 상태·설계 결정"의 정본,
 > `patch_note/`는 "무엇이 언제 왜 어떻게 바뀌었나"의 이력. 연구 산출물은 research/ (별개).
@@ -24,6 +24,8 @@
 - 소급 작성은 하지 않는다(2026-08-11 이전 이력은 코드 주석·VERDICT·git이 담당).
   단 도입 주간(08-11~15)은 시작 사료로 백필돼 있음.
 
+- [20261127_telegram_lines_large_ready.md](20261127_telegram_lines_large_ready.md) — **2026.11.27** 텔레그램 🧭 긴 줄을 둘로(휴대폰에서 여전히 꺾임 — D54 가 D49 형식을 고침) · "ls_t1 → 판정 가능"은 주간 앵커 8개가 찰 때만(11/11 부터 틀린 안내였다) — `buy_context.py`·`notify_telegram.py` 문구만, 판정·점수 0-diff
+- [20261127_pitfalls_split.md](20261127_pitfalls_split.md) — **2026.11.26** 함정 장을 '항상 한 줄' + 주제별 파일 넷(`pitfalls/`)으로 나눔(D52 · 원문 25줄 글자 그대로 · 4,891B → 3,230B) · 검사 장치 [6]·세션 끝 검사에 주제 파일 반영 · **결정 장 자리 내기(D53)**: 대기 목록 14묶음 → `DECISIONS_PENDING.md` 글자 그대로 · D46~D52 를 이력 절 제목 그대로 한 줄씩(15,000B → 13,758B) · 문서·검사 장치만, 판정·점수 0-diff
 - [20261126_lowvol_protected_run.md](20261126_lowvol_protected_run.md) — **2026.11.25** lowvol 11/23 동결 점수를 다시 쓰지 못하게(D51) — `lowvol_score.py` 재적재 길만(`PROTECTED_RUNS`), 평소 배치 0-diff · 그날 점수 사본 `research/frozen_snapshots/` · `--full` 은 다른 날 점수도 바꾼다는 것 실측
 - [20261126_telegram_compass_short.md](20261126_telegram_compass_short.md) — **2026.11.24** 텔레그램 🧭 시장 줄을 짧은 네 줄로(D49 · 긴 줄이 꺾여 들쭉날쭉하던 것) — `buy_context.py` 문구만, 숫자 그대로 · **배포 실패 알림 손질**(전송 실패를 실패로 · 문구에서 원인 단정 뺌 — Codex 점검) · 절차서 3-1 에 lowvol 11/23(D50) · 판정·점수 0-diff
 - [20261125_deploy_pages_action_versions.md](20261125_deploy_pages_action_versions.md) — **2026.11.23** 페이지 배포 설정: **올리기와 배포 사이 20초 대기**(이걸로 고쳐짐 — 11/25 23:21 성공, 공개 페이지 11/25 확인) + 도구 버전 네 줄 올림(이것만으로는 안 고쳐짐) — 11/24~25 "Found 0 artifact(s)" 거듭 실패 대응 · 배포 실패 텔레그램 알림 + 시험 스위치(`test_alert`) · 11/26 자동 배포로 재확인 · 판정·점수 0-diff

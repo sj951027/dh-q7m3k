@@ -7,6 +7,7 @@
   B. 본문: [2026-10-20 밤] 매일 알림 기본은 성적표 블록 없음(SCOREBOARD_DAILY_V3=False, 링크로 대체) · 스위치를 켜면 종전대로 나온다 · '최근 1개월' 블록은 없다.
   C. 맨 아래 링크는 성적표가 먼저이고, 표시 모델의 목록 페이지가 뒤따른다.
   D. 깨진 입력에도 예외 없이 None/폴백.
+  E. [2026-11-27] 대형 트랙(ls_t1)의 '판정 가능'은 거래일 수가 아니라 상태 파일의 h60 라벨로(창 닫힌 주간 앵커 8개 전에는 줄 없음).
 실행: python tests/test_telegram_scoreboard.py
 """
 import re
@@ -57,6 +58,31 @@ check("성적표(leaderboard.html)가 첫 링크", hrefs and hrefs[0].endswith("
 check("표시 모델 목록 링크가 뒤따름", [h.rsplit("/", 1)[1] for h in hrefs[1:]] == [nt.MODEL_PAGE_V3[m].rsplit("/", 1)[1] for m in nt.SHOW_V3 if m in nt.MODEL_PAGE_V3])
 check("'저변동 종목 보기' 문구 없음", "저변동 종목 보기" not in msg)
 check("첫 줄은 ✅ 또는 ⚠️", msg.startswith("✅") or msg.startswith("⚠️"))
+
+print("E. 대형 트랙 판정 일정")
+S = nt._large_h60_state
+_wait = "## 판정\n- **h60: 대기** (두 정의 중 낮은 쪽) — 전 유니버스 **대기**: 창 닫힌 주간 앵커 4/8 · IC 계산분 4 / 시장별 평균 **대기**: 창 닫힌 주간 앵커 5/8 · IC 계산분 4\n- **h120: 대기** — 창 닫힌 주간 앵커 0/8\n"
+_done = _wait.replace("h60: 대기", "h60: 기움").replace("4/8", "8/8").replace("5/8", "9/8")
+check("대기 상태를 읽는다(두 정의 중 적게 닫힌 쪽)", S(_wait) == ("대기", 4, 8))
+check("라벨이 붙으면 그 라벨", S(_done) == ("기움", 8, 8))
+check("못 읽으면 None(예외 없음)", S("") is None and S("엉뚱한 글") is None and S("- **h60: 대기** 숫자 없음") is None)
+import json as _json, tempfile as _tf
+_lb = _json.loads((REPO / "docs" / "leaderboard.json").read_text(encoding="utf-8"))
+_has_large = any(m.get("track") == "large" and not m.get("retired") and m["model"] not in nt.SEALED_V2 for m in _lb.get("models", []))
+_orig = nt.LARGE_STATUS_MD
+with _tf.TemporaryDirectory() as _d:
+    _p = Path(_d) / "s.md"
+    _p.write_text(_wait, encoding="utf-8"); nt.LARGE_STATUS_MD = _p
+    _t_wait = "\n".join(nt._status_lines_v3())
+    _p.write_text(_done, encoding="utf-8")
+    _t_done = "\n".join(nt._status_lines_v3())
+    nt.LARGE_STATUS_MD = Path(_d) / "none.md"
+    _t_none = "\n".join(nt._status_lines_v3())
+nt.LARGE_STATUS_MD = _orig
+_lg_line = lambda t: [x for x in t.split("\n") if "ls_t1" in x and "판정 가능" in x]
+check("대기면 'ls_t1 → 판정 가능' 줄 없음", not _lg_line(_t_wait))
+check("상태 파일이 없어도 줄 없음(예외 없음)", not _lg_line(_t_none) and "만들기 실패" not in _t_none)
+check("라벨이 붙으면(주간 앵커 8개) '판정 가능' 줄" + ("" if _has_large else " — 현역 대형 모델 없음, 건너뜀"), (not _has_large) or bool(_lg_line(_t_done)))
 
 print(("\n❌ 실패 %d건" % fails) if fails else "\n✅ test_telegram_scoreboard 통과")
 sys.exit(1 if fails else 0)

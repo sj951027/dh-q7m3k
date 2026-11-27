@@ -5,7 +5,9 @@
 [3] 세 장이 가리키는 정본이 실재한다: .md/.py 경로 + 확장자 없는 축약 정본 이름(RESEARCH_*, VERDICT_*, PREREGISTER_*, 대문자_날짜 메모)도 접두 glob 으로 찾는다(PTW 파일 제외).
 [4] 원장 `MODELS_LEDGER.md` 현역 표의 model_id 가 KNOWLEDGE 어딘가에 한 번은 나온다(고정 목록 아님 — 원장을 읽는다). 은퇴·대조 모델은 제외하지 않음(지식에 라벨이 있어야 하므로).
 [5] 행 ID 중복 없음(K##). 결정 번호(D##)는 장부 행·묶음 안 번호·결정 이력(DECISIONS_LOG.md)을 합쳐 중복·빠짐·요약 없는 원문·원문 없는 요약을 본다(2026-11-15, D40).
-[2-1] 남은 자리가 300B 아래면 경고(실패 아님) — 새 줄을 적기 전에 자리부터."""
+[2-1] 남은 자리가 300B 아래면 경고(실패 아님) — 새 줄을 적기 전에 자리부터.
+[3-1] 결정 대기 목록 DECISIONS_PENDING.md(2026-11-27 D53 — DECISIONS.md §B 에서 옮김)의 정본 링크도 [3] 처럼 본다. 크기 상한은 없다(매 세션 읽지 않음).
+[6] 함정 주제 파일(pitfalls/*.md, 2026-11-27 D52): 정본 링크를 [3] 처럼 보고, README 를 뺀 주제 파일은 PITFALLS.md 가 이름으로 가리켜야 한다(가리키지 않는 파일은 아무도 안 읽는다)."""
 import datetime as dt, re, sys
 from pathlib import Path
 
@@ -101,6 +103,18 @@ def main():
     linked = dict(texts)
     for c in sorted((REPO / "knowledge").glob("K*.md")):
         linked[f"knowledge/{c.name}"] = c.read_text(encoding="utf-8")
+    n_cards = len(linked) - len(texts)
+    # [2026-11-27] 함정 주제 파일(pitfalls/*.md)도 같이 본다 — 상세가 PITFALLS.md 밖으로 나갔으므로(D52)
+    topics = sorted(p for p in (REPO / "pitfalls").glob("*.md") if p.name != "README.md")
+    for p in topics:
+        linked[f"pitfalls/{p.name}"] = p.read_text(encoding="utf-8")
+        if f"pitfalls/{p.name}" not in texts.get("PITFALLS.md", ""):
+            bad.append(f"[6] pitfalls/{p.name} 을 PITFALLS.md 가 가리키지 않는다 — '분야별' 표에 한 줄")
+    pend = REPO / "DECISIONS_PENDING.md"  # [2026-11-27] 결정 대기 목록(DECISIONS.md §B 에서 옮김, D53) — 정본 링크를 같이 본다
+    if pend.exists():
+        linked[pend.name] = pend.read_text(encoding="utf-8")
+    elif "DECISIONS_PENDING.md" in texts.get("DECISIONS.md", ""):
+        bad.append("[3] DECISIONS.md 가 가리키는 DECISIONS_PENDING.md 없음")
     for f, s in linked.items():
         for m in set(re.findall(r"[A-Za-z0-9_./\-]+\.(?:md|py)", s)):
             base = m.split("/")[-1]
@@ -130,7 +144,7 @@ def main():
         print("WARN " + w)
     if bad:
         print("\n".join(bad)); return 1
-    print("OK 지식 세 장: 크기 " + " · ".join(f"{f} {len(texts[f].encode()):,}B" for f in CAPS) + f" · 링크·축약 정본 확인(카드 {len(linked) - len(texts)}장 포함) · 원장 모델 {len(ids)}개 모두 KNOWLEDGE 에 있음")
+    print("OK 지식 세 장: 크기 " + " · ".join(f"{f} {len(texts[f].encode()):,}B" for f in CAPS) + f" · 링크·축약 정본 확인(카드 {n_cards}장 · 함정 주제 파일 {len(topics)}개 포함) · 원장 모델 {len(ids)}개 모두 KNOWLEDGE 에 있음")
     return 0
 
 

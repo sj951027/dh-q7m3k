@@ -100,13 +100,17 @@ def pick(stats_mkt, k):
 
 
 def lines(mkt, r20_pct, st, years="3년", used=None, pos10=None):
-    """한 시장의 네 줄(사용자 확정 형식 2026-11-26 D49 — 10/20 의 긴 세 줄은 텔레그램에서 꺾여 들쭉날쭉했다).
+    """한 시장의 짧은 줄 묶음(사용자 확정 형식 2026-11-26 D49 — 10/20 의 긴 세 줄은 텔레그램에서 꺾여 들쭉날쭉했다).
     한 줄이 꺾이지 않게 짧게, 줄 머리는 '· '. st = stats()[cell]. 표본 부족이면 세 줄. 숫자·뜻은 10/20 형식과 같다
     (평균 = '다음날 종가에 사서 40거래일 뒤', '더 떨어진' = 산 뒤 20일 안 지수 −5% — 모듈 머리말).
+    [2026-11-27 사용자 승인] 11/26 형식의 셋째 줄("… 평균 +8% · 10번 다 플러스")이 휴대폰에서 여전히 꺾여 '평균'과 '몇 번 플러스'를
+    두 줄로 나눴다. '단 N번은 더 떨어졌고 그중 M번만 플러스' → '더 떨어진 N번 중 M번만 플러스'(같은 뜻, 짧게).
+    부모 칸으로 대체될 때의 범위 말은 따로 한 줄. 어림 폭(한글 2·그 밖 1)으로 34 를 넘지 않게 — 11/27 휴대폰에서 34 는 안 꺾였다.
     예)
-    🧭 코스피 9.9/10 · -21.9%
+    🧭 코스피 9.5/10 · -14.4%
     가장 많이 빠진 축 · 시장 전체 기준
-    · 12년간 10번 → 40일 뒤 평균 +8% · 10번 다 플러스
+    · 12년간 10번 → 40일 뒤 평균 +8%
+    · 10번 다 플러스
     · 단 3번은 더 떨어진 뒤 올랐음
     """
     k = cell6(r20_pct)
@@ -127,9 +131,11 @@ def lines(mkt, r20_pct, st, years="3년", used=None, pos10=None):
         n = st.get("events_n", 0)
         return head + [f"· 비슷했던 때가 {years}간 {n}번뿐 → 표본 부족"]
     n, pos, mean = st["events_n"], st["events_pos"], st["mean"]
-    when = f"{PARENT_WHEN[used]} " if used in PARENT_WHEN else ""   # 부모 칸으로 대체된 경우만 범위를 말로 밝힌다(둘째 줄 라벨과 다르므로)
-    tail = f"{n}번 다 플러스" if pos == n else f"{pos}번 플러스"
-    out = head + [f"· {when}{years}간 {n}번 → 40일 뒤 평균 {_sign(mean)} · {tail}"]
+    out = list(head)
+    if used in PARENT_WHEN:                                   # 부모 칸으로 대체된 경우만 범위를 말로 밝힌다(둘째 줄 라벨과 다르므로) — 따로 한 줄
+        out.append(f"· {PARENT_WHEN[used]} 기준")
+    out.append(f"· {years}간 {n}번 → 40일 뒤 평균 {_sign(mean)}")
+    out.append(f"· {n}번 다 플러스" if pos == n else f"· {n}번 중 {pos}번 플러스")
     if pos / n < 0.5:                                         # 과반이 손해였을 때만(평균만 마이너스면 숫자가 말하게 둔다)
         out.append("· 과거엔 좋은 자리 아니었음")
     if st.get("further_n", 0):
@@ -137,7 +143,7 @@ def lines(mkt, r20_pct, st, years="3년", used=None, pos10=None):
         if fu == fn:
             out.append(f"· 단 {fn}번은 더 떨어진 뒤 올랐음")
         else:
-            out.append(f"· 단 {fn}번은 더 떨어졌고 그중 {fu}번만 플러스")
+            out.append(f"· 더 떨어진 {fn}번 중 {fu}번만 플러스")
     return out
 
 
